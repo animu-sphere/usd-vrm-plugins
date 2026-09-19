@@ -49,7 +49,7 @@ milestones below say which of them each one serves.
 Migration Phase D — `usd-mmd-plugins` consuming the same core — is that
 repository's, and needs nothing from this one.
 
-## 2. MIG-0 — preparation 🚧
+## 2. MIG-0 — preparation ✅
 
 - ✅ **Check the API for VRM vocabulary, mechanically** (2026-09-19).
   `workspace_motion_vocabulary` scans every public header of `motionCore`,
@@ -70,13 +70,27 @@ repository's, and needs nothing from this one.
   1.0's required-bone set, `ExpressionResolver` and `LookAtEvaluator`. Three
   findings are recorded there for the arrival: a caller-supplied required
   set, the look-at target's shape, and the expression channel's namespace.
-- ⬜ **Hand over the evidence.** The shared core's contract starts from what
-  this repository measured: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s
-  basis, root-and-hips, path-rule and tracker sections, the OpenExec driver
-  contract, and the exec layer's findings. They are proposed into
-  `usd-motion-plugins`' `MOTION_CONTRACT.md` and `RETARGETING_POLICY.md` as
-  cited evidence, not re-derived there.
-- ⬜ **Carry the producer conventions v0.9.0 left unauthored.**
+- ✅ **Hand over the evidence** (2026-09-19, usd-motion-plugins #3). The
+  shared core's contract starts from what this repository measured. The basis,
+  root-and-hips and path-rule sections and the four sampling findings were
+  already there. #3 adds what was missing, as cited evidence:
+  - the v0.9.0 partial-skeleton and scale decisions, and the six retarget-side
+    exec findings, in its `RETARGETING_POLICY.md` §4.1, §6.1 and §10;
+  - recorded-source provenance and the tracker boundary, in its
+    `MOTION_CONTRACT.md` §7.1 and §11.1;
+  - the OpenExec driver contract, in a new `EXEC_CONTRACT.md`. It went there
+    and not into the motion contract, because it describes an evaluation, not
+    a value.
+- ✅ **Carry the producer conventions v0.9.0 left unauthored** (2026-09-19,
+  proposed in usd-motion-plugins #3, its `EXEC_CONTRACT.md` §5). The answer
+  proposed: only `motion:timeCodesPerSecond` is a motion writer's to author,
+  from the same number as the stage metadata, as a shim until OpenUSD delivers
+  stage metadata to a computation. Everything else below is evaluation policy
+  and belongs to the composed scene, never to a motion asset. For this
+  repository that means the `.vrma` importer and the bake author the rate, and
+  `vrm:retarget:*` stays a scene-side convention of `execVrm` until the shared
+  `Bindings` prim exists. The one-joint fallback is closed on the producer side
+  by writers always authoring both arrays. What the item asked:
   `motion:timeCodesPerSecond`, `motion:filter:*`, `motion:root:*`,
   `vrm:retarget:sourceSkeleton` and the four `vrm:retarget:*` root statements
   are read by the exec bundles and authored today only by fixtures and the
