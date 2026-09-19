@@ -8,16 +8,14 @@ older history is in the [delivery history](../reports/delivery-history.md). A
 milestone's own detail lives in its track document. This file carries the
 boundary, what is still open, and where the detail is.
 
-Legend: 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️ accepted workaround
+Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️ accepted workaround
 
-## Shipped: v0.9.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) 🚧
+## Shipped: v0.9.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ✅
 
-**Prepared 2026-09-17, not yet tagged.** Every task and every gate row is closed
-and the version is bumped ([release record](../releases/v0.9.0.md)). What is
-left is the `release.yml` dry run on `main`, the tag and publishing the draft.
-This heading says `Shipped` because `check_docs.py` accepts only
-`Next`/`Then`/`Shipped` with a version, and a version with a release record
-cannot be `Next`.
+**Tagged and published on 2026-09-17** ([release record](../releases/v0.9.0.md)).
+This section stays only as the milestone `check_docs.py` reads, and until the
+next release takes a number. What v0.9.0 left open is under
+[Carried out of v0.9.0](#carried-out-of-v090).
 
 **Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
 humanoid through OpenExec, proven equal to the offline result on the same input.
@@ -158,7 +156,7 @@ work is in the CHANGELOG's `[Unreleased]` section. What remains of the phase is
 **live recording** and the **VRMA export investigation**, both in
 [the backlog](backlog.md).
 
-## Then: the motion migration ⬜ — generic motion to `usd-motion-plugins`, input to `motion-connectors`
+## Then: the motion migration 🚧 — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
 **Decided 2026-09-17, and it replaces two sections that stood here:** boundary
 consolidation as its own milestone, and a conditional repository split that
@@ -179,6 +177,11 @@ steps **Migration Phase A–F**.
 
 It starts after v0.9.0, on purpose: the OpenExec foundation's findings are the
 API defects the move fixes on arrival, and they only exist once its nodes do.
+**MIG-0 started on 2026-09-19.** The line through `vrmRetarget` is drawn, the
+vocabulary check runs, and the parity baselines are named. The evidence
+hand-over and the producer conventions are still open
+([the track §2](motion-foundation-split.md#2-mig-0--preparation-)). Both
+destinations have a scaffold under way, which is what MIG-1 waits for.
 Until an identity moves, it takes fixes and the work v0.9.0 owes, and **no new
 generic capability** ([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
 

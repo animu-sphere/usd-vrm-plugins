@@ -13,6 +13,33 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Added
+
+- **A vocabulary check on the headers that are leaving** (the motion
+  migration's MIG-0). `workspace_motion_vocabulary` scans every public header
+  of `motionCore`, `motionRuntime` and the generic half of `vrmRetarget` with
+  comments removed, plus every string literal of their sources, for VRM
+  vocabulary. It fails on any name that
+  [`tests/boundary/motion-vocabulary.json`](tests/boundary/motion-vocabulary.json)
+  does not dispose of as a rename, an identity name, a diagnostic code or a
+  recorded finding. It also fails on a ledger row the scan no longer finds, and
+  on a finding whose anchor identifier is gone. The first run classified 40
+  names. Three near-miss ledgers each get one thing wrong and must fail with
+  that message.
+
+### Documentation
+
+- **The line through `vrmRetarget`**
+  ([WORKSPACE.md §9.5](docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
+  The split is by header. `HumanoidMap` is generic and moves as `RetargetMap`,
+  and only its VRM 1.0 required-bone set stays. `ExpressionResolver` and
+  `LookAtEvaluator` stay too. Three findings are recorded for the arrival. §9.1
+  now names every destination identity, lower-camel as both destinations
+  decided, and §9.2 rule 7 moves every live input at once.
+- **The parity baselines each move reproduces**, named per move in
+  [the migration track](docs/roadmap/motion-foundation-split.md#2-mig-0--preparation-).
+  `current.md` and the roadmap README now record v0.9.0 as published.
+
 ## [0.9.0] — 2026-09-17
 
 > **The OpenExec foundation.** `execMotion` and `execVrm` evaluate a humanoid

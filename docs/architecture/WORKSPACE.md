@@ -1139,7 +1139,10 @@ every consumer here twice.
 | `VRM_RETARGET_*` diagnostic codes | the destination's code style (its DIAG-O1) |
 
 Where a published contract there chooses differently, the published contract
-wins and this table is corrected.
+wins and this table is corrected. `tests/boundary/motion-vocabulary.json` lists
+every VRM-vocabulary name the moving headers still spell, and which of these
+rows or which §9.5 finding disposes of it. `workspace_motion_vocabulary` fails
+on a name it does not list.
 
 ### 9.4 Sequences
 

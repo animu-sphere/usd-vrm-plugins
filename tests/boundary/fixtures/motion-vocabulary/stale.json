@@ -1,0 +1,39 @@
+{
+  "about": "Near-miss ledgers for workspace_motion_vocabulary: each gets exactly one thing wrong, and the check must name it.",
+  "vocabulary": "vrm|humanoid",
+  "scope": {
+    "headers": [
+      "include/*.h"
+    ],
+    "sources": []
+  },
+  "findings": {
+    "1": "a finding"
+  },
+  "anchors": [
+    {
+      "identifier": "GetRequiredBones",
+      "finding": 1
+    }
+  ],
+  "names": [
+    {
+      "kind": "identifier",
+      "text": "HumanoidPose",
+      "disposition": "rename",
+      "to": "MotionPose"
+    },
+    {
+      "kind": "identifier",
+      "text": "VrmBindingHint",
+      "disposition": "finding",
+      "finding": 1
+    },
+    {
+      "kind": "identifier",
+      "text": "HumanoidAnimation",
+      "disposition": "rename",
+      "to": "MotionClip"
+    }
+  ]
+}

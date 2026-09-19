@@ -153,7 +153,7 @@ already met real hardware. The file `openexec-v0.6.0-v0.7.0.md` was renamed
 [openexec-foundation.md](openexec-foundation.md) in the same change — a filename
 carrying a version number is drift waiting to be re-litigated.
 
-Where things stand, as of 2026-09-15:
+Where things stand, as of 2026-09-19:
 
 - **Every Workspace phase has code.** `motionCore`, `motionRuntime`,
   `vrmRetarget` and `usdVrmaFileFormat` implement Motion Phases A–D;
@@ -168,12 +168,16 @@ Where things stand, as of 2026-09-15:
   ([release record](../releases/v0.8.0.md)). What it shipped and did not close
   is in that record's known limitations; the part with work left is in
   [current.md](current.md#carried-out-of-v080).
-- **Current priority: v0.9.0, the [OpenExec foundation](openexec-foundation.md).**
-  What remains is one packaging task (P0-3), the producer half of the
-  statements the nodes read (P0-4), and three decisions (P0-6, P1-2, P1-3);
-  [current.md](current.md) has the table. Carried beside it: operator evidence
-  for both input halves, the Workspace Phase 5 packaging P0, and runtime
-  verification. None of those blocks the foundation, and it blocks none of them.
+- **v0.9.0 shipped on 2026-09-17**: the
+  [OpenExec foundation](openexec-foundation.md), with OpenExec and the offline
+  bake agreeing on 414 598 values, every one `==`
+  ([release record](../releases/v0.9.0.md)).
+- **Current priority: the [motion migration](motion-foundation-split.md).**
+  MIG-0 started on 2026-09-19. Both destinations are being scaffolded, and
+  MIG-1 moves `motionCore` once `usd-motion-plugins` has a tree that can
+  receive it. Carried beside it: operator evidence for both input halves, the
+  Workspace Phase 5 packaging P0, and the build machine's RPATH in packaged
+  POSIX binaries ([current.md](current.md#carried-out-of-v090)).
 - **The recorded half's second format family waits behind three tracks**, and
   its boundary is already built: NPZ / AMASS enters through `motionSource`
   exactly as BVH does. Whether that is one identity (`motionNpz`) or two
