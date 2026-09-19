@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1 and MIG-2, their consuming halves blocked on `ost` (report 41) · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41) · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -171,9 +171,17 @@ repository's, and needs nothing from this one.
 - ⬜ The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.
-- ⬜ `StageIo`'s clip and skeleton reading and writing arrive as `motionUsd`,
-  which is also the library home for clip → pose the sampling finding asked
-  for.
+- 🚧 `motionUsd`. The authoring half arrived on 2026-09-19
+  ([usd-motion-plugins #7](https://github.com/animu-sphere/usd-motion-plugins/pull/7)). Its source was
+  `motion_capture`'s `ClipWriter`, not `StageIo`. `StageIo` reads a clip and
+  bakes it onto a VRM, and that writing half is VRM-specific and stays here.
+  `motionUsd` authors that repository's own stage shape
+  (`/Animation/{Skeleton,Body}`, always 30 time codes per second). The
+  `.vrma` stage here does not change. `motion_capture` keeps its copy of the
+  writer until MIG-4 moves the tool.
+  - ⬜ `StageIo`'s clip and skeleton *reading* arrives as `motionUsd`'s
+    reading half. That is also the library home for clip → pose that the
+    sampling finding asked for.
 - ⬜ `execMotion` arrives as `usd-motion-plugins`' optional
   `plugins/execMotion`; `execVrm` stays and reads its nodes by name exactly
   as it does now.
@@ -182,11 +190,23 @@ repository's, and needs nothing from this one.
   `execVrm`. The OpenExec parity values are re-run against the consumed
   packages before anything here is deleted.
 
-## 5. MIG-3 — recorded sources ⬜
+## 5. MIG-3 — recorded sources 🚧
 
-- ⬜ `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`
-  and the producer profiles arrive together (motion-plugins policy §26–§27);
-  the profiles are installed data there.
+- ✅ `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`
+  and the producer profiles arrived together, with their history, on
+  2026-09-19 ([usd-motion-plugins #8](https://github.com/animu-sphere/usd-motion-plugins/pull/8)). That is ahead of
+  that repository's v0.4.0, which still carries them. The profiles are
+  installed data there. The arrival names:
+  - `motion_bvh_convert` is `motion_convert`, and it authors through
+    `motionUsd`, with the producer's rest.
+  - `USDVRM_MOTION_PROFILE_PATH` is `USDMOTION_PROFILE_PATH`.
+  - The `VRM_BVH_*` codes are `MOTION_BVH_*` (that repository's design policy
+    §42.8).
+- ⛔ This repository deletes its copies in the same consuming change as
+  MIG-1, and for the same reason it waits (ost report 41). The change
+  re-runs `workspace_bvh_end_to_end` against the consumed tools.
+  `workspace_unicode_paths` loses `motion_bvh_convert` in it, so the
+  non-ASCII path case needs a home in `usd-motion-plugins` first.
 - ⬜ NPZ / AMASS is no longer this repository's track: its identity decision
   ([the recorded track](recorded-motion-sources.md) §13) moves with
   `motionSource`, behind the versioned NPZ payload contract the motion-plugins
