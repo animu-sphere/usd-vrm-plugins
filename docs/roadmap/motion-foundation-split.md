@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19; 🚧 MIG-4, its two leaf libraries in review in `motion-connectors` · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -242,16 +242,33 @@ repository's, and needs nothing from this one.
   `motionSource`, behind the versioned NPZ payload contract the motion-plugins
   policy requires first (its §28).
 
-## 6. MIG-4 — recording and live input ⬜
+## 6. MIG-4 — recording and live input 🚧
 
 - ⬜ `motion_capture` arrives as `usd-motion-plugins`' recording tool.
-- ⬜ `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
+- 🚧 `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
   `motion-connectors`, which depends on `usd-motion-plugins` and on nothing
   here. They arrive **together**, in `motion-connectors` v0.1.0, and leave
   here in one change ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)
   rule 7). The adapters lose the `vrm` prefix there, as
   `motionConnectorVmc`, `motionConnectorMocopi` and `motionConnectorVrchatOsc`.
+  - 🚧 The two leaves, in review (2026-09-19):
+    `liveTransport` as `motionConnectorTransport`
+    ([motion-connectors #2](https://github.com/animu-sphere/motion-connectors/pull/2), 10 commits) and `osc` as
+    `motionConnectorOsc` ([#3](https://github.com/animu-sphere/motion-connectors/pull/3), 6 commits, stacked on #2).
+    Each came with its history, then a move-only commit, then the rename.
+    The namespaces are `openstrata::connectors::transport` and
+    `openstrata::connectors::osc`, and the code is unchanged. Both link
+    nothing, so they could go ahead of the `usd-motion-plugins` release that
+    everything after them needs. `motion-connectors` rendered its CI with the
+    first of them.
+  - ⬜ `motionTracking` and the three adapters link `motionCore`. Importing
+    them needs `motion-connectors` to consume `usd-motion-plugins` as an
+    installed package, and under `ost` that is the same gap as
+    [report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md).
+  - ⬜ The OSC suite's corpus half reads the VMC capture format over this
+    repository's VMC fixtures. It stays here and travels with
+    `vrmAdapterVmc`.
 - ⬜ Recorded evidence — capture traces, the cross-source reports' inputs —
   moves with the adapter that produced it, under the same redistribution rule
   it has here.
