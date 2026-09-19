@@ -179,8 +179,8 @@ repository's, and needs nothing from this one.
     `SkeletonJoint`, `HumanoidMap` is `RetargetMap`, and the codes are
     `MOTION_RETARGET_*` with the event names unchanged. 24 of
     `vrmRetarget_unit`'s 56 tests travelled; the other 32 test what stays.
-  - ✅ Two questions were decided for the import (2026-09-19). The destination's WS-O2:
-    `motionRetarget` depends on `motionCore` alone, so
+  - ✅ Two questions were decided for the import (2026-09-19). The
+    destination's WS-O2: `motionRetarget` depends on `motionCore` alone, so
     `RetargetOptions::resampleRate` is gone and a caller resamples first, as
     `motion_retarget` already does. Its RT-O1: the published root-motion
     vocabulary is the imported `Hips` / `RootJoint` / `Ignore`.
