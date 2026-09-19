@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41) · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -168,9 +168,39 @@ repository's, and needs nothing from this one.
     in the same change as MIG-1's `motionCore`, and for the same reason it
     waits: `requires.libraries` cannot name a library from another repository
     ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
-- ⬜ The generic retarget arrives as `motionRetarget`, with a
+- 🚧 The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.
+  - ✅ Arrived with its history (2026-09-19,
+    [usd-motion-plugins #9](https://github.com/animu-sphere/usd-motion-plugins/pull/9)):
+    32 commits, cut along [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget),
+    with `ExpressionResolver` and `LookAtEvaluator` left out of the history.
+    `TargetSkeleton` is `SkeletonDescriptor` there, `TargetJoint` is
+    `SkeletonJoint`, `HumanoidMap` is `RetargetMap`, and the codes are
+    `MOTION_RETARGET_*` with the event names unchanged. 24 of
+    `vrmRetarget_unit`'s 58 tests travelled; the other 34 test what stays.
+  - ✅ Two questions were decided at the import. The destination's WS-O2:
+    `motionRetarget` depends on `motionCore` alone, so
+    `RetargetOptions::resampleRate` is gone and a caller resamples first, as
+    `motion_retarget` already does. Its RT-O1: the published root-motion
+    vocabulary is the imported `Hips` / `RootJoint` / `Ignore`.
+  - ✅ §9.5's finding 1 was fixed there: the required-bone set is
+    `RetargetOptions::requiredBones`, empty by default, and
+    `GetRequiredBones` is gone. Under `Hips` root motion the hips stay
+    required. This repository supplies VRM 1.0's set, which starts with the
+    hips, so every list the parity rows compare is unchanged.
+  - ✅ Both builders the OpenExec findings asked for exist there:
+    `BuildSkeletonDescriptor` (tokens and rest matrices) and
+    `BuildSourceRestPose` (a semantic skeleton), each with the refusals
+    `execVrm`'s copy makes.
+  - ⛔ The consuming change here deletes the generic half of
+    `libs/vrmRetarget`. `ExecVrmRig`'s `TargetSkeletonFromRest` and
+    `SourceRestFromSkeleton` and `motion_retarget`'s copies become calls to
+    the two builders, and the caller passes VRM 1.0's required set. It
+    re-runs the parity rows first, and it waits on
+    [ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
+    like MIG-1. Whether what stays keeps the name `vrmRetarget` is decided in
+    that change.
 - 🚧 `motionUsd`. The authoring half arrived on 2026-09-19
   ([usd-motion-plugins #7](https://github.com/animu-sphere/usd-motion-plugins/pull/7)). Its source was
   `motion_capture`'s `ClipWriter`, not `StageIo`. `StageIo` reads a clip and
