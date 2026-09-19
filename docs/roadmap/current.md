@@ -182,7 +182,7 @@ API defects the move fixes on arrival, and they only exist once its nodes do.
 `motionSampling` and `motionRecording`) have arrived in `usd-motion-plugins`
 with their history, and so have `vrmRetarget`'s generic half, `motionUsd`'s
 authoring half and the recorded sources (MIG-3). MIG-4 has started:
-`liveTransport` and `osc` are in review in `motion-connectors`. This
+`liveTransport` and `osc` have arrived in `motion-connectors`. This
 repository still builds its own copies: consuming a library from another
 repository waits on `ost`
 ([report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).

@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19; 🚧 MIG-4, its two leaf libraries in review in `motion-connectors` · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -252,16 +252,18 @@ repository's, and needs nothing from this one.
   here in one change ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)
   rule 7). The adapters lose the `vrm` prefix there, as
   `motionConnectorVmc`, `motionConnectorMocopi` and `motionConnectorVrchatOsc`.
-  - 🚧 The two leaves, in review (2026-09-19):
+  - ✅ The two leaves arrived with their history (2026-09-19):
     `liveTransport` as `motionConnectorTransport`
-    ([motion-connectors #2](https://github.com/animu-sphere/motion-connectors/pull/2), 10 commits) and `osc` as
-    `motionConnectorOsc` ([#3](https://github.com/animu-sphere/motion-connectors/pull/3), 6 commits, stacked on #2).
+    ([motion-connectors #2](https://github.com/animu-sphere/motion-connectors/pull/2), 10 commits, merged as 35d01c6) and `osc` as
+    `motionConnectorOsc` ([#3](https://github.com/animu-sphere/motion-connectors/pull/3), 6 commits, f600259).
     Each came with its history, then a move-only commit, then the rename.
     The namespaces are `openstrata::connectors::transport` and
     `openstrata::connectors::osc`, and the code is unchanged. Both link
     nothing, so they could go ahead of the `usd-motion-plugins` release that
     everything after them needs. `motion-connectors` rendered its CI with the
-    first of them.
+    first of them. Its capability matrix claims the capture format, the poll
+    mapping and the diagnostic vehicle, but not yet receiving on a socket:
+    the socket suites are the adapters' here, and travel with them.
   - ⬜ `motionTracking` and the three adapters link `motionCore`. Importing
     them needs `motion-connectors` to consume `usd-motion-plugins` as an
     installed package, and under `ost` that is the same gap as
