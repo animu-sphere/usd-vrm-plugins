@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19, and `motion_capture` is in review in `usd-motion-plugins` · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -244,7 +244,23 @@ repository's, and needs nothing from this one.
 
 ## 6. MIG-4 — recording and live input 🚧
 
-- ⬜ `motion_capture` arrives as `usd-motion-plugins`' recording tool.
+- 🚧 `motion_capture` arrives as `usd-motion-plugins`' recording tool.
+  - 🚧 Imported with its history as `motion_record`
+    ([usd-motion-plugins #10](https://github.com/animu-sphere/usd-motion-plugins/pull/10), in review):
+    17 commits, without the clip writer, which had arrived as `motionUsd`.
+    A move-only commit and the rename followed. It authors through
+    `motionUsd`, so its stage is that repository's `/Animation` shape and
+    not the `/Capture` scope it authors here. `--missing-bones` is
+    `--missing-joints` there, and `--clip-name` is gone.
+  - 🚧 `motion_capture_replay` travelled as `motion_record_replay`. Its last
+    leg bakes the recorded clip onto `docs/design/fixtures/motion/avatar.usda`
+    with `motion_retarget`. That leg is this repository's, because it reads a
+    VRM avatar, and it stays here: the consuming change re-points it at the
+    consumed tool. There, the stage is resolved through a
+    `UsdSkelSkeletonQuery` instead.
+  - ⬜ This repository deletes `tools/motionCapture` in the consuming change,
+    and for the same reason it waits
+    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
 - 🚧 `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
   `motion-connectors`, which depends on `usd-motion-plugins` and on nothing

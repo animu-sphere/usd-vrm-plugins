@@ -1057,7 +1057,7 @@ consumer in any case.
 | `vrmRetarget` | split, along the line §9.5 draws | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget` | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38); building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
-| `motion_capture` | `usd-motion-plugins` (the `motion-record` CLI) | trace → avatar-independent clip | nothing |
+| `motion_capture` | `usd-motion-plugins` (`motion_record`) | trace → avatar-independent clip | nothing |
 | `motion_retarget` | split | the generic half of the stage reading and writing (`StageIo`, §9.5) → `motionUsd` | a VRM retarget CLI over the shared libraries |
 | `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) | the vendor-neutral OpenExec nodes | nothing |
 | `execVrm` | stays | — | VRM semantics as OpenExec nodes, over the shared core |
