@@ -411,6 +411,38 @@ else()
         "is not in this build tree; skipping workspace_unicode_paths")
 endif()
 
+# The motion migration's MIG-0 vocabulary check: every VRM name the headers
+# leaving for usd-motion-plugins still spell, against the ledger that says how
+# each is disposed of on arrival (WORKSPACE.md §9.3, §9.5). Source only, so it
+# needs no target of this tree. The three near-miss ledgers each get one thing
+# wrong, and each must fail with its own message -- a pass regex rather than
+# WILL_FAIL, so a crash or a missing file cannot stand in for the right refusal.
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON)
+    set(_vocabulary_fixture
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/boundary/fixtures/motion-vocabulary")
+    add_test(NAME workspace_motion_vocabulary
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_vocabulary.py")
+    add_test(NAME workspace_motion_vocabulary_fixture
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_vocabulary.py"
+            --root "${_vocabulary_fixture}"
+            --ledger "${_vocabulary_fixture}/complete.json")
+    foreach(_case IN ITEMS unclassified stale anchor)
+        add_test(NAME workspace_motion_vocabulary_${_case}
+            COMMAND "${USDVRM_TEST_PYTHON}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_vocabulary.py"
+                --root "${_vocabulary_fixture}"
+                --ledger "${_vocabulary_fixture}/${_case}.json")
+    endforeach()
+    set_tests_properties(workspace_motion_vocabulary_unclassified PROPERTIES
+        PASS_REGULAR_EXPRESSION "unclassified: identifier `VrmBindingHint` in include/Pose.h")
+    set_tests_properties(workspace_motion_vocabulary_stale PROPERTIES
+        PASS_REGULAR_EXPRESSION "stale: ledger lists identifier `HumanoidAnimation`")
+    set_tests_properties(workspace_motion_vocabulary_anchor PROPERTIES
+        PASS_REGULAR_EXPRESSION "missing anchor: finding 1 is about `FindMissingRequiredBones`")
+endif()
+
 # The OpenExec plan's P0-2 labels, read back from CTest itself. `ost test`
 # reports one flat total, so a member whose suite silently stopped registering
 # reads as passing (usdVrmaFileFormat did, for months); this fails instead,
