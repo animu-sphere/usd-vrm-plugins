@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** 🚧 MIG-0 in progress · **Target:** after the OpenExec foundation ·
+**Status:** 🚧 MIG-0 and MIG-1 in progress; MIG-1 blocked on `ost` (report 41) · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -100,10 +100,19 @@ repository's, and needs nothing from this one.
   Boundary suites (`*_boundaries`) travel too, and they are rewritten there
   for that repository's edges rather than reproduced.
 
-## 3. MIG-1 — the core ⬜
+## 3. MIG-1 — the core 🚧
 
-- ⬜ `motionCore` arrives in `usd-motion-plugins` under the same identity, with its
-  history, renamed to the shared names, under `openstrata::motion`.
+- ✅ `motionCore` arrives in `usd-motion-plugins` under the same identity, with its
+  history, renamed to the shared names, under `openstrata::motion`
+  (2026-09-19, usd-motion-plugins #2). Four contract questions were decided
+  first: the 55-joint vocabulary is version 1, the generic stage's prims are
+  `Skeleton` / `Body` / `Channels`, time codes are always 30 per second, and a
+  channel's value is a `float`.
+- ⛔ **Blocked on `ost`:** `requires.libraries` resolves only sibling members,
+  so this repository cannot declare `motionCore` from another repository, and
+  undeclaring the edge would hide it from the graph and provenance
+  ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+  The consuming change below waits for that ask, not for a workaround.
 - ⬜ This repository consumes the installed package: `usdVrmaFileFormat`,
   `motionRuntime`, `vrmRetarget`, `motionSource`, `motionTracking` and the
   adapters switch their edge in the same change that deletes `libs/motionCore`
