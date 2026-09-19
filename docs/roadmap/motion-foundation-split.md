@@ -178,7 +178,7 @@ repository's, and needs nothing from this one.
     `TargetSkeleton` is `SkeletonDescriptor` there, `TargetJoint` is
     `SkeletonJoint`, `HumanoidMap` is `RetargetMap`, and the codes are
     `MOTION_RETARGET_*` with the event names unchanged. 24 of
-    `vrmRetarget_unit`'s 58 tests travelled; the other 34 test what stays.
+    `vrmRetarget_unit`'s 56 tests travelled; the other 32 test what stays.
   - ✅ Two questions were decided at the import. The destination's WS-O2:
     `motionRetarget` depends on `motionCore` alone, so
     `RetargetOptions::resampleRate` is gone and a caller resamples first, as
