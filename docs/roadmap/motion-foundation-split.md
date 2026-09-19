@@ -40,7 +40,7 @@ milestones below say which of them each one serves.
 | Milestone | Migration Phase | Moves | Waits for |
 | --- | --- | --- | --- |
 | MIG-0 — preparation | A | nothing | v0.9.0 |
-| MIG-1 — the core | A, B | `motionCore` | `usd-motion-plugins` `motion-core` scaffold |
+| MIG-1 — the core | A, B | `motionCore` | the `usd-motion-plugins` scaffold |
 | MIG-2 — sampling, retarget, USD bridge | C | `motionRuntime`, the generic half of `vrmRetarget`, `motion_retarget`'s `StageIo`, `execMotion` | MIG-1 |
 | MIG-3 — recorded sources | C | `motionSource`, `motionBvh`, the BVH tools, `profiles/motion/` | MIG-1 |
 | MIG-4 — recording and live input | E | `motion_capture` to `usd-motion-plugins`; `liveTransport`, `osc`, `motionTracking`, the `vrmAdapter*` libraries and their record tools to `motion-connectors` | MIG-2, and `motion-connectors` existing |
@@ -58,10 +58,13 @@ repository's, and needs nothing from this one.
   ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)); a **concept**
   that is only meaningful because a VRM rig is downstream is a boundary
   defect, and stays here.
-- ⬜ **Draw the line through `vrmRetarget`.** Which types and functions are the
-  generic retargeter, rest-pose handling and root-motion policy, and which are
-  the VRM humanoid map, `ExpressionResolver` and `LookAtEvaluator`. Written in
-  WORKSPACE.md first, in its own change, because it splits an identity.
+- ✅ **Draw the line through `vrmRetarget`** (2026-09-19). The line is by
+  header, and only `HumanoidMap::GetRequiredBones` is cut in two
+  ([WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
+  The map itself is generic and moves as `RetargetMap`. What stays is VRM
+  1.0's required-bone set, `ExpressionResolver` and `LookAtEvaluator`. Three
+  findings are recorded there for the arrival: a caller-supplied required
+  set, the look-at target's shape, and the expression channel's namespace.
 - ⬜ **Hand over the evidence.** The shared core's contract starts from what
   this repository measured: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s
   basis, root-and-hips, path-rule and tracker sections, the OpenExec driver
@@ -82,7 +85,7 @@ repository's, and needs nothing from this one.
 
 ## 3. MIG-1 — the core ⬜
 
-- ⬜ `motionCore` arrives in `usd-motion-plugins` as `motion-core`, with its
+- ⬜ `motionCore` arrives in `usd-motion-plugins` under the same identity, with its
   history, renamed to the shared names, under `openstrata::motion`.
 - ⬜ This repository consumes the installed package: `usdVrmaFileFormat`,
   `motionRuntime`, `vrmRetarget`, `motionSource`, `motionTracking` and the
@@ -96,14 +99,14 @@ repository's, and needs nothing from this one.
 
 ## 4. MIG-2 — sampling, retarget, USD bridge ⬜
 
-- ⬜ `motionRuntime` arrives as `motion-sampling` and `motion-recording`, with
+- ⬜ `motionRuntime` arrives as `motionSampling` and `motionRecording`, with
   the exec findings fixed on arrival: a status-carrying `SampleClip`, a
   stateless `PoseFilter` step, `ConditionRootMotion` as a free function, an
   N-way blend that can answer *nothing to blend*.
-- ⬜ The generic retarget arrives as `motion-retarget`, with a
+- ⬜ The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.
-- ⬜ `StageIo`'s clip and skeleton reading and writing arrive as `motion-usd`,
+- ⬜ `StageIo`'s clip and skeleton reading and writing arrive as `motionUsd`,
   which is also the library home for clip → pose the sampling finding asked
   for.
 - ⬜ `execMotion` arrives as `usd-motion-plugins`' optional
@@ -130,8 +133,10 @@ repository's, and needs nothing from this one.
 - ⬜ `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
   `motion-connectors`, which depends on `usd-motion-plugins` and on nothing
-  here. The adapters lose the `vrm` prefix there; the name is that
-  repository's decision.
+  here. They arrive **together**, in `motion-connectors` v0.1.0, and leave
+  here in one change ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)
+  rule 7). The adapters lose the `vrm` prefix there, as
+  `motionConnectorVmc`, `motionConnectorMocopi` and `motionConnectorVrchatOsc`.
 - ⬜ Recorded evidence — capture traces, the cross-source reports' inputs —
   moves with the adapter that produced it, under the same redistribution rule
   it has here.

@@ -1052,26 +1052,35 @@ consumer in any case.
 
 | Identity | Destination | What arrives there | What stays here |
 | --- | --- | --- | --- |
-| `motionCore` | `usd-motion-plugins` (`motion-core`) | pose, animation, root motion, constraints, source metadata — renamed on arrival (§9.3) | nothing |
-| `motionRuntime` | `usd-motion-plugins` (`motion-sampling`, `motion-recording`) | buffer, interpolation, resample, filter, blend, the capture session's conditioning | nothing |
-| `vrmRetarget` | split | the generic pose retargeter, rest-pose handling and root-motion policy → `motion-retarget` | the VRM humanoid map built from `VrmHumanoidAPI`, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38) |
+| `motionCore` | `usd-motion-plugins` (`motionCore`) | pose, animation, root motion, constraints, source metadata — renamed on arrival (§9.3) | nothing |
+| `motionRuntime` | `usd-motion-plugins` (`motionSampling`, `motionRecording`) | buffer, interpolation, resample, filter, blend, the capture session's conditioning | nothing |
+| `vrmRetarget` | split, along the line §9.5 draws | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget` | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38); building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
-| `motion_capture` | `usd-motion-plugins` (`motion-record`) | trace → avatar-independent clip | nothing |
-| `motion_retarget` | split | the stage reading and writing (`StageIo`) → `motion-usd` | a VRM retarget CLI over the shared libraries |
+| `motion_capture` | `usd-motion-plugins` (the `motion-record` CLI) | trace → avatar-independent clip | nothing |
+| `motion_retarget` | split | the generic half of the stage reading and writing (`StageIo`, §9.5) → `motionUsd` | a VRM retarget CLI over the shared libraries |
 | `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) | the vendor-neutral OpenExec nodes | nothing |
 | `execVrm` | stays | — | VRM semantics as OpenExec nodes, over the shared core |
-| `liveTransport`, `osc` | `motion-connectors` | UDP receiver, capture file, OSC 1.0 wire format | nothing |
-| `vrmAdapterVmc`, `vrmAdapterMocopi`, `vrmAdapterVrchatOsc`, their record tools | `motion-connectors` | protocol and device decode, frame assembly, recording | nothing |
-| `motionTracking` | `motion-connectors` | tracker regions, assignment, the tracker solve | nothing |
+| `liveTransport`, `osc` | `motion-connectors` (`motionConnectorTransport`, `motionConnectorOsc`) | UDP receiver, capture file, OSC 1.0 wire format | nothing |
+| `vrmAdapterVmc`, `vrmAdapterMocopi`, `vrmAdapterVrchatOsc`, their record tools | `motion-connectors` (`motionConnectorVmc`, `motionConnectorMocopi`, `motionConnectorVrchatOsc`) | protocol and device decode, frame assembly, recording | nothing |
+| `motionTracking` | `motion-connectors` (`motionConnectorTracking`) | tracker regions, assignment, the tracker solve | nothing |
 | `vrmAdapterArdy` (reserved) | `motion-connectors`, behind the motion-plugins generator interface | — | nothing |
-| `usdVrmaFileFormat` | stays | — | `.vrma` reading and its stage (motion-plugins policy §26), consuming `motion-core` |
+| `usdVrmaFileFormat` | stays | — | `.vrma` reading and its stage (motion-plugins policy §26), consuming the shared `motionCore` |
 | `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, `vrmContainer`, `vrmCore` | stay | — | the product |
 
 A row whose destination is another repository is **frozen here**: it takes
 fixes, and the work v0.9.0 still owes, but no new generic capability. A new
 generic motion feature is proposed in `usd-motion-plugins`; a new device or
 protocol input in `motion-connectors`.
+
+The destination names are lower-camel identities, each also its CMake package
+name and its exported target's (`motionCore::motionCore`), exactly as
+[PACKAGE_CONTRACT.md](PACKAGE_CONTRACT.md) states them here. Both destinations
+settled that on 2026-09-19 (their WS-O1). So `motionCore`, `motionSource` and
+`motionBvh` keep their identity when they move, and `usd-motion-plugins`
+v0.1.0 publishes a `motionCore` package whose types are renamed (§9.3).
+Nothing can resolve both, because rule 1 below never leaves two copies, and the
+version names which one a consumer has.
 
 ### 9.2 Moving rules
 
@@ -1101,6 +1110,14 @@ it *out* adds these:
    `vrmRetarget` and `motionSource`/`motionBvh` to `usd-motion-plugins`; then
    `liveTransport`, `osc`, `motionTracking` and the adapters to
    `motion-connectors`.
+7. **Every live input moves at once.** `vrmAdapterMocopi` and
+   `vrmAdapterVrchatOsc` link `liveTransport` and `osc`. Moving the shared
+   leaves first would leave either two copies for a release (rule 1) or an
+   edge from here to `motion-connectors` that no contract declares. So
+   `liveTransport`, `osc`, `motionTracking`, the three `vrmAdapter*` libraries
+   and their record tools arrive together in `motion-connectors` v0.1.0, and
+   this repository drops all of them in one change (`motion-connectors`
+   WS-O7, decided 2026-09-19).
 
 ### 9.3 Names
 
@@ -1116,7 +1133,10 @@ every consumer here twice.
 | `motion::HumanBone` | `HumanJoint` |
 | `motion::RootMotion` | `RootMotion` |
 | `vrmRetarget::TargetSkeleton` | `SkeletonDescriptor` |
-| the humanoid map | `RetargetMap` |
+| `vrmRetarget::HumanoidMap` | `RetargetMap` |
+| `motion::ExpressionWeights` on the pose | `MotionChannelSet` |
+| the generic half of `vrmRetarget` (namespace, `VRMRETARGET_*` macros, include root) | `motionRetarget` |
+| `VRM_RETARGET_*` diagnostic codes | the destination's code style (its DIAG-O1) |
 
 Where a published contract there chooses differently, the published contract
 wins and this table is corrected.
@@ -1128,3 +1148,59 @@ repository they are always written **Migration Phase A–F**, never "Phase A",
 because Motion Phase A–H already exists here and the two are unrelated. The
 Workspace ladder (§8) does not grow for them: it tracked the move out of
 `usdVrm`, and a move out of the repository is not a step on it.
+
+### 9.5 The line through `vrmRetarget`
+
+Drawn on 2026-09-19, as MIG-0's second item
+([the migration track §2](../roadmap/motion-foundation-split.md#2-mig-0--preparation-)).
+It is drawn here, in a change of its own, because it splits an identity.
+
+The split is by header, and one function in one header is the only thing cut in
+two. The VRM half includes nothing from the generic half, and the generic half
+includes nothing from the VRM half. Both are measured from the sources, not
+inferred from the names:
+
+| Header | Declares | Goes to | Why |
+| --- | --- | --- | --- |
+| `TargetSkeleton.h` | `TargetJoint`, `TargetSkeleton`, `DecomposeRestTransform` | `motionRetarget` as `SkeletonDescriptor` | a rig as plain values: joint tokens, parents, rest transforms |
+| `HumanoidMap.h` | `HumanoidMap`, without `GetRequiredBones` | `motionRetarget` as `RetargetMap` | it maps `motion::HumanBone` to a joint index, and it never reads a VRM binding. Every caller builds one from `VrmHumanoidAPI` (`execVrm`'s `ExecVrmRig`, `motion_retarget`'s `StageIo`), and that reading stays with the caller |
+| `HumanoidMap.h` | `GetRequiredBones`, and the check that reads it | **cut**: the set stays here, the check moves with a caller-supplied set | finding 1 below |
+| `RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` | `motionRetarget` | the rest-pose path rule, stated for any two rigs |
+| `RootMotionPolicy.h` | `RootMotionMode`, `RootMotionOptions`, `ResolveRootTranslation` | `motionRetarget` | the root-motion policy. `Hips` is the default because the motion contract records body translation on the hips ([Root and hips](../design/MOTION_CONTRACT.md#root-and-hips-v070)), which is a rule for every producer and not a `.vrma` convention |
+| `PoseRetargeter.h` | `PoseRetargeter`, `RetargetedPose`, `RetargetedAnimation`, `JointLocalTransforms`, `GetJointWorldTransform`, `DiagnoseRig`, `RetargetOptions` | `motionRetarget` | the retarget itself |
+| `Diagnostics.h` | the eight frozen `RetargetDiagnosticCode`s and their record | `motionRetarget`, codes restyled (§9.3) | the body retarget's codes: five raised by the library, three by a stage-holding caller that is itself `motionUsd` or a CLI there |
+| `ExpressionResolver.h` | `ExpressionResolver` and its diagnostics | **stays** | resolves producer expression names onto one avatar's VRM expressions and binds |
+| `LookAtEvaluator.h` | `LookAtEvaluator`, `ParseLookAtRangeMaps` | **stays** | reads a VRM rig's look-at type and range maps, in the 0.x and 1.0 shapes |
+
+What stays in `libs/vrmRetarget/` is then two resolvers and a bone set, and
+none of it retargets. Whether it keeps the name is decided in MIG-2, when it
+happens. It is not decided here, because renaming a library that is still
+whole would change every consumer twice.
+
+`motion_retarget`'s `StageIo` splits along the same seam. Writing a
+`UsdSkelAnimation` and reading a skeleton, a clip's joints and its time codes
+go to `motionUsd`. `ReadAvatar`'s humanoid binding, expressions and look-at,
+and the clip's `vrm:` attributes, stay with the VRM CLI.
+
+**Findings.** These are the concepts a rename cannot carry. Each is fixed on
+arrival, in its own change after the move (the destination's WORKSPACE.md §3
+rule 4):
+
+1. **The required-bone set is VRM 1.0's, and the generic retargeter reads
+   it.** `HumanoidMap::GetRequiredBones` states which bones "a VRM 1.0 avatar
+   must define", and `DiagnoseRig` raises `MissingRequiredBone` from it for
+   every rig. The destination's motion contract says the joint vocabulary
+   carries no required-bone rule, and that whether a target needs a joint is
+   the retarget's question. So `motionRetarget` takes the required set from its
+   caller. This repository supplies VRM 1.0's, and `usd-mmd-plugins` supplies
+   its own or none.
+2. **The look-at target is a pose field, not a channel.**
+   `HumanoidPose::lookAtTarget` is a point, and the destination carries gaze
+   as a channel in `MotionChannelSet`, whose value type is still open (its
+   MC-O4, a first non-scalar channel). This one is not a VRM concept. It is a
+   shape the destination has not decided yet, and it is recorded here so that
+   MIG-1 does not decide it by accident.
+3. **Expression weights are the channel set under a VRM name.** They are
+   already carried verbatim and sorted by name, which is the destination's
+   channel rule. The difference is the namespace (`vrm:happy`), and the
+   producers choose it, not this library.
