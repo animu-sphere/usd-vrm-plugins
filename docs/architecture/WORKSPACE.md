@@ -1058,7 +1058,7 @@ consumer in any case.
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
 | `motion_capture` | `usd-motion-plugins` (`motion_record`) | trace → avatar-independent clip | nothing |
-| `motion_retarget` | split | the generic half of the stage reading and writing (`StageIo`, §9.5) → `motionUsd` | a VRM retarget CLI over the shared libraries |
+| `motion_retarget` | split | the generic half of the stage **reading** (`StageIo`, §9.5) → `motionUsd`, arrived 2026-09-20 | a VRM retarget CLI over the shared libraries, and the bake: `WriteRetargetedAnimation` authors onto a VRM avatar |
 | `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) | the vendor-neutral OpenExec nodes | nothing |
 | `execVrm` | stays | — | VRM semantics as OpenExec nodes, over the shared core |
 | `liveTransport`, `osc` | `motion-connectors` (`motionConnectorTransport`, `motionConnectorOsc`) | UDP receiver, capture file, OSC 1.0 wire format | nothing |
@@ -1180,10 +1180,18 @@ none of it retargets. Whether it keeps the name is decided in MIG-2, when it
 happens. It is not decided here, because renaming a library that is still
 whole would change every consumer twice.
 
-`motion_retarget`'s `StageIo` splits along the same seam. Writing a
-`UsdSkelAnimation` and reading a skeleton, a clip's joints and its time codes
-go to `motionUsd`. `ReadAvatar`'s humanoid binding, expressions and look-at,
-and the clip's `vrm:` attributes, stay with the VRM CLI.
+`motion_retarget`'s `StageIo` splits along the same seam, and the move
+(2026-09-20,
+[usd-motion-plugins #13](https://github.com/animu-sphere/usd-motion-plugins/pull/13))
+drew it more narrowly than this section first did. What went is the
+**reading**: a skeleton, a clip's joints, its time codes and its samples.
+What stays is everything VRM — `ReadAvatar`'s humanoid binding, expressions
+and look-at, the clip's `vrm:` attributes — and **the writing too**.
+`WriteRetargetedAnimation` is a bake onto a VRM avatar, not an
+avatar-independent clip, so `motionUsd`'s authoring half came from
+`motion_capture`'s clip writer instead, on 2026-09-19. `ReadClip` here
+becomes a call to `ReadMotionStage` plus the `vrm:` reading, in the consuming
+change.
 
 **Findings.** These are the concepts a rename cannot carry. Each is fixed on
 arrival, in its own change after the move (the destination's WORKSPACE.md §3

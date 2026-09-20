@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19 and `execMotion` 2026-09-20, which is every sending half of MIG-2 but `motionUsd`'s reading one; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19, and `motion_capture` arrived in `usd-motion-plugins` 2026-09-20 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19, and `motion_capture` arrived in `usd-motion-plugins` 2026-09-20 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -209,9 +209,47 @@ repository's, and needs nothing from this one.
   (`/Animation/{Skeleton,Body}`, always 30 time codes per second). The
   `.vrma` stage here does not change. `motion_capture` keeps its copy of the
   writer until MIG-4 moves the tool.
-  - ⬜ `StageIo`'s clip and skeleton *reading* arrives as `motionUsd`'s
-    reading half. That is also the library home for clip → pose that the
-    sampling finding asked for.
+  - ✅ `StageIo`'s clip and skeleton *reading* arrived as `motionUsd`'s
+    reading half (2026-09-20,
+    [usd-motion-plugins #13](https://github.com/animu-sphere/usd-motion-plugins/pull/13)),
+    which closes every sending half of MIG-2. 13 commits came through
+    `git filter-repo` over the two files — 11 changes and the two merges that
+    carried them — then a move-only commit, then the cut: a file cannot be
+    filtered in two, so both halves arrived and the VRM half was removed there
+    rather than carried. The bake stays here.
+  - The library home is what the move was for. `PoseFromStageSample` takes
+    values rather than a prim, so a caller holding a stage and an OpenExec
+    node holding already-resolved inputs apply one rule — the clip → pose home
+    the sampling finding asked for. `execMotion` there still carries its own
+    copy; switching it over adds an edge that repository's WORKSPACE.md §2.1
+    does not draw yet.
+  - The two findings the destination's USD_MAPPING.md §7 names were fixed on
+    arrival.
+    `RootMotion::worldOrientation` is read: the hips rotation is the body's
+    orientation as well as the local rotation, and **both** copies here drop
+    it, so a clip read by either loses the body's facing. And the skeleton
+    comes back as joint tokens and rest matrices rather than as a
+    `SkeletonDescriptor` — the arrays `BuildSkeletonDescriptor` takes, whose
+    descriptor `BuildSourceRestPose` takes after it — so reading a stage there
+    links no retargeter.
+
+    A third was found in review and fixed there: the clip's
+    `nominalFrameRate` is the rate its samples were taken at, and the stage's
+    `timeCodesPerSecond` is where they were written, always 30. The reader
+    answered the stage's, so a 60 Hz capture came back claiming 30. It reads
+    `customData.motion.nominalFrameRate` now. The `.vrma` reader here is not
+    affected: it authors and reads one rate, the stage's.
+  - The `Channels` prim is authored and read with it, so USD-O4 is
+    implemented as well as decided. That settles nothing further in §8: its
+    stage half was already answered on 2026-09-20 and its pose half is still
+    open. What §8 gains is one rule the implementation produced — see there.
+    The `.vrma` stage here still does not change.
+  - ⛔ This repository deletes `StageIo`'s reading half in the consuming
+    change, and for the same reason it waits
+    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+    `ReadClip` becomes a call to `ReadMotionStage` plus this repository's own
+    `vrm:` reading — the expression tracks, the gaze track and the clip's
+    look-at offset — which the destination refused on purpose.
 - ✅ `execMotion` arrived as `usd-motion-plugins`' optional
   `plugins/execMotion` (2026-09-20,
   [usd-motion-plugins #11](https://github.com/animu-sphere/usd-motion-plugins/pull/11)),
@@ -345,14 +383,23 @@ repository's, and needs nothing from this one.
   names on today's `HumanoidPose`; in the shared core that is a
   `MotionChannelSet` with namespaced semantics (motion-plugins policy §5.3).
   The mapping is decided in MIG-1, and expansion onto a rig stays here.
-  The **stage** half of it was decided there on 2026-09-20 (its USD-O4): a
-  generic channel is one typeless prim under `/Animation/Channels` carrying
-  `motion:channelName` — the semantic verbatim, and the key — and a
-  time-sampled `motion:channelValue`, and `vrm:expressionType` does not come
-  across. The `.vrma` stage here keeps `/Animation/Expressions` and its
-  `vrm:expression*` attributes; what is still open here is the **pose** half —
-  which names the weights carry on a `MotionChannelSet` — and the expansion
-  onto a rig.
+  The **stage** half of it was decided there on 2026-09-20 (its USD-O4) and
+  implemented with the reading half the same day: a generic channel is one
+  typeless prim under `/Animation/Channels` carrying `motion:channelName` —
+  the semantic verbatim, and the key — and a time-sampled
+  `motion:channelValue`, and `vrm:expressionType` does not come across. The
+  `.vrma` stage here keeps `/Animation/Expressions` and its `vrm:expression*`
+  attributes; what is still open here is the **pose** half — which names the
+  weights carry on a `MotionChannelSet` — and the expansion onto a rig.
+
+  One rule came out of implementing it there, and the consuming change has to
+  decide whether it holds here: **a channel is read back only where the stage
+  keyed it**, because USD holds the last key forward and a held value is not
+  one the producer reported. `ReadClip` here reads an expression weight with
+  `UsdAttribute::Get` at the union of key times, so it takes the held value
+  instead. Which is right for a `.vrma` is not obvious — the bake that
+  consumes it wants a weight at every sample — so it is a question for the
+  switch-over, not a defect recorded here.
 - **`ExecIr`.** It is VRM-specific and stays, but a generic invertible rig
   could later interest the shared core; nothing is moved on speculation.
 
