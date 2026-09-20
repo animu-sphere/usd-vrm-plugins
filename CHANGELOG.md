@@ -29,7 +29,7 @@ Current schema contract version: **1**.
 
 ### Changed
 
-- **The `ost` pin is 0.23.1** — `openstrata.ci.yaml`, the workflow re-rendered
+- **The `ost` pin is 0.23.2** — `openstrata.ci.yaml`, the workflow re-rendered
   from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
   The bump is taken for what it adds, not because it is current: 0.23.0 answers
   both asks of
@@ -62,6 +62,13 @@ Current schema contract version: **1**.
   `python313.dll` through pxr while the Windows runtime bundles no
   interpreter — so it built and then died at `0xC0000135`. The cell now
   declares 3.13, which every other cell in the ecosystem already did.
+
+  0.23.2 is the third pin in a day, and the third is the one this repository's
+  own migration needs: the root `ost build` now composes the external library
+  artifacts its members declare. Without it a workspace consuming a
+  digest-pinned library from another repository could not configure at all,
+  which is the shape of the consuming change this repository is about to make
+  ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Documentation
 
