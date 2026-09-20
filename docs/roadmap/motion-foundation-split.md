@@ -231,26 +231,34 @@ repository's, and needs nothing from this one.
     smooths the root orientation — `PoseFilter::Options` defaults
     `filterRootOrientation` to true and the field was previously absent from
     every clip-sourced pose, so a clip authoring no policy at all is affected
-    — and `motion.extractRootMotion` returns a root motion carrying one. The
-    eight L5 goldens there did not move, because no fixture turns its hips;
-    the parity rows here are the ones that would see it, and `vrmRetarget`
-    reads no root orientation, so they should not. That is a prediction to
-    check when the rows are re-run, not a measurement.
+    — and `motion.extractRootMotion` returns a root motion carrying one.
+
+    Its eight L5 goldens did not move, and only one of them could have: a
+    golden is a flattened stage, and the exec-computed poses are values
+    rather than authored scene data. `displayed_clip` is the one fixture
+    that authors a computed transform, and it turns its head and not its
+    hips. The parity rows here are what would see the change, and
+    `vrmRetarget` reads no root orientation, so the prediction is that they
+    do not move — a prediction to check when the rows are re-run, not a
+    measurement.
 
     The leaf-segment rule went with it: `motionCore` there gained
-    `FindHumanJointByPath`, `HumanJointPath`'s inverse. **This repository
-    still has two copies of that rule**, in `StageIo`'s `LeafToken` and
-    `execMotion`'s `BoneForJointPath`, and the consuming change deletes both.
+    `FindHumanJointByPath`, `HumanJointPath`'s inverse. **This repository has
+    three copies of that rule.** Two leave with the code that holds them,
+    `StageIo`'s `LeafToken` and `execMotion`'s `BoneForJointPath`; the third
+    is `execVrm`'s `BoneForLeaf`, which stays and becomes a call to the
+    consumed function. Its comment already names the other two, which is how
+    the third was found.
   - The two findings the destination's USD_MAPPING.md §7 names were fixed on
     arrival.
     `RootMotion::worldOrientation` is read: the hips rotation is the body's
     orientation as well as the local rotation, and **both** copies here drop
     it, so a clip read by either loses the body's facing. Consuming the
-    package is therefore a behaviour change here too, not only a deletion. And the skeleton
-    comes back as joint tokens and rest matrices rather than as a
-    `SkeletonDescriptor` — the arrays `BuildSkeletonDescriptor` takes, whose
-    descriptor `BuildSourceRestPose` takes after it — so reading a stage there
-    links no retargeter.
+    package is therefore a behaviour change here too, not only a deletion.
+    And the skeleton comes back as joint tokens and rest matrices rather than
+    as a `SkeletonDescriptor` — the arrays `BuildSkeletonDescriptor` takes,
+    whose descriptor `BuildSourceRestPose` takes after it — so reading a
+    stage there links no retargeter.
 
     A third was found in review and fixed there: the clip's
     `nominalFrameRate` is the rate its samples were taken at, and the stage's
