@@ -56,6 +56,13 @@ Current schema contract version: **1**.
   a claim that does fail now names the first CMake error — `Imported target
   "tf" includes non-existent path` — instead of the trailing warning block.
 
+  One cell needed a change for it, and only one: `usdvrmfileformat-pr-windows`
+  declared no `host_python`, because its pyramid stops at L4. `consumer-link`
+  links **and runs** a C++ consumer, and on Windows that executable loads
+  `python313.dll` through pxr while the Windows runtime bundles no
+  interpreter — so it built and then died at `0xC0000135`. The cell now
+  declares 3.13, which every other cell in the ecosystem already did.
+
 ### Documentation
 
 - **[ost report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)**,

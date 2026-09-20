@@ -247,6 +247,15 @@ cells:
     bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
+    # The pyramid stops at L4 here (see the header), so this cell needed no
+    # interpreter until ost 0.23.x. `ost runtime validate` now LINKS AND RUNS a
+    # C++ consumer against the runtime (`consumer-link`), and on Windows that
+    # executable loads `python313.dll` through pxr -- the Windows runtime
+    # bundles no interpreter, so with no host Python the consumer builds and
+    # then dies at 0xC0000135 (DLL not found). Measured on this cell, and only
+    # on this cell: every other cell in the ecosystem already declares 3.13 and
+    # passes. Matching the runtime's ABI is the point, not the version number.
+    host_python: "3.13"
     up_to: 4
 
   - name: usdvrmfileformat-pr-macos-arm64
