@@ -70,7 +70,7 @@
 #   (.github/workflows/package-consumer.yml) carries the workaround; every other
 #   lane goes through `ost build` and never sees it.
 #
-#   RE-PINNED TO 0.23.0 (2026-09-20), and unlike the two before it this one is
+#   RE-PINNED TO 0.23.1 (2026-09-20), and unlike the two before it this one is
 #   taken for what it adds rather than because it is current. 0.23.0 answers
 #   both asks of
 #   docs/reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md:
@@ -84,10 +84,22 @@
 #   `--require-openusd*` positionally, so a cell that declares neither no
 #   longer risks an empty array under macOS bash 3.2 `set -u`.
 #
+#   The pin is 0.23.1 and not 0.23.0 because 0.23.0 could not be adopted at
+#   all. Its new `consumer-link` claim in `ost runtime validate` probed the
+#   materialized runtime BEFORE the relocation `ost configure` and
+#   `ost plugin build` apply to that same prefix, and a generated job's order
+#   is pull -> validate -> build, so every hosted Linux and Windows lane in
+#   this repository and both destinations went red on the pin bump alone.
+#   Measured, reported and fixed the same day:
+#   docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md
+#   0.23.1 applies the repair before the claim, carries the first CMake error
+#   in a failed claim's detail, and documents which directory a `file://`
+#   artifact source names -- that report's P1, P2 and P3.
+#
 #   .github/workflows/release.yml is hand-authored and mirrors this pin by
 #   hand; it was updated in the same change. scripts/check_docs.py compares the
 #   two and fails on drift, which is a repository-local check of the version
-#   string alone. 0.23.0 adds `external_workflows`, which would have `ost`
+#   string alone. 0.23.x adds `external_workflows`, which would have `ost`
 #   itself check that file against this contract -- the pin AND the cell
 #   bindings it consumes -- and adopting it is a separate change.
 #
@@ -147,7 +159,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.23.0"
+    version: "0.23.1"
     repository: animu-sphere/open-strata
 
 runners:

@@ -29,7 +29,7 @@ Current schema contract version: **1**.
 
 ### Changed
 
-- **The `ost` pin is 0.23.0** — `openstrata.ci.yaml`, the workflow re-rendered
+- **The `ost` pin is 0.23.1** — `openstrata.ci.yaml`, the workflow re-rendered
   from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
   The bump is taken for what it adds, not because it is current: 0.23.0 answers
   both asks of
@@ -43,6 +43,18 @@ Current schema contract version: **1**.
   `--require-openusd*` positionally, so a cell declaring neither no longer
   risks an empty array under macOS bash 3.2 `set -u`. The pinned runtime leaves
   do not move, and the tree is 159/159 green under the new toolchain locally.
+
+  The pin is 0.23.1 rather than 0.23.0 because 0.23.0 could not be adopted:
+  its new `consumer-link` claim probed a materialized runtime before the
+  relocation `ost configure` and `ost plugin build` apply to that same prefix,
+  and every hosted Linux and Windows lane in this repository and both
+  destinations went red on the pin bump alone
+  ([report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)).
+  0.23.1 answers all three of that report's asks. Re-measured here against the
+  pinned Windows artifact from a simulated clean host: `consumer-link` passes,
+  `runtime validate` performs the relocation itself (16 imported targets), and
+  a claim that does fail now names the first CMake error — `Imported target
+  "tf" includes non-existent path` — instead of the trailing warning block.
 
 ### Documentation
 
