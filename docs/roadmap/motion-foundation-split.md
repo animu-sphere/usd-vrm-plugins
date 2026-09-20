@@ -213,9 +213,10 @@ repository's, and needs nothing from this one.
     reading half (2026-09-20,
     [usd-motion-plugins #13](https://github.com/animu-sphere/usd-motion-plugins/pull/13)),
     which closes every sending half of MIG-2. 13 commits came through
-    `git filter-repo` over the two files, then a move-only commit, then the
-    cut: a file cannot be filtered in two, so both halves arrived and the VRM
-    half was removed there rather than carried. The bake stays here.
+    `git filter-repo` over the two files — 11 changes and the two merges that
+    carried them — then a move-only commit, then the cut: a file cannot be
+    filtered in two, so both halves arrived and the VRM half was removed there
+    rather than carried. The bake stays here.
   - The library home is what the move was for. `PoseFromStageSample` takes
     values rather than a prim, so a caller holding a stage and an OpenExec
     node holding already-resolved inputs apply one rule — the clip → pose home
@@ -228,11 +229,21 @@ repository's, and needs nothing from this one.
     orientation as well as the local rotation, and **both** copies here drop
     it, so a clip read by either loses the body's facing. And the skeleton
     comes back as joint tokens and rest matrices rather than as a
-    `SkeletonDescriptor`, which is what the two builders take, so reading a
-    stage there links no retargeter.
-  - The `Channels` prim is authored and read with it, which is the other half
-    of USD-O4 and answers more of §8's open question — see there. The `.vrma`
-    stage here still does not change.
+    `SkeletonDescriptor` — the arrays `BuildSkeletonDescriptor` takes, whose
+    descriptor `BuildSourceRestPose` takes after it — so reading a stage there
+    links no retargeter.
+
+    A third was found in review and fixed there: the clip's
+    `nominalFrameRate` is the rate its samples were taken at, and the stage's
+    `timeCodesPerSecond` is where they were written, always 30. The reader
+    answered the stage's, so a 60 Hz capture came back claiming 30. It reads
+    `customData.motion.nominalFrameRate` now. The `.vrma` reader here is not
+    affected: it authors and reads one rate, the stage's.
+  - The `Channels` prim is authored and read with it, so USD-O4 is
+    implemented as well as decided. That settles nothing further in §8: its
+    stage half was already answered on 2026-09-20 and its pose half is still
+    open. What §8 gains is one rule the implementation produced — see there.
+    The `.vrma` stage here still does not change.
   - ⛔ This repository deletes `StageIo`'s reading half in the consuming
     change, and for the same reason it waits
     ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
