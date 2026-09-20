@@ -220,18 +220,49 @@ repository's, and needs nothing from this one.
   - The library home is what the move was for. `PoseFromStageSample` takes
     values rather than a prim, so a caller holding a stage and an OpenExec
     node holding already-resolved inputs apply one rule — the clip → pose home
-    the sampling finding asked for. `execMotion` there still carries its own
-    copy; switching it over adds an edge that repository's WORKSPACE.md §2.1
-    does not draw yet.
+    the sampling finding asked for. `execMotion` there calls it and holds no
+    copy (2026-09-20,
+    [usd-motion-plugins #14](https://github.com/animu-sphere/usd-motion-plugins/pull/14)),
+    which closes that finding rather than only giving it somewhere to be
+    closed.
+
+    **That switch changed what every node reading `RootMotion` answers**, and
+    the consuming change here inherits the change with the package.
+    `motion.filterPose` smooths the root orientation — `PoseFilter::Options`
+    defaults `filterRootOrientation` to true and the field was previously
+    absent from every clip-sourced pose, so a clip authoring no policy at all
+    is affected. `motion.interpolatePose` slerps it between two bracketing
+    samples, `motion.extractRootMotion` carries it, and
+    `motion.rootTransform` would rotate a placement rather than translate it
+    only. `motion.blendPoses` is unaffected, because the blend does not read
+    the root.
+
+    Its eight L5 goldens did not move, and only one of them could have: a
+    golden is a flattened stage, and the exec-computed poses are values
+    rather than authored scene data. `displayed_clip` is the one fixture
+    that authors a computed transform, and it turns its head and not its
+    hips. The parity rows here are what would see the change, and
+    `vrmRetarget` reads no root orientation, so the prediction is that they
+    do not move — a prediction to check when the rows are re-run, not a
+    measurement.
+
+    The leaf-segment rule went with it: `motionCore` there gained
+    `FindHumanJointByPath`, `HumanJointPath`'s inverse. **This repository has
+    three copies of that rule.** Two leave with the code that holds them,
+    `StageIo`'s `LeafToken` and `execMotion`'s `BoneForJointPath`; the third
+    is `execVrm`'s `BoneForLeaf`, which stays and becomes a call to the
+    consumed function. Its comment already names the other two, which is how
+    the third was found.
   - The two findings the destination's USD_MAPPING.md §7 names were fixed on
     arrival.
     `RootMotion::worldOrientation` is read: the hips rotation is the body's
     orientation as well as the local rotation, and **both** copies here drop
-    it, so a clip read by either loses the body's facing. And the skeleton
-    comes back as joint tokens and rest matrices rather than as a
-    `SkeletonDescriptor` — the arrays `BuildSkeletonDescriptor` takes, whose
-    descriptor `BuildSourceRestPose` takes after it — so reading a stage there
-    links no retargeter.
+    it, so a clip read by either loses the body's facing. Consuming the
+    package is therefore a behaviour change here too, not only a deletion.
+    And the skeleton comes back as joint tokens and rest matrices rather than
+    as a `SkeletonDescriptor` — the arrays `BuildSkeletonDescriptor` takes,
+    whose descriptor `BuildSourceRestPose` takes after it — so reading a
+    stage there links no retargeter.
 
     A third was found in review and fixed there: the clip's
     `nominalFrameRate` is the rate its samples were taken at, and the stage's
