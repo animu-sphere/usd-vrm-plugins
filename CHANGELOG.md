@@ -29,6 +29,18 @@ Current schema contract version: **1**.
 
 ### Documentation
 
+- **[ost report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)**,
+  written from the 0.23.0 re-pin. Report 41's P1 is delivered and measured —
+  `requires.libraries` takes a digest-pinned artifact from another repository,
+  and the declared edge survives in the graph — and the same upgrade turns
+  every hosted Linux and Windows lane in three repositories red.
+  `runtime validate`'s new `consumer-link` claim probes a materialized runtime
+  before the repair `ost configure` and `plugin build` apply to that same
+  prefix, so it reports a failure the next step of the job removes. Reproduced
+  locally against the pinned artifact: simulate a clean host and the claim
+  fails with CI's message; one `ost configure` relocates the baked Python
+  include; the claim then passes. Report 41 gains its forward-note.
+
 - **The line through `vrmRetarget`**
   ([WORKSPACE.md §9.5](docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
   The split is by header. `HumanoidMap` is generic and moves as `RetargetMap`,
