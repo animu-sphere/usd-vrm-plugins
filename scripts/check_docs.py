@@ -328,6 +328,21 @@ def check_openusd_pin(failures: list[str]) -> None:
         failures.append(
             f"{doc} has no table row stating the OpenUSD pin {expected!r}")
 
+    # The README's badge states the pin to every visitor before they open a
+    # single document, so it is a mirror like the manifests and drifts like
+    # one. Both halves: shields.io renders the label, and the alt text is what
+    # a reader without images sees.
+    readme = read("README.md")
+    for pattern, what in ((r"badge/OpenUSD-([0-9.]+)-", "badge"),
+                          (r"!\[OpenUSD ([0-9.]+)\]", "badge alt text")):
+        found = re.search(pattern, readme)
+        if not found:
+            failures.append(f"README.md has no OpenUSD {what}")
+        elif found.group(1) != release:
+            failures.append(
+                f"README.md's OpenUSD {what} states {found.group(1)!r}; the "
+                f"workspace pin is {release!r} (cmake/UsdVrmOpenUsd.cmake)")
+
 
 # --- roadmap / release drift -------------------------------------------------
 
