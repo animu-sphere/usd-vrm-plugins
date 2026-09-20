@@ -1183,7 +1183,11 @@ whole would change every consumer twice.
 `motion_retarget`'s `StageIo` splits along the same seam. Writing a
 `UsdSkelAnimation` and reading a skeleton, a clip's joints and its time codes
 go to `motionUsd`. `ReadAvatar`'s humanoid binding, expressions and look-at,
-and the clip's `vrm:` attributes, stay with the VRM CLI.
+and the clip's `vrm:` attributes, stay with the VRM CLI. The reading half
+arrived on 2026-09-20
+([usd-motion-plugins #13](https://github.com/animu-sphere/usd-motion-plugins/pull/13));
+`ReadClip` here becomes a call to its `ReadMotionStage` plus the `vrm:`
+reading, in the consuming change.
 
 **Findings.** These are the concepts a rename cannot carry. Each is fixed on
 arrival, in its own change after the move (the destination's WORKSPACE.md §3
