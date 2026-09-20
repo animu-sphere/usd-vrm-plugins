@@ -226,12 +226,16 @@ repository's, and needs nothing from this one.
     which closes that finding rather than only giving it somewhere to be
     closed.
 
-    **That switch changed what two of its nodes answer**, and the consuming
-    change here inherits the change with the package. `motion.filterPose`
-    smooths the root orientation — `PoseFilter::Options` defaults
-    `filterRootOrientation` to true and the field was previously absent from
-    every clip-sourced pose, so a clip authoring no policy at all is affected
-    — and `motion.extractRootMotion` returns a root motion carrying one.
+    **That switch changed what every node reading `RootMotion` answers**, and
+    the consuming change here inherits the change with the package.
+    `motion.filterPose` smooths the root orientation — `PoseFilter::Options`
+    defaults `filterRootOrientation` to true and the field was previously
+    absent from every clip-sourced pose, so a clip authoring no policy at all
+    is affected. `motion.interpolatePose` slerps it between two bracketing
+    samples, `motion.extractRootMotion` carries it, and
+    `motion.rootTransform` would rotate a placement rather than translate it
+    only. `motion.blendPoses` is unaffected, because the blend does not read
+    the root.
 
     Its eight L5 goldens did not move, and only one of them could have: a
     golden is a flattened stage, and the exec-computed poses are values
