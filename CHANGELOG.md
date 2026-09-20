@@ -27,6 +27,42 @@ Current schema contract version: **1**.
   names. Three near-miss ledgers each get one thing wrong and must fail with
   that message.
 
+### Changed
+
+- **The `ost` pin is 0.23.1** — `openstrata.ci.yaml`, the workflow re-rendered
+  from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
+  The bump is taken for what it adds, not because it is current: 0.23.0 answers
+  both asks of
+  [ost report 41](docs/reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md).
+  `requires.libraries` can name a digest-pinned library artifact from another
+  repository, and every rendered job runs `ost library pull` before it builds —
+  the edge the motion migration's consuming half waits on
+  ([the migration track](docs/roadmap/motion-foundation-split.md)). An
+  explicitly empty workspace also renders CI now, which is that report's P3.
+  The render gains one more thing beside the pull step: every cell passes
+  `--require-openusd*` positionally, so a cell declaring neither no longer
+  risks an empty array under macOS bash 3.2 `set -u`. The pinned runtime leaves
+  do not move, and the tree is 159/159 green under the new toolchain locally.
+
+  The pin is 0.23.1 rather than 0.23.0 because 0.23.0 could not be adopted:
+  its new `consumer-link` claim probed a materialized runtime before the
+  relocation `ost configure` and `ost plugin build` apply to that same prefix,
+  and every hosted Linux and Windows lane in this repository and both
+  destinations went red on the pin bump alone
+  ([report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)).
+  0.23.1 answers all three of that report's asks. Re-measured here against the
+  pinned Windows artifact from a simulated clean host: `consumer-link` passes,
+  `runtime validate` performs the relocation itself (16 imported targets), and
+  a claim that does fail now names the first CMake error — `Imported target
+  "tf" includes non-existent path` — instead of the trailing warning block.
+
+  One cell needed a change for it, and only one: `usdvrmfileformat-pr-windows`
+  declared no `host_python`, because its pyramid stops at L4. `consumer-link`
+  links **and runs** a C++ consumer, and on Windows that executable loads
+  `python313.dll` through pxr while the Windows runtime bundles no
+  interpreter — so it built and then died at `0xC0000135`. The cell now
+  declares 3.13, which every other cell in the ecosystem already did.
+
 ### Documentation
 
 - **[ost report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)**,
