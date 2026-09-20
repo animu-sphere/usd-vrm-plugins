@@ -65,6 +65,18 @@ Current schema contract version: **1**.
 
 ### Documentation
 
+- **[ost report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)**,
+  written from the first real consumption of a cross-repository library
+  artifact. `usd-motion-plugins` v0.5.0 published seven of them, and
+  `motion-connectors` imported `motionTracking` and declared `motionCore` as
+  an external dependency — the declaration, the pull, the identity checks, the
+  graph edge, the link and the tests all work. The root `ost build` does not:
+  `ost library build` prepends the materialized prefix to `CMAKE_PREFIX_PATH`
+  and the root build of the same tree omits it, so `find_package(motionCore)`
+  fails. Every rendered workspace cell runs the root build, so a workspace
+  with one such member has no green lane — and that is the shape of this
+  repository's own consuming change, which switches nine members at once.
+
 - **[ost report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)**,
   written from the 0.23.0 re-pin. Report 41's P1 is delivered and measured —
   `requires.libraries` takes a digest-pinned artifact from another repository,
