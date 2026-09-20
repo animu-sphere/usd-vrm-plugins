@@ -17,12 +17,18 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 41 is the
-one to read first: the motion migration split this workspace across three
-repositories, and `requires.libraries` can name only a sibling member, so
-deleting `libs/motionCore` in favour of `usd-motion-plugins`' package fails
-nine members' graph edges and the only way past is to undeclare them. That P1
-holds the migration's MIG-1. Report 40 is next: it carries a P1 that breaks a release lane following the
+The current `ost` ask list is always in the **newest** report. Report 42 is the
+one to read first: `ost` 0.23.0 delivers report 41's P1 — a library dependency
+that names an artifact from another repository, measured working — and the same
+upgrade turns every hosted Linux and Windows lane in three repositories red.
+`runtime validate`'s new `consumer-link` claim probes a materialized runtime
+before the repair `ost configure` and `plugin build` apply to the same prefix,
+so it reports a failure the next step of the job removes. That P1 holds the
+0.23.0 pin, and with it the migration. Report 41 is next, and its P1 and P3 are
+now delivered (see its forward-note): the motion migration split this workspace
+across three repositories, and under 0.22.10 `requires.libraries` could name
+only a sibling member, so deleting `libs/motionCore` in favour of
+`usd-motion-plugins`' package failed nine members' graph edges. Report 40 is next: it carries a P1 that breaks a release lane following the
 documented build order — `plugin package` and `plugin test --workspace` stage
 every bundle's plain-library runtime out of one prefix that each `plugin build`
 refills with its own closure, so the product carries the last-built bundle's
