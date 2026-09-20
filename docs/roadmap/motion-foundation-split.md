@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19, and `motion_capture` arrived in `usd-motion-plugins` 2026-09-20 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19 and `execMotion` 2026-09-20, which is every sending half of MIG-2 but `motionUsd`'s reading one; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19, and `motion_capture` arrived in `usd-motion-plugins` 2026-09-20 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -212,9 +212,37 @@ repository's, and needs nothing from this one.
   - ⬜ `StageIo`'s clip and skeleton *reading* arrives as `motionUsd`'s
     reading half. That is also the library home for clip → pose that the
     sampling finding asked for.
-- ⬜ `execMotion` arrives as `usd-motion-plugins`' optional
-  `plugins/execMotion`; `execVrm` stays and reads its nodes by name exactly
-  as it does now.
+- ✅ `execMotion` arrived as `usd-motion-plugins`' optional
+  `plugins/execMotion` (2026-09-20,
+  [usd-motion-plugins #11](https://github.com/animu-sphere/usd-motion-plugins/pull/11)),
+  ahead of that repository's v0.5.0. 13 commits came through `git filter-repo`
+  into the directory that workspace had reserved, so no move-only commit was
+  needed; the rename and the workspace join followed. `execVrm` stays here and
+  reads its nodes by name exactly as it does now.
+  - The four findings this bundle produced are the point of the arrival:
+    every node is one library call there. `motion.filterPose` is
+    `PoseFilter::Step`, `motion.extractRootMotion` is `ConditionRootMotion`,
+    `motion.interpolatePose` is `SampleClip` over a clip held by reference,
+    and `motion.blendPoses` reads the N-way `BlendPoses`' `std::optional`
+    instead of checking for nothing weighted first. The wrapper code the
+    findings were about is gone rather than moved.
+  - What the library answers where a node refuses changed with them, so the
+    pins moved too: nothing weighted is `nullopt`, and a NaN weight counts as
+    no weight rather than poisoning the blend.
+  - One thing the move did not close, and it is the graph's rather than the
+    library's: an exec computation's value is a pose, so until a node
+    publishes `StepResult::state` as a value of its own, a driver hands the
+    result back as the next prior pose and a joint returning after a dropout
+    is passed through where the streaming filter would slerp it.
+  - Two decisions were taken there with it: that repository's EX-O2 — the
+    rate stays a namespaced convention, no schema registers it — and, in
+    [#12](https://github.com/animu-sphere/usd-motion-plugins/pull/12), USD-O4,
+    the generic channel attribute names. USD-O4 is what the `.vrma` stage
+    would have to match if it ever adopted the generic shape; it does not,
+    and §3 is unchanged by it.
+  - ⛔ This repository deletes `plugins/execMotion` in the consuming change,
+    and for the same reason it waits
+    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
 - ⬜ What stays is re-read as a consumer: the VRM humanoid map,
   `ExpressionResolver`, `LookAtEvaluator`, `motion_retarget` as a VRM CLI,
   `execVrm`. The OpenExec parity values are re-run against the consumed
