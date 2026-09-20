@@ -70,6 +70,13 @@ Current schema contract version: **1**.
   fails with CI's message; one `ost configure` relocates the baked Python
   include; the claim then passes. Report 41 gains its forward-note.
 
+  All three of report 42's asks are answered in `ost` 0.23.1, published the
+  same day, and re-verified from the same simulated clean host in its §7:
+  `runtime validate` performs the relocation itself, a claim that does fail
+  names the first CMake error (`Imported target "tf" includes non-existent
+  path`), and the `file://` artifact source's directory is documented. Report
+  42 carries the forward-note; report 37's P1 underneath it stays open.
+
 - **The line through `vrmRetarget`**
   ([WORKSPACE.md §9.5](docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
   The split is by header. `HumanoidMap` is generic and moves as `RetargetMap`,

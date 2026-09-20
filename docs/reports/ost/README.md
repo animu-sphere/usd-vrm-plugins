@@ -21,10 +21,12 @@ The current `ost` ask list is always in the **newest** report. Report 42 is the
 one to read first: `ost` 0.23.0 delivers report 41's P1 — a library dependency
 that names an artifact from another repository, measured working — and the same
 upgrade turns every hosted Linux and Windows lane in three repositories red.
-`runtime validate`'s new `consumer-link` claim probes a materialized runtime
+`runtime validate`'s new `consumer-link` claim probed a materialized runtime
 before the repair `ost configure` and `plugin build` apply to the same prefix,
-so it reports a failure the next step of the job removes. That P1 holds the
-0.23.0 pin, and with it the migration. Report 41 is next, and its P1 and P3 are
+so it reported a failure the next step of the job removes. All three of its
+asks are answered in 0.23.1, published the same day and re-verified from a
+simulated clean host in its §7; this repository pins 0.23.1. Report 41 is
+next, and its P1 and P3 are
 now delivered (see its forward-note): the motion migration split this workspace
 across three repositories, and under 0.22.10 `requires.libraries` could name
 only a sibling member, so deleting `libs/motionCore` in favour of
