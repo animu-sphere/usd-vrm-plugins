@@ -237,9 +237,9 @@ repository's, and needs nothing from this one.
   - Two decisions were taken there with it: that repository's EX-O2 — the
     rate stays a namespaced convention, no schema registers it — and, in
     [#12](https://github.com/animu-sphere/usd-motion-plugins/pull/12), USD-O4,
-    the generic channel attribute names. USD-O4 is what the `.vrma` stage
-    would have to match if it ever adopted the generic shape; it does not,
-    and §3 is unchanged by it.
+    the generic channel attribute names. Neither changes the `.vrma` stage:
+    [§3](#3-mig-1--the-core-)'s last item still holds. USD-O4 does answer half
+    of §8's open question about the `vrm:` expression weights — see there.
   - ⛔ This repository deletes `plugins/execMotion` in the consuming change,
     and for the same reason it waits
     ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
@@ -345,6 +345,14 @@ repository's, and needs nothing from this one.
   names on today's `HumanoidPose`; in the shared core that is a
   `MotionChannelSet` with namespaced semantics (motion-plugins policy §5.3).
   The mapping is decided in MIG-1, and expansion onto a rig stays here.
+  The **stage** half of it was decided there on 2026-09-20 (its USD-O4): a
+  generic channel is one typeless prim under `/Animation/Channels` carrying
+  `motion:channelName` — the semantic verbatim, and the key — and a
+  time-sampled `motion:channelValue`, and `vrm:expressionType` does not come
+  across. The `.vrma` stage here keeps `/Animation/Expressions` and its
+  `vrm:expression*` attributes; what is still open here is the **pose** half —
+  which names the weights carry on a `MotionChannelSet` — and the expansion
+  onto a rig.
 - **`ExecIr`.** It is VRM-specific and stays, but a generic invertible rig
   could later interest the shared core; nothing is moved on speculation.
 
