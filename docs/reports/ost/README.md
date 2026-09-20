@@ -17,8 +17,13 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 42 is the
-one to read first: `ost` 0.23.0 delivers report 41's P1 — a library dependency
+The current `ost` ask list is always in the **newest** report. Report 43 is the
+one to read first: the cross-repository library edge works everywhere except
+the one place a workspace's CI uses it. `ost library build` composes a
+member's external library artifact onto `CMAKE_PREFIX_PATH`; the root
+`ost build` of the same tree does not, and every rendered workspace cell runs
+the root build. Three repositories are waiting on that edge. Report 42 is
+next: `ost` 0.23.0 delivers report 41's P1 — a library dependency
 that names an artifact from another repository, measured working — and the same
 upgrade turns every hosted Linux and Windows lane in three repositories red.
 `runtime validate`'s new `consumer-link` claim probed a materialized runtime
