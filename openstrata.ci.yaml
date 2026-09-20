@@ -70,6 +70,27 @@
 #   (.github/workflows/package-consumer.yml) carries the workaround; every other
 #   lane goes through `ost build` and never sees it.
 #
+#   RE-PINNED TO 0.23.0 (2026-09-20), and unlike the two before it this one is
+#   taken for what it adds rather than because it is current. 0.23.0 answers
+#   both asks of
+#   docs/reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md:
+#   `requires.libraries` can name a digest-pinned library artifact from another
+#   repository, and a rendered job pulls it (`ost library pull`) before it
+#   builds. That is what the motion migration's consuming half waits on
+#   (docs/roadmap/motion-foundation-split.md), so this pin is its precondition.
+#   The pinned runtime leaves do not move: re-pulling one leaves its CMake
+#   package byte-identical, and report 37's P1 is still open against them.
+#   What the render gains beside the pull step: every cell now passes
+#   `--require-openusd*` positionally, so a cell that declares neither no
+#   longer risks an empty array under macOS bash 3.2 `set -u`.
+#
+#   .github/workflows/release.yml is hand-authored and mirrors this pin by
+#   hand; it was updated in the same change. scripts/check_docs.py compares the
+#   two and fails on drift, which is a repository-local check of the version
+#   string alone. 0.23.0 adds `external_workflows`, which would have `ost`
+#   itself check that file against this contract -- the pin AND the cell
+#   bindings it consumes -- and adopting it is a separate change.
+#
 #   Diagnosis: docs/reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md That matrix expands
 #   to sixteen immutable leaves -- OpenUSD 26.05 and 26.08 x
 #   linux/windows `core`/`gl`/`vulkan` and macOS arm64 `core`/`metal` -- each
@@ -126,7 +147,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.22.8"
+    version: "0.23.0"
     repository: animu-sphere/open-strata
 
 runners:

@@ -27,6 +27,23 @@ Current schema contract version: **1**.
   names. Three near-miss ledgers each get one thing wrong and must fail with
   that message.
 
+### Changed
+
+- **The `ost` pin is 0.23.0** — `openstrata.ci.yaml`, the workflow re-rendered
+  from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
+  The bump is taken for what it adds, not because it is current: 0.23.0 answers
+  both asks of
+  [ost report 41](docs/reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md).
+  `requires.libraries` can name a digest-pinned library artifact from another
+  repository, and every rendered job runs `ost library pull` before it builds —
+  the edge the motion migration's consuming half waits on
+  ([the migration track](docs/roadmap/motion-foundation-split.md)). An
+  explicitly empty workspace also renders CI now, which is that report's P3.
+  The render gains one more thing beside the pull step: every cell passes
+  `--require-openusd*` positionally, so a cell declaring neither no longer
+  risks an empty array under macOS bash 3.2 `set -u`. The pinned runtime leaves
+  do not move, and the tree is 159/159 green under the new toolchain locally.
+
 ### Documentation
 
 - **The line through `vrmRetarget`**
