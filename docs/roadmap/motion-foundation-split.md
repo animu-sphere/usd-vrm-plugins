@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; 🚧 MIG-4, its two leaf libraries arrived in `motion-connectors` 2026-09-19, and `motion_capture` arrived in `usd-motion-plugins` 2026-09-20 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; 🚧 MIG-4, **every sending half of which has now arrived**: `motion_capture` in `usd-motion-plugins` 2026-09-20, and all six connector-bound identities in `motion-connectors` 2026-09-19..21 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -377,13 +377,49 @@ repository's, and needs nothing from this one.
     first of them. Its capability matrix claims the capture format, the poll
     mapping and the diagnostic vehicle, but not yet receiving on a socket:
     the socket suites are the adapters' here, and travel with them.
-  - ⬜ `motionTracking` and the three adapters link `motionCore`. Importing
-    them needs `motion-connectors` to consume `usd-motion-plugins` as an
-    installed package, and under `ost` that is the same gap as
-    [report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md).
-  - ⬜ The OSC suite's corpus half reads the VMC capture format over this
-    repository's VMC fixtures. It stays here and travels with
-    `vrmAdapterVmc`.
+  - ✅ `motionTracking` arrived as `motionConnectorTracking` (2026-09-20,
+    [motion-connectors #5](https://github.com/animu-sphere/motion-connectors/pull/5),
+    merged as 501678e). It is the **first member there to consume
+    `usd-motion-plugins`**, and the first declared cross-repository edge in that
+    repository: `requires.libraries` pins `motionCore` by archive digest per
+    target, with the `oci://` source from v0.5.0's generated pin table. Here the
+    same edge existed in CMake and in no descriptor, so the declaration is a
+    correction as well as a move. What made it possible is `ost` 0.23.2, which
+    answered [report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md);
+    the gap [report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
+    named is closed for that repository.
+  - ✅ The three adapters arrived, each with its history, a move-only commit,
+    then the rename:
+    - `vrmAdapterVmc` as `motionConnectorVmc` with `vmc_record` (2026-09-21,
+      [#6](https://github.com/animu-sphere/motion-connectors/pull/6), merged as
+      c350373). What was one `motionRuntime` here is two packages there: the
+      frame assembler reads `motionSampling`'s source interface and the live
+      source writes `motionRecording`'s capture trace, so its descriptor pins
+      three artifacts beside the two leaves.
+    - `vrmAdapterMocopi` as `motionConnectorMocopi` with `mocopi_record`
+      (2026-09-21, [#7](https://github.com/animu-sphere/motion-connectors/pull/7),
+      in review). Same three artifacts, and **not** the wire format: this
+      protocol is not OSC, and that absence is the connector's shape.
+    - `vrmAdapterVrchatOsc` as `motionConnectorVrchatOsc` with
+      `vrchat_osc_record` (2026-09-21,
+      [#8](https://github.com/animu-sphere/motion-connectors/pull/8), in review,
+      stacked on #7). The one that is **not a pose source**: its library pins
+      `motionCore` alone, and its CLI takes `motionConnectorTracking` and
+      `motionRecording` — the first tool descriptor in the ecosystem to declare
+      a digest-pinned external artifact of its own.
+  - The recorders go to that repository's root `tools/`, and **the end-to-end
+    legs do not travel**: each one's last step bakes a recorded session onto an
+    avatar with a retarget CLI, which `motion-connectors` has no edge to. The
+    three `*_endToEnd` names stay here with their fixtures, as
+    `motion_record_replay`'s bake did.
+  - The `VRM_VMC_*`, `VRM_MOCOPI_*` and `VRM_VRCHAT_OSC_*` code families
+    arrived unrenamed on purpose: that repository's DIAG-O1 is answered once
+    over every connector, before its v0.1.0, rather than per import.
+  - ✅ The OSC suite's corpus half travelled with `vrmAdapterVmc`, over the
+    VMC fixtures it reads.
+  - ⬜ **This repository deletes all six in one change** (rule 7), which is now
+    the only MIG-4 work left on this side. `workspace_unicode_paths` loses the
+    three recorders with it.
 - ⬜ Recorded evidence — capture traces, the cross-source reports' inputs —
   moves with the adapter that produced it, under the same redistribution rule
   it has here.
