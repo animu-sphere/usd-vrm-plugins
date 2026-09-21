@@ -33,7 +33,7 @@ unproducible on this product rather than merely unrecorded.
 Six captures, 44 918 datagrams, 2 380 792 payload bytes. **The bytes are not in
 this repository and cannot be**: tracker positions are a real person's motion in
 a real room. What survives is
-[the session manifest](../../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json)
+[the session manifest](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json)
 — hashes and every `--inspect` reading — and this report.
 
 No BVH export accompanies any take, and §5 explains why that is a finding rather
@@ -160,7 +160,7 @@ third was not expected.
   no handshake: the stream simply resumes.
 - **`--inspect` on that same capture reports one peer.** The capture format
   carries a single `peer` in its header and no peer per datagram, which
-  [`liveTransport/UdpReceiver.h`](../../../libs/liveTransport/include/liveTransport/UdpReceiver.h)
+  [`liveTransport/UdpReceiver.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTransport/include/motionConnectorTransport/UdpReceiver.h)
   states as a deliberate asymmetry — *"a capture names one peer in its header,
   where a live socket learns a possibly different one per datagram"*.
 
@@ -197,7 +197,7 @@ Their consequence is a fact about the product, not a scheduling problem:
 
 [§11](../../roadmap/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
 asks for one physical session observed four ways, and
-[the corpus](../../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/README.md)
+[the corpus](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/README.md)
 asks a recorded VRChat OSC session to be *the same physical take* as the native
 UDP recording. Neither is producible with this product. Both are amended in the
 same change as this report — a comparison of separate takes is a smaller claim,

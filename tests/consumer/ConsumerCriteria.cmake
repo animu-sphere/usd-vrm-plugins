@@ -15,7 +15,7 @@
 # fixture is for, which is what makes criterion 5 mechanically checkable
 # (scripts/check_package_consumer.py).
 #
-#     consumer_criteria(PACKAGE osc TARGET osc::osc)
+#     consumer_criteria(PACKAGE motionCore TARGET motionCore::motionCore)
 #
 # Every line it prints is parsed by the driver, so the spellings below are an
 # interface:

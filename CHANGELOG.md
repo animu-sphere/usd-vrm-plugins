@@ -13,6 +13,36 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Removed
+
+- **Every live input left for `motion-connectors`** (MIG-4, 2026-09-21).
+  `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
+  `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and the three record tools are
+  [`motionConnector*`](https://github.com/animu-sphere/motion-connectors)
+  there, with their history, their corpora and their boundary checks; this
+  repository builds, ships and tests none of them. They left **together**,
+  which is [WORKSPACE.md §9.2](docs/architecture/WORKSPACE.md#92-moving-rules)
+  rule 7 rather than a convenience: an adapter with its transport in another
+  repository would have been a live half split across two.
+  - **What this product loses is a capability, not a test.** From the next
+    release it has no live input at all: no socket, no protocol decode, no
+    tracker assignment, and no recorder. What it keeps is everything that reads
+    a *file* — the `.vrm` and `.vrma` importers, the BVH path, the retarget and
+    both exec bundles — and a `motion-capture-trace` is still what a live
+    session hands it.
+  - `workspace_unicode_paths` covers four executables where it covered seven,
+    and reaches `motion_capture` through a committed trace rather than through a
+    recorder's export.
+  - `tests/consumer/` is seven fixtures where it was twelve, and
+    `PACKAGE_CONTRACT.md` lost the only row whose closure differed by platform
+    and the only one with no edges at all — both shapes its §5 argument was
+    built on, and both now `motion-connectors`'.
+  - The two roadmap tracks that planned this work
+    ([the adapters](docs/roadmap/adapters-mocopi-vmc-ardy.md),
+    [the OSC foundation](docs/roadmap/osc-and-vrchat-trackers.md)) are records
+    rather than plans now, and every link into the moved code points at the
+    repository that holds it.
+
 ### Added
 
 - **A vocabulary check on the headers that are leaving** (the motion
@@ -2149,7 +2179,7 @@ Current schema contract version: **1**.
 
 - **`vrmAdapterVrchatOsc` decodes tracker messages** (VRC-2). A known address
   becomes a tracker identity, a channel and three floats
-  ([`TrackerMessage.h`](adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackerMessage.h));
+  ([`TrackerMessage.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/TrackerMessage.h));
   an unknown one is `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS` and the session
   continues. Nothing is converted on the way through: the values are the
   sender's own, in the sender's own space, because a documented basis is a
@@ -2183,7 +2213,7 @@ Current schema contract version: **1**.
     change on purpose: a single message is always partial.
 
   **The generated corpus lands with it** — twelve captures written by
-  [`tools/generate_packets.py`](adapters/liveCapture/vrchatOsc/tools/generate_packets.py)
+  [`tools/generate_packets.py`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tools/generate_packets.py)
   from the measured shapes, replayed by `vrmAdapterVrchatOsc_trackerCorpus`
   against counts derived from the generator's structure, and re-checked against
   the generator itself by `vrmAdapterVrchatOsc_packetGen`.
@@ -3191,7 +3221,7 @@ Current schema contract version: **1**.
 
 - **`vmc_record`, the VMC adapter's CLI and the one part of it that meets a real
   sender** —
-  [`adapters/liveCapture/vmc/tools/vmcRecord/`](adapters/liveCapture/vmc/tools/vmcRecord/)
+  [`adapters/liveCapture/vmc/tools/vmcRecord/`](https://github.com/animu-sphere/motion-connectors/blob/main/tools/vmcRecord/)
   records a live session to a `vmc-packet-capture` file and reports what it
   decoded to. Every layer beneath it is verifiable from committed bytes, which
   is the adapter's build order and also its limit: the corpus is *generated*, so
@@ -3236,7 +3266,7 @@ Current schema contract version: **1**.
   forbids. Both tests were picked up by the `kind: workspace` CI cells with no
   CI edit, taking the root suite from 41 names to 43.
 - **The VMC adapter has a socket, and the runtime still has one thread** —
-  [`UdpReceiver.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/UdpReceiver.h)
+  [`UdpReceiver.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/include/motionConnectorVmc/UdpReceiver.h)
   is the last layer of the VMC path and the first one a live session touches.
   It owns a socket, a bind address, a receive clock and a size limit, and owns
   no decoding at all: `Receive` hands back the bytes exactly as they arrived,
@@ -3290,7 +3320,7 @@ Current schema contract version: **1**.
   they bind loopback on an OS-assigned port — never 39539, which would fight a
   developer's own sender for it.
 - **VMC's names and VMC's axes, turned into a humanoid** —
-  [`SkeletonMap.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/SkeletonMap.h)
+  [`SkeletonMap.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/include/motionConnectorVmc/SkeletonMap.h)
   is the one conversion the VMC adapter exists to perform and the first layer in
   it that knows a `motion::HumanBone` exists. It converts and it does not
   decide: frame boundaries and missing bones stay with the assembler, and
@@ -3355,7 +3385,7 @@ Current schema contract version: **1**.
   [docs/README.md](docs/README.md) asks for; the semantics are in
   [MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md#comparison-semantics-v060).
 - **The VMC message layer, and no humanoid in it** —
-  [`VmcMessage.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/VmcMessage.h)
+  [`VmcMessage.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/include/motionConnectorVmc/VmcMessage.h)
   turns a decoded OSC message into one of seven VMC messages: availability
   (`/VMC/Ext/OK`), the sender's clock (`/VMC/Ext/T`), the model
   (`/VMC/Ext/VRM`), the root and bone transforms, and blend-shape values with
@@ -3390,7 +3420,7 @@ Current schema contract version: **1**.
   malformed-forms capture's bad bone costs that bone, its datagram still
   yielding the twenty-two messages that arrived with it.
 - **The OSC layer, and nothing about VMC in it** —
-  [`OscPacket.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/OscPacket.h)
+  [`OscPacket.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/include/motionConnectorVmc/OscPacket.h)
   decodes a datagram into addresses, type tags, arguments, and bundles flattened
   into wire order. It does not know that `/VMC/Ext/Bone/Pos` means anything, and
   that separation is what makes both layers testable: OSC has its own
@@ -3412,7 +3442,7 @@ Current schema contract version: **1**.
   implement — decoded.
 - **A VMC session can be recorded and replayed before anything decodes one** —
   `vmc-packet-capture` v1
-  ([`PacketCapture.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/PacketCapture.h)),
+  ([`PacketCapture.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/include/motionConnectorVmc/PacketCapture.h)),
   the format that makes the adapter's transport-last order possible. It records
   the datagrams a session delivered, verbatim, with the instant each arrived:
   line-oriented text with hex bytes and an ASCII gutter, so a fixture diffs in a
@@ -3425,7 +3455,7 @@ Current schema contract version: **1**.
   disagrees with its bytes (a reviewer reads the gutter, not the hex), an
   unknown header key, and a length above the largest UDP payload.
 - **The VMC packet corpus** — seven generated captures in
-  [`adapters/liveCapture/vmc/tests/corpus/`](adapters/liveCapture/vmc/tests/corpus/),
+  [`adapters/liveCapture/vmc/tests/corpus/`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/tests/corpus/),
   pinning the bundled and the unbundled sender shape, well-formed traffic the
   body path must ignore rather than refuse, ten packet-level refusals, seven
   message-level ones plus a bad bone inside an otherwise whole frame, the longer

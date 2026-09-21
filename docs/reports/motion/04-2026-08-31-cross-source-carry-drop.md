@@ -28,8 +28,8 @@ to a canonical clip by the tools as they stand today, and read side by side.
 
 | | |
 | --- | --- |
-| Native + BVH | the 2026-08-15 mocopi session, [`recorded/manifest.json`](../../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json), measured in [report 01](01-2026-08-15-mocopi-cross-source.md) |
-| VRChat OSC | the 2026-08-30 mocopi `VRChat (OSC)` session, [session manifest](../../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json), inventoried in [report 02](02-2026-08-30-vrchat-osc-address-inventory.md) |
+| Native + BVH | the 2026-08-15 mocopi session, [`recorded/manifest.json`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi/tests/corpus/recorded/manifest.json), measured in [report 01](01-2026-08-15-mocopi-cross-source.md) |
+| VRChat OSC | the 2026-08-30 mocopi `VRChat (OSC)` session, [session manifest](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json), inventoried in [report 02](02-2026-08-30-vrchat-osc-address-inventory.md) |
 | Sender | `mocopi-app-2.7.2`, six sensors, iPhone — the same application and the same body on both dates |
 | Sequences | `neutral-standing` · `head-turn` · `arm-raise-left` · `walk-root-motion` · `session-restart`, performed on both dates from the same written instructions |
 | Driven by | `mocopi_record --export-trace`, `vrchat_osc_record --inspect --export-trace --assign`, `motion_bvh_convert`, then `motion_capture` — release binaries at `2694776`, no argument naming a protocol |

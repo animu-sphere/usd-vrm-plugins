@@ -52,9 +52,6 @@ UNICODE_DIRECTORY = "ユニコード-é"
 RECORDED = "mocopi-mobile-arm-raise-turn.bvh"
 PROFILE = "mocopi-mobile-bvh-default-v1.yaml"
 
-# The one VRChat assignment the adapter's own export suite uses.
-VRCHAT_ASSIGNMENT = "1=hips 2=leftFoot 3=rightFoot head=head"
-
 
 class Failures:
     def __init__(self) -> None:
@@ -259,9 +256,7 @@ def legs(failures: Failures, arguments: argparse.Namespace,
                              "プロファイル")
     avatar = workspace.copy(arguments.avatar, "avatar", "アバター")
     vrma = workspace.copy(arguments.vrma, "walk", "歩き")
-    vmc = workspace.copy(arguments.vmc_capture, "vmc", "送信")
-    mocopi = workspace.copy(arguments.mocopi_capture, "mocopi", "装着")
-    vrchat = workspace.copy(arguments.vrchat_capture, "vrchat", "追跡")
+    trace = workspace.copy(arguments.trace, "capture", "収録トレース")
     out = {"bvh": bvh, "avatar": avatar, "vrma": vrma}
 
     # The recorded path: syntax, conversion through a profile named by path,
@@ -282,33 +277,22 @@ def legs(failures: Failures, arguments: argparse.Namespace,
         "--avatar", avatar, "--animation", vrma,
         "--output", out["vrma_bake"], "--quiet")
 
-    # The live path: each adapter's recorder reads a capture and exports a
-    # trace, and motion_capture replays one of them into a clip.
-    out["vmc_trace"] = workspace.name("vmc", "送信", ".trace")
-    run(failures, "vmc_record", arguments.vmc_record, "--inspect", vmc,
-        "--export-trace", out["vmc_trace"], "--quiet")
-    out["mocopi_trace"] = workspace.name("mocopi", "装着", ".trace")
-    run(failures, "mocopi_record", arguments.mocopi_record, "--inspect",
-        mocopi, "--export-trace", out["mocopi_trace"], "--quiet")
-    out["vrchat_trace"] = workspace.name("vrchat", "追跡", ".trace")
-    run(failures, "vrchat_osc_record", arguments.vrchat_osc_record,
-        "--inspect", vrchat, "--export-trace", out["vrchat_trace"],
-        "--assign", VRCHAT_ASSIGNMENT, "--quiet")
+    # The live path, from a committed trace rather than from a recorder. The
+    # three recorders left with MIG-4, and with them the step that turned a
+    # capture into a trace; what stays here is the half this workspace still
+    # ships -- `motion_capture` replaying a `motion-capture-trace` whose path
+    # no ANSI code page can spell.
     out["live_clip"] = workspace.name("live", "ライブ", ".usda")
-    if out["vmc_trace"].exists():
-        run(failures, "motion_capture", arguments.capture,
-            "--trace", out["vmc_trace"], "--output", out["live_clip"],
-            "--quiet")
+    run(failures, "motion_capture", arguments.capture,
+        "--trace", trace, "--output", out["live_clip"], "--quiet")
     return out
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    for tool in ("bvh-inspect", "bvh-convert", "retarget", "capture",
-                 "vmc-record", "mocopi-record", "vrchat-osc-record"):
+    for tool in ("bvh-inspect", "bvh-convert", "retarget", "capture"):
         parser.add_argument(f"--{tool}", type=pathlib.Path, required=True)
-    for data in ("avatar", "vrma", "bvh-corpus", "profiles", "vmc-capture",
-                 "mocopi-capture", "vrchat-capture"):
+    for data in ("avatar", "vrma", "bvh-corpus", "profiles", "trace"):
         parser.add_argument(f"--{data}", type=pathlib.Path, required=True)
     arguments = parser.parse_args()
     # A failure names a non-ASCII file, and a pipe on Windows is otherwise
@@ -328,8 +312,7 @@ def main() -> int:
             return failures.report()
         unicode = legs(failures, arguments, Workspace(root, unicode=True))
 
-        for key in ("clip", "bake", "vrma_bake", "vmc_trace", "mocopi_trace",
-                    "vrchat_trace", "live_clip"):
+        for key in ("clip", "bake", "vrma_bake", "live_clip"):
             failures.check(unicode[key].exists(),
                            f"{unicode[key].name} was not written")
 
@@ -353,15 +336,6 @@ def main() -> int:
                                     unicode["avatar"])
                 check_same_animation(failures, leg, unicode[key], ascii_[key])
 
-        # A trace names no path, so its bytes are the comparison.
-        for key, leg in (("vmc_trace", "vmc_record"),
-                         ("mocopi_trace", "mocopi_record"),
-                         ("vrchat_trace", "vrchat_osc_record")):
-            if unicode[key].exists():
-                failures.check(
-                    unicode[key].read_bytes() == ascii_[key].read_bytes(),
-                    f"{leg}: the trace exported under a non-ASCII path "
-                    f"differs from the ASCII one")
         if unicode["live_clip"].exists():
             check_same_animation(failures, "motion_capture",
                                  unicode["live_clip"], ascii_["live_clip"])

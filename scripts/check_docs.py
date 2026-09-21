@@ -169,9 +169,9 @@ def check_schema_contract(failures: list[str]) -> None:
 MOCOPI_BVH = ("libs/motionBvh/tests/corpus/recorded/redistributable/"
               "mocopi-mobile-arm-raise-turn.bvh")
 MOCOPI_PROFILE = "profiles/motion/mocopi-mobile-bvh-default-v1.yaml"
-MOCOPI_ADAPTER = "adapters/liveCapture/mocopi/src/SkeletonMap.cpp"
-MOCOPI_ADAPTER_HEADER = ("adapters/liveCapture/mocopi/include/"
-                         "vrmAdapterMocopi/SkeletonMap.h")
+# The adapter's own table is `motion-connectors`' since MIG-4, so the third
+# leg of the agreement below is checked there. What is checkable here is the
+# pair this repository still holds.
 
 
 def bvh_hierarchy() -> tuple[list[str], list[int]]:
@@ -219,68 +219,27 @@ def profile_joint_bones() -> dict[str, str | None]:
 
 
 def check_mocopi_rig_agreement(failures: list[str]) -> None:
-    """The live adapter and the recorded profile describe the same rig.
+    """The recorded profile describes the rig the committed export carries.
 
-    They are deliberately *not* one table. A file reader and a socket meet at
-    `motionCore` and nowhere earlier, so a shared mapping would hand a live
-    session a file's assumptions the first time the two rigs stopped being the
-    same rig (roadmap/adapters-mocopi-vmc-ardy.md §2.1).
+    This used to be a three-way agreement: the live adapter's joint table, the
+    recorded profile, and the committed BVH export. The adapter left with MIG-4
+    and is `motion-connectors`' `motionConnectorMocopi` now, so the leg that
+    compared a socket's table against a file's is checked there, against the
+    same measurement — the handedness run of 2026-08-12, which matched all 27
+    rest offsets sign for sign.
 
-    Today they *are* the same rig — that is what the handedness measurement of
-    2026-08-12 established, by matching all 27 rest offsets sign for sign — so
-    the duplication has to cost a check rather than a silent divergence. This is
-    that check. It reads the committed export for the joint order, because a
-    BVH hierarchy is depth-first and a `bnid` is a position in exactly that
-    list; a difference here means one of the three has moved and the other two
-    have not been told.
+    What stays checkable here is the pair this repository still holds, and it
+    is the one that would silently rot: a BVH hierarchy is depth-first and the
+    profile maps by joint name, so a renamed or reordered joint in the export
+    has to fail rather than map to nothing.
     """
-    names, parents = bvh_hierarchy()
-
-    block = re.search(r"kMeasuredBones\s*=\s*\{\{(.*?)\}\};",
-                      read(MOCOPI_ADAPTER), re.S)
-    if not block:
-        failures.append(f"{MOCOPI_ADAPTER}: no kMeasuredBones table to check "
-                        f"the recorded profile against")
-        return
-    adapter = re.findall(r"HumanBone::(\w+)", block.group(1))
-
-    column = re.search(r"MeasuredParentColumn\s*=\s*\{\{(.*?)\}\};",
-                       read(MOCOPI_ADAPTER_HEADER), re.S)
-    if not column:
-        failures.append(f"{MOCOPI_ADAPTER_HEADER}: no MeasuredParentColumn to "
-                        f"check the recorded export's hierarchy against")
-        return
-    declared = [int(v) for v in re.findall(r"-?\d+", re.sub(r"//[^\n]*", "",
-                                                            column.group(1)))]
-
-    if not (len(names) == len(adapter) == len(declared)):
-        failures.append(
-            f"the mocopi rig has {len(names)} joints in {MOCOPI_BVH}, "
-            f"{len(adapter)} in the adapter's table and {len(declared)} in its "
-            f"parent column")
-        return
-    if declared != parents:
-        failures.append(
-            f"{MOCOPI_ADAPTER_HEADER}: MeasuredParentColumn is not the "
-            f"hierarchy the committed export carries")
-
+    names, _ = bvh_hierarchy()
     profile = profile_joint_bones()
     for index, name in enumerate(names):
         if name not in profile:
             failures.append(
                 f"{MOCOPI_PROFILE}: joint {name!r} (bone {index} natively) is "
                 f"neither mapped nor listed as ignored")
-            continue
-        expected = profile[name]
-        # The profile writes VRM 1.0's lowerCamel and the enum is PascalCase;
-        # an unmapped joint is `Count` on one side and absent on the other.
-        native = adapter[index]
-        wanted = "Count" if expected is None else expected[0].upper() + expected[1:]
-        if native != wanted:
-            failures.append(
-                f"the mocopi rig's joint {name!r} is {expected or 'ignored'} in "
-                f"{MOCOPI_PROFILE} and HumanBone::{native} at bone {index} in "
-                f"{MOCOPI_ADAPTER}")
 
 
 def check_openusd_pin(failures: list[str]) -> None:

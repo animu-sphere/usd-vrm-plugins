@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; 🚧 MIG-4, **every sending half of which has now arrived**: `motion_capture` in `usd-motion-plugins` 2026-09-20, and all six connector-bound identities in `motion-connectors` 2026-09-19..21 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture`'s own arrival in `usd-motion-plugins` (2026-09-20) still owes its deletion here · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -417,9 +417,26 @@ repository's, and needs nothing from this one.
     over every connector, before its v0.1.0, rather than per import.
   - ✅ The OSC suite's corpus half travelled with `vrmAdapterVmc`, over the
     VMC fixtures it reads.
-  - ⬜ **This repository deletes all six in one change** (rule 7), which is now
-    the only MIG-4 work left on this side. `workspace_unicode_paths` loses the
-    three recorders with it.
+  - ✅ **This repository deleted all six in one change** (2026-09-21, rule 7):
+    `adapters/`, `libs/liveTransport`, `libs/osc`, `libs/motionTracking` and
+    their six consumer fixtures are gone, with the members, the CMake wiring,
+    the package-contract rows and the capability rows that named them. 88/88
+    here afterwards.
+    - `workspace_unicode_paths` lost the three recorders and the three captures
+      they read, and kept its `motion_capture` leg by replaying a **committed
+      trace** instead — so the non-ASCII claim is over four executables rather
+      than seven, and says so in the file.
+    - `check_docs.py`'s mocopi rig agreement was a three-way check: the
+      adapter's joint table, the recorded profile and the committed BVH export.
+      The adapter's leg is `motion-connectors`' now; the profile-to-export leg
+      stays here and is what the check does.
+    - `PACKAGE_CONTRACT.md` lost its adapter section and three library rows,
+      and with them **the only platform difference** it carried
+      (`ws2_32` / `Threads::Threads`) and **the only empty-edge row**.
+      `tests/consumer/` is seven fixtures where it was twelve.
+    - The `vrmAdapterArdy` row went too: the generation adapter is created in
+      `motion-connectors`, behind the generator interface `usd-motion-plugins`
+      specifies.
 - ⬜ Recorded evidence — capture traces, the cross-source reports' inputs —
   moves with the adapter that produced it, under the same redistribution rule
   it has here.

@@ -47,19 +47,10 @@ project's central design decision, and it is described below.
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter | v0.4.0 |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
-| [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | VMC Protocol input: OSC-over-UDP datagrams → canonical humanoid motion | v0.6.0 |
-| [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report, and exports what the adapter delivered as a capture trace the tools above replay unchanged | v0.6.0 |
-| [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | Native live UDP input for one capture product, kept strictly separate from the relay path above | v0.7.0 |
-| [`mocopi_record`](adapters/liveCapture/mocopi/tools/mocopiRecord) | CLI executable | Records and inspects mocopi UDP captures, and exports a capture trace `motion_capture` replays unchanged | v0.7.0 |
 | [`motionSource`](libs/motionSource) | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | v0.7.0 |
 | [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | v0.7.0 |
 | [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
 | [`motion_bvh_convert`](tools/motionBvh) | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | v0.7.0 |
-| [`liveTransport`](libs/liveTransport) | Plain static CMake library | The live half's shared leaf: UDP receiver, opt-in datagram queue, packet-capture file format, and the diagnostic vehicle every live adapter reports through — no protocol, no product name, no diagnostic code | v0.8.0 |
-| [`osc`](libs/osc) | Plain static CMake library | The OSC 1.0 wire format, shared by every adapter that speaks it: packets, bundles, addresses, type tags, arguments, and a refusal that carries no diagnostic code — no address semantics, no product name, and an empty link line | v0.8.0 |
-| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | VRChat OSC tracker input: numbered tracker observations, which are pre-IK, so it stops at a tracker frame and the humanoid solve stays outside it — semantic decode, tracking-space conversion and frame assembly, with unknown traffic recoverable rather than fatal | v0.8.0 |
-| [`vrchat_osc_record`](adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord) | CLI executable | Records and inspects VRChat OSC packet captures. Recording reports the datagram envelope and nothing about a payload; `--inspect` adds the address inventory and the decoded frames, and `--export-trace --assign` writes the capture trace `motion_capture` replays unchanged | v0.8.0 |
-| [`motionTracking`](libs/motionTracking) | Plain static CMake library | Which tracker is which body region: a generic region vocabulary that is not a bone list, an operator's explicit statement binding an opaque tracker identity to one, and a stated policy for an observed set it cannot place. No address literal, no adapter identity, and an empty link line | v0.8.0 |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend | v0.9.0 |
 | [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | v0.9.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
@@ -70,11 +61,13 @@ that predate that rename use it in the old sense.
 
 ### The motion layer
 
-> **Moving out after v0.9.0.** The generic half of this layer — `motionCore`,
+> **The live inputs have moved (2026-09-21).** `liveTransport`, `osc`,
+> `motionTracking`, the three adapters and their record tools are
+> [`motion-connectors`](https://github.com/animu-sphere/motion-connectors)'
+> now, under `motionConnector*` names, and this repository no longer builds,
+> ships or tests any of them. The generic half of this layer — `motionCore`,
 > `motionRuntime`, the generic retarget, `motionSource`, `motionBvh`,
-> `motion_capture` and `execMotion` — moves to `usd-motion-plugins`, and the
-> live inputs — `liveTransport`, `osc`, `motionTracking` and the adapters — to
-> `motion-connectors`. This repository keeps VRM and VRMA, VRM semantic
+> `motion_capture` and `execMotion` — moves to `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
 > resolution and `execVrm`, and consumes the rest as installed packages
 > ([WORKSPACE.md §9](docs/architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration plan](docs/roadmap/motion-foundation-split.md)). The table
@@ -120,15 +113,8 @@ bit. They shipped in v0.9.0. What comes next:
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |
 | [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `vrmRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
-| `adapters/` | Optional plain libraries + their CLIs | **Live** input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted *in code* (e.g. VMC, Mocopi, ARDY) |
 | `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
 | `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |
-| [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
-| [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | The second: a capture product's own UDP grammar, measured off five device sessions rather than read from a specification, through the same frame assembly and bridge; includes the `mocopi_record` CLI |
-| [`liveTransport`](libs/liveTransport) | Plain static CMake library | What the live leaves stopped writing twice: the socket, the packet-capture format and the diagnostic vehicle. It is under `libs/` and still **outside** the aggregate product — no tool in the product opens a transport — and its allowed edge set is empty |
-| [`osc`](libs/osc) | Plain static CMake library | The other thing the live leaves stopped writing twice, and the one that had to wait: an OSC decoder extracted on the strength of one caller is a decoder shaped like that caller, so it moved when a second consumer had decoded through it. Also outside the aggregate product, and its link line is empty of `liveTransport` too — the two are siblings, not a stack |
-| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | The third, and the first that is not a pose source: this wire carries numbered tracker observations, and a tracker index is not a body role. Written on the near side of both extractions, so its capture format is one magic string, its receiver is a `switch` over two transport events, and its address inventory is a loop over a decoder it does not own |
-| [`motionTracking`](libs/motionTracking) | Plain static CMake library | What a tracker source is not allowed to decide: which tracker is on which body region. Generic, outside every adapter, and holding a region vocabulary that is deliberately not a bone list — an adapter that mapped `/tracking/trackers/1/*` onto a hips joint would have invented a calibration and hidden it in a decoder |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a

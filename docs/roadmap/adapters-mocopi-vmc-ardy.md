@@ -1,11 +1,16 @@
 # Input adapters — the VMC → mocopi → ARDY direction
 
-> **Destination (2026-09-17): `motion-connectors`.** The VMC and mocopi adapters
-> and their record tools move there, and the ARDY adapter (§7) is created there
-> behind the generator interface `usd-motion-plugins` specifies
+> **Moved (2026-09-21): `motion-connectors`.** The VMC and mocopi adapters and
+> their record tools are
+> [`motionConnectorVmc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc),
+> [`motionConnectorMocopi`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi) and the
+> two recorders under that repository's root `tools/`; this repository deleted
+> its copies in the same change
 > ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
-> [the migration](motion-foundation-split.md) MIG-4). This plan stays the record
-> of what was built and measured here.
+> [the migration](motion-foundation-split.md) MIG-4). The ARDY adapter (§7) is
+> created there, behind the generator interface `usd-motion-plugins` specifies.
+> **This plan is a record now, not a plan**: what it measured is what was built
+> here, and the work it names continues in that repository.
 
 The plan for `adapters/`: how real-time protocols, real capture devices, and
 motion generators reach this repository's motion pipeline without any of them
