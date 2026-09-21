@@ -9,8 +9,11 @@ profile = "usd"
 # The member set, declared rather than discovered (ost 0.22.3).
 #
 # `members` only controls SOURCE discovery, and it is fail-closed: ost scans the
-# tree and refuses any descriptor no pattern covers, so a new adapter or library
-# cannot join the graph by existing.
+# tree and refuses any descriptor no pattern covers, so a new library cannot
+# join the graph by existing. It is fail-closed the other way too, since 0.23.x:
+# a descriptor left in the tree but out of this list is
+# WORKSPACE_DESCRIPTOR_NOT_DECLARED, which is why MIG-4 deleted the six
+# connector directories rather than merely unlisting them.
 #
 # Every member is named in full rather than matched by `plugins/*`-style globs.
 # That began as a workaround and is kept as a choice. Under `ost` 0.22.3 and
@@ -19,21 +22,20 @@ profile = "usd"
 # the whole graph refuse to resolve (WORKSPACE_MEMBER_DESCRIPTOR_MISSING).
 # 0.22.5 treats a wildcard as a filter -- verified here on 2026-08-29: `tools/*`
 # swept past the same `__pycache__` and reported the same 10 libraries and 16
-# edges this list did that day. The count moved on 2026-08-31 when
-# `libs/motionTracking` joined and has not been re-measured, which is the kind of
-# number this file should not restate without running the command.
+# edges this list did that day. The count has moved twice since and is not
+# restated here, which is the kind of number this file should not carry without
+# running the command.
 # What keeps the list is the second reason rather than the first: adding a
 # member is a visible edit here rather than a side effect of creating a
 # directory, which is the same demand `release_members` below makes and the same
 # one WORKSPACE.md section 5 makes of the product.
 #
 # `release_members` is the aggregate product, and it is the reason this table
-# exists at all. Until 0.22.3 nothing in any descriptor could decline membership:
-# 0.21.0 kept the adapter CLIs out of the product only by failing to discover
-# `adapters/<group>/<name>/tools/<tool>/`, and 0.22.x discovers them, so the
-# exclusion WORKSPACE.md §5 states as a rule was in fact a property of the pinned
-# toolchain version -- one that would have been discovered in a published
-# archive. It is a declaration now: packaging subtracts `release_exclude` from
+# exists at all. The exclusion it was written for -- the adapter CLIs, which
+# WORKSPACE.md §5 kept out of the product -- is gone with MIG-4: every recorder
+# is `motion-connectors`' now, and nothing in this tree has to be subtracted
+# for carrying a producer's name. What the declaration still does is the
+# general case: packaging subtracts `release_exclude` from
 # the discovered bundle/tool ids and fails with AGGREGATE_MEMBERSHIP_MISMATCH if
 # the result is not exactly this list. A new tool under `tools/` fails the lane
 # until it is named here, which is the same demand release.yml's staging step
@@ -46,24 +48,15 @@ members = [
   "plugins/usdVrmaFileFormat",
   "plugins/usdVrmPackageResolver",
   "plugins/vrmSchema",
-  "libs/liveTransport",
   "libs/motionBvh",
   "libs/motionCore",
   "libs/motionRuntime",
   "libs/motionSource",
-  "libs/motionTracking",
-  "libs/osc",
   "libs/vrmContainer",
   "libs/vrmRetarget",
   "tools/motionBvh",
   "tools/motionCapture",
   "tools/motionRetarget",
-  "adapters/liveCapture/mocopi",
-  "adapters/liveCapture/mocopi/tools/mocopiRecord",
-  "adapters/liveCapture/vmc",
-  "adapters/liveCapture/vmc/tools/vmcRecord",
-  "adapters/liveCapture/vrchatOsc",
-  "adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord",
 ]
 release_members = [
   "vrmSchema",

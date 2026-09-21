@@ -1,10 +1,15 @@
 # Shared OSC foundation and VRChat OSC Trackers input
 
-> **Destination (2026-09-17): `motion-connectors`.** `osc`, `liveTransport`,
-> `motionTracking` and the VRChat OSC adapter move there
+> **Moved (2026-09-21): `motion-connectors`.** `osc`, `liveTransport`,
+> `motionTracking` and the VRChat OSC adapter are
+> [`motionConnectorOsc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorOsc),
+> [`motionConnectorTransport`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTransport),
+> [`motionConnectorTracking`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTracking) and
+> [`motionConnectorVrchatOsc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc)
+> there; this repository deleted its copies in the same change
 > ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
-> [the migration](motion-foundation-split.md) MIG-4). This plan stays the record
-> of what was built and measured here.
+> [the migration](motion-foundation-split.md) MIG-4). **This plan is a record
+> now, not a plan.**
 
 The plan for the **third** live input: a VRChat OSC Trackers adapter, and the
 extraction that stops it being the third copy of code this repository already
@@ -110,7 +115,7 @@ datagrams is not. Nothing in the middle needs a judgement call.
 
 `UdpReceiver` is the pair the census flags loudest, and none of this is a new
 discovery — it is a prediction coming true on schedule.
-[`mocopi/include/vrmAdapterMocopi/UdpReceiver.h`](../../adapters/liveCapture/mocopi/include/vrmAdapterMocopi/UdpReceiver.h)
+[`mocopi/include/vrmAdapterMocopi/UdpReceiver.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi/include/motionConnectorMocopi/UdpReceiver.h)
 says so in its own preamble: a review of that file on 2026-08-11 found **four
 defects the sibling has identically, because they were copied along with
 everything else**, corrected all four in the younger copy, and wrote down that
@@ -179,7 +184,7 @@ other copy is in `libs/`. Turning a source's axes into canonical ones now exists
 three times: `vrmAdapterVmc/SkeletonMap.cpp` hard-codes the reflection through
 X, `motionSource/CanonicalConversion.cpp` derives the general signed permutation
 from a profile, and
-[`vrmAdapterVrchatOsc/TrackingSpace.cpp`](../../adapters/liveCapture/vrchatOsc/src/TrackingSpace.cpp)
+[`vrmAdapterVrchatOsc/TrackingSpace.cpp`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/src/TrackingSpace.cpp)
 is the third.
 
 **It is not extracted, and the reason is a contract rather than a judgement.**
@@ -210,7 +215,7 @@ saying which is which is this section's whole job.
 
 The OSC decoder is already free of VMC semantics, and the measurement is small
 enough to state exactly. Everything in
-[`OscPacket.h`](../../adapters/liveCapture/vmc/include/vrmAdapterVmc/OscPacket.h)
+[`OscPacket.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/include/motionConnectorVmc/OscPacket.h)
 — `OscBlob`, `OscArgument`, `OscMessage`, `OscPacket`, `DecodeOscPacket` —
 decodes OSC 1.0 and nothing else; the header says so in its first line and the
 code agrees. It is coupled to the adapter in exactly three places: the
@@ -649,7 +654,7 @@ this sender actually uses.
 
 **Done 2026-08-30** — six captures, 44 918 datagrams, and the measurement is
 [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) with
-[the session manifest](../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json)
+[the session manifest](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json)
 beside it. **The subset is eight addresses**: three numbered trackers and a named
 `head`, each with `position` and `rotation`, every one of them `,fff`, one
 message per datagram and no bundle anywhere.
@@ -677,7 +682,7 @@ handshake — and the capture format carries one peer in its header and none per
 datagram, so that marker does not survive into a file. The live session saw two
 peers; `--inspect` on the same capture sees one. The asymmetry is deliberate and
 documented in
-[`liveTransport/UdpReceiver.h`](../../libs/liveTransport/include/liveTransport/UdpReceiver.h);
+[`liveTransport/UdpReceiver.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTransport/include/motionConnectorTransport/UdpReceiver.h);
 what is new is that it now has a measured cost, because a fixture-driven restart
 test can exercise the silence and not the identity change. Widening the format
 touches a shared library, three adapters and two committed corpora, so it is
@@ -717,9 +722,9 @@ validated; an unknown VRChat OSC address is `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS`
 and the session continues. Generated corpus lands here; recorded corpus replays.
 
 **Done 2026-08-30** —
-[`TrackerMessage.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackerMessage.h),
+[`TrackerMessage.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/TrackerMessage.h),
 its suite, and twelve generated captures written by
-[`tools/generate_packets.py`](../../adapters/liveCapture/vrchatOsc/tools/generate_packets.py)
+[`tools/generate_packets.py`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tools/generate_packets.py)
 from report 02's measurements. The counts the corpus is replayed against come
 from the generator's *structure* rather than from a run, a capture with no
 expectation in the test fails, and six mutations of the decoder — the head
@@ -793,7 +798,7 @@ is the precedent for why a documented basis is a hypothesis. **No avatar joint
 is resolved in this layer.**
 
 **Done 2026-08-30** —
-[`TrackingSpace.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackingSpace.h),
+[`TrackingSpace.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/TrackingSpace.h),
 its suite and
 [report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md), which
 re-reads the VRC-1 session rather than recording a new one. The documented space
@@ -854,7 +859,7 @@ samples · the head reference · source reset · calibration discontinuity. Each
 a test, and each has a recorded or generated fixture that produces it.
 
 **Done 2026-08-30** —
-[`FrameAssembler.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/FrameAssembler.h),
+[`FrameAssembler.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/FrameAssembler.h),
 its suite and three new corpus fixtures. This is the first file in this adapter
 that **decides** rather than converts, and the first whose failure mode is
 invisible per value: every sample in a wrongly-cut frame is individually
@@ -969,7 +974,7 @@ Automatic assignment from rest geometry is **not** in this milestone. It is an
 aid over this contract once the contract exists, in the same relationship
 `motion_bvh_inspect`'s candidate profiles have to `--profile`.
 
-**Done 2026-08-31** — [`libs/motionTracking`](../../libs/motionTracking), named
+**Done 2026-08-31** — [`libs/motionTracking`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTracking), named
 in the contract first ([§10](#10-contract-changes-this-plan-requires)) and
 implemented second. It is the first library here that holds a *policy* and no
 format at all: nothing in it reads a byte, and its whole surface is two
@@ -1034,7 +1039,7 @@ No target-avatar-specific logic enters the adapter under any outcome — that is
 and it does not bend for a source that happens to need IK.
 
 **Done 2026-08-31** — `SolveTrackerPose` in
-[`libs/motionTracking`](../../libs/motionTracking), on the contract written the
+[`libs/motionTracking`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTracking), on the contract written the
 same day and ahead of it ([§10](#10-contract-changes-this-plan-requires)). The
 milestone's column changed with it: this is the **motion layer's**, not the
 adapter's, and no adapter names it.

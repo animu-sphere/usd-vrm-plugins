@@ -2,8 +2,14 @@
 
 One CMake project per package, each one an *external consumer*: it calls
 `find_package`, links the exported target, includes a public header, and knows
-nothing else about this workspace. Twelve of them, which is every package this
+nothing else about this workspace. Seven of them, which is every package this
 workspace installs.
+
+**There were twelve until 2026-09-21.** `osc`, `liveTransport`,
+`motionTracking` and the three adapters left with MIG-4, and their fixtures went
+with them — a fixture is part of the package's contract, not of this directory.
+The sentences below that count twelve are kept where they record a measurement
+taken while all twelve were here.
 
 Nothing here is built by the workspace. No `add_subdirectory` reaches this
 directory, no ctest registers it, and `scripts/check_package_consumer.py` copies
@@ -30,20 +36,20 @@ These fixtures are the consumer that is not us.
 ## Running one
 
 ```sh
-python scripts/check_package_consumer.py osc
+python scripts/check_package_consumer.py vrmContainer
 ```
 
-Three of the twelve need no OpenUSD and run exactly like that: `osc`,
-`vrmContainer` and `liveTransport`. The other nine take a `--extra-prefix`.
+One of the seven needs no OpenUSD and runs exactly like that: `vrmContainer`.
+The other six take a `--extra-prefix`. Three packages that needed none left with
+MIG-4, so the shape "a package with no external edge at all" has no fixture
+here any more.
 
-`vrmAdapterVrchatOsc` was a fourth until 2026-08-30, when VRC-3 gave it the
-`motionCore` edge its conversion returns values from, and `motionTracking` was a
-fifth until 2026-08-31, when VRC-5 gave it the same edge for the same kind of
-reason — a solve produces a `HumanoidPose`. Nothing about either fixture's
-*shape* changed; what changed is the prefix each needs, which the driver reads
-from PACKAGE_CONTRACT.md rather than from a list kept here. That is the whole
-argument for reading the contract: two packages acquired an edge in two days and
-this file needed no list updating for the lane to keep being right.
+That the list is not kept here is the point, and it was measured twice: two
+packages acquired a `motionCore` edge two days apart in 2026-08, and this file
+needed no updating for the lane to keep being right, because the driver reads
+PACKAGE_CONTRACT.md. The six that left proved the same thing in the other
+direction — the lane stopped running them when their rows went, with nothing to
+delete here but the fixtures themselves.
 
 The driver installs the package and its required packages into a scratch prefix
 holding nothing else, configures the fixture against that prefix alone, builds
@@ -69,7 +75,7 @@ workspace does not produce, and the driver keeps it out of the resolution of the
 package under test: criterion 1 fails if the package answers from anywhere but
 the scratch prefix.
 
-## Running all twelve, and what CI does with them
+## Running all of them, and what CI does with them
 
 ```sh
 python scripts/run_package_consumer_lane.py --reports package-consumer-reports
@@ -145,13 +151,14 @@ every clean consumer, so its blanket mutation is a real catch.
 
 ## Adding one
 
-Copy `osc/` and change three things: the `project()` name, the `PACKAGE` and
+Copy `vrmContainer/` — or `motionCore/`, if the new package has an OpenUSD
+edge — and change three things: the `project()` name, the `PACKAGE` and
 `TARGET` arguments to `consumer_criteria`, and what `main.cpp` includes and
 calls. Everything else is shared by
 [`ConsumerCriteria.cmake`](ConsumerCriteria.cmake), and that sharing is the
-point rather than a convenience: twelve fixtures each writing their own
-`find_package` and their own `if(TARGET)` would be twelve chances for one of
-them to check less than the others and still print a pass.
+point rather than a convenience: a fixture per package each writing its own
+`find_package` and its own `if(TARGET)` would be one chance per package for one
+of them to check less than the others and still print a pass.
 
 The third of those three is the one that takes thought, and PKG-3 measured why.
 **Include the header that carries the package's edges**, not the smallest one:
@@ -196,8 +203,8 @@ out; for `vrmContainer`, whether a hand-assembled container parses; for
 `vrmSchema`, whether a generated class knows its own attribute names — because
 anything larger makes a packaging failure look like a decoder failure the first
 time it goes red. Those suites live with their code, in
-[`libs/osc/tests/`](../../libs/osc/tests/) and
-[`adapters/liveCapture/vmc/tests/`](../../adapters/liveCapture/vmc/tests/).
+[`libs/osc/tests/`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorOsc/tests/) and
+[`adapters/liveCapture/vmc/tests/`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc/tests/).
 
 *Which* header a fixture includes is a packaging decision, though. A package
 with edges is best asked through the header that carries them: `SkeletonMap.h`

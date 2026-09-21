@@ -75,6 +75,16 @@ and is handled by a different bundle.
 of v0.6.0, as of v0.7.0 both a second live adapter and a recorded-file path, and
 as of v0.8.0 a third live adapter — the first tracker source — over two leaves
 the first two adapters had each been writing privately.
+
+**Live input is no longer this repository's, as of 2026-09-21.** The three
+adapters, their record tools, the two shared leaves and the tracker layer left
+with MIG-4 and are `motion-connectors`' now
+([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
+Their rows stay below because they record what shipped in v0.6.0 – v0.8.0 of
+this product, which is what this table is for; what they no longer say is
+anything about the next release, where this repository ships no live input at
+all.
+
 Its own status:
 
 | Component | Since | Status |

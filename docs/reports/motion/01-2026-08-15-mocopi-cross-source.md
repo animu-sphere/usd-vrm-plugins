@@ -28,7 +28,7 @@ The application was recording internally for the whole UDP window, so the BVH
 export covers the session and some either side of it. **The bytes are not in this
 repository and cannot be**: a session is a real person's motion and a skeleton
 packet is a body measurement of that person. What survives is
-[`recorded/manifest.json`](../../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json)
+[`recorded/manifest.json`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi/tests/corpus/recorded/manifest.json)
 — hashes and every measured field — and this report.
 
 Four further sessions were recorded the same evening and are measured in that

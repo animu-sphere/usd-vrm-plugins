@@ -116,13 +116,17 @@ What [v0.8.0](../releases/v0.8.0.md) shipped and did not close is its record's
   bundle when that stops covering a package. The fix is upstream
   ([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)
   P1).
-- ⬜ **No lane publishes an adapter artifact.** `ost library package` produces
-  one; whether a release carries it is a decision, scheduled as
-  [BND-2](boundary-consolidation.md#4-bnd-2--settle-the-adapter-distribution-decision-).
+- ➡️ **No lane publishes an adapter artifact** — and none will from here.
+  The adapters left with MIG-4 on 2026-09-21, so whether a release carries one
+  is `motion-connectors`' decision, as BND-2 already said it would be.
 
 ### Carried out of v0.7.0 — evidence an operator produces
 
-None of these closes by writing code.
+None of these closes by writing code, and since 2026-09-21 none of them closes
+*here*: every item below is about a live session through an adapter, and the
+adapters are `motion-connectors`'. They are kept in this list until that
+repository's own roadmap carries them, so that a condition this product shipped
+without is not lost in the move.
 
 - ⬜ **A VMC relay session, compared at the canonical layer.** Two paths of three
   agree to a median 0.084° per bone
@@ -141,13 +145,14 @@ None of these closes by writing code.
   ([report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md)
   §2.3).
 - ⬜ **A redistributable mocopi capture.** The five device sessions are
-  [`recorded/manifest.json`](../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json)
+  [`recorded/manifest.json`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi/tests/corpus/recorded/manifest.json)
   rows with no bytes, because a session is a real person's motion. A
   publishable one needs the vendor's `BVH Sender`, not a device.
 - 🚧 **The live path from release artifacts alone.** The recorded path runs from
-  an installed product, profiles included (2026-08-30). The live path needs the
-  product composed with an adapter's own artifact, which `ost library package`
-  can produce and nothing has run.
+  an installed product, profiles included (2026-08-30). The live path now needs
+  this product composed with a `motion-connectors` artifact, which makes it the
+  cross-repository test MIG-5 owes rather than a lane this repository can run
+  by itself.
 
 ### Carried out of Motion Phase G
 
@@ -181,11 +186,15 @@ API defects the move fixes on arrival, and they only exist once its nodes do.
 `motionCore` (MIG-1) and `motionRuntime` (MIG-2's first item, as
 `motionSampling` and `motionRecording`) have arrived in `usd-motion-plugins`
 with their history, and so have `vrmRetarget`'s generic half, `motionUsd`'s
-authoring half and the recorded sources (MIG-3). MIG-4 has started:
-`liveTransport` and `osc` have arrived in `motion-connectors`. This
-repository still builds its own copies: consuming a library from another
-repository waits on `ost`
-([report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+authoring half and the recorded sources (MIG-3). **MIG-4 is done on both sides (2026-09-21).** All six connector-bound
+identities arrived in `motion-connectors` — the two leaves, the tracker layer
+and the three adapters with their recorders — and this repository deleted its
+copies in one change, under [WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)
+rule 7. `ost` 0.23.2 is what made the cross-repository edge declarable
+([report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)),
+so MIG-1..MIG-3's consuming change — this repository resolving `motionCore` and
+the rest as installed packages — is unblocked and is the next thing the track
+owes.
 Until an identity moves, it takes fixes and the work v0.9.0 owes, and **no new
 generic capability** ([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
 

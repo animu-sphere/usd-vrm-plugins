@@ -31,7 +31,8 @@ own config sitting in the same prefix — and **all 17 CI lanes were green**,
 because the workspace build and `ost library build` both had `osc::osc` already
 defined as an alias in the same CMake project.
 
-The fix was per-adapter: each `check_boundaries.py` now cross-checks its link
+The fix was per-adapter (and the adapters have since left, with their checks,
+for `motion-connectors`): each `check_boundaries.py` cross-checks its link
 line against its config template, verified by injection in both directions. That
 closes the class for the three adapters and nowhere else, and it checks a
 *template against a link line* rather than a package against a consumer. The
@@ -215,49 +216,32 @@ this document of what `find_dependency(pxr)` is carrying.
 | `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | **measured** |
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
-| `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | **measured** |
-| `osc` | `osc::osc` | `include/osc/` | — | — | **no** | **measured** |
-| `motionTracking` | `motionTracking::motionTracking` | `include/motionTracking/` | `pxr`, `motionCore` | — | not yet | **measured** |
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
 and defines a `<NAME>_STATIC` compile definition `PUBLIC`, which a consumer
 inherits from the imported target and must not set by hand.
 
-**`motionTracking`'s row is the first whose *product* cell says neither yes nor
-no.** It is on the product side of [WORKSPACE.md §5](WORKSPACE.md)'s split — it
-names no product, opens nothing, and a product tool can link it, which is the
-question `osc` fails — and nothing links it **yet**, in or out of the product:
-§2's permission is `adapters/*/tools/* -> motionTracking` and no CLI has taken
-it, so this fixture is currently its only reader. A `no` there would read as the exclusion the
-two shared leaves carry, and a `yes` would claim a member that does not exist, so
-the cell says what is true.
+**Three rows left this table with MIG-4**, on 2026-09-21: `liveTransport`,
+`osc` and `motionTracking` are `motion-connectors`' `motionConnectorTransport`,
+`motionConnectorOsc` and `motionConnectorTracking` now
+([WORKSPACE.md §9.1](WORKSPACE.md)). Their measurements went with them and are
+not repeated here — what this document loses with them is stated rather than
+quietly dropped:
 
-**Its required-package cell changed on 2026-08-31, and it is the only cell that
-did.** Until VRC-5 the row was `osc`'s measurement repeated — three empty
-columns, no workspace edge, no `find_dependency` at all. The solve took the one
-edge [WORKSPACE.md §2](WORKSPACE.md) grants this library, so the config now
-carries `motionCore` and, with it, the `pxr` guard every row that names a Gf
-type carries. **The platform column stayed empty**, which is the half worth
-saying out loud: what this library gained is a value type, not an ability, and
-nothing here opens or waits on anything. Re-measured the same day from a
-`cmake --install` prefix — configure, build, link and **run**, against a prefix
-holding `motionCore` and nothing else of this workspace's.
-
-`osc`'s row is empty in three columns and that is the measurement rather than an
-oversight: one source file, two headers, no workspace edge and no platform
-library, which is why its archive is seven files where the transport leaf's is
-nine (WORKSPACE.md §5).
-
-It is also the first row in this document to say **measured**, on 2026-08-29,
-and it says so because an external consumer configured, built, linked and *ran*
-against it from a prefix holding those seven files and nothing else
-(`tests/consumer/osc/`, driven by `scripts/check_package_consumer.py`). Its
-empty edge set is what made it the right one to measure first: with no
-`find_dependency` to resolve, a failure could only have been the config file
-itself, so the run says something about the fixture as well as about the
-package. What it does *not* say is anything about criterion 6 — one host cannot
-answer whether three agree, and PKG-4's lane is where that column stops being
-about a workstation.
+- **the only platform difference it carried.** `liveTransport` was the one row
+  whose closure differed by platform (`ws2_32` on Windows, `Threads::Threads`
+  elsewhere), which is why four cells read *measured (Windows)* until PKG-4's
+  lane answered criterion 6. No row here differs by platform any more, so the
+  qualifier has no subject left in this workspace.
+- **the only empty-edge row.** `osc` was measured first *because* it had no
+  `find_dependency` at all, so a failure could only have been its own config
+  file. The argument in §5 about the order fixtures were taken in still holds
+  as history; the shape it started from is no longer here.
+- **the row whose product cell said neither yes nor no.** `motionTracking` was
+  on the product side of [WORKSPACE.md §5](WORKSPACE.md)'s split with nothing
+  linking it. Its reader exists now, and it is
+  [`vrchat_osc_record`](https://github.com/animu-sphere/motion-connectors/blob/main/tools/vrchatOscRecord) in the
+  repository that holds both.
 
 **`vrmContainer` already read *measured*, and now it is measured in the second
 of the two senses that word carries here.** Three bundles call
@@ -274,28 +258,6 @@ the `.dll` meets criteria 1–4 and exits `0xC0000135` on the line after them.
 This one did not: the prefix ships `bin/vrmContainer.dll` beside
 `lib/vrmContainer.lib`, criterion 2 names both, and the consumer ran with the
 prefix's own `bin` and `lib` on the loader path and nothing else.
-
-**`liveTransport`'s closure is exactly the one entry the table predicts, and a
-Windows run is the weaker half of its measurement.** `tests/consumer/liveTransport/`
-records a closure of `ws2_32` and nothing else — no workspace package, no
-threading target — which is the Windows side of the one documented platform
-difference in this document. The POSIX side is worth more, because there the
-same fixture verifies the *absence* of the socket link as well as the presence
-of the threading one, and no host can check both ([the track](../roadmap/packaging-hardening.md)
-PKG-5). The `Standalone` cell therefore says **measured (Windows)** rather than
-**measured**: an unqualified word there would claim a platform agreement that
-only PKG-4's lane can produce.
-
-*Which* call a fixture makes is a packaging decision for this row in a way it is
-not for the others. This is a static library, so the archive member carrying the
-platform's socket calls is linked only when the consumer needs it — a fixture
-that called the diagnostic vehicle alone would link a package whose platform
-link line was missing entirely and report criterion 4 met. The fixture therefore
-calls into `UdpReceiver`, and it calls the one thing there that needs no socket:
-`Receive` on a receiver that was never opened returns `Closed`. Nothing binds
-and no port is named, because a packaging fixture that took a port would go red
-on a host where something else already held it, which is a fact about the
-machine rather than about the package.
 
 **The motion layer's five packages are measured, and the chain matters more
 than the count.** `motionCore`, `motionRuntime`, `vrmRetarget`, `motionSource`
@@ -329,120 +291,43 @@ is the artifact's name and the namespace is the layer. A consumer finds that out
 from the header, which is one more reason criterion 4 requires including one
 rather than only linking.
 
-### 4.3 Adapters
+### 4.3 Adapters — retired 2026-09-21
 
-An adapter is a plain library under `adapters/`, never in the aggregate product
-(WORKSPACE.md §5), and its artifact carries its CLI with it.
+There is no adapter in this workspace. `vrmAdapterVmc`, `vrmAdapterMocopi` and
+`vrmAdapterVrchatOsc` left together with MIG-4 (the moving rule that sends them
+as a set, [WORKSPACE.md §9.2](WORKSPACE.md) rule 7) and are
+[`motionConnectorVmc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVmc),
+[`motionConnectorMocopi`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi) and
+[`motionConnectorVrchatOsc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc)
+now, each with its recorder under that repository's root `tools/`. The reserved
+`vrmAdapterArdy` row went with them: the generation adapter is created there.
 
-| Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
-| --- | --- | --- | --- | --- | --- | --- |
-| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
-| `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **measured** — including the raw-library half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113), on both POSIX platforms |
-| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `pxr`, `motionCore`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
-| `vrmAdapterArdy` | reserved | reserved | reserved | — | no | not applicable |
+Their rows said **measured**, and what those measurements established is worth
+keeping in one sentence each, because §5's argument below rests on them: five
+packages had to resolve before `vrmAdapterVmc`'s target existed, which is where
+§3's rule that a config declares its whole `PUBLIC` interface first had
+something behind it; `vrmAdapterVrchatOsc` reproduced §1's defect in its second
+shape, with the two edges answered at different stages — the transport leaf
+through the public header and the decoder only at the link; and
+`vrmAdapterMocopi` carried `ws2_32` twice over, once from its own transport edge
+and once, capitalised, from OpenUSD's `arch`, which is what a platform
+difference looks like when two providers name one library.
 
-`vrmAdapterVmc` is the second row to say **measured**, on 2026-08-29, and it is
-the first one measured with edges: five packages must resolve before its target
-links, and the consumer names none of them (`tests/consumer/vrmAdapterVmc/`).
-Three things that run said, none of which `osc` could have.
-
-**The closure a consumer inherits is fifteen entries, and four of them are this
-package's.** On Windows: `motionCore::motionCore`, `motionRuntime::motionRuntime`,
-`liveTransport::liveTransport`, `osc::osc`, OpenUSD's `arch`, `gf`, `tf`,
-`boost`, `python`, `TBB::tbb` and `Python3::Python`, and the platform names
-`Dbghelp.lib`, `Shlwapi.lib`, `Ws2_32.lib` and `ws2_32`. The last two are the
-same library spelled by two different providers — OpenUSD's `arch` writes it
-capitalised, `liveTransport` in lower case — and that pair is the clearest
-statement of what criterion 6 is for: on a POSIX host the second becomes
-`$<LINK_ONLY:Threads::Threads>` (§3 rule 4) and the first disappears with the
-rest of the Windows set, so this is a difference a lane must expect rather than
-a defect it should report. Nothing here reaches `vrmContainer`, `vrmSchema` or a
-sibling adapter, which is WORKSPACE.md §2 observed from outside the workspace
-for the first time.
-
-**Criterion 4 exercises three include roots, not one.** The header the fixture
-includes carries `motionCore/Humanoid.h` and two OpenUSD `Gf` headers into the
-consumer's translation unit, so a config that resolved this package's target and
-left a required package unresolved fails at the first `#include` rather than at
-link time. That is a property of *this* package's public headers rather than a
-rule, and it is why the fixture includes that header and not a self-contained
-one.
-
-**The §1 defect was reproduced in its own shape and caught.** Removing every
-`find_dependency` from the installed config is caught by whichever edge the
-closure walk reaches first — `motionCore`, here — which says nothing about the
-fifth. `--mutate no-dependency --dependency osc` removes exactly the block the
-OSC-3 fix added and leaves the other four, and criterion 3 refuses it by name:
-*`osc::osc` is on the link closure of `vrmAdapterVmc::vrmAdapterVmc` and no
-package has defined it*. That is the failure every one of the 17 lanes was
-structurally unable to produce.
-
-**`vrmAdapterVrchatOsc` gained `pxr` and `motionCore` on 2026-08-30, and the
-paragraph this replaces predicted it.** That paragraph said the two rows were
-absent because the library held no canonical value, that they would "arrive with
-the code that produces one", and that this table was where a reviewer should
-notice. VRC-3 is that code — the sender's axes into the canonical basis, which
-is a `GfVec3f` and a `GfQuatf` — so the row grew by two and the closure grew to
-reach OpenUSD's value-type layer.
-
-`motionRuntime` is still absent, and that absence is the same kind of statement
-the other two used to be: it is what an adapter takes when it produces a
-**pose**, and a tracker observation is pre-IK. It arrives with VRC-5's solve or
-it does not arrive at all.
-
-**Nothing here was caught by a check, and that is worth one sentence.**
-`scripts/check_docs.py` refuses a `*Config.cmake.in` with no row and a row
-naming no package; it does not compare a row's *required packages* against the
-`find_dependency` calls in the config it points at. This row was updated by
-hand, in the change that made it wrong, and the driver below is what proved the
-update rather than the review — since `check_package_consumer.py` reads this
-table to build the prefix, a row that under-states its edges installs too little
-and the consumer fails to configure. That is a good failure mode and not a
-substitute for the check.
-
-**The cell says *measured* because it was measured again**, on 2026-08-30 with
-the new edge in place: `python scripts/run_package_consumer_lane.py --package
-vrmAdapterVrchatOsc` on a Windows workstation, criteria 1–5 met, criterion 6
-left to PKG-4's lane. The closure it records is **fourteen** entries, where the
-pre-VRC-3 one reached no OpenUSD at all — `Dbghelp.lib`, `Python3::Python`,
-`Shlwapi.lib`, `TBB::tbb`, `Ws2_32.lib`, `arch`, `boost`, `gf`,
-`liveTransport::liveTransport`,
-`motionCore::motionCore`, `osc::osc`, `python`, `tf`, `ws2_32` — which is the
-same shape `vrmAdapterVmc`'s carries, double `ws2_32` spelling included: once
-from this package's transport edge and once, capitalised, from OpenUSD's `arch`.
-A measurement that was true about an older package is not a fourth value for
-this cell (§3), so re-running it was the requirement rather than the courtesy.
-
-**All three adapters are measured, and all three cells say *(Windows)*.** Every
-adapter inherits its platform dependency from `liveTransport`, which is the one
-row in this document whose closure differs by platform — so a Windows run of any
-of them is knowingly half of the measurement, and PKG-4's lane is the other
-half. `vrmAdapterVmc`'s cell was written before that qualifier existed and is
-corrected here; nothing about its measurement changed.
-
-**`vrmAdapterVrchatOsc` is the second half of the §1 defect, and it was
-reproduced in its own shape too.** `--mutate no-dependency --dependency osc`
-removes exactly the block the OSC-3 fix added to *this* config and leaves the
-transport edge in place, and criterion 3 refuses it by name. The same defect,
-in the same shape, in the second of the two packages that shipped it — and the
-fixture that catches it needs both of this package's edges, because they are
-answered at different stages: the transport leaf arrives through the public
-header and the decoder only at the link, where `InventoryAddresses` pulls it in.
-A fixture that built a capture and stopped would have measured one of the two.
-
-**`vrmAdapterMocopi`'s cell says *measured* rather than *stale*, and the
-difference is exactly one half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113).**
-Its closure is fourteen entries and carries `ws2_32` twice over: once from this
-package's own transport edge and once, capitalised, from OpenUSD's `arch` — the
-same double spelling `vrmAdapterVmc` records, which is what a platform
-difference looks like when two providers name one library. That is the
-imported-target half of the issue, now measured rather than predicted. The
-raw-library half is not, and cannot be here: on Windows the socket library is
-*present*, and what the issue is about is whether a POSIX host links the
-threading library and no socket one ([the track](../roadmap/packaging-hardening.md)
-PKG-5).
+An adapter's contract is `motion-connectors`' to state now. What this document
+keeps is the shape of the rule that governed them — a package outside the
+aggregate product, carrying its CLI in the same artifact — because
+[WORKSPACE.md §5](WORKSPACE.md)'s split is still this repository's, and the next
+identity that carries a producer's name will meet it again.
 
 ## 5. What "standalone" is worth without a lane
+
+**Read this section as dated.** Six of the rows it counts — the three shared
+leaves and the three adapters — left this workspace with MIG-4 on 2026-09-21
+and are `motion-connectors`' now (§4.2, §4.3). The counts, the platform
+qualifier and the adapter-CLI shape below are the record of what was measured
+here while they were here; the packages and their fixtures travelled with the
+code, and re-stating their numbers from this side would be a claim this
+repository can no longer make.
 
 **Measured** in the tables above is a statement about evidence, and as of
 2026-08-30 every row that carries a `find_package` contract has it: all twelve

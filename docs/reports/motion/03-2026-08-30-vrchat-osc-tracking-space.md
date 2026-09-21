@@ -24,14 +24,14 @@ are.
 
 | | |
 | --- | --- |
-| Source | the six 2026-08-30 captures, 44 918 datagrams, [session manifest](../../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json) |
+| Source | the six 2026-08-30 captures, 44 918 datagrams, [session manifest](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json) |
 | Takes read | `neutral-standing` · `head-turn` · `walk-root-motion`, plus all six for the ranges |
 | Measured by | a throwaway script over the capture files, as report 02 §3's cadence figures were |
-| Landed as | [`TrackingSpace.h`](../../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackingSpace.h) and its suite |
+| Landed as | [`TrackingSpace.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/TrackingSpace.h) and its suite |
 
 **None of these numbers is in the session manifest, deliberately.** That file
 holds readings taken by a shipped tool and nothing else
-([its README](../../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/manifests/README.md)),
+([its README](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/manifests/README.md)),
 and `vrchat_osc_record --inspect` counts messages rather than reading their
 values — so this report is where they live, exactly as report 02 §3's cadence
 figures do. What would change that is one feature: an `--inspect` that printed a
@@ -242,9 +242,9 @@ documentation standing in for a measurement.
 
 ## 3. What landed
 
-[`TrackingSpace.h`](../../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackingSpace.h),
+[`TrackingSpace.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/TrackingSpace.h),
 its implementation and
-[its suite](../../../adapters/liveCapture/vrchatOsc/tests/test_tracking_space.cpp).
+[its suite](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/test_tracking_space.cpp).
 Positions and rotations reach the canonical basis — right-handed, +Y up, +Z
 forward, metres — by VRM 1.0's reflection through X, `M v` and
 `(w, det(M) · M v)` for `M = diag(-1, 1, 1)`, which is the sibling adapter's

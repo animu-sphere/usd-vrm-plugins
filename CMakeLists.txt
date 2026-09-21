@@ -307,73 +307,28 @@ if(USDVRM_BUILD_TESTS AND TARGET ExecMotion AND TARGET ExecVrm
     add_subdirectory("tests/parity")
 endif()
 
-# The live half's shared leaf, before the adapters that link it and after
-# everything else — which is the whole of its position argument. It reaches no
-# workspace library at all (WORKSPACE.md §2 gives it an empty edge set), so it
-# could sit anywhere above the adapters; it sits here, immediately above them,
-# because the only targets that may name it are the ones added next. Nothing in
-# the aggregate product links a transport, and a reader scanning this file for
-# where that stops being true finds the boundary in one place.
-#
-# No OpenUSD, not even Gf: it holds a socket, a text file format, and a
-# diagnostic line, and names no value type.
-add_subdirectory("libs/liveTransport")
-
-# The other shared live leaf, and a sibling of the one above rather than a layer
-# of it: `osc` decodes a byte range and `liveTransport` delivers one, and
-# WORKSPACE.md §2 forbids an edge between them in **both** directions. The order
-# of these two lines therefore carries no meaning at all, which is worth saying
-# because every other pair of `add_subdirectory` lines in this file does.
-#
-# No OpenUSD and no platform library either -- not a socket, not a mutex. It is
-# the only leaf here whose link line is empty.
-add_subdirectory("libs/osc")
-
-# The assignment policy: which tracker is which body region (WORKSPACE.md §1).
-# A third leaf with an empty link line, and the first of the three that is on
-# the *product* side of §5's split — nothing here links it yet, and nothing has
-# to change for a product tool to.
-#
-# Its position in this file is not the transport pair's. It sits above the
-# adapters because an adapter's CLI may link it and the adapter library may not
-# (§2), so the target has to exist before those directories are added and be
-# refused inside them by their own boundary checks.
-#
-# No OpenUSD and no `motionCore`: a region is a mount point, and the day it
-# becomes a `HumanBone` alias assignment has become a lookup.
-add_subdirectory("libs/motionTracking")
-
-# Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
-# both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
-# libraries, not plugin bundles: an adapter registers nothing with OpenUSD.
-#
-# Added LAST, and that is the point. Every adapter is a leaf of the core, of the
-# OpenExec bundles, and of every other adapter, so nothing configured above may
-# name an adapter target; at this position CMake would fail on the unknown
-# target rather than quietly accept the inverted edge. CONFIGURE_DEPENDS
-# re-globs when an adapter is added or removed.
-file(GLOB _adapters LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE
-     "${CMAKE_CURRENT_SOURCE_DIR}/adapters"
-     "${CMAKE_CURRENT_SOURCE_DIR}/adapters/*/*")
-foreach(_adapter ${_adapters})
-    set(_adapterDir "${CMAKE_CURRENT_SOURCE_DIR}/adapters/${_adapter}")
-    if(IS_DIRECTORY "${_adapterDir}"
-       AND EXISTS "${_adapterDir}/openstrata.library.yaml"
-       AND EXISTS "${_adapterDir}/CMakeLists.txt")
-        message(STATUS "OpenStrata: adding input adapter 'adapters/${_adapter}'")
-        add_subdirectory("adapters/${_adapter}")
-    endif()
-endforeach()
+# The live half left with MIG-4. `liveTransport`, `osc`, `motionTracking` and
+# the three input adapters are `motion-connectors`' now, as
+# `motionConnectorTransport`, `motionConnectorOsc`, `motionConnectorTracking`
+# and the three `motionConnector*` connectors
+# ([WORKSPACE.md §9.1](docs/architecture/WORKSPACE.md), rule 7: they left
+# together). Nothing here links a transport, a wire format or a tracker
+# assignment any more, and the `adapters/` tree and its glob are gone with
+# them — a directory this file scanned for members it no longer has.
 
 # Every executable and file format the workspace ships, handed paths no ANSI
 # code page can spell and held to the same run from an ASCII directory. It is
 # the OpenExec plan's P0-2 "Windows Unicode paths" row and Product P3's Unicode
-# item. Registered here, after the adapters, because three of the seven
-# executables are adapter recorders and nothing above this line may name one.
+# item.
+#
+# **Four executables, where there were seven.** The three adapter recorders
+# left with MIG-4, and with them the three recorded captures this test opened
+# from a non-ASCII directory. What that costs is stated rather than absorbed:
+# the claim "every executable this workspace ships opens a non-ASCII path" is
+# now over four, and the recorders' half of it is `motion-connectors`' to make.
 if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
    AND TARGET motion_bvh_inspect AND TARGET motion_bvh_convert
    AND TARGET motion_retarget AND TARGET motion_capture
-   AND TARGET vmc_record AND TARGET mocopi_record AND TARGET vrchat_osc_record
    AND TARGET UsdVrmFileFormat AND TARGET UsdVrmaFileFormat
    AND TARGET UsdVrmPackageResolver AND EXISTS "${_real_avatar}")
     set(_unicode_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
@@ -387,18 +342,13 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
             --bvh-convert "$<TARGET_FILE:motion_bvh_convert>"
             --retarget "$<TARGET_FILE:motion_retarget>"
             --capture "$<TARGET_FILE:motion_capture>"
-            --vmc-record "$<TARGET_FILE:vmc_record>"
-            --mocopi-record "$<TARGET_FILE:mocopi_record>"
-            --vrchat-osc-record "$<TARGET_FILE:vrchat_osc_record>"
             --avatar "${_real_avatar}"
             --vrma "${_unicode_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
             --bvh-corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
             --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion"
-            --vmc-capture "${CMAKE_CURRENT_SOURCE_DIR}/adapters/liveCapture/vmc/tests/corpus/arm-raise-30hz.vmcpackets"
-            --mocopi-capture "${CMAKE_CURRENT_SOURCE_DIR}/adapters/liveCapture/mocopi/tests/corpus/neutral-standing-60hz.mocopipackets"
-            --vrchat-capture "${CMAKE_CURRENT_SOURCE_DIR}/adapters/liveCapture/vrchatOsc/tests/corpus/generated/rig-motion.vrchatoscpackets")
+            --trace "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionRuntime/tests/corpus/walk-clean-30hz.trace")
     # The three file-format bundles as their own suites load them, and the
-    # Python runtime the adapter recorders load through Gf.
+    # Python runtime the remaining tools load through Gf.
     set_tests_properties(workspace_unicode_paths PROPERTIES
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:${_unicode_python_dir};PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmaFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmPackageResolver>;PATH=path_list_prepend:${_unicode_plugins}/vrmSchema/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmaFileFormat/tests/resources/usdVrmaFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmPackageResolver/tests/resources/usdVrmPackageResolver;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_plugins}/vrmSchema/plugin/resources/vrmSchema"
@@ -407,7 +357,7 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
         LABELS "motion.integration;motion.real-corpus")
 else()
     message(STATUS
-        "usd-vrm-plugins: a tool, an adapter recorder or a file-format bundle "
+        "usd-vrm-plugins: a tool or a file-format bundle "
         "is not in this build tree; skipping workspace_unicode_paths")
 endif()
 
