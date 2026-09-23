@@ -95,6 +95,12 @@ v0.9.0; the capability ships on, from those packages. What stayed of
 bones — is `vrmRig` from the next release, and the retarget codes print as
 `MOTION_RETARGET_*`.
 
+**The capture-replay CLI is no longer shipped, as of 2026-09-23.**
+`motion_capture` left with MIG-4 and is `usd-motion-plugins`' `motion_record`.
+Its row below records what shipped here from v0.5.0 through v0.9.0. From the
+next release this product's archive carries no capture-replay tool. What stays
+is `motion_retarget` baking a clip that the recorder wrote.
+
 Its own status:
 
 | Component | Since | Status |

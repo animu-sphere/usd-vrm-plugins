@@ -92,6 +92,25 @@ Current schema contract version: **1**.
 
 ### Removed
 
+- **`motion_capture` left for `usd-motion-plugins`** (MIG-4, 2026-09-23). The
+  capture-replay CLI is that repository's `motion_record`, published in its
+  v0.5.0, and `tools/motionCapture` is gone with its member, its product entry,
+  its `motion.cli` directory and the three trace fixtures only its suite read.
+  From the next release the product archive carries two tools, `motion_retarget`
+  and `motion_bvh`.
+  - **The bake of a recorded session stays, over the recorder's own output.**
+    `motion_capture_replay` ended by baking its clip onto the design avatar
+    with `motion_retarget`. `ost` cannot consume another repository's tool, so
+    that leg is now `motion_retarget_design_triplet` baking
+    `recorded_session_clip.usda`: the stage the published `motion_record`
+    0.5.0 wrote from the corpus trace, byte for byte, with the archive digest
+    and the command in the fixtures' README. The skeleton query has to move;
+    a copy frozen at the first frame fails it.
+  - **The non-ASCII path claim moved first.** `workspace_unicode_paths` covers
+    three executables where it covered four. `motion_record_replay` now makes
+    the claim for the recorder
+    ([usd-motion-plugins #23](https://github.com/animu-sphere/usd-motion-plugins/pull/23)),
+    and it fails there when the tool is built without its UTF-8 manifest.
 - **MIG-0's vocabulary check** (2026-09-23): `workspace_motion_vocabulary`,
   its three near-miss cases, `scripts/check_motion_vocabulary.py` and the
   ledger. It scanned the headers that were leaving for VRM names, and the last

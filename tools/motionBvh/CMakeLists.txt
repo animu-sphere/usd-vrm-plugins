@@ -78,8 +78,8 @@ endif()
 # transitively, but no header this tool includes reaches those uses -- it
 # includes the syntax half only, and BvhExtract.h is where motionSource starts.
 
-# Staged into the member root's bin/, the way `motion_capture` and `vmc_record`
-# are: `ost plugin package` reads the directories openstrata.tool.yaml declares
+# Staged into the member root's bin/, the way `motion_retarget` is:
+# `ost plugin package` reads the directories openstrata.tool.yaml declares
 # rather than a build tree, so a tool that only lands in build/ is refused at
 # packaging with PRECONDITION_FAILED (report 33).
 set_target_properties(motion_bvh_inspect PROPERTIES

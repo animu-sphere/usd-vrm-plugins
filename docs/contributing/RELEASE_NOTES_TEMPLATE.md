@@ -23,8 +23,8 @@ VRMA motion clips as canonical `UsdSkelAnimation` data.
 | `usdVrmFileFormat-{version}-<target>.tar.zst` | `.vrm` importer bundle for `<target>` (lean) |
 | `usdVrmPackageResolver-{version}-<target>.tar.zst` | embedded-texture package resolver for `<target>` (lean) |
 | `usdVrmaFileFormat-{version}-<target>.tar.zst` | `.vrma` animation importer bundle for `<target>` (lean) |
-| `usd-vrm-plugins-{version}-<target>-plugin-product.tar.zst` | aggregate product archive containing the exact seven members: the four bundles above and three CLI tools |
-| `motion_retarget` · `motion_capture` · `motion_bvh` | tool members of the product archive — the retarget, capture-replay and BVH CLIs |
+| `usd-vrm-plugins-{version}-<target>-plugin-product.tar.zst` | aggregate product archive containing exactly the eight members `openstrata.toml` `release_members` names: the four bundles above, `execMotion`, `execVrm` and two CLI tools |
+| `motion_retarget` · `motion_bvh` | tool members of the product archive — the retarget and BVH CLIs |
 | `<bundle>-{version}-<target>.manifest.json` | OpenStrata manifest sidecar per bundle |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |
