@@ -216,6 +216,16 @@ Current schema contract version: **1**.
 
 ### Documentation
 
+- **[ost report 45](docs/reports/ost/45-2026-09-23-v0.23.3-a-tool-edge-arrives-and-a-bundle-tree-keeps-its-runtime.md)**,
+  written from the ecosystem's move to `ost` 0.23.3 and the two changes it
+  unblocked here: `motion_retarget` consuming `motionUsd` over an edge only a
+  tool declares, and MIG-3. Report 44's tool-edge P1 is delivered in full.
+  Its runtime-identity P1 is delivered for `ost build` only: `ost plugin
+  build` kept every bundle tree's old `pxr_DIR` and wrote the new runtime's
+  digest marker into it, which hides the stale tree from the check 0.23.3
+  added. Two P2s follow: `requires.bundles` has no artifact pin, so the
+  published `execMotion` cannot be consumed, and no descriptor can name
+  another repository's tool.
 - **[ost report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)**,
   written from the first real consumption of a cross-repository library
   artifact. `usd-motion-plugins` v0.5.0 published seven of them, and

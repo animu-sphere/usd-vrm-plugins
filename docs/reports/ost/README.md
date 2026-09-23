@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.23.2, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.23.3, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,8 +17,15 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 44 is the
-one to read first: 0.23.2 delivers report 43's P1, so a member's external
+The current `ost` ask list is always in the **newest** report. Report 45 is the
+one to read first: 0.23.3 delivers report 44's tool-edge P1 — an artifact only
+a tool declares is pulled, graphed and validated, and `motion_retarget`
+consumes `motionUsd` over it — and its runtime-identity P1 for the root build
+only. `ost plugin build` and `ost library build` still keep a tree configured
+against another runtime, and now stamp the new runtime's digest marker into it,
+so the check 0.23.3 added passes the stale tree afterwards. It also asks for an
+artifact pin on `requires.bundles` (the last MIG-2 item waits on it) and a way
+to consume a published tool. Report 44 is next: 0.23.2 delivers report 43's P1, so a member's external
 library edge now reaches the root build — every member kind's but a tool's. A
 tool descriptor's `requires.libraries` is neither materialized nor graphed nor
 validated, and a tool is the last consumer three migrating identities have. It
@@ -69,6 +76,7 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 45 | 2026-09-23 | [A tool edge arrives, and a bundle tree still keeps its runtime](45-2026-09-23-v0.23.3-a-tool-edge-arrives-and-a-bundle-tree-keeps-its-runtime.md) | 0.23.3 | The ecosystem pin to 0.23.3 (#221, usd-motion-plugins #24, motion-connectors #16, usd-mmd-plugins #21), `motionUsd` consumed through a tool-only edge (#221) and MIG-3 (#223). Report 44's tool-edge P1 is delivered: pull, root toolchain, graph (15 → 22 edges) and validation (a missing tool edge is exit 5). Its runtime P1 is delivered for `ost build` — an unmarked or mismatched root tree is discarded — but not for `ost plugin build`/`ost library build`, which kept every bundle tree's adopt `pxr_DIR` and wrote the artifact's digest marker into it. Also: `requires.bundles` has no artifact pin, so the published `execMotion` cannot be consumed; and no descriptor can name another repository's tool. **One live P1 + two P2s** |
 | 44 | 2026-09-23 | [A tool's library edge reaches nothing, and a build tree keeps the runtime it was born with](44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md) | 0.23.2 | MIG-2's retarget item (#218). Report 43's P1 is delivered: the root toolchain prepends every member's materialized external prefix, and the workspace builds and tests against four `usd-motion-plugins` packages. But a **tool** descriptor's `requires.libraries` is read by nothing: `library pull` skips an artifact only a tool declares, the graph carries no tool edge, and a tool naming a library that does not exist is `valid` — where the same misspelling in a bundle is `WORKSPACE_LIBRARY_DEPENDENCY_MISSING`. And the root tree had compiled against an adopted runtime since 2026-09-04 while `target.lock.json` recorded the pulled artifact: a cached `pxr_DIR` beats the toolchain's `pxr_ROOT`, and the build directory is keyed by target id, not runtime. Also `layout-complete` passes a runtime the OS emptied to four files. **Two live P1s + one P3** |
 | 43 | 2026-09-20 | [The root build cannot see an external library its own member declares](43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md) | 0.23.1 | The first real consumption of a cross-repository library artifact (`motion-connectors`' `motionConnectorTracking` on `usd-motion-plugins`' `motionCore`). Declaration, graph edge, pull and `ost library build` all work; the root `ost build` omits the materialized prefix from `CMAKE_PREFIX_PATH`, and every rendered workspace cell runs the root build. Plus a P3: a runtime-mismatch refusal does not say which runtime the artifact wants. **P1 delivered in 0.23.2 (see 44)** |
 | 42 | 2026-09-20 | [A runtime claim measured before the toolchain's own repair](42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md) | 0.23.0 | The 0.23.0 re-pin, taken for report 41's P1 (an artifact-pinned library dependency), which it delivers. The same upgrade turns every hosted Linux and Windows lane in three repositories red: `runtime validate`'s new `consumer-link` claim probes a materialized runtime before the baked-Python repair `ost configure` applies to the same prefix. The artifact is fine. **All three asks delivered in 0.23.1** |
