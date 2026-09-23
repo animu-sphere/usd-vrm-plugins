@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.22.10, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.23.2, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,9 +17,16 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 43 is the
-one to read first: the cross-repository library edge works everywhere except
-the one place a workspace's CI uses it. `ost library build` composes a
+The current `ost` ask list is always in the **newest** report. Report 44 is the
+one to read first: 0.23.2 delivers report 43's P1, so a member's external
+library edge now reaches the root build — every member kind's but a tool's. A
+tool descriptor's `requires.libraries` is neither materialized nor graphed nor
+validated, and a tool is the last consumer three migrating identities have. It
+also records that a build tree keeps the runtime it was first configured
+against: switch the runtime under it and `ost` records the new digest while
+CMake's cached `pxr_DIR` compiles against the old one. Report 43 is next: the
+cross-repository library edge worked everywhere except the one place a
+workspace's CI uses it. `ost library build` composes a
 member's external library artifact onto `CMAKE_PREFIX_PATH`; the root
 `ost build` of the same tree does not, and every rendered workspace cell runs
 the root build. Three repositories are waiting on that edge. Report 42 is
@@ -62,6 +69,9 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 44 | 2026-09-23 | [A tool's library edge reaches nothing, and a build tree keeps the runtime it was born with](44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md) | 0.23.2 | MIG-2's retarget item (#218). Report 43's P1 is delivered: the root toolchain prepends every member's materialized external prefix, and the workspace builds and tests against four `usd-motion-plugins` packages. But a **tool** descriptor's `requires.libraries` is read by nothing: `library pull` skips an artifact only a tool declares, the graph carries no tool edge, and a tool naming a library that does not exist is `valid` — where the same misspelling in a bundle is `WORKSPACE_LIBRARY_DEPENDENCY_MISSING`. And the root tree had compiled against an adopted runtime since 2026-09-04 while `target.lock.json` recorded the pulled artifact: a cached `pxr_DIR` beats the toolchain's `pxr_ROOT`, and the build directory is keyed by target id, not runtime. Also `layout-complete` passes a runtime the OS emptied to four files. **Two live P1s + one P3** |
+| 43 | 2026-09-20 | [The root build cannot see an external library its own member declares](43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md) | 0.23.1 | The first real consumption of a cross-repository library artifact (`motion-connectors`' `motionConnectorTracking` on `usd-motion-plugins`' `motionCore`). Declaration, graph edge, pull and `ost library build` all work; the root `ost build` omits the materialized prefix from `CMAKE_PREFIX_PATH`, and every rendered workspace cell runs the root build. Plus a P3: a runtime-mismatch refusal does not say which runtime the artifact wants. **P1 delivered in 0.23.2 (see 44)** |
+| 42 | 2026-09-20 | [A runtime claim measured before the toolchain's own repair](42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md) | 0.23.0 | The 0.23.0 re-pin, taken for report 41's P1 (an artifact-pinned library dependency), which it delivers. The same upgrade turns every hosted Linux and Windows lane in three repositories red: `runtime validate`'s new `consumer-link` claim probes a materialized runtime before the baked-Python repair `ost configure` applies to the same prefix. The artifact is fine. **All three asks delivered in 0.23.1** |
 | 41 | 2026-09-19 | [A library from another repository has no way into the graph](41-2026-09-19-v0.22.10-a-library-from-another-repository.md) | 0.22.10 | MIG-1 of the motion migration. `motionCore` now lives in `usd-motion-plugins`, and this repository must consume it as an installed package. A `LibraryDependency` is `{id, version}` resolved against sibling members only, so removing the library fails nine members with `WORKSPACE_LIBRARY_DEPENDENCY_MISSING`. Dropping the declaration lets `ost library build` find the external package through an ambient `CMAKE_PREFIX_PATH`, and hides the edge from the graph, `verify-consumer`, provenance and CI, so it is refused and MIG-1 waits. Also: an empty workspace cannot render CI (both new repositories), and report 37's Python-paths P1 reproduced in `usd-motion-plugins`' installed-consumer lane on hosted Linux and Windows. **Live P1 + one P3** |
 | 40 | 2026-09-13 | [One workspace prefix answers for every bundle, and the last build decides what it holds](40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md) | 0.22.8, 0.22.10 | The first run of the OpenExec bundles from the installed product could not open a `.vrm`: the product carried no `vrmContainer` binary at all. `ost plugin build` rebuilds one shared `workspace-prefix` from each bundle's own closure, and `plugin package` / `plugin test --workspace` stage every bundle's library runtime out of it, counting a library as staged when its *directory* exists — so the product carries the last-built bundle's closure while every `dependencies.json` records `vrmContainer` as present. Our release loop has ended with an exec bundle (static libraries only) since 2026-09-06, with no release run since. Reproduced on a fresh clone with 0.22.10; reordering the loop alone reverses it (pyramid 3/6 fail → 6/6). Workaround plus a record-vs-bytes check in `release.yml`; and, once the product carried its libraries, all five parity cases held bit for bit from it. **Live P1 + two P3s** |
 | 39 | 2026-09-01 | [The release lane's first execution was three releases late](39-2026-09-01-v0.22.8-release-lane-first-execution.md) | 0.22.8 | v0.8.0 release preparation. The `workflow_dispatch` dry run the checklist puts in front of the tag went red on all three OS at the same step — and the defect is **ours**: a jq expression that asks a membership array for a `.name` field, in a step rewritten around `.data.release_members` when that field arrived in 0.22.3, *after* the last tag. No `pull_request` event runs `release.yml`, so it had never once executed. Found beside it: the lane still bootstrapped 0.22.6 while the contract had moved to 0.22.8 two days earlier, with the runtime digests correctly mirrored — a partial divergence, which is the harder kind to see. What behaved: `preflight`, and every 0.22.3 deliverable the step consumes (`release_members` = 7 of 10 packages, `product.members` = 7). Report 38's **P2 now carries two receipts** — a lane that cannot be generated is a lane that cannot be exercised — plus a P3 asking `ci validate` to know what it does not own |
