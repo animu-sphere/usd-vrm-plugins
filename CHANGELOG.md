@@ -288,6 +288,15 @@ Current schema contract version: **1**.
 
 ### Documentation
 
+- **[ost report 46](docs/reports/ost/46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md)**,
+  written from the ecosystem's move to `ost` 0.23.4 and a scratch rehearsal of
+  deleting `plugins/execMotion`. All three of report 45's asks are delivered,
+  and the parity rows pass against a consumed `execMotion` inside an
+  `ost plugin run` session. The new bundle and tool pins do not reach the root
+  build, though, and every suite here that composes them is a root CTest suite,
+  so the deletion waits on that (P1). The report also corrects report 45 §5:
+  `usd-motion-plugins` v0.5.0 attached the bundle to its release without
+  pushing it to a registry.
 - **[ost report 45](docs/reports/ost/45-2026-09-23-v0.23.3-a-tool-edge-arrives-and-a-bundle-tree-keeps-its-runtime.md)**,
   written from the ecosystem's move to `ost` 0.23.3 and the two changes it
   unblocked here: `motion_retarget` consuming `motionUsd` over an edge only a
