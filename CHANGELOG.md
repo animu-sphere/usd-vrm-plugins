@@ -200,6 +200,20 @@ Current schema contract version: **1**.
   which is the shape of the consuming change this repository is about to make
   ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
+### Fixed
+
+- **The release lane could not package the product since MIG-4.**
+  `openstrata.toml`'s `release_exclude` still named `mocopi_record`,
+  `vmc_record` and `vrchat_osc_record`, the three adapter CLIs that left for
+  `motion-connectors` on 2026-09-21, and `ost plugin package --workspace
+  --product` refuses an exclusion naming a member it does not discover:
+  `AGGREGATE_MEMBERSHIP_MISMATCH: workspace.release_exclude names undiscovered
+  member(s)`. No pull-request lane packages the product, so every PR since was
+  green and the next tag would have been the first to fail. The list is empty
+  now. Measured locally with the release lane's own order — root `ost build`,
+  each bundle's `ost plugin build`, then the product package and its
+  artifact-only exec smoke.
+
 ### Documentation
 
 - **[ost report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)**,

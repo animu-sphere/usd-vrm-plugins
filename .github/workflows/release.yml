@@ -29,8 +29,10 @@
 # 0.22.x does discover them, and the bootstrap pin below is 0.23.2 now. What
 # keeps the adapter CLIs out of the product is therefore no longer the
 # toolchain version but `[workspace].release_exclude` in openstrata.toml, which
-# names the three of them and makes `ost` itself fail with
-# AGGREGATE_MEMBERSHIP_MISMATCH before this step runs. The product was seven
+# named the three of them and made `ost` itself fail with
+# AGGREGATE_MEMBERSHIP_MISMATCH before this step runs. The adapters left with
+# MIG-4 and the list is empty: `ost` refuses an exclusion naming a member it
+# does not discover, which stopped this lane's packaging until it was emptied. The product was seven
 # members through v0.8.0, eight once execMotion joined it and nine since
 # execVrm did -- which is exactly why no number is written down here, only in
 # openstrata.toml.
