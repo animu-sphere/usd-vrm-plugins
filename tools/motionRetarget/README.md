@@ -21,9 +21,9 @@ rig is actually driven rather than sitting at rest.
 
 ## The stage boundary lives here
 
-This is the motion layer's **only** stage-aware component. `vrmRetarget`,
-`motionRuntime`, and `motionCore` take and return plain values and never open a
-stage ([WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §2). The split is
+This is the motion layer's **only** stage-aware component. `motionRetarget`,
+`vrmRig`, `motionSampling` and `motionCore` take and return plain values and
+never open a stage ([WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §2). The split is
 what lets `execVrm` wrap the retarget core later instead of reimplementing it,
 and what lets a future live-capture source reuse it with no stage at all.
 
@@ -81,7 +81,7 @@ tool says so and exits 4 when it does not.
 A clip carries expression weights by name and an avatar carries the binds those
 names mean — N morph targets across M meshes, plus material colours. When both
 are present the bake resolves one against the other
-([`vrmRetarget::ExpressionResolver`](../../libs/vrmRetarget/README.md)) and
+([`vrmRig::ExpressionResolver`](../../libs/vrmRig/README.md)) and
 authors the result as `blendShapes` and `blendShapeWeights` on the same
 `SkelAnimation` the joints are on:
 
@@ -138,7 +138,7 @@ A clip names a *place* the character is looking at, not a direction, because a
 direction is only meaningful next to a head and where the head sits belongs to
 the avatar. So the bake evaluates the clip's `vrm:lookAtTarget` against the
 avatar's own `/Asset/rig/LookAt`
-([`vrmRetarget::LookAtEvaluator`](../../libs/vrmRetarget/README.md)) — the head
+([`vrmRig::LookAtEvaluator`](../../libs/vrmRig/README.md)) — the head
 transform the body half just produced, plus the rig's `offsetFromHeadBone`, its
 four range-map curves and its type.
 
@@ -203,11 +203,11 @@ Each of those is one line in a frozen code's format, one line per bone or joint
 diagnostics"):
 
 ```text
-motion_retarget: [VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable subject=upperChest: the clip drives it and the target rig binds no joint for it
+motion_retarget: [MOTION_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable subject=upperChest: the clip drives it and the target rig binds no joint for it
 ```
 
 Match the code and the subject, not the sentence after them. A refused
-`--output` that names an input is `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`.
+`--output` that names an input is `MOTION_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`.
 
 The same holds for the face: expressions the clip animates and this avatar does
 not declare, weights clamped from outside `[0, 1]`, blend shapes no mesh binds,

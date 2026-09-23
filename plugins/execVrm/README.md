@@ -6,27 +6,28 @@ schema contract only. Workspace Phase 8 / Motion Phase E; the plan is
 §6, P0-5.
 
 **The rig, one sample of a clip on it, and what the retarget said.** It
-registers seven value types -- six of `vrmRetarget`'s, and `execMotion`'s
+registers seven value types -- six of `motionRetarget`'s, and `execMotion`'s
 `motion::MotionPose`, which a bundle that reads a type has to register itself
 -- and nine computations:
 
 | Computation | Provider | Result |
 | --- | --- | --- |
-| `vrm.computeTargetSkeleton` | a `UsdSkelSkeleton` prim | the `vrmRetarget::TargetSkeleton` its `joints` and `restTransforms` state: tokens verbatim, parents from the joint paths, each rest transform decomposed into a rotation and a translation with **scale and shear dropped** |
-| `vrm.computeHumanoidMap` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::HumanoidMap` its `vrm:humanBones:*` tokens state, resolved against the one skeleton `vrm:skeleton` reaches |
-| `vrm.computeRestPoseCorrection` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RestPoseCorrection` from the rest pose of the skeleton `vrm:retarget:sourceSkeleton` reaches onto this humanoid's rig, through its map |
+| `vrm.computeTargetSkeleton` | a `UsdSkelSkeleton` prim | the `openstrata::motion::SkeletonDescriptor` its `joints` and `restTransforms` state: tokens verbatim, parents from the joint paths, each rest transform decomposed into a rotation and a translation with **scale and shear dropped** |
+| `vrm.computeHumanoidMap` | a prim with `VrmHumanoidAPI` applied | the `openstrata::motion::RetargetMap` its `vrm:humanBones:*` tokens state, resolved against the one skeleton `vrm:skeleton` reaches |
+| `vrm.computeRestPoseCorrection` | a prim with `VrmHumanoidAPI` applied | the `openstrata::motion::RestPoseCorrection` from the rest pose of the skeleton `vrm:retarget:sourceSkeleton` reaches onto this humanoid's rig, through its map |
 | `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::MotionPose` `execMotion`'s `motion.sampleAnimation` answers on the animation the skeleton is bound to -- its own `skel:animationSource`, or else an ancestor's -- forwarded |
 | `vrm.computeBindingPose` | a prim with `UsdSkelBindingAPI` applied | the same, for the animation that prim binds at or beneath it, or else its nearest such ancestor's: UsdSkel's inherited binding, one prim per step |
-| `vrm.humanoidRetarget` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetedPose`: one sample of the clip `vrm:retarget:sourceSkeleton` reaches, in this rig's joint order, under the humanoid's root-motion statements |
-| `vrm.computeJointLocalTransforms` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::JointLocalTransforms`: that retargeted sample in the shape a `UsdSkelAnimation` states at one time code -- the rig's `joints`, the pose's translations and rotations, and one `(1, 1, 1)` scale per joint |
-| `vrm.computeRigDiagnostics` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetDiagnostics` the rig and its map raise for any retarget onto them -- `DiagnoseRig`, under the humanoid's root-motion statements; no clip read |
-| `vrm.computeRetargetDiagnostics` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetDiagnostics` retargeting this sample raised: the rig's list, then the pose's own |
+| `vrm.humanoidRetarget` | a prim with `VrmHumanoidAPI` applied | the `openstrata::motion::RetargetedPose`: one sample of the clip `vrm:retarget:sourceSkeleton` reaches, in this rig's joint order, under the humanoid's root-motion statements |
+| `vrm.computeJointLocalTransforms` | a prim with `VrmHumanoidAPI` applied | the `openstrata::motion::JointLocalTransforms`: that retargeted sample in the shape a `UsdSkelAnimation` states at one time code -- the rig's `joints`, the pose's translations and rotations, and one `(1, 1, 1)` scale per joint |
+| `vrm.computeRigDiagnostics` | a prim with `VrmHumanoidAPI` applied | the `openstrata::motion::RetargetDiagnostics` the rig and its map raise for any retarget onto them -- `DiagnoseRig`, under the humanoid's root-motion statements; no clip read |
+| `vrm.computeRetargetDiagnostics` | a prim with `VrmHumanoidAPI` applied | the `openstrata::motion::RetargetDiagnostics` retargeting this sample raised: the rig's list, then the pose's own |
 
 `vrm.computeBoundPose` and `vrm.computeBindingPose` are not among the plan's
 five: they are the second hop from a humanoid to its clip's animation, which an
 exec input cannot make, and UsdSkel's inheritance of that hop. The two
 diagnostics computations are not among them either: they are P0-6's
-diagnostics row, answering P1-1's frozen `VRM_RETARGET_*` codes as values.
+diagnostics row, answering P1-1's frozen retarget codes as values
+(`MOTION_RETARGET_*` since the retarget is consumed; `VRM_RETARGET_*` before).
 
 ## Two schemas, and one of them is another bundle's
 
@@ -139,7 +140,7 @@ them, both ways, with the properties the schema's own prim definition lists.
 
 ## The clip's rest, and the correction onto this rig
 
-`vrm.computeRestPoseCorrection` is `vrmRetarget::ComputeRestPoseCorrection`
+`vrm.computeRestPoseCorrection` is `openstrata::motion::ComputeRestPoseCorrection`
 over three inputs: the humanoid's own map, the target rig across `vrm:skeleton`,
 and the rig a clip was authored against, across **`vrm:retarget:sourceSkeleton`**.
 That relationship is defined by no schema. It is a convention of this bundle,
@@ -171,7 +172,7 @@ refusal came first.
 
 ## One sample of the clip, on this rig
 
-`vrm.humanoidRetarget` is `vrmRetarget::PoseRetargeter` over the rig, the map,
+`vrm.humanoidRetarget` is `openstrata::motion::PoseRetargeter` over the rig, the map,
 the clip's rest and the root-motion options, asked for **one** pose: the clip's
 own sample at the evaluated frame. It is reached from the humanoid through
 `vrm:retarget:sourceSkeleton` to the clip's skeleton, then through its
@@ -252,7 +253,7 @@ It is a question P1-2 has to answer
 
 ## What the retarget said
 
-A retarget reports what it could not honour as P1-1's frozen `VRM_RETARGET_*`
+A retarget reports what it could not honour as P1-1's frozen `MOTION_RETARGET_*`
 codes ([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md), "Retarget
 diagnostics"), and the codes are a value here, not a warning a caller of
 `Compute` never sees. Two computations answer them, split where the library
@@ -338,7 +339,7 @@ again through the built bundles.
 
 `vrm.computeJointLocalTransforms` wraps no call: what it adds is the bake's
 shape, which is stated offline only in two lines of `motion_retarget`'s
-`WriteAnimation`. `vrmRetarget` gained the type for the registry, and the rule
+`WriteAnimation`. The retarget library gained the type for the registry, and the rule
 stays two lines here and two in the tool. The ask is that the tool author from
 the library's value.
 
@@ -360,17 +361,18 @@ included. Asked for beside the joint transforms, that adds 23 µs a frame on the
 §6).
 
 Reading a clip's rest off its skeleton — which joint fills which bone, and which
-bone is its parent — exists only in `tools/motionRetarget`'s `ReadClip`, so that
-assignment is in the seam too; the decomposition under it is
-`vrm.computeTargetSkeleton`'s. The ask is the same as for the skeleton: a
-`SourceRestPose` built from a semantic skeleton's tokens and rests, beside the
-struct.
+bone is its parent — is `motionRetarget`'s `BuildSourceRestPose` since
+2026-09-23, which this seam and `tools/motionRetarget`'s `ReadClip` both call;
+the decomposition under it is `vrm.computeTargetSkeleton`'s. Until then it
+existed only in the tool and the seam carried a copy, which is what the ask
+for a `SourceRestPose` built from a semantic skeleton's tokens and rests was
+about.
 
-`vrm.computeTargetSkeleton` is a library call end to end since v0.9.0:
-`TargetSkeleton` and `ResolveParentsFromTokens` are `vrmRetarget`'s, and so is
-`DecomposeRestTransform`, which turns a rest matrix into the rotation,
-translation and scale a `TargetJoint` carries and which `motion_retarget` calls
-too. It arrived with the scale policy, because carrying the rest scale in two
+`vrm.computeTargetSkeleton` is a library call end to end:
+`BuildSkeletonDescriptor` is `motionRetarget`'s since 2026-09-23, and so are
+`SkeletonDescriptor`, `ResolveParentsFromTokens` and `DecomposeRestTransform`,
+which turns a rest matrix into the rotation, translation and scale a
+`SkeletonJoint` carries; `motion_retarget` calls the same builder. It arrived with the scale policy, because carrying the rest scale in two
 copies of the decomposition would have been a parity difference waiting to
 happen. What remains of the ask for
 [boundary consolidation](../../docs/roadmap/boundary-consolidation.md) is
@@ -379,8 +381,8 @@ reading the tokens and matrices off a skeleton, which is a stage read.
 ## How a computation refuses
 
 `execMotion`'s way: a `TF_RUNTIME_ERROR` naming the computation, and **no value
-at all** (`VdfContext::SetEmptyOutput`). An empty `TargetSkeleton`, an empty
-`HumanoidMap` and an all-identity `RestPoseCorrection` are all answers — a
+at all** (`VdfContext::SetEmptyOutput`). An empty `SkeletonDescriptor`, an empty
+`RetargetMap` and an all-identity `RestPoseCorrection` are all answers — a
 skeleton authoring `joints = []`, a humanoid binding nothing, two rigs with the
 same rest — so none of them can stand for a refusal. A refusal propagates: a
 skeleton that refused leaves the map a fan-in with nothing in it, the map
@@ -406,7 +408,8 @@ pose nothing, and the retarget refuses after it.
 ([its README](../execMotion/README.md#how-the-rules-are-checked)). It uses that
 check's snapshot-rule tables, imported along the one edge the two bundles may
 have. What it adds is this bundle's own: the links it may have are `motionCore`,
-`motionRuntime` and `vrmRetarget`, and nothing of `vrmSchema`. No GLB parser or
+`motionSampling`, `motionRecording`, `motionRetarget` and `vrmRig`, and nothing
+of `vrmSchema`. No GLB parser or
 importer may be named in the source. The binary imports neither `vrmSchema` nor
 `execMotion`. No schema may be declared that `execMotion`'s `plugInfo.json`
 declares.

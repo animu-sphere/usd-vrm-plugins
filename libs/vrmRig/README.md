@@ -1,59 +1,56 @@
-# vrmRetarget
+# vrmRig
 
-The offline retarget core: it takes a clip of semantic humanoid poses and
-expands it into a specific rig's joint order, correcting for the two rigs'
-differing rest poses and resolving where root motion lands. It resolves the
-clip's *expressions* onto the same rig as well — a named weight becomes the
-blend-shape weights and material colours that name means on this avatar — and
-its *gaze*: the place a clip looks at becomes this rig's eye rotations, or the
-four gaze expressions an expression-driven rig aims with instead.
+What a VRM rig adds to a retarget, and none of it retargets. The retarget
+itself — expanding semantic humanoid poses into one rig's joint order,
+correcting for the two rigs' rest poses, resolving where root motion lands — is
+`usd-motion-plugins`' [`motionRetarget`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/libs/motionRetarget),
+consumed here as a published package. This library is the three things that
+only a VRM avatar knows:
 
-`vrmRetarget` is a **plain static CMake library**, not a plugin bundle. It has
-no `plugInfo.json`, no `openstrata.plugin.yaml`, and — the load-bearing
-constraint — **no OpenExec dependency**: the retarget core is complete and
-testable before any exec node exists (motion policy §10.1, §18.12), so
-`execVrm`'s future `HumanoidRetarget` node is a thin wrapper over this, not a
-reimplementation. See [WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §1–2,
-enforced by [`tests/check_boundaries.py`](tests/check_boundaries.py).
+- **the bones a VRM 1.0 avatar must bind**, which every caller here hands the
+  retarget, because `motionRetarget` holds no required set of its own;
+- **the clip's expressions**, resolved onto the rig — a named weight becomes the
+  blend-shape weights and material colours that name means on this avatar;
+- **its gaze** — the place a clip looks at becomes this rig's eye rotations, or
+  the four gaze expressions an expression-driven rig aims with instead.
 
-Workspace Phase: **6b** · Motion Phase: **C** (both land in v0.4.0).
+It was the VRM half of `vrmRetarget` until 2026-09-23, when the generic half
+left for `usd-motion-plugins` along the line
+[WORKSPACE.md §9.5](../../docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)
+draws; the name went with the half that retargets.
+
+`vrmRig` is a **plain static CMake library**, not a plugin bundle. It has no
+`plugInfo.json`, no `openstrata.plugin.yaml`, and — the load-bearing constraint
+— **no OpenExec dependency** (motion policy §10.1, §18.12). Its one edge beyond
+OpenUSD's value libraries is `motionCore`: the VRM half includes nothing from
+the generic half, and [`tests/check_boundaries.py`](tests/check_boundaries.py)
+forbids every other `usd-motion-plugins` package so that the line stays drawn.
+See [WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §1–2.
 
 ## It never opens a stage
 
-The target rig arrives as plain values — `TargetSkeleton`, a `HumanoidMap`, a
-`SourceRestPose` — not as a `UsdSkelSkeleton`. Reading those off a stage is the
-caller's job ([`tools/motionRetarget`](../../tools/motionRetarget/) does it for
-the CLI). That keeps the core testable without USD composition and usable by a
-live source that has no stage at all.
+The rig arrives as plain values — an `ExpressionRig`, a `LookAtRig` — not as
+prims. Reading those off a stage is the caller's job
+([`tools/motionRetarget`](../../tools/motionRetarget/) does it for the CLI).
+That keeps the library testable without USD composition and usable by a live
+source that has no stage at all.
 
 ## What it provides
 
 | Header | Contents |
 | --- | --- |
-| `vrmRetarget/TargetSkeleton.h` | `TargetJoint`, `TargetSkeleton` — joint tokens, parents derived from `a/b/c` joint paths, decomposed rest transforms with their scale, and `DecomposeRestTransform`, the one decomposition both the tool and `execVrm` call |
-| `vrmRetarget/HumanoidMap.h` | `HumanoidMap` — human bone → target joint index, plus missing-required-bone and duplicate-binding reporting |
-| `vrmRetarget/RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` |
-| `vrmRetarget/RootMotionPolicy.h` | `RootMotionMode` (`Ignore` / `Hips` / `RootJoint`), `RootMotionOptions`, `ResolveRootTranslation` |
-| `vrmRetarget/PoseRetargeter.h` | `PoseRetargeter`, `RetargetedPose`, `RetargetedAnimation`, `JointLocalTransforms` (one retargeted sample in a `UsdSkelAnimation`'s shape, scales included), `DiagnoseRig` |
-| `vrmRetarget/Diagnostics.h` | the frozen `VRM_RETARGET_*` codes (`RetargetDiagnosticCode`) and their table, `RetargetDiagnostic`, `RetargetDiagnostics` — five codes this library raises and three only a caller holding a stage can |
-| `vrmRetarget/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
-| `vrmRetarget/LookAtEvaluator.h` | `LookAtRangeMap`, `LookAtCurveKey`, `LookAtType`, `LookAtRig`, `ParseLookAtRangeMaps`, `LookAtHead`, `LookAtInput`, `LookAtEvaluator`, `ResolvedLookAt`, `LookAtDiagnostics` |
+| `vrmRig/RequiredBones.h` | `GetRequiredBones` — VRM 1.0's seventeen required humanoid bones, hips first, which a caller passes as `motionRetarget`'s `RetargetOptions::requiredBones` |
+| `vrmRig/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
+| `vrmRig/LookAtEvaluator.h` | `LookAtRangeMap`, `LookAtCurveKey`, `LookAtType`, `LookAtRig`, `ParseLookAtRangeMaps`, `LookAtHead`, `LookAtInput`, `LookAtEvaluator`, `ResolvedLookAt`, `LookAtDiagnostics` |
 
-## Six decisions worth knowing
+## Four decisions worth knowing
 
-- **Joint names are never guessed.** A binding comes from the avatar's
-  `vrm:humanBones:<bone>` or from an explicit map file. Name heuristics are
-  exactly the silent mis-retarget this contract exists to prevent, so a bone
-  the caller did not bind stays unmapped and is *reported*, not inferred.
-- **Rest-pose correction preserves the world delta.** With source rest `S`,
-  source parent rest `Sp`, target rest `T`, and target parent rest `Tp`, the
-  bone's world rotation away from its own rest is what survives the change of
-  rig; the closed form falls out of equating the two deltas, and a unit test
-  checks the invariant directly rather than the formula.
-- **Root motion carries a delta, not a height.** The hips translation is
-  applied relative to each rig's own rest translation, so a clip authored on a
-  1.0 m rig drives a 1.6 m one without the avatar snapping to the source's hip
-  height. `preserveTargetHeight` drops the vertical component entirely.
+- **The required set is the caller's statement, and a VRM caller always makes
+  it.** The joint vocabulary carries no required-bone rule, so `motionRetarget`
+  requires nothing but the hips under `Hips` root motion. A caller that forgets
+  this set gets no error, only a rig that lacks a VRM 1.0 bone reported as
+  whole — which is why `execVrm` and `motion_retarget` both pass it and their
+  suites fail when either stops.
 - **An expression joins on its name, and a reported zero is not silence.** The
   key is `vrm:expressionName` — the name the source VRM spelled — because the
   two sides sanitize prim names with private tables and a Japanese or colliding
@@ -94,10 +91,8 @@ live source that has no stage at all.
   through a second one. All four names are reported every sample, zeros
   included, for the reason a reported zero is authored above.
 
-Unmapped joints keep their rest transform, so a clip that drives only part of a
-rig leaves the rest of it alone instead of collapsing it to identity. Resolving
-expressions produces values and authors nothing: writing `blendShapeWeights`
-onto a stage is the caller's job, and
+Resolving expressions produces values and authors nothing: writing
+`blendShapeWeights` onto a stage is the caller's job, and
 [`motion_retarget`](../../tools/motionRetarget/README.md) is the caller that
 does it — it reads the binds off the avatar, hands them here, and authors what
 comes back onto the animation it already binds to the rig.
@@ -107,8 +102,7 @@ comes back onto the animation it already binds to the rig.
 It builds as part of the workspace root `CMakeLists.txt`. Standalone:
 
 ```bash
-cmake -S libs/vrmRetarget -B build/vrmRetarget \
-      -DCMAKE_PREFIX_PATH="<usd-install>;<motionCore-install>;<motionRuntime-install>"
-cmake --build build/vrmRetarget
-ctest --test-dir build/vrmRetarget --output-on-failure
+cmake -S libs/vrmRig -B build/vrmRig       -DCMAKE_PREFIX_PATH="<usd-install>;<motionCore-install>"
+cmake --build build/vrmRig
+ctest --test-dir build/vrmRig --output-on-failure
 ```

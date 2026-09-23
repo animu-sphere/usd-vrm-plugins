@@ -93,7 +93,7 @@ $ motion_retarget --motion canonical.usda --avatar avatar.vrm --output result.us
 
 That split is what makes one recording reusable across avatars, separates a
 parsing failure from a retarget failure, and keeps this tool free of VRM schema
-details — the source-rest-to-target-rest correction belongs to `vrmRetarget`,
+details — the source-rest-to-target-rest correction belongs to `motionRetarget`,
 which v0.4.0 already shipped, and a converter that applied it would be a second
 one ([§4, §5](../../docs/roadmap/recorded-motion-sources.md)).
 
@@ -172,7 +172,7 @@ link line and the source, both of which say the same thing on every platform.
 The two executables have two different boundaries and the check is run twice,
 once per target. `motion_bvh_convert` is invoked with `--crossing`: it may
 author a stage and name the humanoid vocabulary, and it still may not name
-`vrmRetarget` or `vrmSchema`, because the target avatar is the one thing this
+`motionRetarget` or `vrmSchema`, because the target avatar is the one thing this
 layer never binds to. The set of files each rule applies to is read out of that
 target's `add_executable` call, so a source moved between the two executables
 cannot keep the permissions of the one it left, and a source compiled by neither

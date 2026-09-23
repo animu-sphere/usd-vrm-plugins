@@ -189,13 +189,18 @@ with their history, and so have `vrmRetarget`'s generic half, `motionUsd`'s
 authoring half and the recorded sources (MIG-3). **MIG-1 and MIG-2's library half is done too (2026-09-21).** `motionCore` and
 `motionRuntime` are consumed packages: `motionCore`, `motionSampling` and
 `motionRecording` from `usd-motion-plugins` v0.5.0, pinned by digest per target
-in five descriptors, with the whole suite green against them. What is left of
-the consuming side is three items, and each waits on something specific:
-`motionSource` / `motionBvh` and the BVH tools wait on `ost` materializing an
-external artifact a **tool** declares; `execMotion` waits on that repository
-publishing a bundle artifact, without which the parity rows cannot be re-run
-against the consumed package before the copy here is deleted; and
-`vrmRetarget`'s generic half waits on neither and is next.
+in five descriptors, with the whole suite green against them.
+**So is the retarget (2026-09-23)**: `vrmRetarget`'s generic half is the
+consumed `motionRetarget`, both builder copies are calls to it, every parity
+row came out identical, and what stayed is `vrmRig`
+([the track §4](motion-foundation-split.md#4-mig-2--sampling-retarget-usd-bridge-)).
+What is left of the consuming side waits on two specific things.
+`motionSource` / `motionBvh` with the BVH tools, and `motionUsd` in place of
+`StageIo`'s reading half, wait on `ost` materializing an external artifact
+that only a **tool** declares: `motion_bvh` and `motion_retarget` are the one
+consumer each has left here. `execMotion` waits on that repository publishing
+a bundle artifact, without which the parity rows cannot be re-run against the
+consumed package before the copy here is deleted.
 
 **MIG-4 is done on both sides (2026-09-21).** All six connector-bound
 identities arrived in `motion-connectors` — the two leaves, the tracker layer

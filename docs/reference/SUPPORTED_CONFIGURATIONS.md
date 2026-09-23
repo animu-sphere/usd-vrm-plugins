@@ -149,8 +149,10 @@ dependency-direction gate before anything is built.
 The file-format plugins are **shared** libraries
 (`libUsdVrmFileFormat.{dll,so,dylib}` and
 `libUsdVrmaFileFormat.{dll,so,dylib}`) — USD loads them dynamically. There is
-no supported static-plugin build. `motionCore`, `motionRuntime`, and
-`vrmRetarget` are intentionally static and are linked into their consumers;
+no supported static-plugin build. `vrmRig`, and the `usd-motion-plugins`
+packages this product consumes (`motionCore`, `motionSampling`,
+`motionRecording`, `motionRetarget`), are intentionally static and are linked
+into their consumers;
 `motion_retarget` and `motion_capture` are ordinary executables and register
 nothing with OpenUSD.
 Discovery follows OpenUSD's standard mechanism: add
