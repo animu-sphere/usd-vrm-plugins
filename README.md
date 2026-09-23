@@ -42,7 +42,7 @@ project's central design decision, and it is described below.
 | [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | `ArPackageResolver` bundle (`usd-package-resolver`) | Embedded resource resolution from `.vrm` | Shipped |
 | [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
-| [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter | v0.4.0 |
+| [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at | v0.4.0 (as `vrmRetarget`) |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
 | [`motionSource`](libs/motionSource) | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | v0.7.0 |
@@ -66,13 +66,18 @@ that predate that rename use it in the old sense.
 > product's motion layer speaks — `MotionPose`, `MotionClip`, `HumanJoint` —
 > is that repository's vocabulary now, under `openstrata::motion`.
 >
+> **So has the retarget (2026-09-23).** The pose retargeter, the skeleton and
+> the joint map, rest-pose correction and root-motion policy are
+> `usd-motion-plugins`' `motionRetarget`, consumed the same way. What stayed
+> of `vrmRetarget` is what a VRM rig adds to it, as `vrmRig`.
+>
 > **The live inputs have moved (2026-09-21).** `liveTransport`, `osc`,
 > `motionTracking`, the three adapters and their record tools are
 > [`motion-connectors`](https://github.com/animu-sphere/motion-connectors)'
 > now, under `motionConnector*` names, and this repository no longer builds,
-> ships or tests any of them. The generic half of this layer — `motionCore`,
-> `motionRuntime`, the generic retarget, `motionSource`, `motionBvh`,
-> `motion_capture` and `execMotion` — moves to `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
+> ships or tests any of them. What is left of the generic half of this layer
+> — `motionSource`, `motionBvh`, `motion_capture` and `execMotion` — moves to
+> `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
 > resolution and `execVrm`, and consumes the rest as installed packages
 > ([WORKSPACE.md §9](docs/architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration plan](docs/roadmap/motion-foundation-split.md)). The table
@@ -112,10 +117,10 @@ bit. They shipped in v0.9.0. What comes next:
 | Component | Type | Role |
 | --- | --- | --- |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
-| [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter |
+| [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |
-| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `vrmRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
+| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `motionRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
 | `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
 | `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |
 
@@ -135,9 +140,9 @@ usdVrmPackageResolver ──> vrmContainer
 
 usdVrmaFileFormat ──────> vrmContainer, motionCore
 
-motionRuntime ──────────> motionCore
-vrmRetarget ────────────> motionCore, motionRuntime
-motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
+vrmRig ─────────────────> motionCore
+motion_retarget (CLI) ──> motionRetarget, vrmRig, motionSampling + OpenUSD
+                          stage APIs
 
 vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport, osc
 vrmAdapterMocopi ───────> motionCore, motionRuntime, liveTransport
@@ -154,8 +159,8 @@ motionBvh ──────────────> motionSource
 motion_bvh_convert ─────> motionBvh, motionSource, OpenUSD stage
 
                           (planned)
-execMotion ─────────────> motionCore, motionRuntime
-execVrm ────────────────> vrmSchema, vrmRetarget
+execMotion ─────────────> motionCore, motionSampling, motionRecording
+execVrm ────────────────> vrmSchema, motionRetarget, vrmRig
 ```
 
 Five rules keep those edges honest:
@@ -165,8 +170,9 @@ Five rules keep those edges honest:
   dependency on the resolver is runtime-only, never link-time.
 - `execVrm` reads the schema contract from the stage — never the importer's
   private API or canonical model.
-- `vrmRetarget` does not depend on OpenExec. The retarget core is finished and
-  testable before any OpenExec node exists; the nodes are thin wrappers.
+- `vrmRig` does not depend on OpenExec, and neither does the retarget it
+  completes: both are finished and testable before any OpenExec node exists;
+  the nodes are thin wrappers.
 - Adapters depend on the core. The core never depends on an adapter, and
   `motionCore` never sees a vendor SDK, a network protocol, or a product name.
 - A file reader knows a format and no semantics; `motionSource` knows semantics
@@ -341,7 +347,7 @@ macOS arm64 / Linux:
   root CMake tree and run its CTest suite. This is the behavioral lane: the root
   tree is the only configuration in which the plain libraries and the CLI tools
   exist, and its suite also contains every bundle's own tests, so it is the
-  coverage `motionCore`, `motionRuntime`, `vrmRetarget`, `vrmContainer`,
+  coverage `vrmRig`, `vrmContainer`, `motionSource`, `motionBvh`,
   `motion_retarget`, `motion_capture`, all four plugin bundles and the
   whole-workspace `usdvrm_baseline` gate get.
 - **Three bundle cells** — `usdVrmFileFormat` on each OS — which build that

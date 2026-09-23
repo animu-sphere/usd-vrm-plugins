@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture`'s own arrival in `usd-motion-plugins` (2026-09-20) still owes its deletion here · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left waits on `ost` materializing an artifact only a tool declares (`motionUsd`, `motionSource`, `motionBvh`) or on a published `execMotion` bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture`'s own arrival in `usd-motion-plugins` (2026-09-20) still owes its deletion here · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -55,7 +55,7 @@ repository's, and needs nothing from this one.
   `workspace_motion_vocabulary` scans every public header of `motionCore`,
   `motionRuntime` and the generic half of `vrmRetarget`, with comments
   removed, and every string literal of their sources. It checks what it finds
-  against [`tests/boundary/motion-vocabulary.json`](../../tests/boundary/motion-vocabulary.json).
+  against a ledger, `tests/boundary/motion-vocabulary.json`.
   The first run found 40 names. 16 are renames or identity names
   ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)), 8 are the
   retarget's diagnostic codes, and 16 belong to the look-at and expression
@@ -63,6 +63,9 @@ repository's, and needs nothing from this one.
   Two anchors pin the required-bone finding, whose names no pattern can see.
   A new VRM name in a moving header, a ledger row that no longer matches, and
   an anchor that disappears each fail, and three near-miss ledgers prove it.
+  The check and its ledger retired on 2026-09-23, when the last of the headers
+  they scanned — the generic half of `vrmRetarget` — left
+  ([§4](#4-mig-2--sampling-retarget-usd-bridge-)).
 - ✅ **Draw the line through `vrmRetarget`** (2026-09-19). The line is by
   header, and only `HumanoidMap::GetRequiredBones` is cut in two
   ([WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
@@ -168,10 +171,13 @@ repository's, and needs nothing from this one.
     `FilteredPose` and `RootMotionFrom` become calls to those functions, and
     `BlendedPose` reads the optional instead of checking for nothing weighted
     first.
-  - ⛔ This repository consumes the packages and deletes `libs/motionRuntime`
-    in the same change as MIG-1's `motionCore`, and for the same reason it
-    waits: `requires.libraries` cannot name a library from another repository
+  - ✅ This repository consumes the packages and deleted `libs/motionRuntime`
+    in the same change as MIG-1's `motionCore` (2026-09-21), once `ost` 0.23.2
+    could declare a library from another repository
     ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+    The two behaviours that changed with the package — `BlendPoses`'
+    `std::nullopt` and a NaN weight counting as none — are read, not
+    predicted, by `execMotion` here.
 - 🚧 The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.
@@ -197,14 +203,26 @@ repository's, and needs nothing from this one.
     `BuildSkeletonDescriptor` (tokens and rest matrices) and
     `BuildSourceRestPose` (a semantic skeleton), each with the refusals
     `execVrm`'s copy makes.
-  - ⛔ The consuming change here deletes the generic half of
-    `libs/vrmRetarget`. `ExecVrmRig`'s `TargetSkeletonFromRest` and
-    `SourceRestFromSkeleton` and `motion_retarget`'s copies become calls to
-    the two builders, and the caller passes VRM 1.0's required set. It
-    re-runs the parity rows first, and it waits on
-    [ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
-    like MIG-1. Whether what stays keeps the name `vrmRetarget` is decided in
-    that change.
+  - ✅ **Consumed here (2026-09-23).** The generic half of
+    `libs/vrmRetarget` is deleted; `execVrm`, `motion_retarget` and the parity
+    harness pin the published `motionRetarget` by digest. `ExecVrmRig`'s
+    `TargetSkeletonFromRest` and `SourceRestFromSkeleton` and
+    `motion_retarget`'s copies are calls to the two builders, and every caller
+    passes VRM 1.0's required set — which is not optional: the library's
+    default requires only the hips, and dropping the set fails four suites.
+    The tool now refuses what `execVrm` always refused: a clip skeleton naming
+    one bone on two joints, and one with no joints or none naming a bone. The
+    `restTransforms` count stays the one recorded difference (P0-6). **The parity rows did
+    not move**: every `workspace_exec_parity_*` output is identical to the
+    one before the change, line for line, once the code prefix is normalized —
+    the prediction recorded under `motionUsd` below, now measured.
+  - ✅ What stays does not keep the name: it is **`vrmRig`**
+    (`libs/vrmRig/`), decided on 2026-09-20 — two resolvers and a bone
+    set, none of it a retarget. It links `motionCore` alone, and its boundary
+    check forbids the rest of `usd-motion-plugins`, so
+    [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
+    line is held after the cut rather than only drawn before it. MIG-0's
+    vocabulary check retired in the same change, its last headers gone.
 - 🚧 `motionUsd`. The authoring half arrived on 2026-09-19
   ([usd-motion-plugins #7](https://github.com/animu-sphere/usd-motion-plugins/pull/7)). Its source was
   `motion_capture`'s `ClipWriter`, not `StageIo`. `StageIo` reads a clip and
@@ -279,9 +297,11 @@ repository's, and needs nothing from this one.
     stage half was already answered on 2026-09-20 and its pose half is still
     open. What §8 gains is one rule the implementation produced — see there.
     The `.vrma` stage here still does not change.
-  - ⛔ This repository deletes `StageIo`'s reading half in the consuming
-    change, and for the same reason it waits
-    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+  - ⛔ This repository deletes `StageIo`'s reading half in a consuming change
+    of its own. It no longer waits on report 41 but on the next thing down:
+    `ost` 0.23.2 materializes an external artifact declared by a library or a
+    plugin descriptor and not one declared only by a tool, and `motion_retarget` is the only consumer
+    `motionUsd` would have here.
     `ReadClip` becomes a call to `ReadMotionStage` plus this repository's own
     `vrm:` reading — the expression tracks, the gaze track and the clip's
     look-at offset — which the destination refused on purpose.
@@ -313,13 +333,15 @@ repository's, and needs nothing from this one.
     the generic channel attribute names. Neither changes the `.vrma` stage:
     [§3](#3-mig-1--the-core-)'s last item still holds. USD-O4 does answer half
     of §8's open question about the `vrm:` expression weights — see there.
-  - ⛔ This repository deletes `plugins/execMotion` in the consuming change,
-    and for the same reason it waits
-    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
-- ⬜ What stays is re-read as a consumer: the VRM humanoid map,
+  - ⛔ This repository deletes `plugins/execMotion` in a consuming change of
+    its own, and it waits on `usd-motion-plugins` publishing the bundle as an
+    artifact: the parity rows are re-run against the consumed bundle before
+    the copy here goes, and nothing publishes one yet.
+- 🚧 What stays is re-read as a consumer: the VRM humanoid map,
   `ExpressionResolver`, `LookAtEvaluator`, `motion_retarget` as a VRM CLI,
   `execVrm`. The OpenExec parity values are re-run against the consumed
-  packages before anything here is deleted.
+  packages before anything here is deleted — done for the retarget on
+  2026-09-23 (identical), and owed again when `execMotion` goes.
 
 ## 5. MIG-3 — recorded sources 🚧
 
@@ -333,8 +355,11 @@ repository's, and needs nothing from this one.
   - `USDVRM_MOTION_PROFILE_PATH` is `USDMOTION_PROFILE_PATH`.
   - The `VRM_BVH_*` codes are `MOTION_BVH_*` (that repository's design policy
     §42.8).
-- ⛔ This repository deletes its copies in the same consuming change as
-  MIG-1, and for the same reason it waits (ost report 41). The change
+- ⛔ This repository deletes its copies in a consuming change of its own. It
+  no longer waits on report 41 but on the next thing down: `ost` 0.23.2
+  materializes an external artifact declared by a library or a plugin
+  descriptor and not one declared only by a tool, and `motion_bvh` is the only
+  consumer these have left here. The change
   re-runs `workspace_bvh_end_to_end` against the consumed tools.
   `workspace_unicode_paths` loses `motion_bvh_convert` in it, so the
   non-ASCII path case needs a home in `usd-motion-plugins` first.

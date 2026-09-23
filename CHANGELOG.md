@@ -15,6 +15,44 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **The retarget is a consumed package, and what stayed is `vrmRig`** (MIG-2,
+  2026-09-23). The generic half of `libs/vrmRetarget` is gone; `execVrm`,
+  `motion_retarget` and the parity harness resolve `usd-motion-plugins`'
+  published [`motionRetarget`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRetarget), pinned by archive digest per target from
+  its v0.5.0 pin table. `TargetSkeleton` is `SkeletonDescriptor`,
+  `TargetJoint` is `SkeletonJoint` and `HumanoidMap` is `RetargetMap`, under
+  `openstrata::motion`.
+  - **The required bones are the caller's, and every caller here passes VRM
+    1.0's.** `motionRetarget` holds no required set, so
+    `HumanoidMap::GetRequiredBones` is `vrmRig::GetRequiredBones` and both
+    exec nodes that build retarget options and the tool hand it over. The
+    library's default requires only the hips; dropping the set fails four
+    suites.
+  - **`execVrm` and `motion_retarget` call one builder.** Their copies of the
+    skeleton and clip-rest reading are calls to `BuildSkeletonDescriptor` and
+    `BuildSourceRestPose`. `motion_retarget` now refuses (exit 2) a clip
+    skeleton naming one bone on two joints, where it kept the later joint, and
+    a clip skeleton with no joints or none naming a human bone, where it baked
+    against identity — what `execVrm` always refused. It also refuses (exit 4)
+    a target skeleton with an empty joint token. One difference stays, and it
+    is the one P0-6 already recorded: a `restTransforms` that does not pair
+    with `joints` is a warning and an identity rest in the tool, and a refusal
+    in `execVrm`.
+  - `motion_retarget` no longer links `motionRecording`, which it never used
+    and only reached through the old library's closure.
+  - **The parity rows did not move.** Every `workspace_exec_parity_*` output
+    is identical to the one before the change once the code prefix is
+    normalized.
+  - **The retarget codes print as `MOTION_RETARGET_*`**, the event names
+    unchanged.
+  - **What stayed is renamed `vrmRig`** — `ExpressionResolver`,
+    `LookAtEvaluator` and the required set, none of it a retarget — with its
+    package, target, include root, namespace, consumer fixture and suites
+    (`vrmRig_unit`, `vrmRig_boundaries`). It links `motionCore` alone, and its
+    boundary check forbids every other `usd-motion-plugins` package, which is
+    [WORKSPACE.md §9.5](docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
+    line held after the cut. The package consumer lane passes it on Windows.
+
 - **The core and the runtime are consumed packages now** (MIG-1 and MIG-2,
   2026-09-21). `libs/motionCore` and `libs/motionRuntime` are gone from this
   workspace; five members resolve `usd-motion-plugins`' published
@@ -50,10 +88,15 @@ Current schema contract version: **1**.
     carry, and letting it pass vacuously would have been worse than dropping it.
   - The MIG-0 vocabulary ledger is down to the 20 names that belong to
     `vrmRetarget`'s generic half — the one set of headers still moving. It
-    empties when that half leaves.
+    empties when that half leaves, and did (below).
 
 ### Removed
 
+- **MIG-0's vocabulary check** (2026-09-23): `workspace_motion_vocabulary`,
+  its three near-miss cases, `scripts/check_motion_vocabulary.py` and the
+  ledger. It scanned the headers that were leaving for VRM names, and the last
+  of them — the generic half of `vrmRetarget` — left with the retarget's
+  consuming change, as its ledger said it would.
 - **Every live input left for `motion-connectors`** (MIG-4, 2026-09-21).
   `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and the three record tools are
@@ -89,8 +132,7 @@ Current schema contract version: **1**.
   of `motionCore`, `motionRuntime` and the generic half of `vrmRetarget` with
   comments removed, plus every string literal of their sources, for VRM
   vocabulary. It fails on any name that
-  [`tests/boundary/motion-vocabulary.json`](tests/boundary/motion-vocabulary.json)
-  does not dispose of as a rename, an identity name, a diagnostic code or a
+  `tests/boundary/motion-vocabulary.json` does not dispose of as a rename, an identity name, a diagnostic code or a
   recorded finding. It also fails on a ledger row the scan no longer finds, and
   on a finding whose anchor identifier is gone. The first run classified 40
   names. Three near-miss ledgers each get one thing wrong and must fail with

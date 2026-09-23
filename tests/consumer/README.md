@@ -166,8 +166,8 @@ for every package whose external edge is OpenUSD, the include is the *only*
 thing between a missing `find_dependency(pxr)` and a passing run, because
 OpenUSD's imported targets are unnamespaced and the closure walk has nothing to
 refuse in a bare `gf`. **Call something whose archive member carries the edges
-the headers do not show**: `vrmRetarget` meets the runtime layer only at the
-link, and `vrmAdapterVrchatOsc` meets the decoder only there, so a fixture that
+the headers do not show**: `vrmRetarget` met the runtime layer only at the
+link while it still held the retarget, and `vrmAdapterVrchatOsc` meets the decoder only there, so a fixture that
 constructed a value and stopped would compile, link, and never ask.
 
 Three rules, all of them mechanically enforced by the driver's criterion-5 pass

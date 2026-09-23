@@ -211,7 +211,7 @@ this document of what `find_dependency(pxr)` is carrying.
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
 | `vrmContainer` | `vrmContainer::vrmContainer` | `include/vrmContainer/` | — | — | yes | **measured** |
-| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionSampling`, `motionRecording` | — | yes | **measured** |
+| `vrmRig` | `vrmRig::vrmRig` | `include/vrmRig/` | `pxr`, `motionCore` | — | yes | **measured** |
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
 
@@ -226,6 +226,15 @@ published artifacts before the build. Their contracts are that repository's to
 state; what this table still owes them is the consumer's half, which is §5's
 criterion 5 read from the other side — every remaining row's closure now
 resolves packages this workspace did not build.
+
+**And the retarget, with MIG-2**, on 2026-09-23: the generic half of
+`vrmRetarget` is `usd-motion-plugins`'
+[`motionRetarget`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRetarget),
+consumed by `execVrm` and `motion_retarget` the same way. What stayed is the
+`vrmRig` row: the expression resolve, the look-at and VRM 1.0's required
+bones. Its closure lost `motionSampling` and `motionRecording` with the code
+that used them, and it does not gain `motionRetarget` — the VRM half includes
+nothing from the generic half ([WORKSPACE.md §9.5](WORKSPACE.md#95-the-line-through-vrmretarget)).
 
 The rows that remain are what this workspace still *installs*. A consumed
 package has no row here and never will: this document is about what a consumer
@@ -278,7 +287,8 @@ than the count.** `motionCore`, `motionRuntime`, `vrmRetarget`, `motionSource`
 and `motionBvh` each configured, built, linked and ran from a prefix holding
 their own transitive closure and nothing else, with OpenUSD arriving through the
 driver's `--extra-prefix` the way it arrives for anyone else. Two of the five
-are consumed packages now and their fixtures went with them; the three findings
+are consumed packages now and their fixtures went with them, and `vrmRetarget`
+is `vrmRig`, whose fixture was rewritten for what stayed; the three findings
 below are what that measurement established, and the first two are why the
 consumer side still holds.
 

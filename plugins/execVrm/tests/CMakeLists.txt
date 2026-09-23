@@ -17,7 +17,8 @@ add_executable(execVrm_rig_tests
 target_include_directories(execVrm_rig_tests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../src"
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execVrm_rig_tests PRIVATE vrmRetarget::vrmRetarget)
+target_link_libraries(execVrm_rig_tests PRIVATE
+    motionRetarget::motionRetarget vrmRig::vrmRig)
 # TfToken, for the attribute names the seam builds.
 foreach(_t IN ITEMS tf gf)
     if(TARGET ${_t})
@@ -37,13 +38,15 @@ add_test(NAME execVrm_rig COMMAND execVrm_rig_tests)
 # ---------------------------------------------------------------------------
 # The humanoid, through the built bundle
 # ---------------------------------------------------------------------------
-# Links OpenUSD and vrmRetarget -- the second for the two result types, read
-# through their accessors -- but NOT the plugin: discovery goes through
+# Links OpenUSD and motionRetarget -- the second for the two result types, read
+# through their accessors -- and vrmRig for the required bones, but NOT
+# the plugin: discovery goes through
 # PXR_PLUGINPATH_NAME and the staged plugInfo.json, the path a packaged bundle
 # takes.
 add_executable(execVrm_humanoid_tests test_exec_vrm_humanoid.cpp)
 target_include_directories(execVrm_humanoid_tests PRIVATE ${PXR_INCLUDE_DIRS})
-target_link_libraries(execVrm_humanoid_tests PRIVATE vrmRetarget::vrmRetarget)
+target_link_libraries(execVrm_humanoid_tests PRIVATE
+    motionRetarget::motionRetarget vrmRig::vrmRig)
 target_compile_options(execVrm_humanoid_tests PRIVATE ${_exec_vrm_assertions})
 if(MSVC)
     target_compile_definitions(execVrm_humanoid_tests
@@ -72,7 +75,7 @@ add_test(NAME execVrm_humanoid
 add_executable(execVrm_correction_tests test_exec_vrm_correction.cpp)
 target_include_directories(execVrm_correction_tests PRIVATE ${PXR_INCLUDE_DIRS})
 target_link_libraries(execVrm_correction_tests PRIVATE
-    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+    motionRetarget::motionRetarget vrmRig::vrmRig ${_exec_vrm_test_targets})
 target_compile_options(execVrm_correction_tests PRIVATE ${_exec_vrm_assertions})
 if(MSVC)
     target_compile_definitions(execVrm_correction_tests
@@ -90,7 +93,7 @@ add_test(NAME execVrm_correction
 add_executable(execVrm_retarget_tests test_exec_vrm_retarget.cpp)
 target_include_directories(execVrm_retarget_tests PRIVATE ${PXR_INCLUDE_DIRS})
 target_link_libraries(execVrm_retarget_tests PRIVATE
-    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+    motionRetarget::motionRetarget vrmRig::vrmRig ${_exec_vrm_test_targets})
 target_compile_options(execVrm_retarget_tests PRIVATE ${_exec_vrm_assertions})
 if(MSVC)
     target_compile_definitions(execVrm_retarget_tests
@@ -109,7 +112,7 @@ add_executable(execVrm_joint_transforms_tests test_exec_vrm_joint_transforms.cpp
 target_include_directories(execVrm_joint_transforms_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
 target_link_libraries(execVrm_joint_transforms_tests PRIVATE
-    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+    motionRetarget::motionRetarget vrmRig::vrmRig ${_exec_vrm_test_targets})
 target_compile_options(execVrm_joint_transforms_tests PRIVATE
     ${_exec_vrm_assertions})
 if(MSVC)
@@ -125,7 +128,7 @@ add_test(NAME execVrm_joint_transforms
 add_executable(execVrm_diagnostics_tests test_exec_vrm_diagnostics.cpp)
 target_include_directories(execVrm_diagnostics_tests PRIVATE ${PXR_INCLUDE_DIRS})
 target_link_libraries(execVrm_diagnostics_tests PRIVATE
-    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+    motionRetarget::motionRetarget vrmRig::vrmRig ${_exec_vrm_test_targets})
 target_compile_options(execVrm_diagnostics_tests PRIVATE ${_exec_vrm_assertions})
 if(MSVC)
     target_compile_definitions(execVrm_diagnostics_tests

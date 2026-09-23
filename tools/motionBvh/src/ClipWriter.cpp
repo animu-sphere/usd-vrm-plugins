@@ -126,7 +126,7 @@ WriteSemanticClip(const std::string& outputPath, const openstrata::motion::Motio
     // The rest pose the converter built, joint for joint. This is the whole of
     // what separates this writer from `motion_capture`'s: the file states a
     // rest and the profile says how to read it, so authoring identity here
-    // would tell `vrmRetarget` that the source rig stands exactly as the target
+    // would tell `motionRetarget` that the source rig stands exactly as the target
     // does and silently skip the correction §4 exists for.
     const pxr::SdfPath skeletonPath = rootPath.AppendChild(pxr::TfToken("HumanoidSkeleton"));
     const pxr::UsdSkelSkeleton skeleton = pxr::UsdSkelSkeleton::Define(stage, skeletonPath);

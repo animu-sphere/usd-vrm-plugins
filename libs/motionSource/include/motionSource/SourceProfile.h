@@ -301,7 +301,7 @@ struct SourceJointMapping
     // Whether a rig missing this joint is still described by this profile. An
     // export preset that drops fingers is the ordinary case, and it is a
     // *profile's* answer rather than a target's: what the target needs is
-    // `vrmRetarget`'s question, one pipeline stage further on.
+    // `motionRetarget`'s question, one pipeline stage further on.
     bool required = false;
 
     MOTIONSOURCE_API friend bool operator==(const SourceJointMapping& lhs,

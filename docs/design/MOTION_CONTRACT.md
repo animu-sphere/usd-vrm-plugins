@@ -109,9 +109,18 @@ Phases D–H.
 
 ## Retarget semantics (Motion Phase C, v0.4.0)
 
-`vrmRetarget` expands a semantic clip into a specific rig's joint order. It
-takes plain values and never opens a stage; `tools/motionRetarget` is the stage
-half.
+> **The retarget is a consumed package since 2026-09-23.** What this section
+> and the two after it state was `vrmRetarget`'s here, and is
+> `usd-motion-plugins`' [`motionRetarget`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRetarget) now: this repository no longer
+> builds it, and that repository's contract is where a change to it is made.
+> The sections stay as what this repository measured and still relies on,
+> because `execVrm` and `motion_retarget` consume it unchanged. The one thing
+> the move made a caller's is **the required bones**: the library holds no set,
+> and every caller here passes VRM 1.0's (`vrmRig::GetRequiredBones`).
+
+`vrmRetarget` expanded a semantic clip into a specific rig's joint order, and
+`motionRetarget` does now. It takes plain values and never opens a stage;
+`tools/motionRetarget` is the stage half.
 
 **Binding.** A human bone drives a target joint only through an explicit
 binding: the avatar's `vrm:humanBones:<bone>` attributes, or a
@@ -191,8 +200,9 @@ retargeting across the difference is legal and useful, so none of the seven
 cases below refuses a retarget. What each one costs is stated and, where it can
 be, reported under a frozen code ([Retarget diagnostics](#retarget-diagnostics-after-v080)).
 The behaviour was already the library's; this section makes it the contract,
-and every row names the test that holds it. Tests without a path are in
-`libs/vrmRetarget/tests/test_vrm_retarget.cpp`.
+and every row names the test that holds it. Tests without a path were in
+`libs/vrmRetarget/tests/test_vrm_retarget.cpp`, and travelled with the library
+to `usd-motion-plugins`' [`test_motion_retarget.cpp`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRetarget/tests/test_motion_retarget.cpp).
 
 | # | Case | What the retarget does | Reported | Held by |
 | --- | --- | --- | --- | --- |
@@ -232,7 +242,10 @@ report at all.
 
 **A diagnostic is a value**: a code, a subject and a detail, with the code's
 severity and recoverability taken from one table
-([`vrmRetarget/Diagnostics.h`](../../libs/vrmRetarget/include/vrmRetarget/Diagnostics.h)).
+([`motionRetarget/Diagnostics.h`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRetarget/include/motionRetarget/Diagnostics.h)).
+Until 2026-09-23 the codes were `VRM_RETARGET_*` and the table was
+`vrmRetarget`'s; they print as `MOTION_RETARGET_*` since the retarget is
+consumed, the event names unchanged.
 The **code and the subject are the contract** — a human bone's VRM name, a joint
 token, a path — and the detail is a sentence for a person. A retarget reports
 into a list that holds each code and subject **once**, in the order they were
@@ -242,24 +255,24 @@ by entry and in order.
 
 | Code | Raised by | Severity | Subject |
 | --- | --- | --- | --- |
-| `VRM_RETARGET_MISSING_REQUIRED_BONE` | `vrmRetarget` | warning | the bone, unbound or bound to an index this rig does not have; for `hips` under root-motion mode `hips`, the detail says root motion was dropped |
-| `VRM_RETARGET_UNBOUND_DRIVEN_BONE` | `vrmRetarget` | warning | the bone the clip drives |
-| `VRM_RETARGET_DUPLICATE_TARGET` | `vrmRetarget` | warning | the joint two bones share |
-| `VRM_RETARGET_INVALID_HIERARCHY` | `vrmRetarget` | warning | the first joint whose parent does not precede it |
-| `VRM_RETARGET_INVALID_ROOT_JOINT` | `vrmRetarget` | warning | the root joint index asked for |
-| `VRM_RETARGET_NON_UNIT_SCALE` | a caller | warning | the clip animation whose `scales` state a non-unit value; the bake keeps the rig's rest scale ([scale policy](#scale-policy-v090)) |
-| `VRM_RETARGET_TIME_RANGE_DERIVED` | a caller | info | the clip whose one pose was placed at the stage's start |
-| `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT` | a caller | **error** | the output path |
+| `MOTION_RETARGET_MISSING_REQUIRED_BONE` | `motionRetarget` | warning | the bone, unbound or bound to an index this rig does not have; for `hips` under root-motion mode `hips`, the detail says root motion was dropped |
+| `MOTION_RETARGET_UNBOUND_DRIVEN_BONE` | `motionRetarget` | warning | the bone the clip drives |
+| `MOTION_RETARGET_DUPLICATE_TARGET` | `motionRetarget` | warning | the joint two bones share |
+| `MOTION_RETARGET_INVALID_HIERARCHY` | `motionRetarget` | warning | the first joint whose parent does not precede it |
+| `MOTION_RETARGET_INVALID_ROOT_JOINT` | `motionRetarget` | warning | the root joint index asked for |
+| `MOTION_RETARGET_NON_UNIT_SCALE` | a caller | warning | the clip animation whose `scales` state a non-unit value; the bake keeps the rig's rest scale ([scale policy](#scale-policy-v090)) |
+| `MOTION_RETARGET_TIME_RANGE_DERIVED` | a caller | info | the clip whose one pose was placed at the stage's start |
+| `MOTION_RETARGET_OUTPUT_COLLIDES_WITH_INPUT` | a caller | **error** | the output path |
 
 Every code but the last is recoverable: each says what the rig or the clip did
 not state and what the result did instead, and retargeting onto a partial rig is
 legal and useful. A collision is the one whose answer is not to write.
 
 **The set splits at the layer boundary**, and the split is checked.
-`vrmRetarget` takes plain values, so the three codes that say what a stage or a
+The library takes plain values, so the three codes that say what a stage or a
 file system added are raised by the caller that holds one —
-`tools/motionRetarget` today — and `vrmRetarget_boundaries` fails if the
-library's sources name them. The rig's own report is `DiagnoseRig`; a clip's is
+`tools/motionRetarget` here — and `vrmRetarget_boundaries` failed if the
+library's sources named them, until the library left for `usd-motion-plugins`. The rig's own report is `DiagnoseRig`; a clip's is
 that list followed by each sample's, so a caller retargeting one pose at a time
 reaches the same list by asking once per rig and once per pose. `execVrm` is
 that caller: `vrm.computeRigDiagnostics` is the rig's report, and
@@ -304,7 +317,7 @@ missing something:
   that `--skeleton`, `--clip-skeleton`, `--root-joint` or `--humanoid-map`
   names and the stage lacks. It also covers two arguments that contradict each
   other: `--root-motion root` without `--root-joint`, and an `--output` that
-  names an input. The last is still `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`
+  names an input. The last is still `MOTION_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`
   on its line, and nothing is written. A usage error is not a class of its
   own: it exited 2 through v0.8.0, and the fix is the same as any other 1.
 - **2** is a clip that opened and is not a semantic humanoid clip. It has no

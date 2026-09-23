@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ExecVrmRig.h"
 
+#include <vrmRig/RequiredBones.h>
+
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3d.h"
@@ -17,24 +19,6 @@
 
 namespace execvrm
 {
-
-namespace
-{
-
-// The bone a semantic joint path names: its leaf, looked up in the vocabulary.
-// tools/motionRetarget's `FindHumanJoint(LeafToken(path))`, and execMotion's
-// `BoneForJointPath` -- a path with no separator is already a leaf.
-std::optional<openstrata::motion::HumanJoint>
-BoneForLeaf(const std::string& jointPath)
-{
-    const std::size_t separator = jointPath.rfind('/');
-    const std::string_view leaf = separator == std::string::npos
-                                      ? std::string_view(jointPath)
-                                      : std::string_view(jointPath).substr(separator + 1);
-    return openstrata::motion::FindHumanJoint(leaf);
-}
-
-} // namespace
 
 const std::array<pxr::TfToken, openstrata::motion::HumanJointCount>&
 HumanBoneAttributeNames()
@@ -59,47 +43,25 @@ HumanBoneAttributeNames()
 SkeletonOutcome
 TargetSkeletonFromRest(const SkeletonRest& rest)
 {
+    // The library's builder, which `motion_retarget` calls too: two readings
+    // that differ in a normalization step are a parity difference P0-6 would
+    // have to explain rather than measure. What is left here is naming its
+    // answer in this bundle's refusal vocabulary.
+    openstrata::motion::SkeletonDescriptorResult built =
+        openstrata::motion::BuildSkeletonDescriptor(rest.joints, rest.restTransforms);
     SkeletonOutcome outcome;
-    for (const std::string& joint : rest.joints)
+    switch (built.error)
     {
-        if (joint.empty())
-        {
-            outcome.refusal = SkeletonRefusal::EmptyJointToken;
-            return outcome;
-        }
-    }
-    // No joints is the empty skeleton, whatever `restTransforms` says: there is
-    // no joint for a rest transform to belong to, so none can become a number.
-    // It is also the one reading under which `joints = []` beside an unauthored
-    // `restTransforms` -- which arrives as one fallback matrix -- is answered
-    // for what the stage states rather than refused over a count it did not.
-    if (rest.joints.empty())
-    {
-        outcome.skeleton = vrmRetarget::TargetSkeleton();
-        return outcome;
-    }
-    if (rest.restTransforms.size() != rest.joints.size())
-    {
+    case openstrata::motion::SkeletonDescriptorError::None:
+        outcome.skeleton = std::move(built.skeleton);
+        break;
+    case openstrata::motion::SkeletonDescriptorError::RestTransformCount:
         outcome.refusal = SkeletonRefusal::RestTransformCount;
-        return outcome;
+        break;
+    case openstrata::motion::SkeletonDescriptorError::EmptyJointToken:
+        outcome.refusal = SkeletonRefusal::EmptyJointToken;
+        break;
     }
-
-    std::vector<vrmRetarget::TargetJoint> joints;
-    joints.reserve(rest.joints.size());
-    for (std::size_t i = 0; i < rest.joints.size(); ++i)
-    {
-        vrmRetarget::TargetJoint joint;
-        joint.token = rest.joints[i];
-        // The library's decomposition, which `motion_retarget` calls too: two
-        // that differ in a normalization step are a parity difference P0-6
-        // would have to explain rather than measure.
-        vrmRetarget::DecomposeRestTransform(rest.restTransforms[i], &joint);
-        joints.push_back(std::move(joint));
-    }
-
-    vrmRetarget::TargetSkeleton skeleton(std::move(joints));
-    skeleton.ResolveParentsFromTokens();
-    outcome.skeleton = std::move(skeleton);
     return outcome;
 }
 
@@ -122,9 +84,9 @@ HumanoidMapFor(const HumanoidInputs& inputs)
         outcome.refusal = MapRefusal::SkeletonUnanswered;
         return outcome;
     }
-    const vrmRetarget::TargetSkeleton& skeleton = inputs.skeletons.front();
+    const openstrata::motion::SkeletonDescriptor& skeleton = inputs.skeletons.front();
 
-    vrmRetarget::HumanoidMap map;
+    openstrata::motion::RetargetMap map;
     for (const auto& [bone, token] : inputs.bindings)
     {
         if (token.empty())
@@ -164,68 +126,26 @@ HumanoidMapFor(const HumanoidInputs& inputs)
 }
 
 SourceRestOutcome
-SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skeleton)
+SourceRestFromSkeleton(const openstrata::motion::SkeletonDescriptor& skeleton)
 {
+    // The library's builder, which `motion_retarget` calls too, and the one
+    // leaf rule for a semantic skeleton (RETARGETING_POLICY.md §10 there).
+    openstrata::motion::SourceRestPoseResult built =
+        openstrata::motion::BuildSourceRestPose(skeleton);
     SourceRestOutcome outcome;
-    vrmRetarget::SourceRestPose rest;
-
-    // Which joint first named each bone, so a second naming can report both.
-    std::array<const std::string*, openstrata::motion::HumanJointCount> namedBy{};
-    std::size_t recognized = 0;
-
-    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints())
+    switch (built.error)
     {
-        const std::optional<openstrata::motion::HumanJoint> bone = BoneForLeaf(joint.token);
-        if (!bone)
-        {
-            continue;
-        }
-        const auto slot = static_cast<std::size_t>(*bone);
-        if (namedBy[slot])
-        {
-            // Report the first naming once, then every later one.
-            const bool firstReported =
-                std::any_of(outcome.offending.begin(), outcome.offending.end(),
-                            [&](const auto& named) { return named.first == *bone; });
-            if (!firstReported)
-            {
-                outcome.offending.emplace_back(*bone, *namedBy[slot]);
-            }
-            outcome.offending.emplace_back(*bone, joint.token);
-            continue;
-        }
-        namedBy[slot] = &joint.token;
-        ++recognized;
-
-        // tools/motionRetarget's ReadClip, line for line: the joint's own
-        // decomposed rest fills its bone's slot, and the semantic parent is the
-        // bone its parent PATH's leaf names -- the path, whether or not a joint
-        // of this skeleton resolves it.
-        rest.localRotations[slot] = joint.restRotation;
-        rest.localTranslations[slot] = joint.restTranslation;
-        const std::size_t separator = joint.token.rfind('/');
-        if (separator == std::string::npos)
-        {
-            continue;
-        }
-        if (const std::optional<openstrata::motion::HumanJoint> parent =
-                BoneForLeaf(joint.token.substr(0, separator)))
-        {
-            rest.SetParent(*bone, *parent);
-        }
-    }
-
-    if (!outcome.offending.empty())
-    {
-        outcome.refusal = SourceRestRefusal::DuplicateBone;
-        return outcome;
-    }
-    if (recognized == 0)
-    {
+    case openstrata::motion::SourceRestPoseError::None:
+        outcome.rest = std::move(built.rest);
+        break;
+    case openstrata::motion::SourceRestPoseError::NoHumanBone:
         outcome.refusal = SourceRestRefusal::NoHumanBone;
-        return outcome;
+        break;
+    case openstrata::motion::SourceRestPoseError::DuplicateBone:
+        outcome.refusal = SourceRestRefusal::DuplicateBone;
+        outcome.offending = std::move(built.offending);
+        break;
     }
-    outcome.rest = std::move(rest);
     return outcome;
 }
 
@@ -251,7 +171,7 @@ struct SourceOutcome
 };
 
 SourceOutcome
-SourceFor(std::size_t count, const std::vector<vrmRetarget::TargetSkeleton>& sources)
+SourceFor(std::size_t count, const std::vector<openstrata::motion::SkeletonDescriptor>& sources)
 {
     SourceOutcome outcome;
     if (count == 0)
@@ -308,7 +228,7 @@ RestPoseCorrectionFor(const CorrectionInputs& inputs)
     }
 
     // The whole node, and it is a wrapper.
-    outcome.correction = vrmRetarget::ComputeRestPoseCorrection(
+    outcome.correction = openstrata::motion::ComputeRestPoseCorrection(
         *source.rest.rest, inputs.targets.front(), *inputs.map);
     return outcome;
 }
@@ -344,10 +264,10 @@ BoundPoseFor(const BoundPoseInputs& inputs)
 
 RootMotionOutcome
 RootMotionOptionsFor(const RootMotionStatements& statements,
-                     const vrmRetarget::TargetSkeleton& target)
+                     const openstrata::motion::SkeletonDescriptor& target)
 {
     RootMotionOutcome outcome;
-    vrmRetarget::RootMotionOptions options;
+    openstrata::motion::RootMotionOptions options;
 
     // motion_retarget's `--root-motion`, word for word (tools/motionRetarget's
     // Options.cpp).
@@ -356,15 +276,15 @@ RootMotionOptionsFor(const RootMotionStatements& statements,
         const std::string& mode = *statements.mode;
         if (mode == "hips")
         {
-            options.mode = vrmRetarget::RootMotionMode::Hips;
+            options.mode = openstrata::motion::RootMotionMode::Hips;
         }
         else if (mode == "root")
         {
-            options.mode = vrmRetarget::RootMotionMode::RootJoint;
+            options.mode = openstrata::motion::RootMotionMode::RootJoint;
         }
         else if (mode == "ignore")
         {
-            options.mode = vrmRetarget::RootMotionMode::Ignore;
+            options.mode = openstrata::motion::RootMotionMode::Ignore;
         }
         else
         {
@@ -375,7 +295,7 @@ RootMotionOptionsFor(const RootMotionStatements& statements,
 
     // And its `--root-joint`, resolved the way main.cpp resolves it: exactly,
     // on the full joint path, and only under `root`.
-    if (options.mode == vrmRetarget::RootMotionMode::RootJoint)
+    if (options.mode == openstrata::motion::RootMotionMode::RootJoint)
     {
         if (!statements.rootJoint || statements.rootJoint->empty())
         {
@@ -409,7 +329,8 @@ RootMotionOptionsFor(const RootMotionStatements& statements,
 }
 
 RetargetOutcome
-HumanoidRetargetFor(const RetargetInputs& inputs, vrmRetarget::RetargetDiagnostics* diagnostics)
+HumanoidRetargetFor(const RetargetInputs& inputs,
+                    openstrata::motion::RetargetDiagnostics* diagnostics)
 {
     RetargetOutcome outcome;
     if (!inputs.map || inputs.targets.size() != 1)
@@ -417,7 +338,7 @@ HumanoidRetargetFor(const RetargetInputs& inputs, vrmRetarget::RetargetDiagnosti
         outcome.refusal = RetargetRefusal::RigUnanswered;
         return outcome;
     }
-    const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
+    const openstrata::motion::SkeletonDescriptor& target = inputs.targets.front();
 
     const RootMotionOutcome rootMotion = RootMotionOptionsFor(inputs.rootMotion, target);
     if (!rootMotion.options)
@@ -464,9 +385,11 @@ HumanoidRetargetFor(const RetargetInputs& inputs, vrmRetarget::RetargetDiagnosti
     // The whole node, and it is a wrapper -- motion_retarget's call, with its
     // four arguments. Constructing the retargeter is where the correction is
     // computed, which is the cost this node reports rather than hides.
-    vrmRetarget::RetargetOptions options;
+    openstrata::motion::RetargetOptions options;
     options.rootMotion = *rootMotion.options;
-    const vrmRetarget::PoseRetargeter retargeter(target, *inputs.map, *source.rest.rest, options);
+    options.requiredBones = vrmRig::GetRequiredBones();
+    const openstrata::motion::PoseRetargeter retargeter(target, *inputs.map, *source.rest.rest,
+                                                        options);
     outcome.pose = retargeter.Retarget(inputs.poses.front(), diagnostics);
     return outcome;
 }
@@ -480,7 +403,7 @@ RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
         outcome.refusal = RetargetRefusal::RigUnanswered;
         return outcome;
     }
-    const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
+    const openstrata::motion::SkeletonDescriptor& target = inputs.targets.front();
 
     const RootMotionOutcome rootMotion = RootMotionOptionsFor(inputs.rootMotion, target);
     if (!rootMotion.options)
@@ -490,15 +413,18 @@ RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
         return outcome;
     }
 
-    // The whole node, and it is a wrapper.
-    vrmRetarget::RetargetOptions options;
+    // The whole node, and it is a wrapper. The required bones are VRM 1.0's:
+    // the retarget holds no set of its own, and this rig is a VRM avatar's.
+    openstrata::motion::RetargetOptions options;
     options.rootMotion = *rootMotion.options;
-    outcome.diagnostics = vrmRetarget::DiagnoseRig(target, *inputs.map, options);
+    options.requiredBones = vrmRig::GetRequiredBones();
+    outcome.diagnostics = openstrata::motion::DiagnoseRig(target, *inputs.map, options);
     return outcome;
 }
 
 RetargetDiagnosticsOutcome
-RetargetDiagnosticsFor(const RetargetInputs& inputs, const vrmRetarget::RetargetDiagnostics* rig)
+RetargetDiagnosticsFor(const RetargetInputs& inputs,
+                       const openstrata::motion::RetargetDiagnostics* rig)
 {
     RetargetDiagnosticsOutcome outcome;
 
@@ -506,7 +432,7 @@ RetargetDiagnosticsFor(const RetargetInputs& inputs, const vrmRetarget::Retarget
     // code the rig already raised -- a missing hips under root-motion mode
     // 'hips', which every sample raises again -- stays where the rig put it:
     // the clip overload's order, exactly.
-    vrmRetarget::RetargetDiagnostics diagnostics;
+    openstrata::motion::RetargetDiagnostics diagnostics;
     if (rig)
     {
         diagnostics = *rig;
@@ -541,8 +467,8 @@ JointLocalTransformsFor(const JointTransformsInputs& inputs)
         outcome.refusal = JointTransformsRefusal::RigUnanswered;
         return outcome;
     }
-    const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
-    const vrmRetarget::RetargetedPose& pose = *inputs.pose;
+    const openstrata::motion::SkeletonDescriptor& target = inputs.targets.front();
+    const openstrata::motion::RetargetedPose& pose = *inputs.pose;
     if (pose.rotations.size() != target.GetSize() || pose.translations.size() != target.GetSize())
     {
         outcome.refusal = JointTransformsRefusal::JointCount;
@@ -555,17 +481,17 @@ JointLocalTransformsFor(const JointTransformsInputs& inputs)
     // What `motion_retarget`'s WriteAnimation authors, per sample: the rig's
     // tokens as `joints`, the pose's arrays unchanged, and each joint's rest
     // scale (the scale policy).
-    vrmRetarget::JointLocalTransforms sample;
+    openstrata::motion::JointLocalTransforms sample;
     sample.timestamp = pose.timestamp;
     sample.joints.reserve(target.GetSize());
-    for (const vrmRetarget::TargetJoint& joint : target.GetJoints())
+    for (const openstrata::motion::SkeletonJoint& joint : target.GetJoints())
     {
         sample.joints.push_back(joint.token);
     }
     sample.translations = pose.translations;
     sample.rotations = pose.rotations;
     sample.scales.reserve(target.GetSize());
-    for (const vrmRetarget::TargetJoint& joint : target.GetJoints())
+    for (const openstrata::motion::SkeletonJoint& joint : target.GetJoints())
     {
         sample.scales.emplace_back(joint.restScale);
     }

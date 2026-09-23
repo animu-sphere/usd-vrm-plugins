@@ -10,7 +10,7 @@
 //     computation (`vrm.computeTargetSkeleton`) on two other prims, through two
 //     relationships -- the second a relationship no schema defines, on a prim
 //     reached through an applied schema;
-//   * that the node is `vrmRetarget::ComputeRestPoseCorrection` and nothing
+//   * that the node is `openstrata::motion::ComputeRestPoseCorrection` and nothing
 //     more, compared with the library's answer over values written from the
 //     fixture;
 //   * invalidation from three rigs' worth of statements -- the source's rest,
@@ -19,7 +19,7 @@
 //   * every refusal, one statement each, and the one relationship statement
 //     the count cannot see.
 //
-// It links vrmRetarget for the result types and to build the expected values;
+// It links motionRetarget for the result types and to build the expected values;
 // the claim about the library is exactly that the node is one call of it.
 
 #include "pxr/pxr.h"
@@ -51,9 +51,9 @@
 #include "pxr/usd/usd/timeCode.h"
 
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/HumanoidMap.h>
-#include <vrmRetarget/RestPose.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/RetargetMap.h>
+#include <motionRetarget/RestPose.h>
+#include <motionRetarget/SkeletonDescriptor.h>
 
 #include <cassert>
 #include <cmath>
@@ -114,7 +114,8 @@ SameOrientation(const GfQuatf& a, const GfQuatf& b)
 // Two corrections that apply identically: the same bones corrected, each half
 // the same orientation.
 bool
-SameCorrection(const vrmRetarget::RestPoseCorrection& a, const vrmRetarget::RestPoseCorrection& b)
+SameCorrection(const openstrata::motion::RestPoseCorrection& a,
+               const openstrata::motion::RestPoseCorrection& b)
 {
     for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
@@ -268,10 +269,10 @@ ValueAt(const ExecUsdCacheView& view, int index, const char* what)
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::RestPoseCorrection
+openstrata::motion::RestPoseCorrection
 CorrectionAt(const ExecUsdCacheView& view, int index = kCorrectionKey)
 {
-    return ValueAt<vrmRetarget::RestPoseCorrection>(view, index, "rest-pose correction");
+    return ValueAt<openstrata::motion::RestPoseCorrection>(view, index, "rest-pose correction");
 }
 
 void
@@ -291,10 +292,10 @@ AssertRefused(const ExecUsdCacheView& view, int index)
 // feeds the library the same rigs.
 
 // /Clip/HumanoidSkeleton: identity rests, the semantic chain its paths state.
-vrmRetarget::SourceRestPose
+openstrata::motion::SourceRestPose
 ClipRest()
 {
-    vrmRetarget::SourceRestPose rest;
+    openstrata::motion::SourceRestPose rest;
     rest.localTranslations[Slot(HumanJoint::Hips)] = GfVec3f(0, 1, 0);
     rest.localTranslations[Slot(HumanJoint::Spine)] = GfVec3f(0, 0.1f, 0);
     rest.localTranslations[Slot(HumanJoint::Chest)] = GfVec3f(0, 0.15f, 0);
@@ -312,10 +313,10 @@ ClipRest()
 // /Posed/HumanoidSkeleton: the arm turned 90 degrees about -Z, the hips a root
 // of the semantic chain because `Reference` is no bone -- and Reference's own
 // rest, turned about +X, is in no slot.
-vrmRetarget::SourceRestPose
+openstrata::motion::SourceRestPose
 PosedRest()
 {
-    vrmRetarget::SourceRestPose rest;
+    openstrata::motion::SourceRestPose rest;
     rest.localTranslations[Slot(HumanJoint::Hips)] = GfVec3f(0, 0.9f, 0);
     rest.localTranslations[Slot(HumanJoint::Spine)] = GfVec3f(0, 0.1f, 0);
     rest.localTranslations[Slot(HumanJoint::Chest)] = GfVec3f(0, 0.15f, 0);
@@ -364,15 +365,16 @@ TestTheCorrectionComputes(const std::string& fixture)
         { timeReported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
-    vrmRetarget::TargetSkeleton target;
-    vrmRetarget::HumanoidMap map;
-    vrmRetarget::RestPoseCorrection correction;
+    openstrata::motion::SkeletonDescriptor target;
+    openstrata::motion::RetargetMap map;
+    openstrata::motion::RestPoseCorrection correction;
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        target = ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
-        ValueAt<vrmRetarget::TargetSkeleton>(view, kSourceKey, "source skeleton");
-        map = ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
+        target =
+            ValueAt<openstrata::motion::SkeletonDescriptor>(view, kTargetKey, "target skeleton");
+        ValueAt<openstrata::motion::SkeletonDescriptor>(view, kSourceKey, "source skeleton");
+        map = ValueAt<openstrata::motion::RetargetMap>(view, kMapKey, "humanoid map");
         correction = CorrectionAt(view);
         assert(mark.IsClean() && "the fixture's correction posted an error");
     }
@@ -380,7 +382,7 @@ TestTheCorrectionComputes(const std::string& fixture)
     // ---- the wrapper claim --------------------------------------------------
     // The node IS ComputeRestPoseCorrection over the clip's rest, the target
     // rig and the map: the library's answer over the same rigs, bit for bit.
-    assert(correction == vrmRetarget::ComputeRestPoseCorrection(ClipRest(), target, map) &&
+    assert(correction == openstrata::motion::ComputeRestPoseCorrection(ClipRest(), target, map) &&
            "the node's correction is not the library's over the same rigs");
 
     // ---- and what it means, from the definition -----------------------------
@@ -452,7 +454,7 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
         { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
-    vrmRetarget::RestPoseCorrection correction = CorrectionAt(system.Compute(request));
+    openstrata::motion::RestPoseCorrection correction = CorrectionAt(system.Compute(request));
 
     // ---- a source rest TRANSLATION moves: reported, and unchanged ----------
     // A correction is rotations only, so moving where the clip's head sits
@@ -493,7 +495,7 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
            "a source rest edit reported the target rig");
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RestPoseCorrection turned = CorrectionAt(view);
+        const openstrata::motion::RestPoseCorrection turned = CorrectionAt(view);
         assert(turned != correction);
         // The clip's spine rest is now 90 X: a sample at it lands on the
         // rig's spine rest, which is identity.
@@ -509,7 +511,7 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
     assert(!reported.count(kSourceKey) && !reported.count(kTargetKey));
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RestPoseCorrection unbound = CorrectionAt(view);
+        const openstrata::motion::RestPoseCorrection unbound = CorrectionAt(view);
         assert(unbound.identity[Slot(HumanJoint::Head)] && "an unbound head kept its correction");
         correction = unbound;
     }
@@ -527,7 +529,7 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
     assert(!reported.count(kSourceKey));
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RestPoseCorrection untwisted = CorrectionAt(view);
+        const openstrata::motion::RestPoseCorrection untwisted = CorrectionAt(view);
         // The hips are no longer turned, so they need no correction from an
         // identity clip hips.
         assert(untwisted.identity[Slot(HumanJoint::Hips)]);
@@ -545,16 +547,16 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
     assert(!reported.count(kMapKey));
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RestPoseCorrection posed = CorrectionAt(view);
-        const vrmRetarget::TargetSkeleton target =
-            ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
-        const vrmRetarget::HumanoidMap map =
-            ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
+        const openstrata::motion::RestPoseCorrection posed = CorrectionAt(view);
+        const openstrata::motion::SkeletonDescriptor target =
+            ValueAt<openstrata::motion::SkeletonDescriptor>(view, kTargetKey, "target skeleton");
+        const openstrata::motion::RetargetMap map =
+            ValueAt<openstrata::motion::RetargetMap>(view, kMapKey, "humanoid map");
         // As orientations, not bit for bit: the posed arm's rest is written
         // here as About(Z, -90) and decomposes off the matrix as its negation
         // (GfMatrix4d::ExtractRotationQuat picks the sign by branch).
-        assert(SameCorrection(posed,
-                              vrmRetarget::ComputeRestPoseCorrection(PosedRest(), target, map)));
+        assert(SameCorrection(
+            posed, openstrata::motion::ComputeRestPoseCorrection(PosedRest(), target, map)));
         // The posed arm rests at -90 Z and the rig's at +90 Z: a sample at the
         // clip's arm rest lands on the rig's.
         assert(SameOrientation(posed.Apply(HumanJoint::LeftUpperArm, About(kZ, -90.0f)),
@@ -636,7 +638,7 @@ TestTheSourceRelationshipIsCounted(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kCorrectionKey);
         // The map does not read the source, and answers.
-        ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
+        ValueAt<openstrata::motion::RetargetMap>(view, kMapKey, "humanoid map");
         if (!MarkNames(mark, c.message))
         {
             std::fprintf(stderr, "%s: expected an error naming \"%s\"\n", c.what, c.message);
@@ -698,7 +700,7 @@ TestASourceNamingOneBoneTwiceIsRefused(const std::string& fixture)
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     TfErrorMark mark;
     ExecUsdCacheView view = system.Compute(request);
-    ValueAt<vrmRetarget::TargetSkeleton>(view, kSourceKey, "source skeleton");
+    ValueAt<openstrata::motion::SkeletonDescriptor>(view, kSourceKey, "source skeleton");
     AssertRefused(view, kCorrectionKey);
     assert(MarkNames(mark, "hips at 'hips', hips at 'Reference/hips'"));
     mark.Clear();
@@ -736,7 +738,7 @@ TestAMapThatRefusedIsRefusedInTurn(const std::string& fixture)
 void
 TestADanglingSecondSourceIsInvisible(const std::string& fixture)
 {
-    const vrmRetarget::RestPoseCorrection expected = [&fixture]
+    const openstrata::motion::RestPoseCorrection expected = [&fixture]
     {
         const Rig rig = Open(fixture);
         ExecUsdSystem system(rig.stage);
@@ -754,7 +756,8 @@ TestADanglingSecondSourceIsInvisible(const std::string& fixture)
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
-        const vrmRetarget::RestPoseCorrection correction = CorrectionAt(system.Compute(request));
+        const openstrata::motion::RestPoseCorrection correction =
+            CorrectionAt(system.Compute(request));
         assert(mark.IsClean() && "a dangling second source was noticed after all -- the "
                                  "limitation this pins is gone, and the node should now refuse");
         assert(correction == expected);
@@ -782,15 +785,16 @@ TestAOneJointSourceWithNoRestIsTheFallback(const std::string& fixture)
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     TfErrorMark mark;
     ExecUsdCacheView view = system.Compute(request);
-    const vrmRetarget::RestPoseCorrection correction = CorrectionAt(view);
+    const openstrata::motion::RestPoseCorrection correction = CorrectionAt(view);
     assert(mark.IsClean());
 
-    vrmRetarget::SourceRestPose identity; // the library's own default
+    openstrata::motion::SourceRestPose identity; // the library's own default
     assert(correction ==
-               vrmRetarget::ComputeRestPoseCorrection(
+               openstrata::motion::ComputeRestPoseCorrection(
                    identity,
-                   ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton"),
-                   ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map")) &&
+                   ValueAt<openstrata::motion::SkeletonDescriptor>(view, kTargetKey,
+                                                                   "target skeleton"),
+                   ValueAt<openstrata::motion::RetargetMap>(view, kMapKey, "humanoid map")) &&
            "a one-joint source with no rest was not the identity rest");
     std::printf("execVrm correction: a one-joint source with no rest pose is "
                 "the identity the fallback supplied\n");

@@ -111,9 +111,9 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
 | `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary, `motion.identityPose`, `motion.sampleAnimation`, `motion.priorPose`, `motion.filterPose` and `motion.extractRootMotion` exist (2026-09-06), and `motion.poseHistory` and `motion.interpolatePose` (2026-09-12), and `motion.blendPoses` (2026-09-13), which completes the OpenExec plan's P0-4 node set; the rest of this row's list is outside P0-4 and does not exist yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
 | `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). |
-| `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). **Completed before OpenExec** (motion policy §18.12). |
-| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
-| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
+| `vrmRig` | plain static CMake library (`libs/vrmRig/`; `vrmRetarget` until 2026-09-23) | What a VRM rig adds to a retarget, and none of it retargets: VRM 1.0's required-bone set, which every caller hands the retarget, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). Links `motionCore` and nothing else of `usd-motion-plugins` (§9.5). |
+| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
+| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `motionRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
 
 **`motionCore` and `motionRuntime` left with MIG-1 and MIG-2** (2026-09-21),
 and this workspace consumes them: they are `usd-motion-plugins`' `motionCore`,
@@ -125,6 +125,13 @@ listed here. `motionSource`, `motionBvh` and the BVH tools are next, and they
 wait for one thing only — an external artifact declared by a tool descriptor is
 not materialized by `ost` 0.23.2, and those two have no library consumer left
 here.
+
+**The generic retarget left with MIG-2** (2026-09-23): the pose retargeter,
+the skeleton and the joint map, rest-pose handling, root-motion policy and the
+body retarget's codes are `usd-motion-plugins`' `motionRetarget`, and
+`execVrm`, `motion_retarget` and the parity harness consume it by digest. What
+stayed of `vrmRetarget` is the row above, renamed `vrmRig` because the old name
+would have outlived every retarget in it.
 
 **Ten identities left this table with MIG-4**, on 2026-09-21, and are
 `motion-connectors`' now: the two shared live leaves (`liveTransport`, `osc`),
@@ -276,9 +283,9 @@ including the implementation order and per-adapter acceptance criteria, is
 
 Shared code is never a plugin bundle: `vrmContainer` has no plugin
 registration, no `plugInfo.json`, and no OpenUSD types in its public API. The
-same rule binds `motionCore`, `motionRuntime`, `vrmRetarget`, and every adapter
+same rule binds `motionCore`, `motionRuntime`, `vrmRig`, and every adapter
 library under `adapters/` — and `motionCore` additionally carries no OpenUSD
-*stage* dependency, only value types (`GfVec3f`, `GfQuatf`). `vrmRetarget` is
+*stage* dependency, only value types (`GfVec3f`, `GfQuatf`). `vrmRig` is
 under the same restriction and links one OpenUSD library beyond `gf`: `js`,
 which parses a string into numbers and objects and touches no stage, layer,
 plugin registry or exec. It is there because a VRM 0.x rig and a VRM 1.0 rig
@@ -303,14 +310,15 @@ usdVrmPackageResolver -> vrmContainer
 usdVrmaFileFormat     -> vrmContainer
 usdVrmaFileFormat     -> motionCore
 motionRuntime         -> motionCore
-vrmRetarget           -> motionCore
-vrmRetarget           -> motionRuntime
-motion_retarget       -> vrmRetarget, motionRuntime, motionCore, OpenUSD stage
+vrmRig                -> motionCore
+motion_retarget       -> motionRetarget, vrmRig, motionSampling, motionCore,
+                         OpenUSD stage
 motion_capture        -> motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
 execVrm               -> vrmSchema
-execVrm               -> motionCore, motionRuntime, vrmRetarget
+execVrm               -> motionCore, motionSampling, motionRecording,
+                         motionRetarget, vrmRig
 execVrm               -> execMotion  (runtime only: `vrm.computeBoundPose`
                          reads `motion.sampleAnimation` by name; nothing is
                          linked, and the reverse edge is not allowed)
@@ -471,8 +479,12 @@ execVrm               -> declaring UsdSkelAnimation, and execMotion -> declaring
 motionCore            -> any vendor SDK, any product-named code, any network
                          protocol, any OpenUSD stage authoring
 motionRuntime         -> vrmSchema, any USD file-format bundle
-vrmRetarget           -> network protocol, OpenExec
-usdVrmaFileFormat     -> live receiver, generator, vrmRetarget, a target VRM
+vrmRig                -> network protocol, OpenExec
+vrmRig                -> motionRetarget, and every other usd-motion-plugins
+                         package but motionCore (the VRM half includes nothing
+                         from the generic half, §9.5)
+usdVrmaFileFormat     -> live receiver, generator, motionRetarget, vrmRig, a
+                         target VRM
 motionCore/motionRuntime/vrmRetarget -> adapters/*  (adapters depend on the
                          core; the core never depends on an adapter)
 execMotion/execVrm    -> adapters/*  (same rule, one layer up: an OpenExec
@@ -508,7 +520,7 @@ motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> osc
 execMotion/execVrm    -> osc
 
 motionCore            -> ExecIr
-vrmRetarget           -> ExecIr
+vrmRig                -> ExecIr
 usdVrmFileFormat      -> authoring ExecIr prims as a requirement of import
 
 motionTracking        -> motionRuntime, vrmRetarget, motionSource, motionBvh,
@@ -526,14 +538,15 @@ motionSource          -> motionBvh, motionFbx, or any other reader
 motionCore            -> motionSource, motionBvh
 motionRuntime         -> motionBvh, motionSource
 motionBvh             -> motionFbx, and any future reader -> any other reader
-motionBvh             -> vrmRetarget, vrmSchema, any USD file-format bundle
+motionBvh             -> motionRetarget, vrmRig, vrmSchema, any USD
+                         file-format bundle
 motionBvh/motionSource-> adapters/*  (and adapters/* -> motionBvh, motionSource:
                          live input and file input meet at canonical motion and
                          nowhere earlier)
 motionBvh             -> a producer name in code, a default profile, or a
                          joint-name heuristic standing in for one
 motionSource/motionBvh-> a target VRM joint index, a target rest pose, or any
-                         retarget step (that is vrmRetarget's, once)
+                         retarget step (that is motionRetarget's, once)
 any cycle, including self-cycles
 ```
 
@@ -564,9 +577,10 @@ reviewer can check them without opening the policy:
   unmet ([the retarget report](../reports/openusd/26.08-openexec-retarget.md)
   §3).
 
-- **`vrmRetarget` does not depend on OpenExec.** The retarget core is finished
-  and testable before any OpenExec node exists (motion policy §10.1, §18.12);
-  `execMotion` / `execVrm` nodes are thin wrappers over it.
+- **`vrmRig` does not depend on OpenExec.** What a VRM rig adds to a retarget
+  is finished and testable before any OpenExec node exists (motion policy
+  §10.1, §18.12), as the retarget itself is in `motionRetarget`; `execMotion`
+  / `execVrm` nodes are thin wrappers over them.
 - **`usdVrmaFileFormat` is avatar-independent.** It authors a canonical semantic
   humanoid skeleton, never a target skeleton's joint order. Retarget is a
   separate, later step (motion policy §4.2, §4.3).
@@ -1064,7 +1078,7 @@ consumer in any case.
 
 | Identity | Destination | What arrives there | What stays here |
 | --- | --- | --- | --- |
-| `vrmRetarget` | split, along the line §9.5 draws | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget` | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38); building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
+| `vrmRetarget` | split, along the line §9.5 draws — **done 2026-09-23** | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget`, consumed here | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38), as `vrmRig`; building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
 | `motion_capture` | `usd-motion-plugins` (`motion_record`) | trace → avatar-independent clip | nothing |
@@ -1138,21 +1152,23 @@ every consumer here twice.
 | Here | In `usd-motion-plugins` |
 | --- | --- |
 | namespace `motion` | `openstrata::motion` |
-| `motion::MotionPose` | `MotionPose` |
-| `motion::MotionClip` | `MotionClip` |
-| `motion::HumanJoint` | `HumanJoint` |
+| `motion::HumanoidPose` | `MotionPose` |
+| `motion::HumanoidAnimation` | `MotionClip` |
+| `motion::HumanBone` | `HumanJoint` |
 | `motion::RootMotion` | `RootMotion` |
 | `vrmRetarget::TargetSkeleton` | `SkeletonDescriptor` |
 | `vrmRetarget::HumanoidMap` | `RetargetMap` |
-| `motion::MotionChannelSet` on the pose | `MotionChannelSet` |
+| `motion::ExpressionWeights` on the pose | `MotionChannelSet` |
 | the generic half of `vrmRetarget` (namespace, `VRMRETARGET_*` macros, include root) | `motionRetarget` |
 | `VRM_RETARGET_*` diagnostic codes | the destination's code style (its DIAG-O1) |
 
 Where a published contract there chooses differently, the published contract
-wins and this table is corrected. `tests/boundary/motion-vocabulary.json` lists
-every VRM-vocabulary name the moving headers still spell, and which of these
-rows or which §9.5 finding disposes of it. `workspace_motion_vocabulary` fails
-on a name it does not list.
+wins and this table is corrected. Until the last of the moving headers left,
+`tests/boundary/motion-vocabulary.json` listed every VRM-vocabulary name they
+still spelled and which of these rows or which §9.5 finding disposed of it,
+and `workspace_motion_vocabulary` failed on a name it did not list. Both were
+retired on 2026-09-23 with the generic half of `vrmRetarget`, the last headers
+they scanned.
 
 ### 9.4 Sequences
 
@@ -1189,6 +1205,12 @@ What stays in `libs/vrmRetarget/` is then two resolvers and a bone set, and
 none of it retargets. Whether it keeps the name is decided in MIG-2, when it
 happens. It is not decided here, because renaming a library that is still
 whole would change every consumer twice.
+
+**It did not keep it.** The cut was made on 2026-09-23, and what stayed is
+`vrmRig` (`libs/vrmRig/`), the name decided on 2026-09-20. The line is
+kept mechanically after the cut: `vrmRig_boundaries` forbids every
+`usd-motion-plugins` package but `motionCore`, so the VRM half still includes
+nothing from the generic half.
 
 `motion_retarget`'s `StageIo` splits along the same seam, and the move
 (2026-09-20,

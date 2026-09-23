@@ -197,15 +197,15 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* 
             }
             if (mode == "hips")
             {
-                options->rootMotion.mode = vrmRetarget::RootMotionMode::Hips;
+                options->rootMotion.mode = openstrata::motion::RootMotionMode::Hips;
             }
             else if (mode == "root")
             {
-                options->rootMotion.mode = vrmRetarget::RootMotionMode::RootJoint;
+                options->rootMotion.mode = openstrata::motion::RootMotionMode::RootJoint;
             }
             else if (mode == "ignore")
             {
-                options->rootMotion.mode = vrmRetarget::RootMotionMode::Ignore;
+                options->rootMotion.mode = openstrata::motion::RootMotionMode::Ignore;
             }
             else
             {
@@ -279,7 +279,7 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* 
         *error = "--output is required";
         return false;
     }
-    if (options->rootMotion.mode == vrmRetarget::RootMotionMode::RootJoint &&
+    if (options->rootMotion.mode == openstrata::motion::RootMotionMode::RootJoint &&
         options->rootJointToken.empty())
     {
         *error = "--root-motion root also needs --root-joint";

@@ -55,7 +55,7 @@ if(EXISTS "${_motion_bvh_lib}/tests/check_boundaries.py")
     # The converter's boundary is a different one, and `--crossing` is where
     # that is said out loud. It may author a stage and speak the humanoid
     # vocabulary -- that is what a converter is -- and it may not name
-    # vrmRetarget or vrmSchema, because the target avatar is the one thing this
+    # motionRetarget or vrmSchema, because the target avatar is the one thing this
     # layer never binds to (roadmap §4). Two executables in one directory means
     # two invocations, not one relaxed rule for both.
     add_test(NAME motion_bvh_convert_boundaries

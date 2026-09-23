@@ -85,6 +85,16 @@ this product, which is what this table is for; what they no longer say is
 anything about the next release, where this repository ships no live input at
 all.
 
+**The generic motion libraries are consumed, not built, as of 2026-09-21 and
+2026-09-23.** `motionCore`, `motionRuntime` and the retarget half of
+`vrmRetarget` are `usd-motion-plugins`' `motionCore`, `motionSampling`,
+`motionRecording` and `motionRetarget`, and this product links the published
+packages. The rows below that name them record what shipped here through
+v0.9.0; the capability ships on, from those packages. What stayed of
+`vrmRetarget` — `ExpressionResolver`, `LookAtEvaluator` and VRM 1.0's required
+bones — is `vrmRig` from the next release, and the retarget codes print as
+`MOTION_RETARGET_*`.
+
 Its own status:
 
 | Component | Since | Status |

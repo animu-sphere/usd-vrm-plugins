@@ -32,7 +32,7 @@ if(NOT DEFINED MOTIONCAPTURE_BUILD_TESTS)
 endif()
 
 # Like motion_retarget, this tool is the only stage-aware part of its own path:
-# motionRuntime stays value-only (WORKSPACE.md §2). It does not link vrmRetarget
+# motionRuntime stays value-only (WORKSPACE.md §2). It does not link motionRetarget
 # -- it authors the avatar-independent semantic clip and stops there, so the
 # retarget step is the existing tool, unchanged.
 if(NOT pxr_FOUND)

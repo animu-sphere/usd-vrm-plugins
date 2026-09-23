@@ -574,7 +574,7 @@ def main() -> int:
     # Vendor-neutral by specification: nothing VRM-shaped, no live leaf, and
     # never execVrm, whose edge to this bundle is the one direction allowed.
     forbidden_neighbours = re.compile(
-        r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|UsdVrm\w*|execVrm|"
+        r"\b(?:vrmSchema|vrmContainer|vrmRig|motionRetarget|usdVrm\w*|UsdVrm\w*|execVrm|"
         r"ExecVrm\w*|cgltf|mocopi|vrchat|ardy|liveTransport|motionTracking|"
         r"vrmAdapter\w*)\b|\bosc::|\bosc/",
         re.IGNORECASE)

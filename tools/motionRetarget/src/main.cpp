@@ -2,16 +2,18 @@
 //
 // motion_retarget — Motion Phase C's bake tool.
 //
-// It is the composition point, not the algorithm: `vrmRetarget` does the
-// retargeting over plain values, `StageIo` does everything that touches a
-// stage, and this file wires the two together and reports what happened.
+// It is the composition point, not the algorithm: `motionRetarget` does the
+// retargeting over plain values, `vrmRig` resolves the face and the gaze,
+// `StageIo` does everything that touches a stage, and this file wires them
+// together and reports what happened.
 #include "Options.h"
 #include "Provenance.h"
 #include "StageIo.h"
 
-#include "vrmRetarget/ExpressionResolver.h"
-#include "vrmRetarget/LookAtEvaluator.h"
-#include "vrmRetarget/PoseRetargeter.h"
+#include "motionRetarget/PoseRetargeter.h"
+#include "vrmRig/ExpressionResolver.h"
+#include "vrmRig/LookAtEvaluator.h"
+#include "vrmRig/RequiredBones.h"
 
 #include "motionSampling/Resample.h"
 
@@ -78,15 +80,15 @@ ReportWarnings(const std::vector<std::string>& warnings, bool quiet)
 // One line per diagnostic, in the frozen code's own format, so a script can
 // match the code and the subject without parsing a sentence.
 void
-ReportDiagnostics(const vrmRetarget::RetargetDiagnostics& diagnostics, bool quiet)
+ReportDiagnostics(const openstrata::motion::RetargetDiagnostics& diagnostics, bool quiet)
 {
     if (quiet)
     {
         return;
     }
-    for (const vrmRetarget::RetargetDiagnostic& diagnostic : diagnostics.reported)
+    for (const openstrata::motion::RetargetDiagnostic& diagnostic : diagnostics.reported)
     {
-        std::cerr << "motion_retarget: " << vrmRetarget::FormatRetargetDiagnostic(diagnostic)
+        std::cerr << "motion_retarget: " << openstrata::motion::FormatRetargetDiagnostic(diagnostic)
                   << "\n";
     }
 }
@@ -114,12 +116,12 @@ JoinNames(const std::vector<std::string>& names)
 // silent omission -- an operator whose clip turns a face red sees why it did
 // not.
 std::size_t
-CountMaterialColors(const std::vector<vrmRetarget::ResolvedExpressions>& expressions)
+CountMaterialColors(const std::vector<vrmRig::ResolvedExpressions>& expressions)
 {
     std::set<std::pair<std::string, std::string>> slots;
-    for (const vrmRetarget::ResolvedExpressions& sample : expressions)
+    for (const vrmRig::ResolvedExpressions& sample : expressions)
     {
-        for (const vrmRetarget::ResolvedMaterialColor& color : sample.materialColors)
+        for (const vrmRig::ResolvedMaterialColor& color : sample.materialColors)
         {
             slots.emplace(color.material, color.colorType);
         }
@@ -136,15 +138,15 @@ CountMaterialColors(const std::vector<vrmRetarget::ResolvedExpressions>& express
 // of the retargeted pose -- in the skeleton space the clip's target point is
 // already in, since a clip's target and its hips translation are stated in the
 // same space.
-std::vector<vrmRetarget::ResolvedLookAt>
+std::vector<vrmRig::ResolvedLookAt>
 EvaluateGaze(const motionRetargetTool::Avatar& avatar, const motionRetargetTool::Clip& clip,
              const openstrata::motion::MotionClip& source,
-             const vrmRetarget::RetargetedAnimation& retargeted,
-             vrmRetarget::LookAtDiagnostics* diagnostics)
+             const openstrata::motion::RetargetedAnimation& retargeted,
+             vrmRig::LookAtDiagnostics* diagnostics)
 {
-    std::vector<vrmRetarget::ResolvedLookAt> gaze;
+    std::vector<vrmRig::ResolvedLookAt> gaze;
     const int head = avatar.map.GetJointIndex(openstrata::motion::HumanJoint::Head);
-    if (head == vrmRetarget::HumanoidMap::kUnmapped)
+    if (head == openstrata::motion::RetargetMap::kUnmapped)
     {
         // Without a head there is no place for the eyes to be, so there is
         // nothing to evaluate against -- and the retarget itself already
@@ -155,17 +157,17 @@ EvaluateGaze(const motionRetargetTool::Avatar& avatar, const motionRetargetTool:
         return gaze;
     }
 
-    vrmRetarget::LookAtEvaluateOptions options;
+    vrmRig::LookAtEvaluateOptions options;
     options.clipOffsetFromHeadBone = clip.lookAtOffsetFromHeadBone;
-    const vrmRetarget::LookAtEvaluator evaluator(avatar.lookAtRig, options);
+    const vrmRig::LookAtEvaluator evaluator(avatar.lookAtRig, options);
 
     const std::size_t count = std::min(source.samples.size(), retargeted.samples.size());
     gaze.reserve(count);
     for (std::size_t i = 0; i < count; ++i)
     {
-        vrmRetarget::LookAtHead where;
-        if (!vrmRetarget::GetJointWorldTransform(avatar.skeleton, retargeted.samples[i], head,
-                                                 &where.orientation, &where.position))
+        vrmRig::LookAtHead where;
+        if (!openstrata::motion::GetJointWorldTransform(avatar.skeleton, retargeted.samples[i],
+                                                        head, &where.orientation, &where.position))
         {
             diagnostics->warnings.push_back(
                 "the target rig's head joint has no resolvable transform, so "
@@ -189,9 +191,11 @@ EvaluateGaze(const motionRetargetTool::Avatar& avatar, const motionRetargetTool:
 // usual shape, a glTF node with a translation and nothing else -- and a rig
 // where they do not is told about rather than silently read one way.
 std::size_t
-ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const openstrata::motion::MotionClip& source,
-                  const std::vector<vrmRetarget::ResolvedLookAt>& gaze,
-                  vrmRetarget::RetargetedAnimation* retargeted, std::vector<std::string>* warnings)
+ApplyEyeRotations(const motionRetargetTool::Avatar& avatar,
+                  const openstrata::motion::MotionClip& source,
+                  const std::vector<vrmRig::ResolvedLookAt>& gaze,
+                  openstrata::motion::RetargetedAnimation* retargeted,
+                  std::vector<std::string>* warnings)
 {
     std::map<std::string, int> jointIndex;
     for (const std::string& token : {avatar.lookAtRig.leftEyeJoint, avatar.lookAtRig.rightEyeJoint})
@@ -201,7 +205,7 @@ ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const openstrata::mo
             continue;
         }
         const int index = avatar.skeleton.FindJoint(token);
-        if (index == vrmRetarget::TargetSkeleton::kNoParent)
+        if (index == openstrata::motion::SkeletonDescriptor::kNoParent)
         {
             continue;
         }
@@ -261,7 +265,7 @@ ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const openstrata::mo
     {
         if (gaze[i].hasGaze)
         {
-            for (const vrmRetarget::LookAtEyeRotation& eye : gaze[i].eyeRotations)
+            for (const vrmRig::LookAtEyeRotation& eye : gaze[i].eyeRotations)
             {
                 const auto found = jointIndex.find(eye.joint);
                 if (found == jointIndex.end())
@@ -357,9 +361,12 @@ main(int argc, char** argv)
         source = &resampled;
     }
 
-    vrmRetarget::RetargetOptions retargetOptions;
+    // The target is a VRM avatar, so the bones it must bind are VRM 1.0's: the
+    // retarget holds no required set of its own.
+    openstrata::motion::RetargetOptions retargetOptions;
     retargetOptions.rootMotion = options.rootMotion;
-    if (retargetOptions.rootMotion.mode == vrmRetarget::RootMotionMode::RootJoint)
+    retargetOptions.requiredBones = vrmRig::GetRequiredBones();
+    if (retargetOptions.rootMotion.mode == openstrata::motion::RootMotionMode::RootJoint)
     {
         const int index = avatar.skeleton.FindJoint(options.rootJointToken);
         if (index < 0)
@@ -373,23 +380,23 @@ main(int argc, char** argv)
         retargetOptions.rootMotion.rootJointIndex = index;
     }
 
-    const vrmRetarget::PoseRetargeter retargeter(avatar.skeleton, avatar.map, clip.restPose,
-                                                 retargetOptions);
-    vrmRetarget::RetargetDiagnostics diagnostics;
+    const openstrata::motion::PoseRetargeter retargeter(avatar.skeleton, avatar.map, clip.restPose,
+                                                        retargetOptions);
+    openstrata::motion::RetargetDiagnostics diagnostics;
     // Not const: a bone-driven look-at writes its eye rotations into these very
     // arrays, which is what lets the gaze reach the stage through the joint
     // authoring that already exists rather than through a second path.
-    vrmRetarget::RetargetedAnimation retargeted = retargeter.Retarget(*source, &diagnostics);
+    openstrata::motion::RetargetedAnimation retargeted = retargeter.Retarget(*source, &diagnostics);
     ReportDiagnostics(diagnostics, options.quiet);
 
     // The gaze, between the body and the face because it needs the first and
     // may feed the second: a bone-driven look-at writes eye rotations over the
     // retargeted joints, and an expression-driven one produces the very weights
     // the expression resolve below consumes.
-    std::vector<vrmRetarget::ResolvedLookAt> gaze;
-    vrmRetarget::LookAtDiagnostics lookAtDiagnostics;
+    std::vector<vrmRig::ResolvedLookAt> gaze;
+    vrmRig::LookAtDiagnostics lookAtDiagnostics;
     std::size_t eyeJointsDriven = 0;
-    const bool gazeDrivesExpressions = avatar.lookAtRig.type == vrmRetarget::LookAtType::Expression;
+    const bool gazeDrivesExpressions = avatar.lookAtRig.type == vrmRig::LookAtType::Expression;
     // An expression-driven gaze reaches the stage as blend-shape weights and by
     // no other route, so --no-expressions takes it along with the face. The
     // evaluation is skipped rather than performed and discarded, because the
@@ -444,11 +451,11 @@ main(int argc, char** argv)
     // binds through the one accumulator that already sums expressions -- and a
     // rig that binds a gaze expression and a face expression to the same morph
     // target gets the sum, which is the rule rather than a coincidence.
-    std::vector<vrmRetarget::ResolvedExpressions> expressions;
-    vrmRetarget::ExpressionDiagnostics expressionDiagnostics;
+    std::vector<vrmRig::ResolvedExpressions> expressions;
+    vrmRig::ExpressionDiagnostics expressionDiagnostics;
     if (options.expressions)
     {
-        const vrmRetarget::ExpressionResolver resolver(avatar.expressionRig);
+        const vrmRig::ExpressionResolver resolver(avatar.expressionRig);
         expressions.reserve(source->samples.size());
         for (std::size_t i = 0; i < source->samples.size(); ++i)
         {
@@ -485,7 +492,7 @@ main(int argc, char** argv)
                     }
                 }
             }
-            vrmRetarget::ResolvedExpressions resolved =
+            vrmRig::ResolvedExpressions resolved =
                 resolver.Resolve(weights, &expressionDiagnostics);
             // The weights overload carries no timestamp, and the samples have
             // to stay on the clip's instants for the authoring step to line

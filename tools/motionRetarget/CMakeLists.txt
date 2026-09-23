@@ -33,7 +33,8 @@ endif()
 
 # This is the one place in the motion layer that opens a stage. The libraries
 # below it stay value-only (WORKSPACE.md §2); the tool reads the rig and the
-# clip off stages, hands plain values to vrmRetarget, and authors the result.
+# clip off stages, hands plain values to motionRetarget and vrmRig, and
+# authors the result.
 # It reads the humanoid mapping as `vrm:humanBones:*` attributes rather than
 # through VrmHumanoidAPI, so it needs no link against the vrmSchema bundle.
 if(NOT pxr_FOUND)
@@ -41,21 +42,19 @@ if(NOT pxr_FOUND)
 endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
-if(NOT TARGET vrmRetarget::vrmRetarget)
-    find_package(vrmRetarget REQUIRED CONFIG)
+if(NOT TARGET motionRetarget::motionRetarget)
+    find_package(motionRetarget REQUIRED CONFIG)
 endif()
-# By name rather than through vrmRetarget's PUBLIC re-export, for the reason
-# `motion_bvh` states about `motionSource`: the tool resamples the clip itself,
-# before either half of the bake expands it, so it has a real edge on
-# `motionRuntime` and declaring it leaves nothing to be inferred from a
+if(NOT TARGET vrmRig::vrmRig)
+    find_package(vrmRig REQUIRED CONFIG)
+endif()
+# By name rather than through a PUBLIC re-export, for the reason `motion_bvh`
+# states about `motionSource`: the tool resamples the clip itself, before
+# either half of the bake expands it, so it has a real edge on
+# `motionSampling` and declaring it leaves nothing to be inferred from a
 # transitive dependency that could stop being transitive.
 if(NOT TARGET motionSampling::motionSampling)
     find_package(motionSampling REQUIRED CONFIG)
-endif()
-# The other half of what was one `motionRuntime`: the live-capture intake and
-# the capture trace are `motionRecording`'s.
-if(NOT TARGET motionRecording::motionRecording)
-    find_package(motionRecording REQUIRED CONFIG)
 endif()
 
 # `--build-info`'s stamp. Like usdVrmFileFormat's buildInfo.json it carries no
@@ -95,9 +94,9 @@ target_include_directories(motion_retarget PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/
 target_compile_features(motion_retarget PRIVATE cxx_std_17)
 target_link_libraries(motion_retarget
     PRIVATE
-        vrmRetarget::vrmRetarget
-        motionSampling::motionSampling
-        motionRecording::motionRecording)
+        motionRetarget::motionRetarget
+        vrmRig::vrmRig
+        motionSampling::motionSampling)
 
 foreach(_usd_lib usd usdGeom usdSkel sdf plug tf gf vt js arch)
     if(TARGET ${_usd_lib})

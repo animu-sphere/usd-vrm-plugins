@@ -136,7 +136,7 @@ TheTable()
         const auto code = static_cast<OpenExecDiagnosticCode>(i);
         assert(FindOpenExecDiagnosticCode(OpenExecDiagnosticCodeString(code)) == code);
     }
-    assert(!FindOpenExecDiagnosticCode("VRM_RETARGET_UNBOUND_DRIVEN_BONE") &&
+    assert(!FindOpenExecDiagnosticCode("MOTION_RETARGET_UNBOUND_DRIVEN_BONE") &&
            "the two namespaces are separate");
 
     // Two errors that end a frame, one warning the driver recovered from.

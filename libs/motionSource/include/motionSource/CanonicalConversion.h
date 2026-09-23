@@ -10,11 +10,11 @@
 //
 // What it is **not** allowed to know stays exactly what it was: the target
 // avatar. Nothing here reads a VRM, a joint order, or a target rest pose, and
-// the day it does it becomes a second `vrmRetarget` whose fork nobody notices
+// the day it does it becomes a second `motionRetarget` whose fork nobody notices
 // until two sources disagree about one avatar (roadmap §2, §4). The pipeline is
 //
 //     source local motion + source rest  ->  canonical semantic motion
-//                                        ->  vrmRetarget + target rest
+//                                        ->  motionRetarget + target rest
 //
 // and this file is the first arrow only.
 //
