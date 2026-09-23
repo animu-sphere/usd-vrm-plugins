@@ -341,6 +341,12 @@ Current schema contract version: **1**.
 
 ### Documentation
 
+- **[ost report 47](docs/reports/ost/47-2026-09-24-v0.23.5-the-bundle-reaches-the-suite-and-the-schema-stage-loses-a-file.md)**,
+  written from the consuming change that deleted `plugins/execMotion`
+  (#227). Report 46's P1 is delivered: the root build composes the pinned
+  bundle, and every suite that composes it passes. The same release breaks the
+  product package on `vrmSchema`, whose managed build records a
+  `lib/vrmSchema.exp` its package stage does not carry (P1, regression).
 - **[ost report 46](docs/reports/ost/46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md)**,
   written from the ecosystem's move to `ost` 0.23.4 and a scratch rehearsal of
   deleting `plugins/execMotion`. All three of report 45's asks are delivered,
