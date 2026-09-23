@@ -56,8 +56,10 @@ LABEL_SOURCES = {
     # converted recording alone.
     "motion.cli": ["tools/motionRetarget/tests"],
     "motion.integration": [".", "tests/parity"],
+    # execMotion's own suites left with the bundle in MIG-2 and run in
+    # `usd-motion-plugins`; what stays is the consumer side, execVrm's and the
+    # parity cases, which load the consumed bundle.
     "motion.openexec": [
-        "plugins/execMotion/tests",
         "plugins/execVrm/tests",
         "tests/parity",
     ],
@@ -68,7 +70,7 @@ LABEL_SOURCES = {
 EVERY_TEST = {
     "motion.retarget": ["libs/vrmRig/tests"],
     "motion.cli": LABEL_SOURCES["motion.cli"],
-    "motion.openexec": ["plugins/execMotion/tests", "plugins/execVrm/tests"],
+    "motion.openexec": ["plugins/execVrm/tests"],
 }
 
 # The members' test directories, at the depths the root CMakeLists.txt
@@ -258,9 +260,9 @@ def selftest():
            ["motion.integration: . contributes no test carrying it"])
 
     # A new test in a directory-wide label's directory, registered without it.
-    added = tests + [("execMotion_new", "plugins/execMotion/tests", set())]
+    added = tests + [("execVrm_new", "plugins/execVrm/tests", set())]
     expect("a test without its directory's label", added, members,
-           ["motion.openexec: execMotion_new (plugins/execMotion/tests) "
+           ["motion.openexec: execVrm_new (plugins/execVrm/tests) "
             "does not carry it"])
 
     # A misspelled label: reported as unknown, and the directory it was meant

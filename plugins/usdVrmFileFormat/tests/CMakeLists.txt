@@ -174,8 +174,11 @@ if(TARGET motionCore::motionCore)
     # find, rather than freezing a short union. It registers no USD *type* --
     # its plugInfo carries an Exec block and nothing else -- so its presence
     # changes what the gate can verify, not what discovery.json contains.
-    set(_exec_motion_bundle "${_bundle_dir}/../execMotion")
-    set(_exec_motion_resources "${_exec_motion_bundle}/plugin/resources/execMotion")
+    # It is the consumed bundle now (cmake/UsdVrmExecMotion.cmake), which the
+    # root build this gate runs in always has.
+    include("${_bundle_dir}/../../cmake/UsdVrmExecMotion.cmake")
+    set(_exec_motion_bundle "${USDVRM_EXEC_MOTION_BUNDLE}")
+    set(_exec_motion_resources "${USDVRM_EXEC_MOTION_RESOURCES}")
     # execVrm joins for execMotion's reason, and like it registers no USD type.
     # Its Exec block names `UsdVrmHumanoidAPI`, a type vrmSchema declares --
     # which this session already carries, so the name resolves here as it

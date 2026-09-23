@@ -5,6 +5,12 @@
 # print "passed" having checked nothing.
 set(_exec_vrm_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 
+# The consumed execMotion: usd-motion-plugins' published bundle, which `ost`
+# materializes for the root build (cmake/UsdVrmExecMotion.cmake). The suites
+# that compose it are registered only where it is; a standalone
+# `ost plugin build` of this bundle builds their executables and says so.
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/UsdVrmExecMotion.cmake")
+
 # ---------------------------------------------------------------------------
 # The seam, with no stage and no exec
 # ---------------------------------------------------------------------------
@@ -89,7 +95,7 @@ add_test(NAME execVrm_correction
 # The retarget, through this bundle AND execMotion's: the pose a retarget reads
 # is `motion.sampleAnimation`'s, reached across `skel:animationSource`, so the
 # session needs the bundle that registers it -- `requires.bundles` in the
-# manifest, and here its plugInfo.json and library, from its sibling directory.
+# manifest, and here its plugInfo.json and library, from the consumed bundle.
 add_executable(execVrm_retarget_tests test_exec_vrm_retarget.cpp)
 target_include_directories(execVrm_retarget_tests PRIVATE ${PXR_INCLUDE_DIRS})
 target_link_libraries(execVrm_retarget_tests PRIVATE
@@ -102,8 +108,10 @@ if(MSVC)
 endif()
 set(_exec_vrm_retarget_fixture
     "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/retargeted_rig.usda")
-add_test(NAME execVrm_retarget
-    COMMAND execVrm_retarget_tests "${_exec_vrm_retarget_fixture}")
+if(USDVRM_EXEC_MOTION_BUNDLE)
+    add_test(NAME execVrm_retarget
+        COMMAND execVrm_retarget_tests "${_exec_vrm_retarget_fixture}")
+endif()
 
 # The retarget as an animation sample, over the retarget's fixture and in the
 # retarget's session. It links usdSkel for what the sample is compared against:
@@ -120,8 +128,10 @@ if(MSVC)
         PRIVATE NOMINMAX _USE_MATH_DEFINES)
     target_compile_options(execVrm_joint_transforms_tests PRIVATE /bigobj /utf-8)
 endif()
-add_test(NAME execVrm_joint_transforms
-    COMMAND execVrm_joint_transforms_tests "${_exec_vrm_retarget_fixture}")
+if(USDVRM_EXEC_MOTION_BUNDLE)
+    add_test(NAME execVrm_joint_transforms
+        COMMAND execVrm_joint_transforms_tests "${_exec_vrm_retarget_fixture}")
+endif()
 
 # The retarget's diagnostics, over the retarget's fixture and in the retarget's
 # session: what these nodes answer is what that retarget reported.
@@ -135,8 +145,15 @@ if(MSVC)
         PRIVATE NOMINMAX _USE_MATH_DEFINES)
     target_compile_options(execVrm_diagnostics_tests PRIVATE /bigobj /utf-8)
 endif()
-add_test(NAME execVrm_diagnostics
-    COMMAND execVrm_diagnostics_tests "${_exec_vrm_retarget_fixture}")
+if(USDVRM_EXEC_MOTION_BUNDLE)
+    add_test(NAME execVrm_diagnostics
+        COMMAND execVrm_diagnostics_tests "${_exec_vrm_retarget_fixture}")
+else()
+    message(STATUS
+        "execVrm: no consumed execMotion in this build (a standalone configure); "
+        "execVrm_retarget, _joint_transforms, _diagnostics and _boundaries are "
+        "built and not registered -- the root build registers them")
+endif()
 
 # The same executable, in a session with vrmSchema and no execMotion: what
 # this bundle's second runtime requirement looks like when it is not met.
@@ -155,10 +172,10 @@ add_test(NAME execVrm_humanoid_without_schema
 # ---------------------------------------------------------------------------
 # The boundary, and the snapshot rule
 # ---------------------------------------------------------------------------
-# execMotion's check, for the reasons given there, plus what is this bundle's
-# own: no vrmSchema link, no GLB parser, and no schema execMotion declares. The
-# snapshot rule's tables are imported from execMotion's tests directory, along
-# the one edge the two bundles may have.
+# The snapshot rule both exec bundles hold (exec_rules.py, which was
+# execMotion's check until MIG-2), plus what is this bundle's own: no vrmSchema
+# link, no GLB parser, and no schema the consumed execMotion declares -- read
+# from the plugInfo.json that bundle ships, which is what a session loads.
 if(USDVRM_TEST_PYTHON)
     set(_exec_vrm_python "${USDVRM_TEST_PYTHON}")
 else()
@@ -167,14 +184,15 @@ else()
         set(_exec_vrm_python "${Python3_EXECUTABLE}")
     endif()
 endif()
-if(_exec_vrm_python)
+if(_exec_vrm_python AND USDVRM_EXEC_MOTION_BUNDLE)
     add_test(NAME execVrm_boundaries
         COMMAND "${_exec_vrm_python}"
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "$<TARGET_FILE:${PLUGIN_NAME}>"
-            "$<JOIN:$<TARGET_PROPERTY:${PLUGIN_NAME},LINK_LIBRARIES>,|>")
-else()
+            "$<JOIN:$<TARGET_PROPERTY:${PLUGIN_NAME},LINK_LIBRARIES>,|>"
+            "${USDVRM_EXEC_MOTION_RESOURCES}/plugInfo.json")
+elseif(NOT _exec_vrm_python)
     message(WARNING
         "execVrm: no Python interpreter, so execVrm_boundaries is not "
         "registered and the snapshot rule is unchecked in this build")
@@ -200,8 +218,8 @@ set(_vrm_schema_bundle "${_bundle_dir}/../vrmSchema")
 set(_vrm_schema_resources "${_vrm_schema_bundle}/plugin/resources/vrmSchema")
 
 # And execMotion, which the retarget reads a computation of.
-set(_exec_motion_bundle "${_bundle_dir}/../execMotion")
-set(_exec_motion_resources "${_exec_motion_bundle}/plugin/resources/execMotion")
+set(_exec_motion_bundle "${USDVRM_EXEC_MOTION_BUNDLE}")
+set(_exec_motion_resources "${USDVRM_EXEC_MOTION_RESOURCES}")
 
 set(_exec_vrm_path_env
     "PATH=path_list_prepend:${_usd_root}/bin"
@@ -212,10 +230,12 @@ set_tests_properties(execVrm_humanoid execVrm_correction PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
-set_tests_properties(execVrm_retarget execVrm_joint_transforms
-                     execVrm_diagnostics PROPERTIES
-    ENVIRONMENT_MODIFICATION
-        "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
+if(USDVRM_EXEC_MOTION_BUNDLE)
+    set_tests_properties(execVrm_retarget execVrm_joint_transforms
+                         execVrm_diagnostics PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
+endif()
 
 # `set`, not a prepend, for the reason execVrm_humanoid_without_schema gives:
 # an activated session may already carry execMotion.
@@ -235,10 +255,14 @@ set_tests_properties(execVrm_rig PROPERTIES
 
 # Motion Phase E's label, as execMotion's suites carry.
 set_tests_properties(execVrm_rig execVrm_humanoid execVrm_correction
-                     execVrm_retarget execVrm_retarget_without_exec_motion
-                     execVrm_joint_transforms execVrm_diagnostics
+                     execVrm_retarget_without_exec_motion
                      execVrm_humanoid_without_schema
     PROPERTIES LABELS "motion.openexec")
+if(USDVRM_EXEC_MOTION_BUNDLE)
+    set_tests_properties(execVrm_retarget execVrm_joint_transforms
+                         execVrm_diagnostics
+        PROPERTIES LABELS "motion.openexec")
+endif()
 if(TEST execVrm_boundaries)
     set_tests_properties(execVrm_boundaries
         PROPERTIES LABELS "motion.openexec")

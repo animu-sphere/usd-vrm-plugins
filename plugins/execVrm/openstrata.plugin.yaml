@@ -43,14 +43,14 @@ requires:
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:2aa549d1d764ef99527f31b71533133ac1c98e48843c63feccf6c69cc551219d
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:32b6ba1bc4b155278fbc388e24a0e9130f19540be9a980cb48bf049637bfe9e7
+            digest: sha256:08455616fe7c7ee936161cf4231ed10051ca6bf447f922feac47d04a8f23eed0
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:4586e148440892f6838bcd46888ff03c7b31a0be84be54bf103ee2940a2389c0
           cy2026-macos-arm64-py313-usd:
-            digest: sha256:0a2c796e1929abcca6b4bba75509b8139a1fd757cb1c4fe6f9a165eee55e8d49
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:54f62ff034b02babe2470a78d78aa18c44b4c2245d09d53ec7d7af0ccc6888e0
+            digest: sha256:970b5a1987c71b5154a76e7ca0d52dddbd309f5ce754c1311c8733d300db6539
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:eaf5e19cbd42779757b905b4b66f4be3e0493f545f0ef3908a38884443422f30
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:7e5c67b9ae5defa40887b7dbaccea0bb5258ae3e86b1e2d14e7c82ae13ce0564
+            digest: sha256:18ce3b990b976b03480b2c948a3435e533cf2d5eb703e4e3ba14d9822bf43547
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:f7edfb277d2c02c5bb90f847de9decfd593aa677f0deb438c47597add7ee1b43
     # The retarget itself, and the library every node here wraps: the rig a
     # computation answers with is `motionRetarget`'s `SkeletonDescriptor`,
     # `RetargetMap`, `RestPoseCorrection` and `RetargetedPose`. It was this
@@ -61,40 +61,40 @@ requires:
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:16f18e2808e44569b6251faf163bd6f91387058fe1e009608af7d631d776ee67
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:044aef49eb9f6a1b2b44a666e734e14d000978e144b66f1b7445eddb4f8d4459
+            digest: sha256:40a7d82e1d0d0ce438316cf476b831d1b91f924b99625a31fac3a854225445c2
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:e04035813c6b89b722e4dc15927dd2b8d9058f2411117f5d2fd5bb1cb08dfba6
           cy2026-macos-arm64-py313-usd:
-            digest: sha256:adc79c4391c8abe9ebb3782fb1e73defdd037cf36957bd1ac17da1c56d525775
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:8dbe77cb246a6250275dc047edd6d31468c96be3c6bb5761b9d981013eb5ed98
+            digest: sha256:dfbb04ae56fc63c77371165f41146d0ff599bb7d54f18d28bf4c4f4da83843b7
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:63907e420ec52a6d65f29e722734435f78bb351c0cc0dd46c7552ff838bd0cc4
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:d6f835997a5a31fb26672fb05008e0bae2a936b90e36f7488ae5a8a0f1625c37
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:ed3ead135894767aa04de2232c4e65206d7ad3bb5fd43ad8e60fbc44e4e79d1a
+            digest: sha256:18203f389c0b045056bcfe5b462c570c799fcff112e1fa6a9c1da6879835c225
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:21651895936f6985dfb6a27452f035295a66b922d74b7934da2104f3dbb2ba89
     - id: motionSampling
       version: ">=0.5,<0.6"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:f73acd91edc76075c0293163983516b4b7563b2c23d8511e2303985e3cd7b58d
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:df947a0faa5337ea0d91d5d2fffc21b3f0093e334d6aef8e4009703b7d680909
+            digest: sha256:4889f3f0aec786d64f49dcc58fc82631f8d97bb6d6d8ec6722ad9fd236608886
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:5631945c39d2b7c39d98813ca7523d5094e2032bbd0b04e6a1f038036d9fbca6
           cy2026-macos-arm64-py313-usd:
-            digest: sha256:e6a263316fc56a4780031a719d364501285632a8175cf3f32bb478705b3b1435
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:fe0bbe82d6b64dd613b2763175d67c925647c0be93674332da3270f9b41dabbc
+            digest: sha256:3b3aa30b6cfeff2a8a7f993779a860e26b3e43856d3c8ca5f6c62030ce589f35
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:63759d3ffda0982c9ec0131dca267fd3d9030542771c5df324219548c1c8f7d9
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:f991e0493a22081bc70c33abb89491263324c9b6931659e6b7e002b7f94a8080
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:e9da4e6148ac39a23b0f1c2a42dec77c533a9904472642578e27ed405d714f03
+            digest: sha256:bc7d75601e541110d4ca9d3d9a6683e1b34ddce21514fa6907e32315d6c86e45
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:a02b1a5b962e0f93d929d4588d70d19a91504ac112de9f078c8907b5efe5a9d8
     - id: motionRecording
       version: ">=0.5,<0.6"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:0adf068ddab28c02c323c599ab6f7e7f7490bcc5d2a84ead5ff8e92efee4e694
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:5be940a725eb6e08a223180b6e9bc597c9c4223ffe80d992ad63680af80e5d47
+            digest: sha256:d3447732b63df0d8e247dc8316755c68ea9fa583c93b34d370b0e57d42503104
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:6337da6c33650e61872154d780677ccfc6aaf36da4c6786547a0f4a73e88fffc
           cy2026-macos-arm64-py313-usd:
-            digest: sha256:adcf943703474e77f9b8c99ada00803b15d250a57b4edcb34d2c10519b6aab21
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:a8f251798aece3df55f6491792356c6d699fe20338832a9da12c0daac8f8d07c
+            digest: sha256:0e7758821dd31c3cf04dc84f642163718912d658ee488e31d9b3ffaaf5f29e7d
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:272c3f40271f8b00a3a53ff2bb5937f8522b45c23c464c23cd9a311a39971f2e
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:5a631f35759f33824da8a0dbc827b6304b5f177a970dc427ce024dffb0452c6c
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:4a16251c534a5a00897983159502f710d318a90657102c5a2e940dba3ef9382c
+            digest: sha256:1daf034651f86b6d1e5e2bfdf038437649fe0a6caacba6ddcc7970b8495bd6b3
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:d84cd5b53af7faa9e611c6442fe2951f3c989cb67f9669afd357a1f6c30c15cd
   # The typed Vrm*API schemas. Not linked: exec resolves `UsdVrmHumanoidAPI`
   # by TfType name when it reads this bundle's Exec block, so what this bundle
   # needs is vrmSchema's plugInfo registered in the session. Without it the
@@ -112,8 +112,25 @@ requires:
     # dropped from the fan-in with no word from exec -- the bound pose's own
     # count is the only thing that notices, measured in
     # execVrm_retarget_without_exec_motion.
+    #
+    # It is usd-motion-plugins' published bundle, pinned by archive digest from
+    # its v0.5.1 pin table: this repository's copy was deleted once the parity
+    # rows passed against it (MIG-2). `ost` materializes it for every session
+    # and, since 0.23.5, for the root build, whose suites find it through
+    # OPENSTRATA_EXTERNAL_BUNDLE_execMotion_ROOT.
     - id: execMotion
-      version: ">=0.9,<0.10"
+      version: ">=0.5,<0.6"
+      artifact:
+        targets:
+          cy2026-linux-x86_64-py313-usd:
+            digest: sha256:32380bd747c551b000db32df5c310c55f1726e696376fc4d94a116814c3824a0
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:69f7c38dd0e3be8ef4c62b9cee2f438939d9ba2cf48dc5b1de2a99ae29926b5a
+          cy2026-macos-arm64-py313-usd:
+            digest: sha256:64475073ae25daf78e606da37e848381cc243b91ae47f9e550d1b3a4646670e7
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:aab047005fcbed026b75d9c8058e5c6574112b8c785fb7efa8966943fb57297c
+          cy2026-windows-x86_64-py313-usd:
+            digest: sha256:2c41a6641ad3648f48d4ede5ab2ea25aca090db0047e30c8d609d55f01c80e31
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:bde27ed0778a0fd624449af6957562d4813bb4d697ff2d3725337636bc652a77
 usd:
   plug_info: plugin/resources/execVrm/plugInfo.json
 tests:

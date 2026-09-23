@@ -138,11 +138,15 @@ a CMake package.
 | `usdVrmFileFormat` | — | — | — | — | yes | not applicable |
 | `usdVrmPackageResolver` | — | — | — | — | yes | not applicable |
 | `usdVrmaFileFormat` | — | — | — | — | yes | not applicable |
-| `execMotion` | — | — | — | — | yes | not applicable |
 | `execVrm` | — | — | — | — | yes | not applicable |
 
 `execMotion` joined the product on 2026-09-06 with its bootstrap (Workspace
-Phase 8). It is a bundle in exactly the sense the next paragraph describes —
+Phase 8), and left the member set in MIG-2 (2026-09-24). It is
+`usd-motion-plugins`' published bundle now: `execVrm` pins its archive per
+target in `requires.bundles`, and `ost` embeds the verified bundle in
+`execVrm`'s package under `runtime/bundles/execMotion/`, so the product still
+carries it and a session that activates `execVrm` registers it. What follows
+was written while it was a member here, and still describes the bundle. It is a bundle in exactly the sense the next paragraph describes —
 OpenUSD finds it, and nothing links it — with one addition: what registers is a
 computation rather than a type, so its consumer contract is *the computation
 resolves on a prim of the schema its plugInfo declares*. A plugInfo that fails to

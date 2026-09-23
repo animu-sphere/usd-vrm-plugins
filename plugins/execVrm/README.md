@@ -405,7 +405,7 @@ pose nothing, and the retarget refuses after it.
 - **No stage authoring, no I/O, no second algorithm** — as for `execMotion`.
 
 `execVrm_boundaries` checks these rules the way `execMotion`'s check does
-([its README](../execMotion/README.md#how-the-rules-are-checked)). It uses that
+([its README](https://github.com/animu-sphere/usd-motion-plugins/blob/main/plugins/execMotion/README.md#how-the-rules-are-checked)). It uses that
 check's snapshot-rule tables, imported along the one edge the two bundles may
 have. What it adds is this bundle's own: the links it may have are `motionCore`,
 `motionSampling`, `motionRecording`, `motionRetarget` and `vrmRig`, and nothing

@@ -243,10 +243,18 @@ endif()
 # `execVrm` evaluating the same avatar and clip. Here for the same reason as the
 # two tests above -- it is a composition of both exec bundles and the retarget
 # tool over the converted recording -- and after them, because it needs every
-# one of those targets.
-if(USDVRM_BUILD_TESTS AND TARGET ExecMotion AND TARGET ExecVrm
+# one of those targets. `execMotion` is not a target any more: it is
+# usd-motion-plugins' published bundle, consumed by execVrm's descriptor and
+# materialized for this build by `ost` (cmake/UsdVrmExecMotion.cmake). These
+# are the rows MIG-2 re-ran against it before this repository's copy went.
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/UsdVrmExecMotion.cmake")
+if(USDVRM_BUILD_TESTS AND USDVRM_EXEC_MOTION_BUNDLE AND TARGET ExecVrm
    AND TARGET motion_retarget)
     add_subdirectory("tests/parity")
+elseif(USDVRM_BUILD_TESTS)
+    message(STATUS
+        "usd-vrm-plugins: no consumed execMotion or no execVrm in this build; "
+        "skipping the OpenExec parity cases")
 endif()
 
 # The live half left with MIG-4. `liveTransport`, `osc`, `motionTracking` and

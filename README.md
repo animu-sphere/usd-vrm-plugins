@@ -44,7 +44,7 @@ project's central design decision, and it is described below.
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
 | [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at | v0.4.0 (as `vrmRetarget`) |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
-| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend | v0.9.0 |
+| [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion) | OpenExec bundle, **consumed** | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend. `usd-motion-plugins`' published bundle since MIG-2; `execVrm` pins it and its package embeds it | v0.9.0 (here); consumed since MIG-2 |
 | [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | v0.9.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
@@ -126,7 +126,7 @@ bit. They shipped in v0.9.0. What comes next:
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
 | [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
-| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |
+| [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion) | OpenExec bundle, consumed from `usd-motion-plugins` | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set, pinned by `execVrm` and embedded in its package |
 | [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `motionRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
