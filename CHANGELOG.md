@@ -39,7 +39,17 @@ Current schema contract version: **1**.
   - **Two refusals are worded by the library.** A clip naming no human bone
     and a clip skeleton with no joints still exit 2, and their message is
     `motionUsd`'s, after `cannot be read as a semantic clip:`.
-- **The `ost` pin is 0.23.3** — `openstrata.ci.yaml`, the workflow re-rendered
+- **The `ost` pin is 0.23.4** — the same three files, and again a re-render
+  that changes nothing but the version. It is taken for the three asks of
+  [ost report 45](docs/reports/ost/45-2026-09-23-v0.23.3-a-tool-edge-arrives-and-a-bundle-tree-keeps-its-runtime.md).
+  The one measured here is its P1: `ost plugin build` and `ost library build`
+  now discard a member tree configured against another runtime. Every tree
+  0.23.3 left behind was rebuilt once, a second build reused it, and a tree
+  whose runtime identity names another digest was discarded, with `pxr_DIR`
+  back on the selected runtime. The other two, a pin for `requires.bundles` and
+  `requires.tools` for tests, are what `execMotion`'s deletion needs. They are
+  not used yet: no published bundle or tool is in a registry to pin.
+- **The `ost` pin was 0.23.3** — `openstrata.ci.yaml`, the workflow re-rendered
   from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
   It is taken for the two P1s of
   [ost report 44](docs/reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md):
