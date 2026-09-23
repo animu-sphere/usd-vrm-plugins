@@ -49,6 +49,25 @@ requires:
           cy2026-windows-x86_64-py313-usd:
             digest: sha256:d6f835997a5a31fb26672fb05008e0bae2a936b90e36f7488ae5a8a0f1625c37
             source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:ed3ead135894767aa04de2232c4e65206d7ad3bb5fd43ad8e60fbc44e4e79d1a
+    # The clip's reading half: skeleton and animation discovery, the pose at a
+    # time code, the producer's rate. This tool is the only consumer it has
+    # here, which is why it waited for `ost` 0.23.3 -- the first release that
+    # materializes an artifact only a tool declares (ost report 44). What the
+    # tool still reads itself is the `vrm:` half: the expression tracks, the
+    # gaze track and the look-at offset, which the library refuses on purpose.
+    - id: motionUsd
+      version: ">=0.5,<0.6"
+      artifact:
+        targets:
+          cy2026-linux-x86_64-py313-usd:
+            digest: sha256:9cfc2a8985a5d30a20d61603f6fd773fdb767ba328079778b7890d32827445ed
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:0b5d8c4a7bbfbc159a4b48fdece7c1549686ab03ab57a7ef5f5a7b6ece9562e4
+          cy2026-macos-arm64-py313-usd:
+            digest: sha256:2261c7187e0f8c3dae2be077889a7b45d247d6f94df5ac665c214312d65dc0fd
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:333a32c1b0adc67264cef18f4154eed4eb23cd409898f244c80e081ddd236ff5
+          cy2026-windows-x86_64-py313-usd:
+            digest: sha256:f11545538fa3a72d9efa6dd108f155123af66b7ee1f52d227f0b345b2ceac5bc
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:5a7c9982828aacc3b00435f1dd2c2dee9710bc12961ad8b59f64dadfd77d45ee
     - id: motionSampling
       version: ">=0.5,<0.6"
       artifact:

@@ -112,7 +112,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary, `motion.identityPose`, `motion.sampleAnimation`, `motion.priorPose`, `motion.filterPose` and `motion.extractRootMotion` exist (2026-09-06), and `motion.poseHistory` and `motion.interpolatePose` (2026-09-12), and `motion.blendPoses` (2026-09-13), which completes the OpenExec plan's P0-4 node set; the rest of this row's list is outside P0-4 and does not exist yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
 | `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). |
 | `vrmRig` | plain static CMake library (`libs/vrmRig/`; `vrmRetarget` until 2026-09-23) | What a VRM rig adds to a retarget, and none of it retargets: VRM 1.0's required-bone set, which every caller hands the retarget, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). Links `motionCore` and nothing else of `usd-motion-plugins` (§9.5). |
-| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
+| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig off a stage, and the semantic clip through `motionUsd` plus the clip's `vrm:` tracks, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 
 **`motionCore` and `motionRuntime` left with MIG-1 and MIG-2** (2026-09-21),
 and this workspace consumes them: they are `usd-motion-plugins`' `motionCore`,
@@ -120,10 +120,10 @@ and this workspace consumes them: they are `usd-motion-plugins`' `motionCore`,
 by digest per target in every descriptor that names one. What that changes for
 this table is what it is a table *of*: an identity here is something this
 workspace builds, and a consumed package is named in a descriptor rather than
-listed here. `motionSource`, `motionBvh` and the BVH tools are next, and they
-wait for one thing only — an external artifact declared by a tool descriptor is
-not materialized by `ost` 0.23.2, and those two have no library consumer left
-here.
+listed here. `motionUsd`'s reading half followed on 2026-09-23 through
+`motion_retarget`'s own descriptor, the first edge here only a tool declares,
+which `ost` 0.23.3 materializes. `motionSource`, `motionBvh` and the BVH tools
+are next, and leave as a deletion.
 
 **The generic retarget left with MIG-2** (2026-09-23): the pose retargeter,
 the skeleton and the joint map, rest-pose handling, root-motion policy and the
@@ -1089,7 +1089,7 @@ consumer in any case.
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
 | `motion_capture` | `usd-motion-plugins` (`motion_record`) | trace → avatar-independent clip | nothing |
-| `motion_retarget` | split | the generic half of the stage **reading** (`StageIo`, §9.5) → `motionUsd`, arrived 2026-09-20 | a VRM retarget CLI over the shared libraries, and the bake: `WriteRetargetedAnimation` authors onto a VRM avatar |
+| `motion_retarget` | split | the generic half of the stage **reading** (`StageIo`, §9.5) → `motionUsd`, arrived 2026-09-20, consumed 2026-09-23 | a VRM retarget CLI over the shared libraries, and the bake: `WriteRetargetedAnimation` authors onto a VRM avatar |
 | `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) | the vendor-neutral OpenExec nodes | nothing |
 | `execVrm` | stays | — | VRM semantics as OpenExec nodes, over the shared core |
 | `liveTransport`, `osc` | `motion-connectors` (`motionConnectorTransport`, `motionConnectorOsc`) | UDP receiver, capture file, OSC 1.0 wire format | nothing |

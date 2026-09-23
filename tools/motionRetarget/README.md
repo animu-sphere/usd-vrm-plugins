@@ -27,6 +27,12 @@ never open a stage ([WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §2). T
 what lets `execVrm` wrap the retarget core later instead of reimplementing it,
 and what lets a future live-capture source reuse it with no stage at all.
 
+The clip's body and its generic `motion:channelName` channels are read through
+`usd-motion-plugins`' `motionUsd` (`ReadMotionStage`), the same clip → pose rule
+`execMotion` applies. What that library refuses on purpose is read here: the
+`vrm:` expression tracks, the gaze track and the look-at offset. A clip that
+states one expression name both ways takes the `vrm:` value.
+
 It is an **executable, not a bundle**: no `openstrata.plugin.yaml`, no
 `plugInfo.json`, nothing registered with OpenUSD.
 

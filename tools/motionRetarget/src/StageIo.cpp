@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StageIo.h"
 
+#include "motionUsd/ClipReader.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/vec3h.h"
@@ -37,16 +39,6 @@ namespace
 {
 
 const char* const kHumanBonesPrefix = "vrm:humanBones:";
-
-// The semantic joint tokens the motion contract defines are paths whose leaf is
-// the human bone name ("hips", "hips/spine", "hips/spine/chest"). Reading the
-// leaf back is the documented inverse, not a name heuristic.
-std::string
-LeafToken(const std::string& jointPath)
-{
-    const std::size_t separator = jointPath.rfind('/');
-    return separator == std::string::npos ? jointPath : jointPath.substr(separator + 1);
-}
 
 // Finds the skeleton to work with: the override when given, otherwise the first
 // UsdSkelSkeleton in stage order. Reporting "which one" back to the caller is
@@ -739,12 +731,11 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     {
         return FailToOpen(path, "animation", failure);
     }
-    clip->timeCodesPerSecond = clip->stage->GetTimeCodesPerSecond();
-    if (clip->timeCodesPerSecond <= 0.0)
-    {
-        clip->timeCodesPerSecond = 30.0;
-    }
 
+    // Found here before the library reads, because the two refusals are
+    // different inputs' faults and the library answers both with one string:
+    // an override naming nothing is the command line's, a stage with no
+    // skeleton is the clip's.
     UsdSkelSkeleton skeleton;
     if (!FindSkeleton(clip->stage, skeletonPathOverride, "animation",
                       ExitCode::UnsupportedSourceFeature, &skeleton, failure))
@@ -753,60 +744,39 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     }
     clip->skeletonPath = skeleton.GetPath();
 
-    UsdPrim animationPrim;
-    if (!UsdSkelBindingAPI(skeleton.GetPrim()).GetAnimationSource(&animationPrim) || !animationPrim)
-    {
-        // A clip layer whose skeleton carries no binding is still usable when
-        // the stage holds exactly one SkelAnimation.
-        std::vector<UsdPrim> animations;
-        for (const UsdPrim& prim : clip->stage->Traverse())
-        {
-            if (prim.IsA<UsdSkelAnimation>())
-            {
-                animations.push_back(prim);
-            }
-        }
-        if (animations.size() != 1)
-        {
-            return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                        "clip skeleton <" + clip->skeletonPath.GetString() +
-                            "> has no skel:animationSource and the stage "
-                            "does not hold exactly one UsdSkelAnimation");
-        }
-        animationPrim = animations.front();
-    }
-
-    const UsdSkelAnimation animation(animationPrim);
-    VtTokenArray animationJoints;
-    if (!animation.GetJointsAttr().Get(&animationJoints) || animationJoints.empty())
+    // The body half of the read is `motionUsd`'s: which animation the skeleton
+    // plays, which joint token is which human joint, the pose at each key, and
+    // the producer's rate. Every refusal it makes is the clip's -- the skeleton
+    // was named above, so what is left is a stage that is not a semantic clip.
+    openstrata::motion::MotionStageRead read;
+    std::string readError;
+    if (!openstrata::motion::ReadMotionStage(clip->stage, clip->skeletonPath.GetString(), &read,
+                                             &readError))
     {
         return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                    "clip animation <" + animationPrim.GetPath().GetString() + "> has no joints");
+                    "the animation " + path + " cannot be read as a semantic clip: " + readError);
     }
+    clip->timeCodesPerSecond = read.timeCodesPerSecond;
 
-    // Semantic joint -> human bone, plus the clip's own rest pose.
-    std::vector<openstrata::motion::HumanJoint> boneForJoint(animationJoints.size(), openstrata::motion::HumanJoint::Count);
-    std::size_t recognized = 0;
-    for (std::size_t i = 0; i < animationJoints.size(); ++i)
+    // Two of the library's warnings are raised here in this tool's frozen
+    // codes instead, so they are not repeated as text: a clip with no time
+    // sample (`TimeRangeDerived`, below) and a scaled joint (`NonUnitScale`).
+    // Matched on the library's wording, which the pinned digest holds still;
+    // the two suites that raise the codes are what notice a new wording.
+    bool timeRangeDerived = false;
+    for (const std::string& warning : read.warnings)
     {
-        const auto bone = openstrata::motion::FindHumanJoint(LeafToken(animationJoints[i].GetString()));
-        if (bone)
+        if (TfStringStartsWith(warning, "the stage states no time sample"))
         {
-            boneForJoint[i] = *bone;
-            ++recognized;
+            timeRangeDerived = true;
+            continue;
         }
-        else
+        if (TfStringStartsWith(warning, "animation <") &&
+            warning.find("> scales joint '") != std::string::npos)
         {
-            clip->warnings.push_back("clip joint '" + animationJoints[i].GetString() +
-                                     "' is not a VRM human bone and was ignored");
+            continue;
         }
-    }
-    if (recognized == 0)
-    {
-        return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                    "no joint of clip animation <" + animationPrim.GetPath().GetString() +
-                        "> names a VRM human bone; is this an "
-                        "avatar-independent semantic clip?");
+        clip->warnings.push_back(warning);
     }
 
     // The clip's rest pose, per bone, through the library's two builders --
@@ -815,31 +785,19 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     // parent, so the rest correction needs no second copy of the humanoid
     // taxonomy.
     //
-    // Both refusals are the builder's and fail the bake, and so does a
-    // skeleton with no joints at all. A tool that kept the later of two joints
-    // naming one bone, or baked against an identity rest for a skeleton naming
-    // none, would answer a clip `execVrm` refuses; and neither is a rest pose
-    // anyone could tell from a measured one.
+    // Both refusals are the builder's and fail the bake. A tool that kept the
+    // later of two joints naming one bone, or baked against an identity rest
+    // for a skeleton naming none, would answer a clip `execVrm` refuses; and
+    // neither is a rest pose anyone could tell from a measured one.
     //
-    // One difference from `execVrm` stays, and it is ReadSkeletonRest's: a
+    // One difference from `execVrm` stays, and it is the reader's: a
     // `restTransforms` that does not pair with `joints` is warned about and
     // replaced by identity here, where `execVrm` refuses it
     // (`SkeletonRefusal::RestTransformCount`). That is P0-6's recorded
     // missing-field difference, not the builder's rule.
-    VtTokenArray restJoints;
-    VtMatrix4dArray restTransforms;
-    if (!ReadSkeletonRest(skeleton, &restJoints, &restTransforms, &clip->warnings))
-    {
-        // No joints is the same defect as joints naming no bone: there is no
-        // rest to read, and `execVrm` refuses both (NoHumanBone).
-        return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                    "clip skeleton <" + clip->skeletonPath.GetString() +
-                        "> has no joints, so its rest pose cannot be read");
-    }
     const openstrata::motion::SkeletonDescriptorResult semantic =
-        openstrata::motion::BuildSkeletonDescriptor(
-            TokenStrings(restJoints),
-            std::vector<GfMatrix4d>(restTransforms.begin(), restTransforms.end()));
+        openstrata::motion::BuildSkeletonDescriptor(read.skeleton.jointTokens,
+                                                    read.skeleton.restTransforms);
     if (!semantic.skeleton)
     {
         return Fail(failure, ExitCode::UnsupportedSourceFeature,
@@ -869,22 +827,19 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     }
     clip->restPose = std::move(*rest.rest);
 
-    const UsdAttribute rotationsAttr = animation.GetRotationsAttr();
-    const UsdAttribute translationsAttr = animation.GetTranslationsAttr();
+    const UsdPrim animationPrim = clip->stage->GetPrimAtPath(SdfPath(read.animationPath));
+    const UsdSkelAnimation animation(animationPrim);
+    VtTokenArray animationJoints;
+    animation.GetJointsAttr().Get(&animationJoints);
 
-    std::vector<double> rotationTimes;
-    std::vector<double> translationTimes;
-    rotationsAttr.GetTimeSamples(&rotationTimes);
-    translationsAttr.GetTimeSamples(&translationTimes);
-
-    std::set<double> timeCodes(rotationTimes.begin(), rotationTimes.end());
-    timeCodes.insert(translationTimes.begin(), translationTimes.end());
+    // What the library refuses on purpose, read here: the `vrm:` tracks. Their
+    // key times join the body's, because expressions live on the pose and a
+    // face key is a sample of the same performance -- a clip that blinks
+    // between two body keys would otherwise have nowhere to say so.
+    std::set<double> vrmTimeCodes;
 
     // The clip's expression tracks, in the shape motionCore carries them: a
-    // verbatim name and one weight per sample. Their key times join the body's,
-    // because expressions live on the pose and a face key is a sample of the
-    // same performance — a clip that blinks between two body keys would
-    // otherwise have nowhere to say so.
+    // verbatim name and one weight per sample.
     struct ClipExpression
     {
         std::string name;
@@ -925,7 +880,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
 
         std::vector<double> weightTimes;
         weightAttr.GetTimeSamples(&weightTimes);
-        timeCodes.insert(weightTimes.begin(), weightTimes.end());
+        vrmTimeCodes.insert(weightTimes.begin(), weightTimes.end());
     }
 
     // The clip's gaze track, on the same union of key times for the reason the
@@ -961,22 +916,8 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
             clip->hasLookAtTrack = true;
             std::vector<double> targetTimes;
             target.GetTimeSamples(&targetTimes);
-            timeCodes.insert(targetTimes.begin(), targetTimes.end());
+            vrmTimeCodes.insert(targetTimes.begin(), targetTimes.end());
         }
-    }
-
-    if (timeCodes.empty())
-    {
-        // A clip with no time samples still has a default value; treat it as a
-        // single pose at the stage's start -- an instant the stage chose, not
-        // one the clip stated, which is what the code says.
-        timeCodes.insert(clip->stage->GetStartTimeCode());
-        clip->diagnostics.Report(openstrata::motion::MakeRetargetDiagnostic(
-            openstrata::motion::RetargetDiagnosticCode::TimeRangeDerived,
-            animationPrim.GetPath().GetString(),
-            "the clip states no time samples, so its one pose is placed at "
-            "the stage's start time code, " +
-                TfStringify(clip->stage->GetStartTimeCode())));
     }
 
     // The scale policy: a clip that animates scale is read, and its scale is
@@ -1008,8 +949,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
                                       ? animationJoints[index].GetString()
                                       : std::to_string(index);
         clip->diagnostics.Report(openstrata::motion::MakeRetargetDiagnostic(
-            openstrata::motion::RetargetDiagnosticCode::NonUnitScale,
-            animationPrim.GetPath().GetString(),
+            openstrata::motion::RetargetDiagnosticCode::NonUnitScale, read.animationPath,
             "the clip scales joint '" + joint + "' to " + TfStringify(GfVec3f(*nonUnit)) +
                 (at.IsDefault() ? std::string(" by default")
                                 : " at time code " + TfStringify(at.GetValue())) +
@@ -1017,46 +957,142 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
         break;
     }
 
-    int hipsJointIndex = -1;
-    for (std::size_t i = 0; i < boneForJoint.size(); ++i)
+    // The library placed one pose at the stage's start when the body and its
+    // channels state no time sample. A `vrm:` track that does state one makes
+    // that pose an instant nothing in the clip named, so the track's keys
+    // replace it; otherwise the placement stands, and is reported in this
+    // tool's code rather than as the library's text.
+    const double timeCodesPerSecond = read.timeCodesPerSecond;
+    if (timeRangeDerived && !vrmTimeCodes.empty())
     {
-        if (boneForJoint[i] == openstrata::motion::HumanJoint::Hips)
+        read.clip.samples.clear();
+    }
+    else if (timeRangeDerived)
+    {
+        clip->diagnostics.Report(openstrata::motion::MakeRetargetDiagnostic(
+            openstrata::motion::RetargetDiagnosticCode::TimeRangeDerived,
+            read.animationPath,
+            "the clip states no time samples, so its one pose is placed at "
+            "the stage's start time code, " +
+                TfStringify(clip->stage->GetStartTimeCode())));
+    }
+
+    // Every pose, keyed by the second the library stamped it with, and the
+    // time code it was resolved at. A `vrm:` key the body does not share gets
+    // a pose of its own through the library's rule, so the tool and the reader
+    // cannot disagree about what the body does at that instant; the
+    // timestamp is the same quotient `PoseFromStageSample` forms, so a key the
+    // body does share finds its pose exactly rather than within a tolerance.
+    struct TimedPose
+    {
+        double timeCode = 0.0;
+        openstrata::motion::MotionPose pose;
+    };
+    std::map<double, TimedPose> poses;
+    for (openstrata::motion::MotionPose& pose : read.clip.samples)
+    {
+        const double timestamp = pose.timestamp;
+        poses.emplace(timestamp, TimedPose{timestamp * timeCodesPerSecond, std::move(pose)});
+    }
+    const UsdAttribute rotationsAttr = animation.GetRotationsAttr();
+    const UsdAttribute translationsAttr = animation.GetTranslationsAttr();
+
+    // The `vrm:` tracks are resolved at the key the body stated, not at the
+    // product of a division and a multiplication: under held interpolation an
+    // instant one ulp early answers the previous key. So every time code the
+    // library can have keyed a pose at is matched back to its pose exactly --
+    // the body's keys, and the start it places a keyless clip at. A key only a
+    // generic channel states keeps the product, and no `vrm:` track is
+    // resolved there that the body does not also key.
+    {
+        std::vector<double> bodyTimeCodes;
+        std::vector<double> times;
+        rotationsAttr.GetTimeSamples(&times);
+        bodyTimeCodes.insert(bodyTimeCodes.end(), times.begin(), times.end());
+        translationsAttr.GetTimeSamples(&times);
+        bodyTimeCodes.insert(bodyTimeCodes.end(), times.begin(), times.end());
+        bodyTimeCodes.push_back(clip->stage->GetStartTimeCode());
+        for (const double timeCode : bodyTimeCodes)
         {
-            hipsJointIndex = static_cast<int>(i);
-            break;
+            const auto found = poses.find(timeCode / timeCodesPerSecond);
+            if (found != poses.end())
+            {
+                found->second.timeCode = timeCode;
+            }
         }
     }
 
-    clip->animation.samples.reserve(timeCodes.size());
-    for (const double timeCode : timeCodes)
+    std::vector<std::string> animationJointTokens;
+    animationJointTokens.reserve(animationJoints.size());
+    for (const TfToken& joint : animationJoints)
     {
-        openstrata::motion::MotionPose pose;
-        pose.timestamp = timeCode / clip->timeCodesPerSecond;
-
+        animationJointTokens.push_back(joint.GetString());
+    }
+    std::size_t addedForVrmTracks = 0;
+    for (const double timeCode : vrmTimeCodes)
+    {
+        const double timestamp = timeCode / timeCodesPerSecond;
+        const auto found = poses.find(timestamp);
+        if (found != poses.end())
+        {
+            found->second.timeCode = timeCode;
+            continue;
+        }
+        openstrata::motion::MotionStageSample sample;
+        sample.jointTokens = animationJointTokens;
         VtQuatfArray rotations;
-        if (rotationsAttr.Get(&rotations, timeCode) && rotations.size() == animationJoints.size())
+        if (rotationsAttr.Get(&rotations, timeCode))
         {
-            for (std::size_t i = 0; i < rotations.size(); ++i)
-            {
-                if (boneForJoint[i] == openstrata::motion::HumanJoint::Count)
-                {
-                    continue;
-                }
-                const auto slot = static_cast<std::size_t>(boneForJoint[i]);
-                pose.localRotations[slot] = rotations[i].GetNormalized();
-                pose.validRotations.set(slot);
-            }
+            sample.rotations.assign(rotations.begin(), rotations.end());
         }
-
         VtVec3fArray translations;
-        if (hipsJointIndex >= 0 && translationsAttr.Get(&translations, timeCode) &&
-            translations.size() == animationJoints.size())
+        if (translationsAttr.Get(&translations, timeCode))
         {
-            // Only hips translation is body translation (motion contract); the
-            // rest is rest-pose data the retargeter re-derives per rig.
-            pose.root.worldPosition = translations[static_cast<std::size_t>(hipsJointIndex)];
-            pose.root.hasPosition = true;
+            sample.translations.assign(translations.begin(), translations.end());
         }
+        sample.timeCode = timeCode;
+        sample.hasTimeCode = true;
+        sample.timeCodesPerSecond = timeCodesPerSecond;
+        std::optional<openstrata::motion::MotionPose> pose =
+            openstrata::motion::PoseFromStageSample(sample);
+        if (!pose)
+        {
+            // Unreachable: the library made the rate positive before it read.
+            return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                        "the clip's rate does not turn its time codes into seconds");
+        }
+        poses.emplace(timestamp, TimedPose{timeCode, std::move(*pose)});
+        ++addedForVrmTracks;
+    }
+
+    // A pose added for a `vrm:` key carries no generic channel: the library
+    // states those only where it keyed them, and no producer writes both kinds
+    // of track into one clip. A clip that did would lose its generic channels
+    // at the `vrm:` keys alone, so it is said rather than left silent.
+    bool hasGenericChannels = false;
+    for (const auto& [timestamp, timed] : poses)
+    {
+        if (!timed.pose.channels.IsEmpty())
+        {
+            hasGenericChannels = true;
+            break;
+        }
+    }
+    if (hasGenericChannels && addedForVrmTracks > 0)
+    {
+        clip->warnings.push_back(
+            "the clip carries both motion:channelName channels and vrm: tracks, and " +
+            std::to_string(addedForVrmTracks) +
+            " vrm: key(s) fall between the body's keys; the poses added for them carry the "
+            "vrm: tracks only");
+    }
+
+    std::set<std::string> shadowed;
+    clip->animation.samples.reserve(poses.size());
+    for (auto& [timestamp, timed] : poses)
+    {
+        openstrata::motion::MotionPose& pose = timed.pose;
+        const double timeCode = timed.timeCode;
 
         if (lookAtTargetAttr)
         {
@@ -1079,6 +1115,16 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
             // clamps when a weight is applied to a rig, and this is the read.
             if (expression.weight.Get(&weight, timeCode))
             {
+                // The `vrm:` expression is this rig's own vocabulary, so it
+                // wins over a generic channel of the same name -- said once.
+                if (pose.channels.Find(expression.name) &&
+                    shadowed.insert(expression.name).second)
+                {
+                    clip->warnings.push_back(
+                        "clip states '" + expression.name +
+                        "' as both a vrm: expression and a motion channel; the vrm: expression "
+                        "is used");
+                }
                 pose.channels.Set(expression.name, weight);
             }
         }
@@ -1088,9 +1134,11 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
 
     clip->animation.startTime = clip->animation.samples.front().timestamp;
     clip->animation.endTime = clip->animation.samples.back().timestamp;
-    clip->animation.nominalFrameRate = clip->timeCodesPerSecond;
-    clip->animation.source.kind = openstrata::motion::MotionSourceKind::Clip;
-    clip->animation.source.sourceId = path;
+    // The producer's rate when the clip states one, which is the library's
+    // answer: a 60 Hz capture authored at 30 time codes per second resamples
+    // from what was measured, not from how it was written.
+    clip->animation.nominalFrameRate = read.clip.nominalFrameRate;
+    clip->animation.source = read.clip.source;
     return true;
 }
 

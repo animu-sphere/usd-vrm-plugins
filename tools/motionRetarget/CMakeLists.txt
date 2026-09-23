@@ -56,6 +56,12 @@ endif()
 if(NOT TARGET motionSampling::motionSampling)
     find_package(motionSampling REQUIRED CONFIG)
 endif()
+# The clip is read through `motionUsd`, the library home of the clip -> pose
+# rule `execMotion` reads by as well; the `vrm:` tracks it refuses are read
+# here, in StageIo.cpp.
+if(NOT TARGET motionUsd::motionUsd)
+    find_package(motionUsd REQUIRED CONFIG)
+endif()
 
 # `--build-info`'s stamp. Like usdVrmFileFormat's buildInfo.json it carries no
 # timestamp, so an unchanged build packages to the same digest.
@@ -96,7 +102,8 @@ target_link_libraries(motion_retarget
     PRIVATE
         motionRetarget::motionRetarget
         vrmRig::vrmRig
-        motionSampling::motionSampling)
+        motionSampling::motionSampling
+        motionUsd::motionUsd)
 
 foreach(_usd_lib usd usdGeom usdSkel sdf plug tf gf vt js arch)
     if(TARGET ${_usd_lib})

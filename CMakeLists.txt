@@ -137,8 +137,8 @@ find_package(pxr REQUIRED CONFIG)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/UsdVrmOpenUsd.cmake")
 
 # The generic motion libraries are consumed, not built (MIG-1..MIG-3).
-# `motionCore`, `motionSampling`, `motionRecording` and `motionRetarget` are
-# published `usd-motion-plugins` artifacts, pinned by digest per target in each
+# `motionCore`, `motionSampling`, `motionRecording`, `motionRetarget` and
+# `motionUsd` are published `usd-motion-plugins` artifacts, pinned by digest per target in each
 # descriptor that names one; `ost` materializes them and puts
 # their prefixes on CMAKE_PREFIX_PATH before this file is configured, so every
 # `find_package` below resolves against a package rather than a sibling
@@ -149,7 +149,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/UsdVrmOpenUsd.cmake")
 # configs to define OpenUSD's imported targets a second time. Each member still
 # guards its own `find_package` with `if(NOT TARGET ...)`, which is what keeps a
 # standalone configure of that member working.
-foreach(_consumed IN ITEMS motionCore motionSampling motionRecording motionRetarget)
+foreach(_consumed IN ITEMS motionCore motionSampling motionRecording motionRetarget motionUsd)
     if(NOT TARGET ${_consumed}::${_consumed})
         find_package(${_consumed} REQUIRED CONFIG)
     endif()
@@ -159,11 +159,11 @@ endforeach()
 # consumed retarget (WORKSPACE.md §2, §9.5), and the recorded-file pair.
 add_subdirectory("libs/vrmRig")
 
-# The recorded-file half stays for now, and the reason is a toolchain fact
-# rather than a design one: `ost` 0.23.2 materializes an external library
-# artifact declared by a library or a plugin descriptor and not one declared
-# only by a tool, and `motion_bvh` is the only consumer these two have left
-# here. They leave with that tool (MIG-3's consuming half), not before.
+# The recorded-file half stays for now. It waited on a toolchain fact rather
+# than a design one -- `ost` 0.23.2 did not materialize an external library
+# artifact declared only by a tool, and `motion_bvh` is the only consumer these
+# two have left here -- and 0.23.3 answered it (ost report 44). They leave with
+# that tool (MIG-3's consuming half), not before.
 #
 # motionSource -> motionCore and nothing else (WORKSPACE.md §2); motionBvh ->
 # motionSource, which is the edge that decides this order. Neither names
