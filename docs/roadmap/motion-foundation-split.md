@@ -210,8 +210,9 @@ repository's, and needs nothing from this one.
     `motion_retarget`'s copies are calls to the two builders, and every caller
     passes VRM 1.0's required set — which is not optional: the library's
     default requires only the hips, and dropping the set fails four suites.
-    The tool now refuses what `execVrm` always refused, a clip skeleton naming
-    one bone on two joints and a clip rest naming none. **The parity rows did
+    The tool now refuses what `execVrm` always refused: a clip skeleton naming
+    one bone on two joints, and one with no joints or none naming a bone. The
+    `restTransforms` count stays the one recorded difference (P0-6). **The parity rows did
     not move**: every `workspace_exec_parity_*` output is identical to the
     one before the change, line for line, once the code prefix is normalized —
     the prediction recorded under `motionUsd` below, now measured.

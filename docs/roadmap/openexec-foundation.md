@@ -386,6 +386,15 @@ to a case.
 **The required coverage, against the suite** *(2026-09-15)*. Every item has a
 CTest name but one, which is covered outside CTest:
 
+> *Since the migration (2026-09-21 and 2026-09-23)*, `motionRuntime_*` and
+> `vrmRetarget_unit`'s retarget cases run in `usd-motion-plugins`, against the
+> code, as `motionSampling`, `motionRecording` and `motionRetarget` suites; the
+> `motion.retarget` label here covers `libs/vrmRig` (the required bones, the
+> expression resolve, the look-at) and no retarget of its own. The rows below
+> that name them are the 2026-09-15 measurement. What still holds a retarget
+> here is the consumer side: `execVrm_*`, `motion_retarget_design_triplet`,
+> `workspace_bvh_end_to_end` and the parity cases, against the package.
+
 | Required coverage | Where |
 |---|---|
 | quaternion interpolation, pose filtering, resampling, missing sample hold | `motionRuntime_unit` |

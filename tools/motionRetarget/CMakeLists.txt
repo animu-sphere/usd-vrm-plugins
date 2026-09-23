@@ -56,11 +56,6 @@ endif()
 if(NOT TARGET motionSampling::motionSampling)
     find_package(motionSampling REQUIRED CONFIG)
 endif()
-# The other half of what was one `motionRuntime`: the live-capture intake and
-# the capture trace are `motionRecording`'s.
-if(NOT TARGET motionRecording::motionRecording)
-    find_package(motionRecording REQUIRED CONFIG)
-endif()
 
 # `--build-info`'s stamp. Like usdVrmFileFormat's buildInfo.json it carries no
 # timestamp, so an unchanged build packages to the same digest.
@@ -101,8 +96,7 @@ target_link_libraries(motion_retarget
     PRIVATE
         motionRetarget::motionRetarget
         vrmRig::vrmRig
-        motionSampling::motionSampling
-        motionRecording::motionRecording)
+        motionSampling::motionSampling)
 
 foreach(_usd_lib usd usdGeom usdSkel sdf plug tf gf vt js arch)
     if(TARGET ${_usd_lib})

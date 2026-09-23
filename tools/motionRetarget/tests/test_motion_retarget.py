@@ -1237,6 +1237,29 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
                 ["hips", "hips/spine", "hips/spine/spine"])
     twice_named_stage.GetRootLayer().Save()
 
+    # A clip skeleton with no joints: no rest to read, the same defect as one
+    # naming no bone, and refused the same way.
+    jointless = cases / "jointless_clip.usda"
+    shutil.copy(clip, jointless)
+    jointless_stage = Usd.Stage.Open(str(jointless))
+    for prim in jointless_stage.Traverse():
+        if prim.IsA(UsdSkel.Skeleton):
+            UsdSkel.Skeleton(prim).GetJointsAttr().Set([])
+    jointless_stage.GetRootLayer().Save()
+
+    # A target skeleton with an empty joint token, which names no joint path:
+    # the builder refuses it, as it refuses it for `execVrm`.
+    blank_token = cases / "blank_token_avatar.usda"
+    shutil.copy(avatar, blank_token)
+    blank_token_stage = Usd.Stage.Open(str(blank_token))
+    for prim in blank_token_stage.Traverse():
+        if prim.IsA(UsdSkel.Skeleton):
+            joints_attr = UsdSkel.Skeleton(prim).GetJointsAttr()
+            tokens = list(joints_attr.Get())
+            tokens[-1] = ""
+            joints_attr.Set(tokens)
+    blank_token_stage.GetRootLayer().Save()
+
     # A stage with a default prim and nothing else. As a clip it is a source
     # with no skeleton; as an avatar, a rig with no skeleton.
     empty = cases / "empty.usda"
@@ -1309,6 +1332,9 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
          EXIT_UNSUPPORTED_SOURCE_FEATURE,
          "names a human bone on more than one joint ('spine' by 'hips/spine', "
          "'spine' by 'hips/spine/spine')"),
+        ("a clip skeleton with no joints", bake(clip_path=jointless),
+         EXIT_UNSUPPORTED_SOURCE_FEATURE,
+         "has no joints, so its rest pose cannot be read"),
         ("a clip with no skeleton", bake(clip_path=empty),
          EXIT_UNSUPPORTED_SOURCE_FEATURE,
          "the animation stage has no UsdSkelSkeleton"),
@@ -1322,6 +1348,9 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
          EXIT_RETARGET_CONTRACT_VIOLATION, "pass --humanoid-map"),
         ("an avatar with no default prim", bake(avatar_path=rootless),
          EXIT_RETARGET_CONTRACT_VIOLATION, "has no defaultPrim"),
+        ("an avatar skeleton with an empty joint token",
+         bake(avatar_path=blank_token),
+         EXIT_RETARGET_CONTRACT_VIOLATION, "has a joint whose token is empty"),
         ("an avatar with no skeleton", bake(avatar_path=empty),
          EXIT_RETARGET_CONTRACT_VIOLATION,
          "the avatar stage has no UsdSkelSkeleton"),

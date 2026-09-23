@@ -815,48 +815,59 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     // parent, so the rest correction needs no second copy of the humanoid
     // taxonomy.
     //
-    // Both refusals are the builder's and fail the bake. A tool that kept the
-    // later of two joints naming one bone, or baked against an identity rest
-    // for a skeleton naming none, would answer a clip `execVrm` refuses; and
-    // neither is a rest pose anyone could tell from a measured one.
+    // Both refusals are the builder's and fail the bake, and so does a
+    // skeleton with no joints at all. A tool that kept the later of two joints
+    // naming one bone, or baked against an identity rest for a skeleton naming
+    // none, would answer a clip `execVrm` refuses; and neither is a rest pose
+    // anyone could tell from a measured one.
+    //
+    // One difference from `execVrm` stays, and it is ReadSkeletonRest's: a
+    // `restTransforms` that does not pair with `joints` is warned about and
+    // replaced by identity here, where `execVrm` refuses it
+    // (`SkeletonRefusal::RestTransformCount`). That is P0-6's recorded
+    // missing-field difference, not the builder's rule.
     VtTokenArray restJoints;
     VtMatrix4dArray restTransforms;
-    if (ReadSkeletonRest(skeleton, &restJoints, &restTransforms, &clip->warnings))
+    if (!ReadSkeletonRest(skeleton, &restJoints, &restTransforms, &clip->warnings))
     {
-        const openstrata::motion::SkeletonDescriptorResult semantic =
-            openstrata::motion::BuildSkeletonDescriptor(
-                TokenStrings(restJoints),
-                std::vector<GfMatrix4d>(restTransforms.begin(), restTransforms.end()));
-        if (!semantic.skeleton)
-        {
-            return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                        "clip skeleton <" + clip->skeletonPath.GetString() +
-                            "> has a joint whose token is empty");
-        }
-        openstrata::motion::SourceRestPoseResult rest =
-            openstrata::motion::BuildSourceRestPose(*semantic.skeleton);
-        if (rest.error == openstrata::motion::SourceRestPoseError::DuplicateBone)
-        {
-            std::string named;
-            for (const auto& [bone, token] : rest.offending)
-            {
-                named += std::string(named.empty() ? "" : ", ") + "'" +
-                         std::string(openstrata::motion::HumanJointName(bone)) + "' by '" + token +
-                         "'";
-            }
-            return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                        "clip skeleton <" + clip->skeletonPath.GetString() +
-                            "> names a human bone on more than one joint (" + named +
-                            "), and which rest the clip meant cannot be known");
-        }
-        if (!rest.rest)
-        {
-            return Fail(failure, ExitCode::UnsupportedSourceFeature,
-                        "no joint of clip skeleton <" + clip->skeletonPath.GetString() +
-                            "> names a VRM human bone, so its rest pose cannot be read");
-        }
-        clip->restPose = std::move(*rest.rest);
+        // No joints is the same defect as joints naming no bone: there is no
+        // rest to read, and `execVrm` refuses both (NoHumanBone).
+        return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                    "clip skeleton <" + clip->skeletonPath.GetString() +
+                        "> has no joints, so its rest pose cannot be read");
     }
+    const openstrata::motion::SkeletonDescriptorResult semantic =
+        openstrata::motion::BuildSkeletonDescriptor(
+            TokenStrings(restJoints),
+            std::vector<GfMatrix4d>(restTransforms.begin(), restTransforms.end()));
+    if (!semantic.skeleton)
+    {
+        return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                    "clip skeleton <" + clip->skeletonPath.GetString() +
+                        "> has a joint whose token is empty");
+    }
+    openstrata::motion::SourceRestPoseResult rest =
+        openstrata::motion::BuildSourceRestPose(*semantic.skeleton);
+    if (rest.error == openstrata::motion::SourceRestPoseError::DuplicateBone)
+    {
+        std::string named;
+        for (const auto& [bone, token] : rest.offending)
+        {
+            named += std::string(named.empty() ? "" : ", ") + "'" +
+                     std::string(openstrata::motion::HumanJointName(bone)) + "' by '" + token + "'";
+        }
+        return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                    "clip skeleton <" + clip->skeletonPath.GetString() +
+                        "> names a human bone on more than one joint (" + named +
+                        "), and which rest the clip meant cannot be known");
+    }
+    if (!rest.rest)
+    {
+        return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                    "no joint of clip skeleton <" + clip->skeletonPath.GetString() +
+                        "> names a VRM human bone, so its rest pose cannot be read");
+    }
+    clip->restPose = std::move(*rest.rest);
 
     const UsdAttribute rotationsAttr = animation.GetRotationsAttr();
     const UsdAttribute translationsAttr = animation.GetTranslationsAttr();

@@ -90,11 +90,12 @@ struct SkeletonOutcome
 
 /// The target rig `rest` states, or a refusal.
 ///
-/// Each joint's rest transform is decomposed into the rotation and translation
-/// `openstrata::motion::SkeletonJoint` carries, **scale and shear dropped** -- the motion
-/// contract ignores scale channels and a retargeted clip never authors one --
-/// and each joint's parent is derived from its token by
-/// `SkeletonDescriptor::ResolveParentsFromTokens`, the library's own "a/b/c" rule.
+/// Each joint's rest transform is decomposed into the rotation, translation and
+/// scale `openstrata::motion::SkeletonJoint` carries -- **the scale kept apart as
+/// `restScale`, not folded into the rotation, and shear dropped** (the scale
+/// policy, MOTION_CONTRACT.md) -- and each joint's parent is derived from its
+/// token by `SkeletonDescriptor::ResolveParentsFromTokens`, the library's own
+/// "a/b/c" rule.
 ///
 /// **This node was the plan's sixth boundary finding, and it is closed.**
 /// Building a skeleton from its rest transforms existed only in
@@ -786,15 +787,14 @@ struct JointTransformsOutcome
 /// scales, which UsdSkel needs beside the other two before it resolves any
 /// joint at all (`openstrata::motion::JointLocalTransforms`).
 ///
-/// **Every scale is (1, 1, 1)**, which is `motion_retarget`'s rule and the
-/// plan's P1-2: a retargeted clip never animates scale. That includes a joint
-/// whose *rest* transform is scaled -- `vrm.computeTargetSkeleton` drops rest
-/// scale, and so does the tool -- so a rig with a scaled rest does not keep its
-/// scale under this sample. UsdSkel takes an animated joint's local transform
-/// from the animation whole, rest scale included, and the sample states 1.
-/// Measured in `execVrm_joint_transforms` on the fixture's arm, rested at
-/// scale 2; the two implementations agree, so it is P1-2's question and not a
-/// P0-6 row.
+/// **Every scale is the joint's rest scale**, which is the scale policy
+/// (MOTION_CONTRACT.md, decided 2026-09-17) and `motion_retarget`'s rule: a
+/// retargeted clip never animates scale, and the bake carries the rig's own. A
+/// joint whose rest is scaled keeps that scale under this sample, because
+/// UsdSkel takes an animated joint's local transform from the animation whole,
+/// rest scale included -- stating 1 there would shrink it. Held in
+/// `execVrm_joint_transforms` on the fixture's arm, rested at scale 2, where
+/// the two implementations agree.
 ///
 /// **The ninth boundary finding, and the smallest.** The bake's shape -- the
 /// rig's tokens beside the arrays, identity scales -- is stated in one place

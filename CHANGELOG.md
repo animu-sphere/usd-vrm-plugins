@@ -28,12 +28,18 @@ Current schema contract version: **1**.
     exec nodes that build retarget options and the tool hand it over. The
     library's default requires only the hips; dropping the set fails four
     suites.
-  - **`execVrm` and `motion_retarget` read a rig one way.** Their copies of the
+  - **`execVrm` and `motion_retarget` call one builder.** Their copies of the
     skeleton and clip-rest reading are calls to `BuildSkeletonDescriptor` and
     `BuildSourceRestPose`. `motion_retarget` now refuses (exit 2) a clip
     skeleton naming one bone on two joints, where it kept the later joint, and
-    a clip rest naming no human bone, where it baked against identity —
-    exactly what `execVrm` always refused.
+    a clip skeleton with no joints or none naming a human bone, where it baked
+    against identity — what `execVrm` always refused. It also refuses (exit 4)
+    a target skeleton with an empty joint token. One difference stays, and it
+    is the one P0-6 already recorded: a `restTransforms` that does not pair
+    with `joints` is a warning and an identity rest in the tool, and a refusal
+    in `execVrm`.
+  - `motion_retarget` no longer links `motionRecording`, which it never used
+    and only reached through the old library's closure.
   - **The parity rows did not move.** Every `workspace_exec_parity_*` output
     is identical to the one before the change once the code prefix is
     normalized.

@@ -842,10 +842,12 @@ TestTheRetargetIsThePoseRetargetersCall()
     const openstrata::motion::SourceRestPose rest =
         *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest;
 
-    // The wrapper claim, with the library's default options: bit for bit.
+    // The wrapper claim, with the library's default root motion and VRM 1.0's
+    // required bones -- the options the node builds: bit for bit.
     execvrm::RetargetOutcome outcome = execvrm::HumanoidRetargetFor(RetargetFixture(map));
     assert(outcome.pose);
-    assert(*outcome.pose == openstrata::motion::PoseRetargeter(FixtureSkeleton(), map, rest)
+    assert(*outcome.pose == openstrata::motion::PoseRetargeter(FixtureSkeleton(), map, rest,
+                                                               VrmRetargetOptions())
                                 .Retarget(ClipSample()) &&
            "the retarget is not PoseRetargeter over the same values");
     assert(outcome.pose->timestamp == 0.75);

@@ -155,7 +155,7 @@ def main() -> int:
         # A namespace qualification or an include path, never the bare word:
         # `osc` is short enough to appear inside one.
         r"\bosc::|\bosc/|"
-        r"\bTargetSkeleton\b")
+        r"\b(?:TargetSkeleton|SkeletonDescriptor|RetargetMap)\b")
     # OpenUSD's value types, and canonical motion itself. Both are permitted
     # only where the crossing is declared, and they are one rule rather than two
     # because they answer one question: whether this file is allowed to say what
