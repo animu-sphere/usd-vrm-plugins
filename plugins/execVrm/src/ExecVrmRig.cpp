@@ -22,34 +22,34 @@ namespace
 {
 
 // The bone a semantic joint path names: its leaf, looked up in the vocabulary.
-// tools/motionRetarget's `FindHumanBone(LeafToken(path))`, and execMotion's
+// tools/motionRetarget's `FindHumanJoint(LeafToken(path))`, and execMotion's
 // `BoneForJointPath` -- a path with no separator is already a leaf.
-std::optional<motion::HumanBone>
+std::optional<openstrata::motion::HumanJoint>
 BoneForLeaf(const std::string& jointPath)
 {
     const std::size_t separator = jointPath.rfind('/');
     const std::string_view leaf = separator == std::string::npos
                                       ? std::string_view(jointPath)
                                       : std::string_view(jointPath).substr(separator + 1);
-    return motion::FindHumanBone(leaf);
+    return openstrata::motion::FindHumanJoint(leaf);
 }
 
 } // namespace
 
-const std::array<pxr::TfToken, motion::HumanBoneCount>&
+const std::array<pxr::TfToken, openstrata::motion::HumanJointCount>&
 HumanBoneAttributeNames()
 {
     // Immutable once built, so it is not the mutable global state a callback
     // may not read: the same list at every evaluation, derived from nothing a
     // stage can change.
-    static const std::array<pxr::TfToken, motion::HumanBoneCount> names = []
+    static const std::array<pxr::TfToken, openstrata::motion::HumanJointCount> names = []
     {
-        std::array<pxr::TfToken, motion::HumanBoneCount> result;
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        std::array<pxr::TfToken, openstrata::motion::HumanJointCount> result;
+        for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
         {
             result[slot] = pxr::TfToken(
                 "vrm:humanBones:" +
-                std::string(motion::HumanBoneName(static_cast<motion::HumanBone>(slot))));
+                std::string(openstrata::motion::HumanJointName(static_cast<openstrata::motion::HumanJoint>(slot))));
         }
         return result;
     }();
@@ -170,12 +170,12 @@ SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skeleton)
     vrmRetarget::SourceRestPose rest;
 
     // Which joint first named each bone, so a second naming can report both.
-    std::array<const std::string*, motion::HumanBoneCount> namedBy{};
+    std::array<const std::string*, openstrata::motion::HumanJointCount> namedBy{};
     std::size_t recognized = 0;
 
     for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints())
     {
-        const std::optional<motion::HumanBone> bone = BoneForLeaf(joint.token);
+        const std::optional<openstrata::motion::HumanJoint> bone = BoneForLeaf(joint.token);
         if (!bone)
         {
             continue;
@@ -208,7 +208,7 @@ SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skeleton)
         {
             continue;
         }
-        if (const std::optional<motion::HumanBone> parent =
+        if (const std::optional<openstrata::motion::HumanJoint> parent =
                 BoneForLeaf(joint.token.substr(0, separator)))
         {
             rest.SetParent(*bone, *parent);

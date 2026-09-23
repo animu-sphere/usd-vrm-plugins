@@ -24,7 +24,10 @@ set(_test_env
 
 set(_capture_test_arguments
     --tool "$<TARGET_FILE:motion_capture>"
-    --corpus "${_repo_root}/libs/motionRuntime/tests/corpus")
+    # The traces this suite replays are fixtures of this repository now: the
+    # corpus they came from is `motionRecording`'s, and a consumed package ships
+    # no test data (MIG-2).
+    --corpus "${_repo_root}/tests/motion/fixtures/traces")
 
 # The full Phase D chain -- capture a session, then bake it onto a real avatar
 # with the UNCHANGED Phase C tool -- only exists in a build tree that carries

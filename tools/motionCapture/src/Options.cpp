@@ -14,7 +14,7 @@ namespace
 
 // Upper bounds exist so that a fat-fingered flag fails with a message instead of
 // running the machine out of memory or looping past the heat death of the
-// universe: a HumanoidPose is roughly 1.3 KB, and the tick loop runs
+// universe: a MotionPose is roughly 1.3 KB, and the tick loop runs
 // `duration * rate` times.
 constexpr double kMaxBufferCapacity = 100000.0; // ~130 MB of pose history
 constexpr double kMaxEvaluationRate = 10000.0;  // Hz; real rigs run 30-1000
@@ -267,11 +267,11 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* 
             }
             if (mode == "hold")
             {
-                options->capture.missingBones = motion::MissingBonePolicy::HoldLast;
+                options->capture.missingJoints = openstrata::motion::MissingJointPolicy::HoldLast;
             }
             else if (mode == "unbound")
             {
-                options->capture.missingBones = motion::MissingBonePolicy::LeaveUnbound;
+                options->capture.missingJoints = openstrata::motion::MissingJointPolicy::LeaveUnbound;
             }
             else
             {
@@ -288,15 +288,15 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* 
             }
             if (mode == "derive")
             {
-                options->capture.rootMotion = motion::RootMotionIntake::DeriveVelocity;
+                options->capture.rootMotion = openstrata::motion::RootMotionIntake::DeriveVelocity;
             }
             else if (mode == "passthrough")
             {
-                options->capture.rootMotion = motion::RootMotionIntake::Passthrough;
+                options->capture.rootMotion = openstrata::motion::RootMotionIntake::Passthrough;
             }
             else if (mode == "ignore")
             {
-                options->capture.rootMotion = motion::RootMotionIntake::Ignore;
+                options->capture.rootMotion = openstrata::motion::RootMotionIntake::Ignore;
             }
             else
             {

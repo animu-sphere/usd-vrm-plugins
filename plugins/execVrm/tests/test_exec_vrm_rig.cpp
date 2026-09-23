@@ -10,7 +10,7 @@
 
 #include "ExecVrmRig.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/RestPose.h>
 #include <vrmRetarget/TargetSkeleton.h>
@@ -34,7 +34,7 @@
 namespace
 {
 
-using motion::HumanBone;
+using openstrata::motion::HumanJoint;
 
 bool
 NearlyEqual(float a, float b, float tolerance = 1e-6f)
@@ -96,12 +96,12 @@ FixtureSkeleton()
     return *outcome.skeleton;
 }
 
-std::vector<std::pair<HumanBone, std::string>>
+std::vector<std::pair<HumanJoint, std::string>>
 FixtureBindings()
 {
-    return {{HumanBone::Hips, kHips},   {HumanBone::Spine, kSpine},
-            {HumanBone::Chest, kChest}, {HumanBone::Neck, kNeck},
-            {HumanBone::Head, kHead},   {HumanBone::LeftUpperArm, kUpperArm}};
+    return {{HumanJoint::Hips, kHips},   {HumanJoint::Spine, kSpine},
+            {HumanJoint::Chest, kChest}, {HumanJoint::Neck, kNeck},
+            {HumanJoint::Head, kHead},   {HumanJoint::LeftUpperArm, kUpperArm}};
 }
 
 execvrm::HumanoidInputs
@@ -121,11 +121,11 @@ void
 TestTheAttributeNamesAreTheVocabularysOwn()
 {
     const auto& names = execvrm::HumanBoneAttributeNames();
-    assert(names.size() == motion::HumanBoneCount);
-    assert(names[static_cast<std::size_t>(HumanBone::Hips)] == "vrm:humanBones:hips");
-    assert(names[static_cast<std::size_t>(HumanBone::LeftThumbMetacarpal)] ==
+    assert(names.size() == openstrata::motion::HumanJointCount);
+    assert(names[static_cast<std::size_t>(HumanJoint::Hips)] == "vrm:humanBones:hips");
+    assert(names[static_cast<std::size_t>(HumanJoint::LeftThumbMetacarpal)] ==
            "vrm:humanBones:leftThumbMetacarpal");
-    assert(names[static_cast<std::size_t>(HumanBone::RightLittleDistal)] ==
+    assert(names[static_cast<std::size_t>(HumanJoint::RightLittleDistal)] ==
            "vrm:humanBones:rightLittleDistal");
 
     // One input is declared per entry, so two equal names would be one input
@@ -135,7 +135,7 @@ TestTheAttributeNamesAreTheVocabularysOwn()
     {
         distinct.insert(name.GetString());
     }
-    assert(distinct.size() == motion::HumanBoneCount);
+    assert(distinct.size() == openstrata::motion::HumanJointCount);
     std::printf("execVrm rig: %zu attribute names, one per bone\n", names.size());
 }
 
@@ -286,16 +286,16 @@ TestTheMapIsTheLibrarysBindings()
 
     // And the indices themselves, from the fixture's joint order.
     assert(map.GetMappedCount() == 6);
-    assert(map.GetJointIndex(HumanBone::Hips) == 1);
-    assert(map.GetJointIndex(HumanBone::Head) == 5);
-    assert(map.GetJointIndex(HumanBone::LeftUpperArm) == 6);
-    assert(!map.IsMapped(HumanBone::RightUpperArm));
+    assert(map.GetJointIndex(HumanJoint::Hips) == 1);
+    assert(map.GetJointIndex(HumanJoint::Head) == 5);
+    assert(map.GetJointIndex(HumanJoint::LeftUpperArm) == 6);
+    assert(!map.IsMapped(HumanJoint::RightUpperArm));
 
     // Eleven of VRM 1.0's seventeen required bones are unbound, and the value
     // says so rather than the node refusing for it.
-    const std::vector<HumanBone> missing = map.FindMissingRequiredBones();
+    const std::vector<HumanJoint> missing = map.FindMissingRequiredBones();
     assert(missing.size() == 11);
-    assert(std::find(missing.begin(), missing.end(), HumanBone::LeftUpperLeg) != missing.end());
+    assert(std::find(missing.begin(), missing.end(), HumanJoint::LeftUpperLeg) != missing.end());
     std::printf("execVrm rig: the map is SetJointToken over the bindings, and "
                 "carries its own gaps\n");
 }
@@ -342,8 +342,8 @@ TestABindingToNoJointIsRefusedAndNamed()
                            "without the bone reads as a humanoid that never named it");
     assert(outcome.refusal == execvrm::MapRefusal::UnknownJoint);
     assert(outcome.offending.size() == 2);
-    assert(outcome.offending[0] == std::make_pair(HumanBone::Hips, std::string("J_Bip_C_Hips")));
-    assert(outcome.offending[1] == std::make_pair(HumanBone::Head, std::string("Root/Head")));
+    assert(outcome.offending[0] == std::make_pair(HumanJoint::Hips, std::string("J_Bip_C_Hips")));
+    assert(outcome.offending[1] == std::make_pair(HumanJoint::Head, std::string("Root/Head")));
     std::printf("execVrm rig: a binding to no joint is refused, by bone\n");
 }
 
@@ -351,14 +351,14 @@ void
 TestTwoBonesOnOneJointAreRefusedAndBothNamed()
 {
     execvrm::HumanoidInputs inputs = FixtureInputs();
-    inputs.bindings.emplace_back(HumanBone::UpperChest, kChest);
+    inputs.bindings.emplace_back(HumanJoint::UpperChest, kChest);
     const execvrm::MapOutcome outcome = execvrm::HumanoidMapFor(inputs);
     assert(!outcome.map && "two bones on one joint were kept, and a retarget would let one "
                            "silently win");
     assert(outcome.refusal == execvrm::MapRefusal::DuplicateJoint);
     assert(outcome.offending.size() == 2);
-    assert(outcome.offending[0].first == HumanBone::Chest);
-    assert(outcome.offending[1].first == HumanBone::UpperChest);
+    assert(outcome.offending[0].first == HumanJoint::Chest);
+    assert(outcome.offending[1].first == HumanJoint::UpperChest);
     std::printf("execVrm rig: two bones on one joint are refused, both named\n");
 }
 
@@ -371,7 +371,7 @@ TestAnEmptyTokenBindsNothing()
     assert(outcome.map && "an empty token was refused -- it names no joint, which is not a "
                           "misspelling of one");
     assert(outcome.map->GetMappedCount() == 5);
-    assert(!outcome.map->IsMapped(HumanBone::LeftUpperArm));
+    assert(!outcome.map->IsMapped(HumanJoint::LeftUpperArm));
 
     // And a humanoid stating nothing at all is the empty map.
     execvrm::HumanoidInputs nothing = FixtureInputs();
@@ -426,17 +426,17 @@ vrmRetarget::SourceRestPose
 SemanticRest()
 {
     vrmRetarget::SourceRestPose rest;
-    const auto hips = static_cast<std::size_t>(HumanBone::Hips);
-    const auto arm = static_cast<std::size_t>(HumanBone::LeftUpperArm);
+    const auto hips = static_cast<std::size_t>(HumanJoint::Hips);
+    const auto arm = static_cast<std::size_t>(HumanJoint::LeftUpperArm);
     rest.localRotations[hips] = About(pxr::GfVec3f(0, 1, 0), 30.0f);
     rest.localTranslations[hips] = pxr::GfVec3f(0, 0.9f, 0);
-    rest.localTranslations[static_cast<std::size_t>(HumanBone::Spine)] = pxr::GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[static_cast<std::size_t>(HumanBone::Chest)] = pxr::GfVec3f(0, 0.15f, 0);
+    rest.localTranslations[static_cast<std::size_t>(HumanJoint::Spine)] = pxr::GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[static_cast<std::size_t>(HumanJoint::Chest)] = pxr::GfVec3f(0, 0.15f, 0);
     rest.localRotations[arm] = About(pxr::GfVec3f(0, 0, 1), -90.0f);
     rest.localTranslations[arm] = pxr::GfVec3f(0.1f, 0.15f, 0);
-    rest.SetParent(HumanBone::Spine, HumanBone::Hips);
-    rest.SetParent(HumanBone::Chest, HumanBone::Spine);
-    rest.SetParent(HumanBone::LeftUpperArm, HumanBone::Chest);
+    rest.SetParent(HumanJoint::Spine, HumanJoint::Hips);
+    rest.SetParent(HumanJoint::Chest, HumanJoint::Spine);
+    rest.SetParent(HumanJoint::LeftUpperArm, HumanJoint::Chest);
     return rest;
 }
 
@@ -454,14 +454,14 @@ SameOrientation(const pxr::GfQuatf& a, const pxr::GfQuatf& b)
 bool
 SameRest(const vrmRetarget::SourceRestPose& a, const vrmRetarget::SourceRestPose& b)
 {
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
         if (!SameOrientation(a.localRotations[slot], b.localRotations[slot]) ||
             !NearlyEqual(a.localTranslations[slot], b.localTranslations[slot]) ||
             a.parents[slot] != b.parents[slot])
         {
             std::fprintf(stderr, "the rests differ at %s\n",
-                         std::string(motion::HumanBoneName(static_cast<HumanBone>(slot))).c_str());
+                         std::string(openstrata::motion::HumanJointName(static_cast<HumanJoint>(slot))).c_str());
             return false;
         }
     }
@@ -478,7 +478,7 @@ TestTheSourceRestIsReadOffTheSemanticSkeleton()
     // of the semantic chain because the reference is no bone.
     assert(SameRest(*outcome.rest, SemanticRest()) &&
            "the clip's rest pose is not what its skeleton states");
-    assert(outcome.rest->parents[static_cast<std::size_t>(HumanBone::Hips)] ==
+    assert(outcome.rest->parents[static_cast<std::size_t>(HumanJoint::Hips)] ==
            vrmRetarget::SourceRestPose::kNoParent);
     std::printf("execVrm rig: the clip's rest is read off its skeleton by "
                 "leaf, a non-bone joint in no slot\n");
@@ -496,8 +496,8 @@ TestTheSourceParentIsTheParentPathsLeaf()
     const execvrm::SourceRestOutcome outcome =
         execvrm::SourceRestFromSkeleton(*execvrm::TargetSkeletonFromRest(rest).skeleton);
     assert(outcome.rest);
-    assert(outcome.rest->parents[static_cast<std::size_t>(HumanBone::Spine)] ==
-           static_cast<std::size_t>(HumanBone::Hips));
+    assert(outcome.rest->parents[static_cast<std::size_t>(HumanJoint::Spine)] ==
+           static_cast<std::size_t>(HumanJoint::Hips));
     std::printf("execVrm rig: a source bone's parent is its parent path's "
                 "leaf\n");
 }
@@ -526,11 +526,11 @@ TestASourceNamingOneBoneTwiceIsRefusedAndBothNamed()
         execvrm::SourceRestFromSkeleton(*execvrm::TargetSkeletonFromRest(rest).skeleton);
     assert(!outcome.rest && "two rests for one bone were resolved by keeping one of them");
     assert(outcome.refusal == execvrm::SourceRestRefusal::DuplicateBone);
-    const std::vector<std::pair<HumanBone, std::string>> expected = {
-        {HumanBone::Hips, "hips"},
-        {HumanBone::Hips, "Reference/hips"},
-        {HumanBone::Spine, "hips/spine"},
-        {HumanBone::Spine, "Reference/spine"}};
+    const std::vector<std::pair<HumanJoint, std::string>> expected = {
+        {HumanJoint::Hips, "hips"},
+        {HumanJoint::Hips, "Reference/hips"},
+        {HumanJoint::Spine, "hips/spine"},
+        {HumanJoint::Spine, "Reference/spine"}};
     assert(outcome.offending == expected);
     std::printf("execVrm rig: a source naming one bone twice is refused, "
                 "every joint named\n");
@@ -560,7 +560,7 @@ TestTheCorrectionIsTheLibrarysCall()
     // the same rig, and the same map.
     const vrmRetarget::RestPoseCorrection expected =
         vrmRetarget::ComputeRestPoseCorrection(SemanticRest(), FixtureSkeleton(), map);
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
         assert(outcome.correction->identity[slot] == expected.identity[slot]);
         assert(SameOrientation(outcome.correction->pre[slot], expected.pre[slot]));
@@ -577,9 +577,9 @@ TestTheCorrectionIsTheLibrarysCall()
     // onto its +90 Z -- and a bone the map does not bind stays identity.
     const float half = std::sqrt(0.5f);
     const pxr::GfQuatf landed =
-        outcome.correction->Apply(HumanBone::LeftUpperArm, About(pxr::GfVec3f(0, 0, 1), -90.0f));
+        outcome.correction->Apply(HumanJoint::LeftUpperArm, About(pxr::GfVec3f(0, 0, 1), -90.0f));
     assert(SameOrientation(landed, pxr::GfQuatf(half, 0.0f, 0.0f, half)));
-    assert(outcome.correction->identity[static_cast<std::size_t>(HumanBone::RightUpperArm)]);
+    assert(outcome.correction->identity[static_cast<std::size_t>(HumanJoint::RightUpperArm)]);
     std::printf("execVrm rig: the correction is ComputeRestPoseCorrection over "
                 "the source's rest, the rig and the map\n");
 }
@@ -636,11 +636,11 @@ TestTheCorrectionRefusesWhatItCannotHonour()
 void
 TestTheBoundPoseIsTheOnePoseForwarded()
 {
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = 0.5;
-    pose.localRotations[static_cast<std::size_t>(HumanBone::Head)] =
+    pose.localRotations[static_cast<std::size_t>(HumanJoint::Head)] =
         About(pxr::GfVec3f(0, 1, 0), 20.0f);
-    pose.validRotations.set(static_cast<std::size_t>(HumanBone::Head));
+    pose.validRotations.set(static_cast<std::size_t>(HumanJoint::Head));
 
     execvrm::BoundPoseInputs inputs;
     inputs.animationTargetCount = 1;
@@ -650,9 +650,9 @@ TestTheBoundPoseIsTheOnePoseForwarded()
 
     // An empty pose that CAME BACK is an answer: a clip naming no bone samples
     // to one. What is refused is a binding that reaches no animation.
-    inputs.poses = {motion::HumanoidPose()};
+    inputs.poses = {openstrata::motion::MotionPose()};
     outcome = execvrm::BoundPoseFor(inputs);
-    assert(outcome.pose && *outcome.pose == motion::HumanoidPose());
+    assert(outcome.pose && *outcome.pose == openstrata::motion::MotionPose());
 
     using execvrm::BoundPoseRefusal;
     inputs.animationTargetCount = 0;
@@ -673,7 +673,7 @@ TestTheBoundPoseIsTheOnePoseForwarded()
     // UsdSkel's order: nothing bound here is what an ancestor binds, and an
     // own binding shadows it -- including one that is broken, which is
     // refused rather than passed over.
-    motion::HumanoidPose ancestor;
+    openstrata::motion::MotionPose ancestor;
     ancestor.timestamp = 0.25;
     inputs.animationTargetCount = 0;
     inputs.poses.clear();
@@ -791,20 +791,20 @@ TestTheRootMotionOptionsRefuseWhatTheToolRefuses()
 
 // A sample of the semantic clip: the spine and arm turned, the hips moved, and
 // one bone the fixture's humanoid does not bind.
-motion::HumanoidPose
+openstrata::motion::MotionPose
 ClipSample()
 {
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = 0.75;
-    const auto set = [&pose](HumanBone bone, const pxr::GfQuatf& rotation)
+    const auto set = [&pose](HumanJoint bone, const pxr::GfQuatf& rotation)
     {
         pose.localRotations[static_cast<std::size_t>(bone)] = rotation;
         pose.validRotations.set(static_cast<std::size_t>(bone));
     };
-    set(HumanBone::Hips, About(pxr::GfVec3f(0, 1, 0), 30.0f));
-    set(HumanBone::Spine, About(pxr::GfVec3f(1, 0, 0), 30.0f));
-    set(HumanBone::LeftUpperArm, About(pxr::GfVec3f(0, 0, 1), 20.0f));
-    set(HumanBone::RightUpperArm, About(pxr::GfVec3f(0, 0, 1), -20.0f));
+    set(HumanJoint::Hips, About(pxr::GfVec3f(0, 1, 0), 30.0f));
+    set(HumanJoint::Spine, About(pxr::GfVec3f(1, 0, 0), 30.0f));
+    set(HumanJoint::LeftUpperArm, About(pxr::GfVec3f(0, 0, 1), 20.0f));
+    set(HumanJoint::RightUpperArm, About(pxr::GfVec3f(0, 0, 1), -20.0f));
     pose.root.worldPosition = pxr::GfVec3f(0.3f, 1.0f, 0.1f);
     pose.root.hasPosition = true;
     return pose;
@@ -860,7 +860,7 @@ TestTheRetargetIsThePoseRetargetersCall()
     const vrmRetarget::RestPoseCorrection cached =
         *execvrm::RestPoseCorrectionFor(CorrectionFixture(map)).correction;
     outcome = execvrm::HumanoidRetargetFor(RetargetFixture(map));
-    const motion::HumanoidPose sample = ClipSample();
+    const openstrata::motion::MotionPose sample = ClipSample();
     for (const auto& [bone, token] : FixtureBindings())
     {
         const int joint = map.GetJointIndex(bone);
@@ -1062,7 +1062,7 @@ RigDiagnosticsFixture(const vrmRetarget::HumanoidMap& map)
 // The fixture's map with one binding left out, as the humanoid would state it
 // with that attribute unauthored.
 vrmRetarget::HumanoidMap
-MapWithout(HumanBone dropped)
+MapWithout(HumanJoint dropped)
 {
     execvrm::HumanoidInputs inputs = FixtureInputs();
     inputs.bindings.erase(std::remove_if(inputs.bindings.begin(), inputs.bindings.end(),
@@ -1102,11 +1102,11 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
     // the fixture binds six bones, and every required bone it leaves out is
     // named, in the vocabulary's order, while every one it binds is not.
     std::vector<std::string> missing;
-    for (const HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    for (const HumanJoint bone : vrmRetarget::HumanoidMap::GetRequiredBones())
     {
         if (!map.IsMapped(bone))
         {
-            missing.emplace_back(motion::HumanBoneName(bone));
+            missing.emplace_back(openstrata::motion::HumanJointName(bone));
         }
     }
     assert(missing.size() >= 10);
@@ -1116,7 +1116,7 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
 
     // The statements reach the options. A rig with no hips says what that
     // costs under root-motion mode 'hips', and only there.
-    const vrmRetarget::HumanoidMap noHips = MapWithout(HumanBone::Hips);
+    const vrmRetarget::HumanoidMap noHips = MapWithout(HumanJoint::Hips);
     const std::string hips = "hips";
     const auto hipsDetail = [&](const execvrm::RigDiagnosticsInputs& inputs)
     {
@@ -1228,7 +1228,7 @@ TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
     retargeter.Retarget(ClipSample(), &expected);
     assert(*outcome.diagnostics == expected);
     {
-        motion::HumanoidAnimation clip;
+        openstrata::motion::MotionClip clip;
         clip.samples = {ClipSample()};
         vrmRetarget::RetargetDiagnostics overload;
         retargeter.Retarget(clip, &overload);
@@ -1254,17 +1254,17 @@ TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
     // Merged over a clip's samples, in order, the nodes' answers are the list
     // the clip overload reports for the clip -- including a bone the clip
     // first drives on its second sample, which is what the harness relies on.
-    motion::HumanoidPose later = ClipSample();
+    openstrata::motion::MotionPose later = ClipSample();
     later.timestamp = 1.0;
-    later.localRotations[static_cast<std::size_t>(HumanBone::LeftLowerArm)] =
+    later.localRotations[static_cast<std::size_t>(HumanJoint::LeftLowerArm)] =
         About(pxr::GfVec3f(0, 1, 0), 15.0f);
-    later.validRotations.set(static_cast<std::size_t>(HumanBone::LeftLowerArm));
+    later.validRotations.set(static_cast<std::size_t>(HumanJoint::LeftLowerArm));
     execvrm::RetargetInputs second = RetargetFixture(map);
     second.poses = {later};
     vrmRetarget::RetargetDiagnostics merged;
     merged.Merge(*execvrm::RetargetDiagnosticsFor(RetargetFixture(map), &rig).diagnostics);
     merged.Merge(*execvrm::RetargetDiagnosticsFor(second, &rig).diagnostics);
-    motion::HumanoidAnimation clip;
+    openstrata::motion::MotionClip clip;
     clip.samples = {ClipSample(), later};
     vrmRetarget::RetargetDiagnostics overload;
     retargeter.Retarget(clip, &overload);

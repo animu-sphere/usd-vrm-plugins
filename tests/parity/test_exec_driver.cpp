@@ -38,8 +38,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
-#include <motionRuntime/MotionSource.h>
+#include <motionCore/MotionPose.h>
+#include <motionSampling/MotionSource.h>
 
 #include <cassert>
 #include <cstdio>
@@ -173,7 +173,7 @@ ArmingKeepsItsRefusals()
     Driver driver(Open());
     Frame arming;
     const Driver::RequestId id =
-        driver.Add({Key::Of<motion::PoseSampleResult>(kClip, kInterpolate)}, &arming);
+        driver.Add({Key::Of<openstrata::motion::PoseSampleResult>(kClip, kInterpolate)}, &arming);
 
     // The arm runs at the default time code, where the history sampler refuses
     // by design -- so the refusal is posted, kept, and is not a failure.
@@ -184,8 +184,8 @@ ArmingKeepsItsRefusals()
     assert(!arming.Failed() && "a by-design refusal failed the arming frame");
 
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0));
-    const auto* result = frame.Get<motion::PoseSampleResult>(0);
-    assert(result && result->status == motion::PoseSampleStatus::Sampled);
+    const auto* result = frame.Get<openstrata::motion::PoseSampleResult>(0);
+    assert(result && result->status == openstrata::motion::PoseSampleStatus::Sampled);
     assert(frame.refusals.empty() && !frame.Failed());
 }
 
@@ -195,8 +195,8 @@ AComputationNobodyRegisters()
 {
     Driver driver(Open());
     Frame arming;
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                                             Key::Of<motion::HumanoidPose>(kClip, kNobody)},
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kSample),
+                                             Key::Of<openstrata::motion::MotionPose>(kClip, kNobody)},
                                             &arming);
 
     const OpenExecDiagnostic* missing = Find(arming, OpenExecDiagnosticCode::ComputationUnavailable,
@@ -209,7 +209,7 @@ AComputationNobodyRegisters()
     assert(arming.errors.empty() && "the complaint was not attributed");
 
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0));
-    const auto* pose = frame.Get<motion::HumanoidPose>(0);
+    const auto* pose = frame.Get<openstrata::motion::MotionPose>(0);
     assert(pose && pose->validRotations.any() &&
            "the key beside the missing one stopped answering");
     assert(frame.values[1].IsEmpty());
@@ -227,7 +227,7 @@ AProviderThatIsNotThere()
 {
     Driver driver(Open());
     Frame arming;
-    driver.Add({Key::Of<motion::HumanoidPose>(SdfPath("/NoSuchPrim"), kSample)}, &arming);
+    driver.Add({Key::Of<openstrata::motion::MotionPose>(SdfPath("/NoSuchPrim"), kSample)}, &arming);
     const OpenExecDiagnostic* missing = Find(arming, OpenExecDiagnosticCode::ComputationUnavailable,
                                              "/NoSuchPrim [motion.sampleAnimation]");
     assert(missing && Contains(missing->detail, "there is no prim"));
@@ -249,11 +249,11 @@ AProviderThatGoesAndComesBack()
     const std::string otherName = "/Other [motion.sampleAnimation]";
 
     Driver driver(stage);
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                                             Key::Of<motion::HumanoidPose>(other, kSample)});
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kSample),
+                                             Key::Of<openstrata::motion::MotionPose>(other, kSample)});
     const Frame before = driver.Evaluate(id, UsdTimeCode(50.0));
-    assert(before.Get<motion::HumanoidPose>(0) && before.Get<motion::HumanoidPose>(1));
-    const motion::HumanoidPose answered = *before.Get<motion::HumanoidPose>(1);
+    assert(before.Get<openstrata::motion::MotionPose>(0) && before.Get<openstrata::motion::MotionPose>(1));
+    const openstrata::motion::MotionPose answered = *before.Get<openstrata::motion::MotionPose>(1);
     assert(answered.validRotations.any());
 
     stage->GetPrimAtPath(other).SetActive(false);
@@ -261,13 +261,13 @@ AProviderThatGoesAndComesBack()
     const OpenExecDiagnostic* missing =
         Find(gone, OpenExecDiagnosticCode::ComputationUnavailable, otherName);
     assert(missing && Contains(missing->detail, "not active"));
-    assert(gone.Get<motion::HumanoidPose>(0) && gone.values[1].IsEmpty());
+    assert(gone.Get<openstrata::motion::MotionPose>(0) && gone.values[1].IsEmpty());
     assert(gone.errors.empty() && gone.Failed());
 
     stage->GetPrimAtPath(other).SetActive(true);
     const Frame back = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(back.diagnostics.IsClean() && back.errors.empty());
-    assert(back.Get<motion::HumanoidPose>(1) && *back.Get<motion::HumanoidPose>(1) == answered);
+    assert(back.Get<openstrata::motion::MotionPose>(1) && *back.Get<openstrata::motion::MotionPose>(1) == answered);
 
     stage->GetPrimAtPath(other).SetActive(false);
     stage->GetPrimAtPath(other).SetActive(true);
@@ -282,8 +282,8 @@ AProviderThatGoesAndComesBack()
     assert(Contains(invalidated->detail, "reported the request invalid"));
     assert(invalidated->recoverable && !resynced.Failed());
     assert(resynced.errors.empty());
-    assert(resynced.Get<motion::HumanoidPose>(1) &&
-           *resynced.Get<motion::HumanoidPose>(1) == answered &&
+    assert(resynced.Get<openstrata::motion::MotionPose>(1) &&
+           *resynced.Get<openstrata::motion::MotionPose>(1) == answered &&
            "the rebuilt request did not answer what the old one did");
 
     // Why the second clip: a request whose EVERY key expires is discarded,
@@ -304,18 +304,18 @@ AProviderThatGoesAndComesBack()
     stage->GetPrimAtPath(other).SetActive(true);
     const Frame joined = driver.Evaluate(
         id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidPose>(kClip, kPrior), VtValue(answered)}});
+        {Override{Key::Of<openstrata::motion::MotionPose>(kClip, kPrior), VtValue(answered)}});
     const OpenExecDiagnostic* alongside =
         Find(joined, OpenExecDiagnosticCode::Invalidated, otherName);
     assert(alongside && "an expiry was rebuilt in silence because the frame "
                         "rebuilt the request for another reason");
     assert(Contains(alongside->detail, "reported the request invalid"));
-    assert(!joined.Failed() && joined.Get<motion::HumanoidPose>(1) &&
-           *joined.Get<motion::HumanoidPose>(1) == answered);
+    assert(!joined.Failed() && joined.Get<openstrata::motion::MotionPose>(1) &&
+           *joined.Get<openstrata::motion::MotionPose>(1) == answered);
 
     // And through the driver that route still ends in a rebuilt request, found
     // after the fact, the way an InvalidateAll is.
-    const Driver::RequestId single = driver.Add({Key::Of<motion::HumanoidPose>(other, kSample)});
+    const Driver::RequestId single = driver.Add({Key::Of<openstrata::motion::MotionPose>(other, kSample)});
     driver.Evaluate(single, UsdTimeCode(50.0));
     stage->GetPrimAtPath(other).SetActive(false);
     stage->GetPrimAtPath(other).SetActive(true);
@@ -323,8 +323,8 @@ AProviderThatGoesAndComesBack()
     const OpenExecDiagnostic* discarded =
         Find(whole, OpenExecDiagnosticCode::Invalidated, otherName);
     assert(discarded && Contains(discarded->detail, "still reported itself valid"));
-    assert(!whole.Failed() && whole.Get<motion::HumanoidPose>(0) &&
-           *whole.Get<motion::HumanoidPose>(0) == answered);
+    assert(!whole.Failed() && whole.Get<openstrata::motion::MotionPose>(0) &&
+           *whole.Get<openstrata::motion::MotionPose>(0) == answered);
 }
 
 // Contract: an override holds exactly its key's type, checked before exec
@@ -334,14 +334,14 @@ AMistypedOverride()
 {
     UsdStageRefPtr stage = Open();
     Driver driver(stage);
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
-    const Key prior = Key::Of<motion::HumanoidPose>(kClip, kPrior);
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kFilter)});
+    const Key prior = Key::Of<openstrata::motion::MotionPose>(kClip, kPrior);
 
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0),
-                                        {Override{prior, VtValue(motion::HumanoidAnimation{})}});
+                                        {Override{prior, VtValue(openstrata::motion::MotionClip{})}});
     const OpenExecDiagnostic* mismatch =
         Find(frame, OpenExecDiagnosticCode::TypeMismatch, kPriorName);
-    assert(mismatch && Contains(mismatch->detail, "HumanoidAnimation"));
+    assert(mismatch && Contains(mismatch->detail, "MotionClip"));
     assert(frame.Failed() && frame.values[0].IsEmpty() && frame.errors.empty());
 
     const Frame empty = driver.Evaluate(id, UsdTimeCode(50.0), {Override{prior, VtValue()}});
@@ -362,9 +362,9 @@ AMistypedOverride()
         system
             .ComputeWithOverrides(
                 raw, {ExecUsdValueOverride{ExecUsdValueKey(stage->GetPrimAtPath(kClip), kPrior),
-                                           VtValue(motion::HumanoidAnimation{})}})
+                                           VtValue(openstrata::motion::MotionClip{})}})
             .Get(0);
-    assert(answered.IsHolding<motion::HumanoidPose>() &&
+    assert(answered.IsHolding<openstrata::motion::MotionPose>() &&
            "exec now refuses a mistyped override; the driver's check is "
            "no longer the only thing between a caller and a plausible answer");
     assert(!mark.IsClean());
@@ -379,18 +379,18 @@ AnOverrideExecRejects()
 {
     Driver driver(Open());
     const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter),
-                    Key::Of<motion::PoseSampleResult>(kClip, kInterpolate)});
+        driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kFilter),
+                    Key::Of<openstrata::motion::PoseSampleResult>(kClip, kInterpolate)});
 
-    motion::HumanoidAnimation history;
+    openstrata::motion::MotionClip history;
     history.samples.emplace_back();
     history.samples.back().timestamp = 1.0;
 
     const Frame frame = driver.Evaluate(
         id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
-                  VtValue(motion::HumanoidAnimation{})},
-         Override{Key::Of<motion::HumanoidAnimation>(kClip, kHistory), VtValue(history)}});
+        {Override{Key::Of<openstrata::motion::MotionClip>(kClip, kPrior),
+                  VtValue(openstrata::motion::MotionClip{})},
+         Override{Key::Of<openstrata::motion::MotionClip>(kClip, kHistory), VtValue(history)}});
     const OpenExecDiagnostic* mismatch =
         Find(frame, OpenExecDiagnosticCode::TypeMismatch, kPriorName);
     assert(mismatch && "exec's own type check was not attributed");
@@ -405,9 +405,9 @@ AnOverrideExecRejects()
     // The same frame again, now with nothing new to build: the same answer.
     const Frame again = driver.Evaluate(
         id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
-                  VtValue(motion::HumanoidAnimation{})},
-         Override{Key::Of<motion::HumanoidAnimation>(kClip, kHistory), VtValue(history)}});
+        {Override{Key::Of<openstrata::motion::MotionClip>(kClip, kPrior),
+                  VtValue(openstrata::motion::MotionClip{})},
+         Override{Key::Of<openstrata::motion::MotionClip>(kClip, kHistory), VtValue(history)}});
     assert(Find(again, OpenExecDiagnosticCode::TypeMismatch, kPriorName) &&
            again.diagnostics.reported.size() == 1 && again.Failed());
 }
@@ -417,11 +417,11 @@ void
 AnAnswerOfAnotherType()
 {
     Driver driver(Open());
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidAnimation>(kClip, kSample)});
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionClip>(kClip, kSample)});
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0));
     const OpenExecDiagnostic* mismatch =
         Find(frame, OpenExecDiagnosticCode::TypeMismatch, kSampleName);
-    assert(mismatch && Contains(mismatch->detail, "HumanoidPose"));
+    assert(mismatch && Contains(mismatch->detail, "MotionPose"));
     assert(frame.values[0].IsEmpty() && frame.Failed());
 }
 
@@ -443,7 +443,7 @@ AnOverrideNothingCompiled()
         TfErrorMark mark;
         system.ComputeWithOverrides(
             raw, {ExecUsdValueOverride{ExecUsdValueKey(stage->GetPrimAtPath(kClip), kPrior),
-                                       VtValue(motion::HumanoidAnimation{})}});
+                                       VtValue(openstrata::motion::MotionClip{})}});
         assert(mark.IsClean() && "exec now reports an override of a key it has not compiled; "
                                  "the driver no longer has to request every key it overrides");
     }
@@ -451,10 +451,10 @@ AnOverrideNothingCompiled()
     // Through the driver the key joins the request, so the same mistaken
     // declaration meets exec's check and is named.
     Driver driver(stage);
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample)});
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kSample)});
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0),
-                                        {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
-                                                  VtValue(motion::HumanoidAnimation{})}});
+                                        {Override{Key::Of<openstrata::motion::MotionClip>(kClip, kPrior),
+                                                  VtValue(openstrata::motion::MotionClip{})}});
     assert(Find(frame, OpenExecDiagnosticCode::TypeMismatch, kPriorName) &&
            "an override of a key the request does not read went unchecked");
     assert(frame.Failed());
@@ -465,10 +465,10 @@ void
 ARequestExecStoppedAnswering()
 {
     Driver driver(Open());
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                                             Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kSample),
+                                             Key::Of<openstrata::motion::MotionPose>(kClip, kFilter)});
     const Frame before = driver.Evaluate(id, UsdTimeCode(50.0));
-    assert(before.Get<motion::HumanoidPose>(0) && before.Get<motion::HumanoidPose>(1));
+    assert(before.Get<openstrata::motion::MotionPose>(0) && before.Get<openstrata::motion::MotionPose>(1));
 
     {
         ExecSystem::Diagnostics diagnostics(&driver.System());
@@ -485,8 +485,8 @@ ARequestExecStoppedAnswering()
     assert(!after.Failed() && after.errors.empty());
     // The time was restated: InvalidateAll put the system at the default time
     // code, where the sampler answers an empty pose.
-    assert(*after.Get<motion::HumanoidPose>(0) == *before.Get<motion::HumanoidPose>(0) &&
-           *after.Get<motion::HumanoidPose>(1) == *before.Get<motion::HumanoidPose>(1));
+    assert(*after.Get<openstrata::motion::MotionPose>(0) == *before.Get<openstrata::motion::MotionPose>(0) &&
+           *after.Get<openstrata::motion::MotionPose>(1) == *before.Get<openstrata::motion::MotionPose>(1));
 
     const Frame settled = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(settled.diagnostics.IsClean() && settled.errors.empty());
@@ -510,17 +510,17 @@ AFrameReportsItsOwnRefusals()
     assert(stage && stage->GetPrimAtPath(kClip));
 
     Driver driver(stage);
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kFilter)});
     const Frame plain = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(plain.values[0].IsEmpty() && AnyContains(plain.refusals, "motion.sampleAnimation") &&
            "the unrated clip no longer refuses, so this proves nothing");
 
-    motion::HumanoidPose handed;
+    openstrata::motion::MotionPose handed;
     handed.timestamp = 1.0;
     const Frame driven =
         driver.Evaluate(id, UsdTimeCode(50.0),
-                        {Override{Key::Of<motion::HumanoidPose>(kClip, kSample), VtValue(handed)}});
-    assert(driven.Get<motion::HumanoidPose>(0) && "the sample handed in did not reach the filter");
+                        {Override{Key::Of<openstrata::motion::MotionPose>(kClip, kSample), VtValue(handed)}});
+    assert(driven.Get<openstrata::motion::MotionPose>(0) && "the sample handed in did not reach the filter");
     assert(driven.refusals.empty() &&
            "the frame carried refusals only the un-overridden graph posts");
     assert(!driven.Failed());
@@ -546,22 +546,22 @@ void
 AnOverrideReachesItsDependent()
 {
     Driver driver(Open());
-    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                                             Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<openstrata::motion::MotionPose>(kClip, kSample),
+                                             Key::Of<openstrata::motion::MotionPose>(kClip, kFilter)});
     const Frame earlier = driver.Evaluate(id, UsdTimeCode(49.0));
-    const motion::HumanoidPose previous = *earlier.Get<motion::HumanoidPose>(0);
+    const openstrata::motion::MotionPose previous = *earlier.Get<openstrata::motion::MotionPose>(0);
 
     const Frame plain = driver.Evaluate(id, UsdTimeCode(50.0));
-    assert(*plain.Get<motion::HumanoidPose>(1) == *plain.Get<motion::HumanoidPose>(0) &&
+    assert(*plain.Get<openstrata::motion::MotionPose>(1) == *plain.Get<openstrata::motion::MotionPose>(0) &&
            "un-overridden, the filter is the sampler");
 
     const Frame stepped = driver.Evaluate(
         id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidPose>(kClip, kPrior), VtValue(previous)}});
+        {Override{Key::Of<openstrata::motion::MotionPose>(kClip, kPrior), VtValue(previous)}});
     assert(!stepped.Failed() && stepped.diagnostics.IsClean());
-    assert(*stepped.Get<motion::HumanoidPose>(1) != *stepped.Get<motion::HumanoidPose>(0) &&
+    assert(*stepped.Get<openstrata::motion::MotionPose>(1) != *stepped.Get<openstrata::motion::MotionPose>(0) &&
            "the previous answer did not reach the filter");
-    assert(*stepped.Get<motion::HumanoidPose>(0) == *plain.Get<motion::HumanoidPose>(0) &&
+    assert(*stepped.Get<openstrata::motion::MotionPose>(0) == *plain.Get<openstrata::motion::MotionPose>(0) &&
            "the override leaked into the sampler");
 }
 

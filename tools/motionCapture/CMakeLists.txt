@@ -40,8 +40,13 @@ if(NOT pxr_FOUND)
 endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
-if(NOT TARGET motionRuntime::motionRuntime)
-    find_package(motionRuntime REQUIRED CONFIG)
+if(NOT TARGET motionSampling::motionSampling)
+    find_package(motionSampling REQUIRED CONFIG)
+endif()
+# The other half of what was one `motionRuntime`: the capture trace and the
+# live-capture intake are `motionRecording`'s.
+if(NOT TARGET motionRecording::motionRecording)
+    find_package(motionRecording REQUIRED CONFIG)
 endif()
 
 add_executable(motion_capture
@@ -51,7 +56,9 @@ add_executable(motion_capture
 usdvrm_use_utf8_code_page(motion_capture)
 
 target_compile_features(motion_capture PRIVATE cxx_std_17)
-target_link_libraries(motion_capture PRIVATE motionRuntime::motionRuntime)
+target_link_libraries(motion_capture PRIVATE
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 
 foreach(_usd_lib usd usdGeom usdSkel sdf tf gf vt arch)
     if(TARGET ${_usd_lib})

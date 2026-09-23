@@ -11,7 +11,7 @@
 // mistaken for a failure in the value.
 #pragma once
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/Diagnostics.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/PoseRetargeter.h>
@@ -33,16 +33,16 @@ namespace execvrm
 {
 
 /// The attribute `VrmHumanoidAPI` names each canonical bone's joint under,
-/// `vrm:humanBones:<bone>`, indexed by `motion::HumanBone`.
+/// `vrm:humanBones:<bone>`, indexed by `openstrata::motion::HumanJoint`.
 ///
-/// Built once from `motion::HumanBoneName` rather than spelled out: the
+/// Built once from `openstrata::motion::HumanJointName` rather than spelled out: the
 /// vocabulary is motionCore's, and the schema's is asserted to be the same
 /// fifty-five names by `execVrm_humanoid`, which reads the schema's own prim
 /// definition -- the one comparison that catches either side growing a bone the
 /// other does not have. A computation declares one input per entry, so a name
 /// the schema did not define would be an input that silently never has a value
 /// (the root-motion report, section 3).
-const std::array<pxr::TfToken, motion::HumanBoneCount>& HumanBoneAttributeNames();
+const std::array<pxr::TfToken, openstrata::motion::HumanJointCount>& HumanBoneAttributeNames();
 
 /// What a `UsdSkelSkeleton` states about its rest pose, as plain values.
 struct SkeletonRest
@@ -173,7 +173,7 @@ struct HumanoidInputs
     /// the empty token -- the fallback, with a `TF_WARN` beside it (see
     /// `SkeletonRefusal`). So an unauthored bone and an authored empty token
     /// are one value by the time they arrive here, and both bind nothing.
-    std::vector<std::pair<motion::HumanBone, std::string>> bindings;
+    std::vector<std::pair<openstrata::motion::HumanJoint, std::string>> bindings;
 };
 
 /// Why a humanoid map was refused.
@@ -208,7 +208,7 @@ struct MapOutcome
     /// For `UnknownJoint` and `DuplicateJoint`: the bones concerned, in
     /// vocabulary order, and the token each named -- so the report can say
     /// which statement the humanoid made that this layer cannot honour.
-    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+    std::vector<std::pair<openstrata::motion::HumanJoint, std::string>> offending;
 };
 
 /// The humanoid map `inputs` state, or a refusal.
@@ -271,7 +271,7 @@ struct SourceRestOutcome
 
     /// For `DuplicateBone`: every joint token that named a bone some other
     /// joint also named, each beside that bone.
-    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+    std::vector<std::pair<openstrata::motion::HumanJoint, std::string>> offending;
 };
 
 /// The clip's rest pose, per human bone, as the source skeleton states it.
@@ -362,7 +362,7 @@ struct CorrectionOutcome
 
     /// For `CorrectionRefusal::SourceRest`.
     SourceRestRefusal sourceRefusal = SourceRestRefusal::NoHumanBone;
-    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+    std::vector<std::pair<openstrata::motion::HumanJoint, std::string>> offending;
 };
 
 /// The correction carrying a rest-relative rotation from the clip's rig onto
@@ -399,7 +399,7 @@ struct BoundPoseInputs
     /// not in the session -- is dropped while the network compiles, and one
     /// whose sampler refused is dropped by the read iterator; the count above
     /// is what tells either from a skeleton that names nothing.
-    std::vector<motion::HumanoidPose> poses;
+    std::vector<openstrata::motion::MotionPose> poses;
 
     /// What the nearest ancestor with `SkelBindingAPI` applied binds, through
     /// its own `vrm.computeBindingPose`; null when there is no such ancestor,
@@ -413,7 +413,7 @@ struct BoundPoseInputs
     /// exec's `NamespaceAncestor` over a computation registered on the applied
     /// `UsdSkelBindingAPI`, which finds exactly the prims UsdSkel's `HasAPI`
     /// check admits.
-    const motion::HumanoidPose* inherited = nullptr;
+    const openstrata::motion::MotionPose* inherited = nullptr;
 };
 
 /// Why a bound pose was refused.
@@ -438,7 +438,7 @@ enum class BoundPoseRefusal
 
 struct BoundPoseOutcome
 {
-    std::optional<motion::HumanoidPose> pose;
+    std::optional<openstrata::motion::MotionPose> pose;
     BoundPoseRefusal refusal = BoundPoseRefusal::NoAnimation;
 };
 
@@ -568,7 +568,7 @@ struct RetargetInputs
 
     std::size_t sourceTargetCount = 0;
     std::vector<vrmRetarget::TargetSkeleton> sources;
-    std::vector<motion::HumanoidPose> poses;
+    std::vector<openstrata::motion::MotionPose> poses;
 
     RootMotionStatements rootMotion;
 
@@ -621,7 +621,7 @@ struct RetargetOutcome
 
     RootMotionRefusal rootMotionRefusal = RootMotionRefusal::UnknownMode;
     SourceRestRefusal sourceRefusal = SourceRestRefusal::NoHumanBone;
-    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+    std::vector<std::pair<openstrata::motion::HumanJoint, std::string>> offending;
 };
 
 /// One sample of the clip, expanded into the target rig's joint order, or a

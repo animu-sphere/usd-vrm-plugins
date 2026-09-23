@@ -64,12 +64,12 @@ importer's executable fixture and flattened golden live beside the plugin.
 ## `motionCore` value contract
 
 `motionCore` is a plain static CMake library. Its public types are
-`motion::HumanBone`, `HumanoidPose`, `HumanoidAnimation`, `RootMotion`, source
+`motion::HumanJoint`, `MotionPose`, `MotionClip`, `RootMotion`, source
 metadata, foot-contact samples, and `MotionConstraintSet`. It may use OpenUSD
 `GfVec3f` and `GfQuatf` value types, but it must never include or expose USD
 stage, Sdf, plug, file-format, network, vendor-SDK, or product-specific APIs.
 
-`HumanoidPose` stores one quaternion per `HumanBone` plus an explicit presence
+`MotionPose` stores one quaternion per `HumanJoint` plus an explicit presence
 bit. An absent bone is not an identity sample. `RootMotion` remains a separate
 object even when hips translation is carried in the authoring skeleton, so a
 future retargeter can choose how to apply it without rewriting clip data.
@@ -136,7 +136,7 @@ way (`a * b` applies `b` first). Where both rest poses are identity — the
 
 **Root motion.** `RootMotion` stays a separate object, so where it lands is a
 retarget-time choice: `Ignore` (animate in place), `Hips` (the joint bound to
-`HumanBone::Hips`, the default), or `RootJoint` (a named root, leaving the hips
+`HumanJoint::Hips`, the default), or `RootJoint` (a named root, leaving the hips
 at rest). What carries is the **delta** from each rig's own hips rest
 translation, not the absolute value, so a clip authored on a 1.0 m rig drives a
 1.6 m one without the avatar snapping to the source's hip height. A uniform
@@ -453,15 +453,15 @@ the caller's (rule 5), since only the caller knows what its source is.
 
 Phase D adds the observation side of §6.1: `IMotionSource`, the generic
 `LiveCaptureSource`, a recorded trace format, and the replay driver that makes
-the two testable. It changes nothing above — a live pose is a `HumanoidPose`
-and a recorded session is a `HumanoidAnimation`, so the Phase C retargeter
+the two testable. It changes nothing above — a live pose is a `MotionPose`
+and a recorded session is a `MotionClip`, so the Phase C retargeter
 consumes a capture without knowing it was one.
 
 **One interface, no source distinction.** `IMotionSource::Sample(t)` answers
 "what is the pose at this evaluation time?" and returns a `PoseSampleResult`
 carrying the pose, a status, and the lag. `ClipSource` (a finished animation)
 and `LiveCaptureSource` (a stream) are interchangeable behind it. Provenance
-travels as `MotionSourceMetadata` and is **never** a branch condition — the
+travels as `SourceMetadata` and is **never** a branch condition — the
 Phase D code reads `kind`, `provider`, `protocol` and `sourceId` only to record
 them (motion policy §9).
 
@@ -510,8 +510,8 @@ the current version — so byte-identity is a property of traces this writer
 produced. It deliberately does
 not record delivery order: when a frame arrived is a property of the transport,
 and it is reproduced by the replay schedule instead. `ReplaySender` pushes
-frames as a caller-driven clock advances; `CaptureRecorder` accumulates the
-evaluated result back into a `HumanoidAnimation`, carrying the per-tick status
+frames as a caller-driven clock advances; `MotionRecorder` accumulates the
+evaluated result back into a `MotionClip`, carrying the per-tick status
 counts with it so a clip baked from a laggy session holds the evidence of that
 lag.
 
@@ -533,19 +533,19 @@ session with no changes. Two details are specific to capture:
   that was never captured.
 
 **One humanoid taxonomy.** The semantic hierarchy (`HumanBoneParent`,
-`NearestPresentAncestor`, `HumanBoneJointPath`) moved into `motionCore` in
+`NearestPresentAncestor`, `HumanJointPath`) moved into `motionCore` in
 v0.5.0. The `.vrma` reader previously carried a private copy; two tables that
 can disagree would produce two skeletons that look alike and do not compose.
 
 Live capture's corpus is synthetic by necessity, not convenience — see
-[`libs/motionRuntime/tests/corpus/README.md`](../../libs/motionRuntime/tests/corpus/README.md).
+[`libs/motionRuntime/tests/corpus/README.md`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRecording/tests/corpus/README.md).
 Validation against a real capture rig needs an adapter and remains open.
 
 ## Comparison semantics (v0.6.0)
 
 Three consumers asked for one comparison and wanted two different answers, so
 `motionCore` states both and each is named for the question it answers.
-[`Compare.h`](../../libs/motionCore/include/motionCore/Compare.h) carries the
+[`Compare.h`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionCore/include/motionCore/Compare.h) carries the
 reasoning; this is what the contract promises.
 
 ```text
@@ -553,8 +553,8 @@ a == b                is this the same recorded value?
 NearlyEqual(a, b)     is this the same motion?
 ```
 
-`operator==` / `operator!=` are exact, on `MotionSourceMetadata`, `RootMotion`,
-`ContactState`, `HumanoidPose` and `HumanoidAnimation`. That is what
+`operator==` / `operator!=` are exact, on `SourceMetadata`, `RootMotion`,
+`ContactState`, `MotionPose` and `MotionClip`. That is what
 `ExecTypeRegistry::RegisterType` requires before a pose can cross an OpenExec
 computation boundary at all, and it is the comparison a trace round-trip is
 defined by. The declarative `MotionConstraintSet` types deliberately have none:
@@ -572,7 +572,7 @@ well *(added 2026-09-13)*, exact, for `execVrm`'s `vrm.computeTargetSkeleton`
 and `vrm.computeHumanoidMap`, which answer them whole. A skeleton compares joint
 by joint in its own order, since that order is what a map's indices count into,
 and a rest rotation and its negation are different skeletons — the conservative
-answer `HumanoidPose` gives. A map compares as indices, so two maps built against
+answer `MotionPose` gives. A map compares as indices, so two maps built against
 two different skeletons can be equal; the map never says which rig it counts
 into. Neither has a `NearlyEqual`: a parity check compares the poses retargeted
 onto them.
@@ -613,7 +613,7 @@ and each is a decision rather than an implementation detail:
   strict answer is the conservative one — a flipped sign recomputes what depends
   on it, which is wasteful and never wrong.
 - **Provenance is part of the value and not part of the motion.** `==` reads
-  `MotionSourceMetadata`; `NearlyEqual` does not. This is the only place the two
+  `SourceMetadata`; `NearlyEqual` does not. This is the only place the two
   read different fields, and it is why comparing an offline result against an
   OpenExec one needs no switch to turn metadata off.
 - **The tolerance is stated once.** Every default is derived from the
@@ -686,8 +686,8 @@ first call site that needs one.
   that is connected and no longer solving — from *zero pose* or from a bone the
   session never observed. The three mean different things downstream, and only a
   live adapter produces the middle one.
-- ✅ **An expression sample.** Landed 2026-08-03 as `ExpressionWeights` on
-  `HumanoidPose`, together with format 2 of the recorded trace. See below for
+- ✅ **An expression sample.** Landed 2026-08-03 as `MotionChannelSet` on
+  `MotionPose`, together with format 2 of the recorded trace. See below for
   the one place it departs from what was written here.
 
 A fourth is adjacent and already satisfied, worth naming so it is not
@@ -698,7 +698,7 @@ the session it recorded.
 
 ## Expression semantics (v0.7.0)
 
-`HumanoidPose::expressions` is a set of named weights, sorted by name and
+`MotionPose::expressions` is a set of named weights, sorted by name and
 holding each name once. The ordering is an invariant rather than a convention:
 two producers that reported the same weights in a different order describe the
 same motion, so they have to be the same *value*, and a trace written from
@@ -729,7 +729,7 @@ the weight to a rig, which is the same layer that will resolve the name.
 
 ### The one departure: on the pose, not beside it
 
-The item above asked for *a timestamped set of weights alongside `HumanoidPose`*
+The item above asked for *a timestamped set of weights alongside `MotionPose`*
 — a parallel track. It landed as a field on the pose instead, and the reason is
 that both producers put expressions on the pose's instants already: a VMC
 datagram carries bones and blend values under one `/VMC/Ext/T`, and the `.vrma`
@@ -745,7 +745,7 @@ does, this is the paragraph to revisit.
 
 ## Look-at semantics (after v0.8.0)
 
-`HumanoidPose::lookAtTarget` is **a point, optional, and never a direction.**
+`MotionPose::lookAtTarget` is **a point, optional, and never a direction.**
 
 **A point, because a direction needs a head.** VRMA points look-at at a node and
 the character watches where that node *is*; turning that into a gaze means
@@ -817,7 +817,7 @@ replay differ from the session it claims to reproduce.
 ## Recorded-source provenance (v0.7.0)
 
 The recorded-file path carries its own provenance type, `SourceProvenance`, and
-this section settles what it is **relative to** `MotionSourceMetadata` — a
+this section settles what it is **relative to** `SourceMetadata` — a
 question the plan asked to have answered before a converter set its first field
 rather than after ([recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md)).
 
@@ -827,7 +827,7 @@ canonical value, and nothing produces a `SourceProvenance` from a canonical one.
 Two independent arguments give the same answer, and either alone would have been
 enough:
 
-- *They travel differently.* `MotionSourceMetadata` rides on every pose and every
+- *They travel differently.* `SourceMetadata` rides on every pose and every
   canonical animation, is compared by `operator==`, and is written into the
   recorded-trace format — so a field added to it is a field every sample carries
   and every trace has to round-trip. A file's producer version and the profile it
@@ -836,12 +836,12 @@ enough:
 - *They are answerable by different layers.* Everything in `SourceProvenance` is
   known before any motion is: a reader supplies the format and the file's
   identity, a profile supplies the producer label, and a caller supplies which
-  profile it named. `MotionSourceMetadata` describes motion that by then already
+  profile it named. `SourceMetadata` describes motion that by then already
   exists.
 
 The mapping, and it is deliberately narrowing:
 
-| `SourceProvenance` | `MotionSourceMetadata` |
+| `SourceProvenance` | `SourceMetadata` |
 | --- | --- |
 | — | `kind` = `Clip`, always |
 | `producer` | `provider` |
@@ -1019,7 +1019,7 @@ translation per bone plus a presence bitset, and **no parent array**: the
 semantic parent of a bone within a rig carrying `present` is
 `motion::NearestPresentAncestor`, and a second copy of the humanoid taxonomy is
 the defect `HumanBoneParent` was moved into `motionCore` to avoid. It is
-deliberately not a field of `motion::HumanoidAnimation` — that type is compared
+deliberately not a field of `motion::MotionClip` — that type is compared
 by `operator==` and round-tripped through the recorded-trace format, so a field
 added to it is one every live-capture consumer inherits. It is
 `vrmRetarget::SourceRestPose`-shaped and never meets it in code: a semantic clip
@@ -1105,7 +1105,7 @@ exactly why the third row is not decided by analogy with them.
 **A hips translation that is the rig's only translating joint is body
 translation, and it is `RootMotion::worldPosition` — absolute, in the source's
 own space.** The rig's rotation at that joint is the body's orientation and is
-`RootMotion::worldOrientation`, while remaining the `HumanBone::Hips` local
+`RootMotion::worldOrientation`, while remaining the `HumanJoint::Hips` local
 rotation: a rig that roots at its hips has a root path of one joint, so the
 composition down that path *is* that joint, and the duplication is what makes
 two observations of one session comparable field for field.
@@ -1193,25 +1193,25 @@ somebody else's type.
 separates — the region vocabulary and the operator's assignment — and now holds
 the third. That library takes an edge to this one and never the reverse
 ([WORKSPACE.md §2](../architecture/WORKSPACE.md)), which is what lets a solve
-produce a `HumanoidPose` while nothing in `motionCore` learns that a tracker
+produce a `MotionPose` while nothing in `motionCore` learns that a tracker
 exists. It is also the reason no adapter is involved: a solve inside an adapter
 would be the second motion pipeline the whole layer exists to prevent, and a
 VRChat-shaped observation type here would be the first vendor value in a
 vendor-neutral library.
 
-**What a tracker-driven pose is, as a value.** An ordinary `HumanoidPose`, and
+**What a tracker-driven pose is, as a value.** An ordinary `MotionPose`, and
 sparse by construction: a rig of three to eleven trackers observes a handful of
 places on a body, so `validRotations` carries what the solve authored and
 nothing else, exactly as a clip that omits a bone does. Nothing new is added to
 the pose for this producer — no tracker identity, no per-bone provenance — and a
 consumer that cannot tell a tracker-driven pose from a clip-driven one is
-reading the value correctly. `MotionSourceMetadata` is where a producer says
+reading the value correctly. `SourceMetadata` is where a producer says
 what it was.
 
 **Root and hips are the existing rule, not a second one.** A hips tracker is a
 body translation observed at one place, which is the case the root/hips record
 above already answers: it is `RootMotion::worldPosition`, the same rotation is
-`RootMotion::worldOrientation`, and it remains the `HumanBone::Hips` local
+`RootMotion::worldOrientation`, and it remains the `HumanJoint::Hips` local
 rotation. A tracker path that invented a second convention would make two
 observations of one session incomparable field for field, which is the cost that
 record was written to stop paying.

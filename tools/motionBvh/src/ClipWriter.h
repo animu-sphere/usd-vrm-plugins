@@ -31,7 +31,7 @@
 // that needs neither variant: at that point the difference is a parameter and
 // the shape is a function. What must not happen in the meantime is the two
 // drifting on the parts that are *not* a choice, so `motion_bvh_convert_writer`
-// pins them — the joint set is in `HumanBone` order, `scales` is authored, and
+// pins them — the joint set is in `HumanJoint` order, `scales` is authored, and
 // the time codes are frames rather than seconds. `scales` is the one with a
 // scar: `UsdSkel` fetches translations, rotations and scales as a unit and
 // `scales` has no schema fallback, so omitting it does not mean "this clip
@@ -40,7 +40,7 @@
 
 #include "motionSource/CanonicalConversion.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include <map>
 #include <string>
@@ -61,7 +61,7 @@ namespace motionBvhTool
 // produced it. Neither this function nor its caller may branch on any of it:
 // a producer name reaching an `if` is the failure the profile design exists to
 // prevent (WORKSPACE.md §1).
-bool WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation& animation,
+bool WriteSemanticClip(const std::string& outputPath, const openstrata::motion::MotionClip& animation,
                        const motionSource::CanonicalRestPose& rest, const std::string& clipName,
                        const std::map<std::string, std::string>& provenance, std::string* error);
 

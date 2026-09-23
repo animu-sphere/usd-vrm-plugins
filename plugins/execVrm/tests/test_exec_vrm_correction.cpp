@@ -50,7 +50,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/RestPose.h>
 #include <vrmRetarget/TargetSkeleton.h>
@@ -69,7 +69,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace
 {
 
-using motion::HumanBone;
+using openstrata::motion::HumanJoint;
 
 const TfToken kTargetSkeleton("vrm.computeTargetSkeleton");
 const TfToken kHumanoidMap("vrm.computeHumanoidMap");
@@ -91,13 +91,13 @@ constexpr int kMapKey = 2;
 constexpr int kCorrectionKey = 3;
 
 TfToken
-BoneAttribute(HumanBone bone)
+BoneAttribute(HumanJoint bone)
 {
-    return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
+    return TfToken("vrm:humanBones:" + std::string(openstrata::motion::HumanJointName(bone)));
 }
 
 std::size_t
-Slot(HumanBone bone)
+Slot(HumanJoint bone)
 {
     return static_cast<std::size_t>(bone);
 }
@@ -116,13 +116,13 @@ SameOrientation(const GfQuatf& a, const GfQuatf& b)
 bool
 SameCorrection(const vrmRetarget::RestPoseCorrection& a, const vrmRetarget::RestPoseCorrection& b)
 {
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
         if (a.identity[slot] != b.identity[slot] || !SameOrientation(a.pre[slot], b.pre[slot]) ||
             !SameOrientation(a.post[slot], b.post[slot]))
         {
             std::fprintf(stderr, "the corrections differ at %s\n",
-                         std::string(motion::HumanBoneName(static_cast<HumanBone>(slot))).c_str());
+                         std::string(openstrata::motion::HumanJointName(static_cast<HumanJoint>(slot))).c_str());
             return false;
         }
     }
@@ -295,17 +295,17 @@ vrmRetarget::SourceRestPose
 ClipRest()
 {
     vrmRetarget::SourceRestPose rest;
-    rest.localTranslations[Slot(HumanBone::Hips)] = GfVec3f(0, 1, 0);
-    rest.localTranslations[Slot(HumanBone::Spine)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::Chest)] = GfVec3f(0, 0.15f, 0);
-    rest.localTranslations[Slot(HumanBone::Neck)] = GfVec3f(0, 0.2f, 0);
-    rest.localTranslations[Slot(HumanBone::Head)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
-    rest.SetParent(HumanBone::Spine, HumanBone::Hips);
-    rest.SetParent(HumanBone::Chest, HumanBone::Spine);
-    rest.SetParent(HumanBone::Neck, HumanBone::Chest);
-    rest.SetParent(HumanBone::Head, HumanBone::Neck);
-    rest.SetParent(HumanBone::LeftUpperArm, HumanBone::Chest);
+    rest.localTranslations[Slot(HumanJoint::Hips)] = GfVec3f(0, 1, 0);
+    rest.localTranslations[Slot(HumanJoint::Spine)] = GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[Slot(HumanJoint::Chest)] = GfVec3f(0, 0.15f, 0);
+    rest.localTranslations[Slot(HumanJoint::Neck)] = GfVec3f(0, 0.2f, 0);
+    rest.localTranslations[Slot(HumanJoint::Head)] = GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[Slot(HumanJoint::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
+    rest.SetParent(HumanJoint::Spine, HumanJoint::Hips);
+    rest.SetParent(HumanJoint::Chest, HumanJoint::Spine);
+    rest.SetParent(HumanJoint::Neck, HumanJoint::Chest);
+    rest.SetParent(HumanJoint::Head, HumanJoint::Neck);
+    rest.SetParent(HumanJoint::LeftUpperArm, HumanJoint::Chest);
     return rest;
 }
 
@@ -316,34 +316,34 @@ vrmRetarget::SourceRestPose
 PosedRest()
 {
     vrmRetarget::SourceRestPose rest;
-    rest.localTranslations[Slot(HumanBone::Hips)] = GfVec3f(0, 0.9f, 0);
-    rest.localTranslations[Slot(HumanBone::Spine)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::Chest)] = GfVec3f(0, 0.15f, 0);
-    rest.localRotations[Slot(HumanBone::LeftUpperArm)] = About(kZ, -90.0f);
-    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
-    rest.SetParent(HumanBone::Spine, HumanBone::Hips);
-    rest.SetParent(HumanBone::Chest, HumanBone::Spine);
-    rest.SetParent(HumanBone::LeftUpperArm, HumanBone::Chest);
+    rest.localTranslations[Slot(HumanJoint::Hips)] = GfVec3f(0, 0.9f, 0);
+    rest.localTranslations[Slot(HumanJoint::Spine)] = GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[Slot(HumanJoint::Chest)] = GfVec3f(0, 0.15f, 0);
+    rest.localRotations[Slot(HumanJoint::LeftUpperArm)] = About(kZ, -90.0f);
+    rest.localTranslations[Slot(HumanJoint::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
+    rest.SetParent(HumanJoint::Spine, HumanJoint::Hips);
+    rest.SetParent(HumanJoint::Chest, HumanJoint::Spine);
+    rest.SetParent(HumanJoint::LeftUpperArm, HumanJoint::Chest);
     return rest;
 }
 
 // The target rest rotations the fixture states, by bone.
 GfQuatf
-TargetRest(HumanBone bone)
+TargetRest(HumanJoint bone)
 {
     switch (bone)
     {
-    case HumanBone::Hips:
+    case HumanJoint::Hips:
         return About(kY, 90.0f);
-    case HumanBone::LeftUpperArm:
+    case HumanJoint::LeftUpperArm:
         return About(kZ, 90.0f);
     default:
         return kIdentity;
     }
 }
 
-const HumanBone kMapped[] = {HumanBone::Hips, HumanBone::Spine, HumanBone::Chest,
-                             HumanBone::Neck, HumanBone::Head,  HumanBone::LeftUpperArm};
+const HumanJoint kMapped[] = {HumanJoint::Hips, HumanJoint::Spine, HumanJoint::Chest,
+                             HumanJoint::Neck, HumanJoint::Head,  HumanJoint::LeftUpperArm};
 
 // ---------------------------------------------------------------------------
 // The correction the fixture states
@@ -387,26 +387,26 @@ TestTheCorrectionComputes(const std::string& fixture)
     // The source rests at identity, so a sample AT the source rest has to land
     // on each mapped joint's own rest -- including the spine, which is not
     // turned itself and still needs a correction because its parent is.
-    for (const HumanBone bone : kMapped)
+    for (const HumanJoint bone : kMapped)
     {
         assert(SameOrientation(correction.Apply(bone, kIdentity), TargetRest(bone)) &&
                "a sample at the clip's rest did not land on the rig's rest");
     }
     // Every bone below the turned hips is corrected, although only the arm is
     // turned itself: the correction reads the accumulated chain.
-    assert(!correction.identity[Slot(HumanBone::Hips)]);
-    assert(!correction.identity[Slot(HumanBone::Spine)] &&
+    assert(!correction.identity[Slot(HumanJoint::Hips)]);
+    assert(!correction.identity[Slot(HumanJoint::Spine)] &&
            "the spine was left uncorrected under a turned hips");
-    assert(!correction.identity[Slot(HumanBone::Head)]);
-    assert(!correction.identity[Slot(HumanBone::LeftUpperArm)]);
+    assert(!correction.identity[Slot(HumanJoint::Head)]);
+    assert(!correction.identity[Slot(HumanJoint::LeftUpperArm)]);
     // An unmapped bone stays identity: nothing to correct onto.
-    assert(correction.identity[Slot(HumanBone::RightUpperArm)]);
+    assert(correction.identity[Slot(HumanJoint::RightUpperArm)]);
 
     // A rotation away from the rest survives as the same world-space delta.
     // Spine: source parent rest identity, target parent rest the hips' 90 Y.
     {
         const GfQuatf animated = About(kX, 30.0f);
-        const GfQuatf retargeted = correction.Apply(HumanBone::Spine, animated);
+        const GfQuatf retargeted = correction.Apply(HumanJoint::Spine, animated);
         const GfQuatf parent = About(kY, 90.0f);
         const GfQuatf targetDelta = (parent * retargeted) * parent.GetInverse();
         assert(SameOrientation(targetDelta, animated) &&
@@ -497,20 +497,20 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
         assert(turned != correction);
         // The clip's spine rest is now 90 X: a sample at it lands on the
         // rig's spine rest, which is identity.
-        assert(SameOrientation(turned.Apply(HumanBone::Spine, About(kX, 90.0f)), kIdentity));
+        assert(SameOrientation(turned.Apply(HumanJoint::Spine, About(kX, 90.0f)), kIdentity));
         correction = turned;
     }
 
     // ---- a binding moves: the map and the correction -----------------------
     reported.clear();
-    rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Head)).Block();
+    rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Head)).Block();
     assert(reported.count(kMapKey) && reported.count(kCorrectionKey) &&
            "unbinding a bone did not reach the correction");
     assert(!reported.count(kSourceKey) && !reported.count(kTargetKey));
     {
         ExecUsdCacheView view = system.Compute(request);
         const vrmRetarget::RestPoseCorrection unbound = CorrectionAt(view);
-        assert(unbound.identity[Slot(HumanBone::Head)] && "an unbound head kept its correction");
+        assert(unbound.identity[Slot(HumanJoint::Head)] && "an unbound head kept its correction");
         correction = unbound;
     }
 
@@ -530,7 +530,7 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
         const vrmRetarget::RestPoseCorrection untwisted = CorrectionAt(view);
         // The hips are no longer turned, so they need no correction from an
         // identity clip hips.
-        assert(untwisted.identity[Slot(HumanBone::Hips)]);
+        assert(untwisted.identity[Slot(HumanJoint::Hips)]);
         correction = untwisted;
     }
 
@@ -557,7 +557,7 @@ TestInvalidationFollowsBothRelationships(const std::string& fixture)
                               vrmRetarget::ComputeRestPoseCorrection(PosedRest(), target, map)));
         // The posed arm rests at -90 Z and the rig's at +90 Z: a sample at the
         // clip's arm rest lands on the rig's.
-        assert(SameOrientation(posed.Apply(HumanBone::LeftUpperArm, About(kZ, -90.0f)),
+        assert(SameOrientation(posed.Apply(HumanJoint::LeftUpperArm, About(kZ, -90.0f)),
                                About(kZ, 90.0f)));
     }
     std::printf("execVrm correction: the source's rest, a binding, the "
@@ -710,7 +710,7 @@ void
 TestAMapThatRefusedIsRefusedInTurn(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips)).Set(TfToken("J_Bip_C_Hips")));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Hips)).Set(TfToken("J_Bip_C_Hips")));
 
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));

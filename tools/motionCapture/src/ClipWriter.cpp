@@ -27,7 +27,7 @@ namespace motionCaptureTool
 {
 
 bool
-WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation& animation,
+WriteSemanticClip(const std::string& outputPath, const openstrata::motion::MotionClip& animation,
                   const std::string& clipName, const std::map<std::string, std::string>& provenance,
                   std::string* error)
 {
@@ -48,9 +48,9 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
     // never solved is simply absent -- it is not authored at rest, because a
     // joint that is present and unmoving means something different downstream
     // from a joint that was never captured.
-    std::bitset<motion::HumanBoneCount> present;
+    std::bitset<openstrata::motion::HumanJointCount> present;
     bool observedRoot = false;
-    for (const motion::HumanoidPose& pose : animation.samples)
+    for (const openstrata::motion::MotionPose& pose : animation.samples)
     {
         present |= pose.validRotations;
         observedRoot = observedRoot || pose.root.hasPosition;
@@ -62,7 +62,7 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
     // its whole root motion here without a word. Hips joins the joint set on
     // the strength of the root observation; its rotation track falls back to
     // identity below, exactly as any unobserved bone's does.
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
     if (observedRoot && !present.test(hips))
     {
         present.set(hips);
@@ -74,17 +74,17 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
         return false;
     }
 
-    std::vector<motion::HumanBone> bones;
+    std::vector<openstrata::motion::HumanJoint> bones;
     pxr::VtTokenArray joints;
-    for (std::size_t index = 0; index < motion::HumanBoneCount; ++index)
+    for (std::size_t index = 0; index < openstrata::motion::HumanJointCount; ++index)
     {
         if (!present.test(index))
         {
             continue;
         }
-        const auto bone = static_cast<motion::HumanBone>(index);
+        const auto bone = static_cast<openstrata::motion::HumanJoint>(index);
         bones.push_back(bone);
-        joints.push_back(pxr::TfToken(motion::HumanBoneJointPath(bone, present)));
+        joints.push_back(pxr::TfToken(openstrata::motion::HumanJointPath(bone, present)));
     }
 
     const double frameRate = animation.nominalFrameRate > 0.0 ? animation.nominalFrameRate : 30.0;
@@ -136,7 +136,7 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
     // downstream as a delta from where the capture started rather than as an
     // absolute height (see MOTION_CONTRACT.md).
     pxr::GfVec3f hipsRest(0.0f);
-    for (const motion::HumanoidPose& pose : animation.samples)
+    for (const openstrata::motion::MotionPose& pose : animation.samples)
     {
         if (pose.root.hasPosition)
         {
@@ -149,10 +149,10 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
     const pxr::UsdSkelSkeleton skeleton = pxr::UsdSkelSkeleton::Define(stage, skeletonPath);
     pxr::VtMatrix4dArray restTransforms;
     restTransforms.reserve(bones.size());
-    for (const motion::HumanBone bone : bones)
+    for (const openstrata::motion::HumanJoint bone : bones)
     {
         pxr::GfMatrix4d rest(1.0);
-        if (bone == motion::HumanBone::Hips)
+        if (bone == openstrata::motion::HumanJoint::Hips)
         {
             rest.SetTranslate(pxr::GfVec3d(hipsRest[0], hipsRest[1], hipsRest[2]));
         }
@@ -194,7 +194,7 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
     // did not arrive. It was invisible while no live path composed a root at
     // all: `hipsRest` stayed at the origin and every frame authored it.
     pxr::GfVec3f hipsHeld = hipsRest;
-    for (const motion::HumanoidPose& pose : animation.samples)
+    for (const openstrata::motion::MotionPose& pose : animation.samples)
     {
         pxr::VtVec3fArray valuesT;
         pxr::VtQuatfArray valuesR;
@@ -204,18 +204,18 @@ WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation
         {
             hipsHeld = pose.root.worldPosition;
         }
-        for (const motion::HumanBone bone : bones)
+        for (const openstrata::motion::HumanJoint bone : bones)
         {
             const auto slot = static_cast<std::size_t>(bone);
             pxr::GfVec3f translation(0.0f);
-            if (bone == motion::HumanBone::Hips)
+            if (bone == openstrata::motion::HumanJoint::Hips)
             {
                 translation = hipsHeld;
             }
             valuesT.push_back(translation);
             // A frame that did not observe a bone authors the rest rotation
             // rather than the previous frame's: holding is an intake policy
-            // (LiveCaptureConfig::missingBones), and re-deciding it here would
+            // (LiveCaptureConfig::missingJoints), and re-deciding it here would
             // hide which policy actually ran.
             valuesR.push_back(pose.validRotations.test(slot)
                                   ? pose.localRotations[slot]

@@ -211,11 +211,25 @@ this document of what `find_dependency(pxr)` is carrying.
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
 | `vrmContainer` | `vrmContainer::vrmContainer` | `include/vrmContainer/` | — | — | yes | **measured** |
-| `motionCore` | `motionCore::motionCore` | `include/motionCore/` | `pxr` | — | yes | **measured** |
-| `motionRuntime` | `motionRuntime::motionRuntime` | `include/motionRuntime/` | `pxr`, `motionCore` | — | yes | **measured** |
-| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | **measured** |
+| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionSampling`, `motionRecording` | — | yes | **measured** |
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
+
+**Two more rows left with MIG-1 and MIG-2**, on 2026-09-21: `motionCore` and
+`motionRuntime` are `usd-motion-plugins`'
+[`motionCore`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionCore),
+[`motionSampling`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionSampling) and
+[`motionRecording`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRecording) now — one library became two
+there — and this workspace **consumes** them: five members name them in
+`requires.libraries` with a digest per target, and `ost` materializes the
+published artifacts before the build. Their contracts are that repository's to
+state; what this table still owes them is the consumer's half, which is §5's
+criterion 5 read from the other side — every remaining row's closure now
+resolves packages this workspace did not build.
+
+The rows that remain are what this workspace still *installs*. A consumed
+package has no row here and never will: this document is about what a consumer
+of **this** repository resolves.
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
 and defines a `<NAME>_STATIC` compile definition `PUBLIC`, which a consumer
@@ -259,12 +273,14 @@ This one did not: the prefix ships `bin/vrmContainer.dll` beside
 `lib/vrmContainer.lib`, criterion 2 names both, and the consumer ran with the
 prefix's own `bin` and `lib` on the loader path and nothing else.
 
-**The motion layer's five packages are measured, and the chain matters more
+**The motion layer's five packages were measured, and the chain matters more
 than the count.** `motionCore`, `motionRuntime`, `vrmRetarget`, `motionSource`
 and `motionBvh` each configured, built, linked and ran from a prefix holding
 their own transitive closure and nothing else, with OpenUSD arriving through the
-driver's `--extra-prefix` the way it arrives for anyone else. Three things came
-out of it.
+driver's `--extra-prefix` the way it arrives for anyone else. Two of the five
+are consumed packages now and their fixtures went with them; the three findings
+below are what that measurement established, and the first two are why the
+consumer side still holds.
 
 *Criterion 3 is blind to an external package, and only criterion 4 catches one.*
 Removing `find_dependency(pxr)` from `motionCore`'s installed config was

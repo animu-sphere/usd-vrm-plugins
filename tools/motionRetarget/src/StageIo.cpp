@@ -493,7 +493,7 @@ ReadHumanoidMapFile(const std::string& path, std::map<std::string, std::string>*
             return Fail(failure, ExitCode::InvalidUserInput,
                         path + ": value for '" + entry.first + "' is not a string");
         }
-        if (!motion::FindHumanBone(entry.first))
+        if (!openstrata::motion::FindHumanJoint(entry.first))
         {
             return Fail(failure, ExitCode::InvalidUserInput,
                         path + ": '" + entry.first + "' is not a VRM human bone name");
@@ -600,10 +600,10 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
     // Stage mappings first, explicit file mappings over the top.
     if (humanoidPrim)
     {
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
         {
-            const auto bone = static_cast<motion::HumanBone>(slot);
-            const std::string name(motion::HumanBoneName(bone));
+            const auto bone = static_cast<openstrata::motion::HumanJoint>(slot);
+            const std::string name(openstrata::motion::HumanJointName(bone));
             const UsdAttribute attribute =
                 humanoidPrim.GetAttribute(TfToken(std::string(kHumanBonesPrefix) + name));
             TfToken jointToken;
@@ -622,7 +622,7 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
 
     for (const auto& entry : extraMappings)
     {
-        const auto bone = motion::FindHumanBone(entry.first);
+        const auto bone = openstrata::motion::FindHumanJoint(entry.first);
         if (!bone)
         {
             continue;
@@ -777,11 +777,11 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     }
 
     // Semantic joint -> human bone, plus the clip's own rest pose.
-    std::vector<motion::HumanBone> boneForJoint(animationJoints.size(), motion::HumanBone::Count);
+    std::vector<openstrata::motion::HumanJoint> boneForJoint(animationJoints.size(), openstrata::motion::HumanJoint::Count);
     std::size_t recognized = 0;
     for (std::size_t i = 0; i < animationJoints.size(); ++i)
     {
-        const auto bone = motion::FindHumanBone(LeafToken(animationJoints[i].GetString()));
+        const auto bone = openstrata::motion::FindHumanJoint(LeafToken(animationJoints[i].GetString()));
         if (bone)
         {
             boneForJoint[i] = *bone;
@@ -815,7 +815,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
         for (std::size_t i = 0; i < restJoints.size(); ++i)
         {
             const std::string jointPath = restJoints[i].GetString();
-            const auto bone = motion::FindHumanBone(LeafToken(jointPath));
+            const auto bone = openstrata::motion::FindHumanJoint(LeafToken(jointPath));
             if (!bone)
             {
                 continue;
@@ -833,7 +833,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
                 continue;
             }
             const auto parentBone =
-                motion::FindHumanBone(LeafToken(jointPath.substr(0, separator)));
+                openstrata::motion::FindHumanJoint(LeafToken(jointPath.substr(0, separator)));
             if (parentBone)
             {
                 clip->restPose.SetParent(*bone, *parentBone);
@@ -991,7 +991,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     int hipsJointIndex = -1;
     for (std::size_t i = 0; i < boneForJoint.size(); ++i)
     {
-        if (boneForJoint[i] == motion::HumanBone::Hips)
+        if (boneForJoint[i] == openstrata::motion::HumanJoint::Hips)
         {
             hipsJointIndex = static_cast<int>(i);
             break;
@@ -1001,7 +1001,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     clip->animation.samples.reserve(timeCodes.size());
     for (const double timeCode : timeCodes)
     {
-        motion::HumanoidPose pose;
+        openstrata::motion::MotionPose pose;
         pose.timestamp = timeCode / clip->timeCodesPerSecond;
 
         VtQuatfArray rotations;
@@ -1009,7 +1009,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
         {
             for (std::size_t i = 0; i < rotations.size(); ++i)
             {
-                if (boneForJoint[i] == motion::HumanBone::Count)
+                if (boneForJoint[i] == openstrata::motion::HumanJoint::Count)
                 {
                     continue;
                 }
@@ -1050,7 +1050,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
             // clamps when a weight is applied to a rig, and this is the read.
             if (expression.weight.Get(&weight, timeCode))
             {
-                pose.expressions.Set(expression.name, weight);
+                pose.channels.Set(expression.name, weight);
             }
         }
 
@@ -1060,7 +1060,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     clip->animation.startTime = clip->animation.samples.front().timestamp;
     clip->animation.endTime = clip->animation.samples.back().timestamp;
     clip->animation.nominalFrameRate = clip->timeCodesPerSecond;
-    clip->animation.source.kind = motion::MotionSourceKind::Clip;
+    clip->animation.source.kind = openstrata::motion::MotionSourceKind::Clip;
     clip->animation.source.sourceId = path;
     return true;
 }

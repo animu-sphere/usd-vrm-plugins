@@ -19,7 +19,7 @@ makes that possible rather than merely intended:
   model is expressed in the source's own basis, unit and angle convention, so it
   names no Gf type and no humanoid bone. Four files are permitted a canonical
   type -- `CanonicalMetadata`, which derives the canonical provenance,
-  `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side,
+  `SourceProfile`, whose joint map has a `HumanJoint` on its right-hand side,
   `SourceProfileFile`, which reads that right-hand side out of a file and cannot
   do it without naming what it reads, and `CanonicalConversion`, which produces
   canonical motion and could not do it without naming what canonical motion is
@@ -84,7 +84,7 @@ FORMAT_NAMES = [
 # was granted for the narrowest possible reason: a joint map's right-hand side is
 # a bone, so a reader of that map has to be able to turn a written word into one.
 # `CanonicalConversion` is the fourth and the last one this library has a reason
-# to grant: producing a `motion::HumanoidAnimation` is what a converter is for,
+# to grant: producing a `motion::MotionClip` is what a converter is for,
 # and anything after it would be a second converter.
 CANONICAL_FILES = {
     "CanonicalMetadata.h", "CanonicalMetadata.cpp",

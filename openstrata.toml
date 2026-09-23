@@ -49,8 +49,6 @@ members = [
   "plugins/usdVrmPackageResolver",
   "plugins/vrmSchema",
   "libs/motionBvh",
-  "libs/motionCore",
-  "libs/motionRuntime",
   "libs/motionSource",
   "libs/vrmContainer",
   "libs/vrmRetarget",

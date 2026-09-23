@@ -203,7 +203,7 @@ contributes identity — correct for a bone nobody observes, since nothing ever
 authors a spine and a consumer leaves it at rest for the whole session. It was
 also being applied to a bone the assignment **did** place that happened to carry
 no rotation in one frame, and that case is different: every consumer in this
-workspace replays with `missingBones = hold`, so what it has for the hips in
+workspace replays with `missingJoints = hold`, so what it has for the hips in
 that frame is the value from a frame ago, not identity. The locals were
 therefore divided by identity and composed against 33.6°.
 

@@ -5,7 +5,7 @@
 // This is the last of the crossings into canonical motion this library has a
 // reason to grant (`motionSource_boundaries` carries the list), and unlike the
 // other three it is the crossing rather than a corner of one: producing a
-// `motion::HumanoidAnimation` is what a converter is for, and a converter that
+// `openstrata::motion::MotionClip` is what a converter is for, and a converter that
 // could not name a `GfQuatf` could not produce one.
 //
 // What it is **not** allowed to know stays exactly what it was: the target
@@ -73,9 +73,9 @@
 // **The rest pose is a value here and a `UsdSkelSkeleton` somewhere else.** It
 // carries a local rotation and a local translation per bone and no parent
 // array, because the semantic parent of a bone within a rig is
-// `motion::NearestPresentAncestor` — a second copy of the humanoid taxonomy is
+// `openstrata::motion::NearestPresentAncestor` — a second copy of the humanoid taxonomy is
 // the defect `HumanBoneParent` was moved into `motionCore` to avoid. It is
-// deliberately *not* part of `motion::HumanoidAnimation`: that type is compared
+// deliberately *not* part of `openstrata::motion::MotionClip`: that type is compared
 // by `operator==` and round-tripped through the recorded-trace format, and a
 // field added to it is a field every consumer of live capture inherits.
 //
@@ -113,7 +113,7 @@
 #include "motionSource/SourceSkeleton.h"
 #include "motionSource/api.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
@@ -215,17 +215,17 @@ MOTIONSOURCE_API SourceQuat ComposeSourceRotation(const SourceEulerAngles& angle
 // The clip's own rest pose, per canonical bone, in canonical basis and metres.
 //
 // No parent array: the semantic parent of a bone within a rig carrying
-// `present` is `motion::NearestPresentAncestor`, and a second copy of the
+// `present` is `openstrata::motion::NearestPresentAncestor`, and a second copy of the
 // humanoid taxonomy is a defect waiting to happen. A bone `present` does not
 // carry has no rest and its entries are left at identity and zero.
 struct CanonicalRestPose
 {
     MOTIONSOURCE_API CanonicalRestPose();
 
-    std::array<pxr::GfQuatf, motion::HumanBoneCount> localRotations;
+    std::array<pxr::GfQuatf, openstrata::motion::HumanJointCount> localRotations;
     // From the bone's nearest present ancestor, in that ancestor's rest frame.
-    std::array<pxr::GfVec3f, motion::HumanBoneCount> localTranslations;
-    std::bitset<motion::HumanBoneCount> present;
+    std::array<pxr::GfVec3f, openstrata::motion::HumanJointCount> localTranslations;
+    std::bitset<openstrata::motion::HumanJointCount> present;
 };
 
 // Why a conversion produced nothing. Values are stable; `None` is success.
@@ -273,7 +273,7 @@ struct ConversionReport
     // joint — the unmapped segments between two mapped ones. Not a warning: it
     // is the rule working, and it is reported because *which* bones absorbed a
     // chain is the thing a cross-source comparison will want to know.
-    std::vector<motion::HumanBone> composedBones;
+    std::vector<openstrata::motion::HumanJoint> composedBones;
 };
 
 // What a conversion produced, or did not.
@@ -291,7 +291,7 @@ struct SourceConversion
     // that did not happen needs it most.
     SourceProfileMatch match;
 
-    motion::HumanoidAnimation animation;
+    openstrata::motion::MotionClip animation;
     CanonicalRestPose rest;
     ConversionReport report;
 

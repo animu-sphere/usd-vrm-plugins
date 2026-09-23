@@ -7,7 +7,7 @@ schema contract only. Workspace Phase 8 / Motion Phase E; the plan is
 
 **The rig, one sample of a clip on it, and what the retarget said.** It
 registers seven value types -- six of `vrmRetarget`'s, and `execMotion`'s
-`motion::HumanoidPose`, which a bundle that reads a type has to register itself
+`motion::MotionPose`, which a bundle that reads a type has to register itself
 -- and nine computations:
 
 | Computation | Provider | Result |
@@ -15,7 +15,7 @@ registers seven value types -- six of `vrmRetarget`'s, and `execMotion`'s
 | `vrm.computeTargetSkeleton` | a `UsdSkelSkeleton` prim | the `vrmRetarget::TargetSkeleton` its `joints` and `restTransforms` state: tokens verbatim, parents from the joint paths, each rest transform decomposed into a rotation and a translation with **scale and shear dropped** |
 | `vrm.computeHumanoidMap` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::HumanoidMap` its `vrm:humanBones:*` tokens state, resolved against the one skeleton `vrm:skeleton` reaches |
 | `vrm.computeRestPoseCorrection` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RestPoseCorrection` from the rest pose of the skeleton `vrm:retarget:sourceSkeleton` reaches onto this humanoid's rig, through its map |
-| `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::HumanoidPose` `execMotion`'s `motion.sampleAnimation` answers on the animation the skeleton is bound to -- its own `skel:animationSource`, or else an ancestor's -- forwarded |
+| `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::MotionPose` `execMotion`'s `motion.sampleAnimation` answers on the animation the skeleton is bound to -- its own `skel:animationSource`, or else an ancestor's -- forwarded |
 | `vrm.computeBindingPose` | a prim with `UsdSkelBindingAPI` applied | the same, for the animation that prim binds at or beneath it, or else its nearest such ancestor's: UsdSkel's inherited binding, one prim per step |
 | `vrm.humanoidRetarget` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetedPose`: one sample of the clip `vrm:retarget:sourceSkeleton` reaches, in this rig's joint order, under the humanoid's root-motion statements |
 | `vrm.computeJointLocalTransforms` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::JointLocalTransforms`: that retargeted sample in the shape a `UsdSkelAnimation` states at one time code -- the rig's `joints`, the pose's translations and rotations, and one `(1, 1, 1)` scale per joint |
@@ -62,7 +62,7 @@ correction compute, and exec drops the animation from the bound pose's fan-in
 posted. The bound pose's count of the relationship is what notices, and
 `execVrm_retarget_without_exec_motion` measures it
 ([the retarget report](../../docs/reports/openusd/26.08-openexec-retarget.md) §3).
-The bundle also registers `motion::HumanoidPose` itself: exec checks that a type
+The bundle also registers `motion::MotionPose` itself: exec checks that a type
 an input reads is registered when *this* bundle's computations are, and with the
 registration removed every session that did not load `execMotion` first lost
 every computation here to a fatal error.
@@ -134,7 +134,7 @@ authored targets. `execVrm_humanoid` pins it.
 **Fifty-five inputs, declared in a loop.** `VrmHumanoidAPI` spells a binding as
 one attribute per bone, and `Inputs()` appends on every call, so the
 registration iterates motionCore's vocabulary rather than spelling it. The names
-are `vrm:humanBones:` + `motion::HumanBoneName`, and `execVrm_humanoid` compares
+are `vrm:humanBones:` + `motion::HumanJointName`, and `execVrm_humanoid` compares
 them, both ways, with the properties the schema's own prim definition lists.
 
 ## The clip's rest, and the correction onto this rig

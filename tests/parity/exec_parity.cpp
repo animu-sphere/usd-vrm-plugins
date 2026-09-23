@@ -51,7 +51,7 @@
 // it, so the cost of the rule is a number rather than a warning.
 //
 // Each difference is classified, never widened (the plan's P0-6): exact, a
-// quaternion's sign only, within `motion::MotionTolerance` -- the contract's
+// quaternion's sign only, within `openstrata::motion::MotionTolerance` -- the contract's
 // tolerance, not one chosen here -- or a divergence. Only a divergence, a
 // refusal, two values that do not have the same shape, or two diagnostics
 // lists that differ fail the run.
@@ -129,7 +129,7 @@
 #include "ExecDriver.h"
 
 #include <motionCore/Compare.h>
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/Diagnostics.h>
 #include <vrmRetarget/PoseRetargeter.h>
 
@@ -630,7 +630,7 @@ ReadMap(const std::string& path, std::vector<std::pair<std::string, std::string>
     }
     for (const auto& [bone, token] : parsed.GetJsObject())
     {
-        if (!token.IsString() || !motion::FindHumanBone(bone))
+        if (!token.IsString() || !openstrata::motion::FindHumanJoint(bone))
         {
             *error = path + ": '" + bone + "' is not a bone bound to a token";
             return false;
@@ -929,7 +929,7 @@ struct Tally
     }
 };
 
-const motion::MotionTolerance kTolerance{};
+const openstrata::motion::MotionTolerance kTolerance{};
 
 Kind
 ClassifyRotation(const GfQuatf& exec, const GfQuatf& baked, double* angle)
@@ -943,7 +943,7 @@ ClassifyRotation(const GfQuatf& exec, const GfQuatf& baked, double* angle)
     {
         return Kind::Sign;
     }
-    *angle = motion::AngleBetween(exec, baked);
+    *angle = openstrata::motion::AngleBetween(exec, baked);
     // A NaN angle is not within anything.
     return *angle <= kTolerance.angle ? Kind::Rounding : Kind::Divergence;
 }

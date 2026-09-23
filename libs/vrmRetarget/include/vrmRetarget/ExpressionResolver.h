@@ -5,7 +5,7 @@
 // A VRM expression is not one blend shape: it drives N morph targets across M
 // meshes plus a set of material colours, and the numbers that say by how much
 // belong to the avatar rather than to the clip. So a producer reports a name
-// and a weight (motionCore's ExpressionWeights), the avatar carries the binds,
+// and a weight (motionCore's MotionChannelSet), the avatar carries the binds,
 // and this is where the two meet -- the consumer step the motion contract
 // names, because it is the first layer that has the rig.
 //
@@ -18,7 +18,7 @@
 
 #include "vrmRetarget/api.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include "pxr/base/gf/vec4f.h"
 
@@ -165,7 +165,7 @@ class VRMRETARGET_API ExpressionRig
 
     // The definition for `name`, or null when the rig declares no such
     // expression. A pointer rather than a value, for the same reason
-    // ExpressionWeights::Find answers with one: "not declared" and "declared
+    // MotionChannelSet::Find answers with one: "not declared" and "declared
     // with no binds" are different rigs.
     const ExpressionDefinition* Find(const std::string& name) const noexcept;
 
@@ -243,7 +243,7 @@ struct ResolvedExpressions
     double timestamp = 0.0;
 
     // Sorted -- by target, and by (material, colorType) -- for the reason
-    // ExpressionWeights is sorted: two producers that reported the same weights
+    // MotionChannelSet is sorted: two producers that reported the same weights
     // in a different order are the same motion, so they must resolve to the
     // same value.
     std::vector<ResolvedMorphTarget> morphTargets;
@@ -341,13 +341,13 @@ class VRMRETARGET_API ExpressionResolver
     // That is the boundary rather than an oversight: cascading would make the
     // answer depend on the order the categories are settled in, and two
     // expressions overriding each other's categories would have none at all.
-    ResolvedExpressions Resolve(const motion::ExpressionWeights& weights,
+    ResolvedExpressions Resolve(const openstrata::motion::MotionChannelSet& weights,
                                 ExpressionDiagnostics* diagnostics = nullptr) const;
 
     // The same, taking the weights off a pose and carrying its timestamp
     // through -- expressions live on the pose, so this is the call a consumer
     // walking a clip actually makes.
-    ResolvedExpressions Resolve(const motion::HumanoidPose& pose,
+    ResolvedExpressions Resolve(const openstrata::motion::MotionPose& pose,
                                 ExpressionDiagnostics* diagnostics = nullptr) const;
 
     // The weight this rig applies for `name` given a `reported` one: the clamp

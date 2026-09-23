@@ -312,7 +312,7 @@ parity — can replay.
 
 ```text
 UDP datagram → OSC decode → VMC message decode → frame assembly
-             → VRM bone mapping → HumanoidPose → LiveCaptureSource
+             → VRM bone mapping → MotionPose → LiveCaptureSource
 ```
 
 | Component | Owns |
@@ -348,7 +348,7 @@ every subsequent test require a live sender.
 ```text
 forbidden:   VMC bone name -> a joint index in /Asset/skel/Skeleton
 
-required:    VMC bone name -> HumanBone token -> canonical pose
+required:    VMC bone name -> HumanJoint token -> canonical pose
              then, downstream:  VrmHumanoidAPI -> target mapping -> retarget
 ```
 
@@ -459,7 +459,7 @@ obtain any. The order is thin receiver → corpus → recorded decoder → mappi
 live-source bridge, amended 2026-08-11 and argued in
 [Milestone D](#milestone-d--the-mocopi-native-live-adapter--v070-evidence-carried).
 
-**Done when:** recorded fixtures yield a deterministic `HumanoidPose`; malformed
+**Done when:** recorded fixtures yield a deterministic `MotionPose`; malformed
 and truncated packets are refused with diagnostics; coordinate, unit, and
 quaternion conventions are pinned by tests; confidence and tracking state reach
 the runtime's confidence gating; missing bones reach the existing policy;
@@ -488,7 +488,7 @@ generator's shape silently becomes the contract.
 > blocking it gets written, not what it is.
 
 ```text
-MotionGenerationRequest → ARDY adapter → HumanoidAnimation / pose stream
+MotionGenerationRequest → ARDY adapter → MotionClip / pose stream
                         → motionRuntime → vrmRetarget → VRM avatar
 ```
 
@@ -497,7 +497,7 @@ MotionGenerationRequest → ARDY adapter → HumanoidAnimation / pose stream
 | `ArdyClient` | process/service/API transport, timeout, cancellation, retry, diagnostics |
 | `ArdyRequestEncoder` | vendor-neutral request → ARDY-specific request |
 | `ArdyResponseDecoder` | ARDY output → adapter-local representation |
-| `ArdyMotionMapper` | → `HumanoidPose` / `HumanoidAnimation`, root motion, per-joint confidence, source timing, generation provenance |
+| `ArdyMotionMapper` | → `MotionPose` / `MotionClip`, root motion, per-joint confidence, source timing, generation provenance |
 | `ArdyGenerator` | a thin `IMotionGenerator` implementation |
 
 Generated motion goes to **canonical humanoid semantics**, never straight to a
@@ -649,7 +649,7 @@ generated corpus was written around rather than into: `partial-upper-body` ·
 ```text
 VMC:     test sender → UDP loopback → adapter → motion-capture-trace → motion_capture → motion_retarget
 mocopi:  recorded packets → adapter → motion-capture-trace → motion_capture → motion_retarget
-ARDY:    request fixture → fake/recorded endpoint → adapter → HumanoidAnimation → motion_retarget
+ARDY:    request fixture → fake/recorded endpoint → adapter → MotionClip → motion_retarget
 ```
 
 All three end at the *existing* tools, unchanged. That is the check that an
@@ -985,7 +985,7 @@ capability:
   separately shippable. What is built instead was already the format's job:
   `<adapter>_record --export-trace` writes what the adapter delivered as a
   `motion-capture-trace` — *after protocol decode and coordinate conversion,
-  before any intake policy* (`motionRuntime/CaptureTrace.h`) — and
+  before any intake policy* (`motionRecording/CaptureTrace.h`) — and
   `motion_capture` replays it unchanged, knowing nothing about VMC. The cost is
   that a live session is two commands. Settled 2026-08-04, in the contract
   before the code, and it is the reason a release can require that a session

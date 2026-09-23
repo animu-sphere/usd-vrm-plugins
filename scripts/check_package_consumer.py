@@ -80,7 +80,42 @@ FIXTURE_ROOT = REPO_ROOT / "tests/consumer"
 # Packages a consumer resolves that this workspace does not produce. They are
 # not installed into the scratch prefix -- they arrive through --extra-prefix,
 # the same way they would arrive for anyone else.
-EXTERNAL_PACKAGES = {"pxr", "Threads"}
+#
+# Two of them are named here because nothing in this tree declares them:
+# OpenUSD and the platform's threading library. The rest are **read** from the
+# descriptors rather than listed, because they change with the migration: a
+# `requires.libraries` entry carrying an `artifact:` block is a package this
+# workspace consumes from another repository (`ost` materializes it by digest),
+# and a consumer of one of our packages resolves it exactly as it resolves
+# OpenUSD. Listing them here instead would be a second place to forget.
+HOST_PACKAGES = {"pxr", "Threads"}
+
+
+def consumed_packages() -> set:
+    """Every library this workspace declares as a published external artifact.
+
+    Read from the descriptors, so a library that starts or stops being consumed
+    needs no edit here. The block is `requires.libraries[].artifact`, which is
+    what `ost` 0.23.x materializes by digest before a build.
+    """
+    consumed: set = set()
+    for pattern in ("libs/*/openstrata.library.yaml",
+                    "plugins/*/openstrata.plugin.yaml",
+                    "tools/*/openstrata.tool.yaml"):
+        for path in REPO_ROOT.glob(pattern):
+            text = path.read_text(encoding="utf-8")
+            current = None
+            for line in text.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("- id:"):
+                    current = stripped.split(":", 1)[1].strip()
+                elif stripped.startswith("artifact:") and current:
+                    consumed.add(current)
+                    current = None
+    return consumed
+
+
+EXTERNAL_PACKAGES = HOST_PACKAGES | consumed_packages()
 
 
 def fail_setup(msg: str) -> NoReturn:

@@ -62,8 +62,13 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 if(NOT TARGET motionCore::motionCore)
     find_package(motionCore CONFIG REQUIRED)
 endif()
-if(NOT TARGET motionRuntime::motionRuntime)
-    find_package(motionRuntime CONFIG REQUIRED)
+if(NOT TARGET motionSampling::motionSampling)
+    find_package(motionSampling CONFIG REQUIRED)
+endif()
+# The other half of what was one `motionRuntime`: the live-capture intake and
+# the capture trace are `motionRecording`'s.
+if(NOT TARGET motionRecording::motionRecording)
+    find_package(motionRecording CONFIG REQUIRED)
 endif()
 if(NOT TARGET vrmRetarget::vrmRetarget)
     find_package(vrmRetarget CONFIG REQUIRED)
@@ -88,7 +93,8 @@ target_include_directories(${PLUGIN_NAME} PRIVATE
     ${PXR_INCLUDE_DIRS})
 target_link_libraries(${PLUGIN_NAME} PRIVATE
     motionCore::motionCore
-    motionRuntime::motionRuntime
+    motionSampling::motionSampling
+    motionRecording::motionRecording
     vrmRetarget::vrmRetarget)
 
 if(MSVC)

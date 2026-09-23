@@ -122,17 +122,21 @@ repository's, and needs nothing from this one.
   first: the 55-joint vocabulary is version 1, the generic stage's prims are
   `Skeleton` / `Body` / `Channels`, time codes are always 30 per second, and a
   channel's value is a `float`.
-- ⛔ **Blocked on `ost`:** `requires.libraries` resolves only sibling members,
-  so this repository cannot declare `motionCore` from another repository, and
-  undeclaring the edge would hide it from the graph and provenance
-  ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
-  The consuming change below waits for that ask, not for a workaround.
-- ⬜ This repository consumes the installed package: `usdVrmaFileFormat`,
-  `motionRuntime`, `vrmRetarget`, `motionSource`, `motionTracking` and the
-  adapters switch their edge in the same change that deletes `libs/motionCore`
+- ✅ **The block is gone.** `ost` 0.23.2 resolves an external artifact declared
+  in `requires.libraries` by digest per target, which is what
+  [report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
+  asked for and [report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)
+  finished on the root-build side.
+- ✅ **This repository consumes the package** (2026-09-21): `libs/motionCore` is
+  gone, five members pin the published `motionCore` by digest, and the whole
+  suite is green against it (80/80). What it cost to adapt: the vocabulary, in
+  104 files.
+  The members that switched their edge: `usdVrmaFileFormat`, `vrmRetarget`,
+  `motionSource`, `execMotion`, `execVrm` and the three CLIs — the adapters and
+  `motionTracking` the original item also named had already left with MIG-4
   ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 1).
-  Adapting code here to the renamed types is acceptable during migration
-  (motion-plugins policy §37); keeping two cores is not.
+  Adapting code here to the renamed types was acceptable during migration
+  (motion-plugins policy §37); keeping two cores was not.
 - ⬜ The `.vrma` stage does not change: `/Animation`, `HumanoidSkeleton`,
   `BodyAnimation`, the `vrma` custom data. A standalone motion stage in
   `usd-motion-plugins`' shape is a separate decision, not a side effect.
@@ -144,7 +148,7 @@ repository's, and needs nothing from this one.
   stateless `PoseFilter` step, `ConditionRootMotion` as a free function, an
   N-way blend that can answer *nothing to blend*.
   - ✅ Arrived with its history (2026-09-19, usd-motion-plugins #4): 28
-    commits, then a move-only split, then the rename. `CaptureRecorder` is
+    commits, then a move-only split, then the rename. `MotionRecorder` is
     `MotionRecorder` there; `LiveCaptureSource` keeps its name until the
     stream's published shape is decided (that repository's MC-O5). The trace
     format and the corpus came unchanged, and every suite MIG-0 named for
@@ -464,7 +468,7 @@ repository's, and needs nothing from this one.
 - **Versions during migration.** Whether this repository requires a range of
   `usd-motion-plugins` releases or one exact version while its API is 0.x.
 - **The `vrm:` expression weights on the pose.** Expression weights travel as
-  names on today's `HumanoidPose`; in the shared core that is a
+  names on today's `MotionPose`; in the shared core that is a
   `MotionChannelSet` with namespaced semantics (motion-plugins policy §5.3).
   The mapping is decided in MIG-1, and expansion onto a rig stays here.
   The **stage** half of it was decided there on 2026-09-20 (its USD-O4) and

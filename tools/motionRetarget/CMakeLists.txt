@@ -49,8 +49,13 @@ endif()
 # before either half of the bake expands it, so it has a real edge on
 # `motionRuntime` and declaring it leaves nothing to be inferred from a
 # transitive dependency that could stop being transitive.
-if(NOT TARGET motionRuntime::motionRuntime)
-    find_package(motionRuntime REQUIRED CONFIG)
+if(NOT TARGET motionSampling::motionSampling)
+    find_package(motionSampling REQUIRED CONFIG)
+endif()
+# The other half of what was one `motionRuntime`: the live-capture intake and
+# the capture trace are `motionRecording`'s.
+if(NOT TARGET motionRecording::motionRecording)
+    find_package(motionRecording REQUIRED CONFIG)
 endif()
 
 # `--build-info`'s stamp. Like usdVrmFileFormat's buildInfo.json it carries no
@@ -91,7 +96,8 @@ target_compile_features(motion_retarget PRIVATE cxx_std_17)
 target_link_libraries(motion_retarget
     PRIVATE
         vrmRetarget::vrmRetarget
-        motionRuntime::motionRuntime)
+        motionSampling::motionSampling
+        motionRecording::motionRecording)
 
 foreach(_usd_lib usd usdGeom usdSkel sdf plug tf gf vt js arch)
     if(TARGET ${_usd_lib})

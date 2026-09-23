@@ -47,7 +47,7 @@ of them:
 
 ```text
 live:      sensors -> phone / PC app -> UDP  -> live adapter -> LiveCaptureSource
-recorded:  sensors -> PC app         -> BVH  -> reader       -> HumanoidAnimation
+recorded:  sensors -> PC app         -> BVH  -> reader       -> MotionClip
 ```
 
 They share a vendor and very little else. The live surface argues about packets,
@@ -72,7 +72,7 @@ motionSource              source skeleton and animation, no format
     ↓
 source profile            what one producer's export means
     ↓
-canonical conversion      -> motion::HumanoidAnimation
+canonical conversion      -> motion::MotionClip
 ```
 
 The layer that earns its keep before it is used twice is `motionSource`. v0.7.0
@@ -83,7 +83,7 @@ for the second means changing every signature above it.
 
 | Layer | Knows | Must not know |
 | --- | --- | --- |
-| `motionBvh` syntax | `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame count, frame time, channel values, **channel declaration order** | which joint is a `HumanBone`, the unit, the up axis, handedness, what a root translation means, the rest pose's interpretation, any target |
+| `motionBvh` syntax | `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame count, frame time, channel values, **channel declaration order** | which joint is a `HumanJoint`, the unit, the up axis, handedness, what a root translation means, the rest pose's interpretation, any target |
 | `motionBvh` extraction | how a BVH hierarchy and channel set become a `SourceSkeleton` / `SourceAnimation` | anything about a producer |
 | `motionSource` | source joints, parents, rest locals, frames, frame time, provenance, and the profile contract | that BVH exists |
 | profile (data) | one producer *and export preset*: joint map, basis, unit, root and rest policy, required/optional joints | how to run anything |
@@ -119,7 +119,7 @@ only when a producer's output contract breaks.
 
 What a profile carries: profile id · expected joint names · expected hierarchy
 characteristics · source handedness · up axis · forward axis · translation unit ·
-joint name → `HumanBone` · root joint · root translation policy · root rotation
+joint name → `HumanJoint` · root joint · root translation policy · root rotation
 policy · rest-pose interpretation · unmapped-joint policy · required vs optional
 joints · provenance label.
 
@@ -283,7 +283,7 @@ the file correctly".
 ## 5. Output — a semantic clip, never a direct bake
 
 ```text
-BVH  →  HumanoidAnimation  →  canonical semantic USD clip  →  motion_retarget  →  target VRM
+BVH  →  MotionClip  →  canonical semantic USD clip  →  motion_retarget  →  target VRM
 ```
 
 ```bash
@@ -440,7 +440,7 @@ to make small.
 | --- | --- | --- |
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | ✅ |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
-| **BVH-2** — semantics | the `motionSource` API, the profile API, two producers' profiles, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ✅ |
+| **BVH-2** — semantics | the `motionSource` API, the profile API, two producers' profiles, basis and unit conversion, source rest pose, root policy, `MotionClip`, the semantic clip writer | ✅ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, the recorded corpus | 🚧 — only the **artifact-only smoke** is left, and it is unblocked ([§10](#10-contract-changes-this-plan-requires)) |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | 🚧 — two paths of three compared ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)); the relay is [current.md](current.md#carried-out-of-v070--evidence-an-operator-produces)'s |
 
@@ -566,7 +566,7 @@ depends on them ([docs/README.md](../README.md)).
 aggregate membership, and the profile destination; a producer profile being data
 in which product names are permitted; and `tools/motionBvh/` as one member with
 two executables. [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) carries
-`SourceProvenance` beside `MotionSourceMetadata`, the quaternion rotation form,
+`SourceProvenance` beside `SourceMetadata`, the quaternion rotation form,
 the canonical forward axis that nobody had written down until this track needed
 it, the six semantic diagnostics being the caller's to raise from typed
 refusals, a mapped bone's local rotation being the composition of the path above
@@ -781,7 +781,7 @@ SourceProfile          producer semantics, declarative, data not code
     │
 CanonicalConversion
     │
-motion::HumanoidAnimation
+motion::MotionClip
 ```
 
 ### 13.1 What a reader is allowed to decide
@@ -827,7 +827,7 @@ what one producer could not have shown.
   → reader, basis-and-handedness → profile; AMASS's axis-angle rotations need
   the same line drawn explicitly rather than by analogy.
 - Do shape parameters cross into canonical motion at all? A canonical
-  `HumanoidAnimation` is avatar-independent, so a per-subject body shape is
+  `MotionClip` is avatar-independent, so a per-subject body shape is
   either provenance or it is out.
 - What is the corpus, and what is redistributable? AMASS datasets carry research
   licences that differ per sub-dataset — the same gate the VRM corpus hit, and

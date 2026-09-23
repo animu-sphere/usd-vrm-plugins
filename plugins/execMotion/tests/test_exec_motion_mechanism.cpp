@@ -37,7 +37,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 
 #include <cassert>
 #include <cstdio>
@@ -52,7 +52,7 @@ namespace
 const TfToken kIdentityPose("motion.identityPose");
 
 bool
-Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
+Has(const openstrata::motion::MotionPose& pose, openstrata::motion::HumanJoint bone)
 {
     return pose.validRotations.test(static_cast<std::size_t>(bone));
 }
@@ -108,15 +108,15 @@ main(int argc, char** argv)
     VtValue value = view.Get(0);
     assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
                                "looks like, not a load error");
-    assert(value.IsHolding<motion::HumanoidPose>() &&
+    assert(value.IsHolding<openstrata::motion::MotionPose>() &&
            "the canonical aggregate did not survive the boundary");
 
-    const motion::HumanoidPose first = value.UncheckedGet<motion::HumanoidPose>();
+    const openstrata::motion::MotionPose first = value.UncheckedGet<openstrata::motion::MotionPose>();
     assert(first.validRotations.count() == 4);
-    assert(Has(first, motion::HumanBone::Hips));
-    assert(Has(first, motion::HumanBone::Spine));
-    assert(Has(first, motion::HumanBone::Chest));
-    assert(Has(first, motion::HumanBone::Head));
+    assert(Has(first, openstrata::motion::HumanJoint::Hips));
+    assert(Has(first, openstrata::motion::HumanJoint::Spine));
+    assert(Has(first, openstrata::motion::HumanJoint::Chest));
+    assert(Has(first, openstrata::motion::HumanJoint::Head));
 
     // ---- recompute with nothing changed -----------------------------------
     const int invalidationsBefore = valueInvalidations;
@@ -124,8 +124,8 @@ main(int argc, char** argv)
     const VtValue value2 = view2.Get(0);
     assert(valueInvalidations == invalidationsBefore &&
            "an unchanged stage reported an invalidation");
-    assert(value2.IsHolding<motion::HumanoidPose>());
-    assert(value2.UncheckedGet<motion::HumanoidPose>() == first &&
+    assert(value2.IsHolding<openstrata::motion::MotionPose>());
+    assert(value2.UncheckedGet<openstrata::motion::MotionPose>() == first &&
            "the same request at the same time returned a different value");
 
     // ---- an authored change invalidates, and the recompute sees it --------
@@ -141,15 +141,15 @@ main(int argc, char** argv)
 
     ExecUsdCacheView view3 = system.Compute(request);
     const VtValue value3 = view3.Get(0);
-    assert(value3.IsHolding<motion::HumanoidPose>());
-    const motion::HumanoidPose second = value3.UncheckedGet<motion::HumanoidPose>();
+    assert(value3.IsHolding<openstrata::motion::MotionPose>());
+    const openstrata::motion::MotionPose second = value3.UncheckedGet<openstrata::motion::MotionPose>();
     assert(second.validRotations.count() == 5);
-    assert(Has(second, motion::HumanBone::LeftShoulder));
+    assert(Has(second, openstrata::motion::HumanJoint::LeftShoulder));
 
     // ---- moving time changes nothing, and exec knows it -------------------
     // `motion.identityPose` has one input, a `uniform` array, so it does not
     // depend on time -- and it deliberately carries no timestamp, because
-    // `HumanoidPose::timestamp` is seconds, a computation is handed a frame, and
+    // `MotionPose::timestamp` is seconds, a computation is handed a frame, and
     // the rate between them is stage metadata exec does not deliver to a
     // callback (measured: `Stage().Metadata<double>(timeCodesPerSecond)` is
     // accepted, is not refused with `.Required()`, and still yields no value).
@@ -163,10 +163,10 @@ main(int argc, char** argv)
     system.ChangeTime(UsdTimeCode(200.0));
     ExecUsdCacheView view4 = system.Compute(request);
     const VtValue value4 = view4.Get(0);
-    assert(value4.IsHolding<motion::HumanoidPose>());
-    assert(value4.UncheckedGet<motion::HumanoidPose>() == second &&
+    assert(value4.IsHolding<openstrata::motion::MotionPose>());
+    assert(value4.UncheckedGet<openstrata::motion::MotionPose>() == second &&
            "moving the frame changed a pose that does not depend on the frame");
-    assert(value4.UncheckedGet<motion::HumanoidPose>().timestamp == 0.0 &&
+    assert(value4.UncheckedGet<openstrata::motion::MotionPose>().timestamp == 0.0 &&
            "a second was invented from a frame and a rate exec cannot see");
     assert(timeInvalidations == timeInvalidationsBefore &&
            "ChangeTime reported a value key with no time-dependent input");
@@ -202,15 +202,15 @@ main(int argc, char** argv)
     ExecUsdRequest rebuilt = system.BuildRequest(std::move(rebuiltKeys));
     ExecUsdCacheView view5 = system.Compute(rebuilt);
     const VtValue value5 = view5.Get(0);
-    assert(value5.IsHolding<motion::HumanoidPose>());
+    assert(value5.IsHolding<openstrata::motion::MotionPose>());
     // The stage's edit survived the invalidation -- the joint the authored
     // change added is still there, so InvalidateAll dropped computed values and
     // not the scene.
-    assert(value5.UncheckedGet<motion::HumanoidPose>().validRotations.count() == 5 &&
+    assert(value5.UncheckedGet<openstrata::motion::MotionPose>().validRotations.count() == 5 &&
            "InvalidateAll lost an authored change");
 
-    assert(value5.UncheckedGet<motion::HumanoidPose>() ==
-               value4.UncheckedGet<motion::HumanoidPose>() &&
+    assert(value5.UncheckedGet<openstrata::motion::MotionPose>() ==
+               value4.UncheckedGet<openstrata::motion::MotionPose>() &&
            "an explicit invalidation changed the answer");
 
     // **InvalidateAll also resets the system's time**, and this suite can no

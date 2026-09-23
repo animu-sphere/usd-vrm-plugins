@@ -49,7 +49,7 @@ using motionSource::SourceSkeleton;
 using motionSource::UnmappedJointPolicy;
 using motionSource::ValidateSourceProfile;
 
-using Bone = motion::HumanBone;
+using Bone = openstrata::motion::HumanJoint;
 
 // The whole vocabulary in one file, in the shape `SourceProfileFile.h` states:
 // a block mapping, two nested ones, a joint map in flow form and a flow

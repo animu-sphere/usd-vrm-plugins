@@ -598,7 +598,7 @@ LookAtEvaluator::Evaluate(const LookAtInput& input, LookAtDiagnostics* diagnosti
 }
 
 ResolvedLookAt
-LookAtEvaluator::Evaluate(const motion::HumanoidPose& pose, const LookAtHead& head,
+LookAtEvaluator::Evaluate(const openstrata::motion::MotionPose& pose, const LookAtHead& head,
                           LookAtDiagnostics* diagnostics) const
 {
     LookAtInput input;

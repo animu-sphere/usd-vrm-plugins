@@ -48,7 +48,7 @@ import json
 import pathlib
 import sys
 
-# The canonical humanoid's parent relation, `motionCore/Humanoid.h`, restricted
+# The canonical humanoid's parent relation, `motionCore/MotionPose.h`, restricted
 # to the bones the shipped profiles map. Fingers, eyes and the jaw are absent
 # because no profile maps one; the day one does, this table grows in the same
 # review rather than the check silently passing.

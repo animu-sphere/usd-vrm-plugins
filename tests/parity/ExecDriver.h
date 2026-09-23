@@ -142,8 +142,8 @@ OpenExecDiagnostic MakeOpenExecDiagnostic(OpenExecDiagnosticCode code, std::stri
 // One line, in the retarget's and the adapters' shape:
 //
 //     [VRM_OPENEXEC_TYPE_MISMATCH] error subject=/Clip [motion.priorPose]:
-//     the override holds 'motion::HumanoidAnimation' and the key is declared
-//     'motion::HumanoidPose'; it was not handed to exec
+//     the override holds 'openstrata::motion::MotionClip' and the key is declared
+//     'openstrata::motion::MotionPose'; it was not handed to exec
 std::string FormatOpenExecDiagnostic(const OpenExecDiagnostic& diagnostic);
 
 // What was raised, in order, each code and subject once -- the retarget's rule,

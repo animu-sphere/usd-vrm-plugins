@@ -60,7 +60,7 @@
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/PoseRetargeter.h>
 #include <vrmRetarget/RestPose.h>
@@ -82,7 +82,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace
 {
 
-using motion::HumanBone;
+using openstrata::motion::HumanJoint;
 
 const TfToken kTargetSkeleton("vrm.computeTargetSkeleton");
 const TfToken kHumanoidMap("vrm.computeHumanoidMap");
@@ -130,13 +130,13 @@ constexpr std::size_t kJointCount = 7;
 const char* const kRootJointToken = "Root";
 
 TfToken
-BoneAttribute(HumanBone bone)
+BoneAttribute(HumanJoint bone)
 {
-    return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
+    return TfToken("vrm:humanBones:" + std::string(openstrata::motion::HumanJointName(bone)));
 }
 
 std::size_t
-Slot(HumanBone bone)
+Slot(HumanJoint bone)
 {
     return static_cast<std::size_t>(bone);
 }
@@ -308,10 +308,10 @@ RetargetAt(const ExecUsdCacheView& view, int index = kRetargetKey)
     return ValueAt<vrmRetarget::RetargetedPose>(view, index, "retargeted pose");
 }
 
-motion::HumanoidPose
+openstrata::motion::MotionPose
 PoseAt(const ExecUsdCacheView& view, int index)
 {
-    return ValueAt<motion::HumanoidPose>(view, index, "pose");
+    return ValueAt<openstrata::motion::MotionPose>(view, index, "pose");
 }
 
 void
@@ -346,19 +346,19 @@ vrmRetarget::SourceRestPose
 ClipRest()
 {
     vrmRetarget::SourceRestPose rest;
-    rest.localTranslations[Slot(HumanBone::Hips)] = GfVec3f(0, 1, 0);
-    rest.localTranslations[Slot(HumanBone::Spine)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::Chest)] = GfVec3f(0, 0.15f, 0);
-    rest.localTranslations[Slot(HumanBone::Neck)] = GfVec3f(0, 0.2f, 0);
-    rest.localTranslations[Slot(HumanBone::Head)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
-    rest.localTranslations[Slot(HumanBone::RightUpperArm)] = GfVec3f(-0.1f, 0.15f, 0);
-    rest.SetParent(HumanBone::Spine, HumanBone::Hips);
-    rest.SetParent(HumanBone::Chest, HumanBone::Spine);
-    rest.SetParent(HumanBone::Neck, HumanBone::Chest);
-    rest.SetParent(HumanBone::Head, HumanBone::Neck);
-    rest.SetParent(HumanBone::LeftUpperArm, HumanBone::Chest);
-    rest.SetParent(HumanBone::RightUpperArm, HumanBone::Chest);
+    rest.localTranslations[Slot(HumanJoint::Hips)] = GfVec3f(0, 1, 0);
+    rest.localTranslations[Slot(HumanJoint::Spine)] = GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[Slot(HumanJoint::Chest)] = GfVec3f(0, 0.15f, 0);
+    rest.localTranslations[Slot(HumanJoint::Neck)] = GfVec3f(0, 0.2f, 0);
+    rest.localTranslations[Slot(HumanJoint::Head)] = GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[Slot(HumanJoint::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
+    rest.localTranslations[Slot(HumanJoint::RightUpperArm)] = GfVec3f(-0.1f, 0.15f, 0);
+    rest.SetParent(HumanJoint::Spine, HumanJoint::Hips);
+    rest.SetParent(HumanJoint::Chest, HumanJoint::Spine);
+    rest.SetParent(HumanJoint::Neck, HumanJoint::Chest);
+    rest.SetParent(HumanJoint::Head, HumanJoint::Neck);
+    rest.SetParent(HumanJoint::LeftUpperArm, HumanJoint::Chest);
+    rest.SetParent(HumanJoint::RightUpperArm, HumanJoint::Chest);
     return rest;
 }
 
@@ -402,12 +402,12 @@ TargetRestTranslation(std::size_t joint)
 // Each mapped bone and the joint it drives.
 struct Binding
 {
-    HumanBone bone;
+    HumanJoint bone;
     std::size_t joint;
 };
-const Binding kBindings[] = {{HumanBone::Hips, kHipsJoint},   {HumanBone::Spine, kSpineJoint},
-                             {HumanBone::Chest, kChestJoint}, {HumanBone::Neck, kNeckJoint},
-                             {HumanBone::Head, kHeadJoint},   {HumanBone::LeftUpperArm, kArmJoint}};
+const Binding kBindings[] = {{HumanJoint::Hips, kHipsJoint},   {HumanJoint::Spine, kSpineJoint},
+                             {HumanJoint::Chest, kChestJoint}, {HumanJoint::Neck, kNeckJoint},
+                             {HumanJoint::Head, kHeadJoint},   {HumanJoint::LeftUpperArm, kArmJoint}};
 
 // The clip at frame 24, as its text states it.
 const GfQuatf kSpineAt24 = About(kX, 30.0f);
@@ -440,7 +440,7 @@ TestTheRetargetComputes(const std::string& fixture)
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        const motion::HumanoidPose empty = PoseAt(view, kSampledKey);
+        const openstrata::motion::MotionPose empty = PoseAt(view, kSampledKey);
         assert(empty.validRotations.none() && !empty.root.hasPosition && empty.timestamp == 0.0 &&
                "the sampler no longer answers an empty pose at the default "
                "time code; revisit the retarget's refusal");
@@ -462,7 +462,7 @@ TestTheRetargetComputes(const std::string& fixture)
     vrmRetarget::TargetSkeleton target;
     vrmRetarget::HumanoidMap map;
     vrmRetarget::RestPoseCorrection correction;
-    motion::HumanoidPose sampled;
+    openstrata::motion::MotionPose sampled;
     vrmRetarget::RetargetedPose retargeted;
     {
         TfErrorMark mark;
@@ -525,8 +525,8 @@ TestTheRetargetComputes(const std::string& fixture)
     // drives -- which the humanoid does not bind -- moved nothing.
     assert(retargeted.rotations[kRootJointSlot] == kIdentity);
     assert(retargeted.translations[kRootJointSlot] == GfVec3f(0.0f));
-    assert(sampled.validRotations.test(Slot(HumanBone::RightUpperArm)) &&
-           !map.IsMapped(HumanBone::RightUpperArm) &&
+    assert(sampled.validRotations.test(Slot(HumanJoint::RightUpperArm)) &&
+           !map.IsMapped(HumanJoint::RightUpperArm) &&
            "the fixture no longer drives a bone the rig does not bind");
 
     // Root motion onto the hips, by the library's default: the clip's delta
@@ -550,7 +550,7 @@ TestTheRetargetComputes(const std::string& fixture)
     system.ChangeTime(UsdTimeCode(12.0));
     {
         ExecUsdCacheView view = system.Compute(request);
-        const motion::HumanoidPose between = PoseAt(view, kSampledKey);
+        const openstrata::motion::MotionPose between = PoseAt(view, kSampledKey);
         assert(between.timestamp == 0.5);
         assert(RetargetAt(view) ==
                vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(between));
@@ -701,8 +701,8 @@ TestInvalidationReachesTheRetarget(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         // The posed animation names its bones under `Reference`, and the
         // sampler reads them by leaf.
-        const motion::HumanoidPose bound = PoseAt(view, kBoundKey);
-        assert(SameOrientation(bound.localRotations[Slot(HumanBone::LeftUpperArm)],
+        const openstrata::motion::MotionPose bound = PoseAt(view, kBoundKey);
+        assert(SameOrientation(bound.localRotations[Slot(HumanJoint::LeftUpperArm)],
                                About(kZ, -90.0f)));
         pose = RetargetAt(view);
     }
@@ -750,10 +750,10 @@ TestADriversPoseReachesTheRetarget(const std::string& fixture)
     const vrmRetarget::RetargetedPose unchanged = RetargetAt(plain);
 
     // A pose a live source would hand in: the head turned, the hips moved.
-    motion::HumanoidPose held;
+    openstrata::motion::MotionPose held;
     held.timestamp = 1.0;
-    held.localRotations[Slot(HumanBone::Head)] = About(kY, -60.0f);
-    held.validRotations.set(Slot(HumanBone::Head));
+    held.localRotations[Slot(HumanJoint::Head)] = About(kY, -60.0f);
+    held.validRotations.set(Slot(HumanJoint::Head));
     held.root.worldPosition = GfVec3f(-0.3f, 0.95f, 0.0f);
     held.root.hasPosition = true;
 
@@ -974,7 +974,7 @@ TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(const std::string& fi
     {
         const Rig rig = Open(fixture);
         assert(
-            rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips)).Set(TfToken("J_Bip_C_Hips")));
+            rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Hips)).Set(TfToken("J_Bip_C_Hips")));
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;

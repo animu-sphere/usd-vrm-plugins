@@ -1,10 +1,8 @@
 {
-  "about": "Every VRM-vocabulary name the moving motion headers still spell, and what disposes of it on arrival in usd-motion-plugins. Checked by scripts/check_motion_vocabulary.py (workspace_motion_vocabulary). The line through vrmRetarget and the findings are docs/architecture/WORKSPACE.md §9.5; the renames are its §9.3.",
+  "about": "Every VRM-vocabulary name the moving motion headers still spell, and what disposes of it on arrival in usd-motion-plugins. Checked by scripts/check_motion_vocabulary.py (workspace_motion_vocabulary). The line through vrmRetarget and the findings are docs/architecture/WORKSPACE.md §9.5; the renames are its §9.3. SCOPE, 2026-09-21: motionCore and motionRuntime have left, so their rows are gone with the headers that spelled them -- 20 of the original 40 -- and what is left is vrmRetarget's generic half, the one set of headers still moving. This ledger empties when that half leaves, and the check goes with it.",
   "vocabulary": "vrm|humanoid|expression|look_?at|mtoon|spring_?bone|vroid|blend_?shape|mocopi|vmc|vrchat|unity",
   "scope": {
     "headers": [
-      "libs/motionCore/include/motionCore/*.h",
-      "libs/motionRuntime/include/motionRuntime/*.h",
       "libs/vrmRetarget/include/vrmRetarget/api.h",
       "libs/vrmRetarget/include/vrmRetarget/Diagnostics.h",
       "libs/vrmRetarget/include/vrmRetarget/HumanoidMap.h",
@@ -14,8 +12,6 @@
       "libs/vrmRetarget/include/vrmRetarget/TargetSkeleton.h"
     ],
     "sources": [
-      "libs/motionCore/src/*.cpp",
-      "libs/motionRuntime/src/*.cpp",
       "libs/vrmRetarget/src/Diagnostics.cpp",
       "libs/vrmRetarget/src/HumanoidMap.cpp",
       "libs/vrmRetarget/src/PoseRetargeter.cpp",
@@ -30,49 +26,127 @@
     "3": "Expression weights are the channel set under a VRM name: the namespace (vrm:happy) is the producer's."
   },
   "anchors": [
-    { "identifier": "GetRequiredBones", "finding": 1 },
-    { "identifier": "FindMissingRequiredBones", "finding": 1 }
+    {
+      "identifier": "GetRequiredBones",
+      "finding": 1
+    },
+    {
+      "identifier": "FindMissingRequiredBones",
+      "finding": 1
+    }
   ],
   "names": [
-    { "kind": "identifier", "text": "HumanoidPose", "disposition": "rename", "to": "MotionPose" },
-    { "kind": "identifier", "text": "HumanoidAnimation", "disposition": "rename", "to": "MotionClip" },
-    { "kind": "identifier", "text": "HumanoidMap", "disposition": "rename", "to": "RetargetMap" },
-    { "kind": "identifier", "text": "ExpressionWeights", "disposition": "finding", "finding": 3, "to": "MotionChannelSet" },
-    { "kind": "identifier", "text": "ExpressionWeight", "disposition": "finding", "finding": 3, "to": "one channel of a MotionChannelSet" },
-    { "kind": "identifier", "text": "expressions", "disposition": "finding", "finding": 3, "to": "the pose's channels" },
-    { "kind": "identifier", "text": "expression", "disposition": "finding", "finding": 3, "to": "the channel tolerance of NearlyEqual" },
-    { "kind": "identifier", "text": "CaptureTraceExpressionsVersion", "disposition": "finding", "finding": 3, "to": "the capture trace's channel-line version" },
-    { "kind": "identifier", "text": "lookAtTarget", "disposition": "finding", "finding": 2 },
-    { "kind": "identifier", "text": "CaptureTraceLookAtVersion", "disposition": "finding", "finding": 2 },
-    { "kind": "identifier", "text": "vrmRetarget", "disposition": "identity", "to": "motionRetarget" },
-    { "kind": "identifier", "text": "VRMRETARGET_API", "disposition": "identity", "to": "motionRetarget's export macro" },
-    { "kind": "identifier", "text": "VRMRETARGET_EXPORTS", "disposition": "identity", "to": "motionRetarget's export macro" },
-    { "kind": "identifier", "text": "VRMRETARGET_STATIC", "disposition": "identity", "to": "motionRetarget's export macro" },
-    { "kind": "string", "text": "motionCore/Humanoid.h", "disposition": "rename", "to": "motionCore's header for MotionPose and HumanJoint" },
-    { "kind": "string", "text": "vrmRetarget/api.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "vrmRetarget/Diagnostics.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "vrmRetarget/HumanoidMap.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "vrmRetarget/PoseRetargeter.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "vrmRetarget/RestPose.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "vrmRetarget/RootMotionPolicy.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "vrmRetarget/TargetSkeleton.h", "disposition": "identity", "to": "motionRetarget/" },
-    { "kind": "string", "text": "VRM_RETARGET_MISSING_REQUIRED_BONE", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_UNBOUND_DRIVEN_BONE", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_DUPLICATE_TARGET", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_INVALID_HIERARCHY", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_INVALID_ROOT_JOINT", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_NON_UNIT_SCALE", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_TIME_RANGE_DERIVED", "disposition": "diagnostic" },
-    { "kind": "string", "text": "VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT", "disposition": "diagnostic" },
-    { "kind": "string", "text": "unknown humanoid bone '", "disposition": "rename", "to": "a message naming a HumanJoint" },
-    { "kind": "string", "text": "expression '", "disposition": "finding", "finding": 3, "to": "a message naming a channel" },
-    { "kind": "string", "text": "'e' needs an expression name and a weight", "disposition": "finding", "finding": 3, "to": "a message naming a channel" },
-    { "kind": "string", "text": "'e' expression weights need format version ", "disposition": "finding", "finding": 3, "to": "a message naming a channel" },
-    { "kind": "string", "text": "lookat", "disposition": "finding", "finding": 2 },
-    { "kind": "string", "text": "lookat ", "disposition": "finding", "finding": 2 },
-    { "kind": "string", "text": "the 'lookat' position", "disposition": "finding", "finding": 2 },
-    { "kind": "string", "text": "'lookat' appears twice in a frame", "disposition": "finding", "finding": 2 },
-    { "kind": "string", "text": "'lookat' needs an x y z target position", "disposition": "finding", "finding": 2 },
-    { "kind": "string", "text": "'lookat' targets need format version ", "disposition": "finding", "finding": 2 }
+    {
+      "kind": "identifier",
+      "text": "HumanoidMap",
+      "disposition": "rename",
+      "to": "RetargetMap"
+    },
+    {
+      "kind": "identifier",
+      "text": "vrmRetarget",
+      "disposition": "identity",
+      "to": "motionRetarget"
+    },
+    {
+      "kind": "identifier",
+      "text": "VRMRETARGET_API",
+      "disposition": "identity",
+      "to": "motionRetarget's export macro"
+    },
+    {
+      "kind": "identifier",
+      "text": "VRMRETARGET_EXPORTS",
+      "disposition": "identity",
+      "to": "motionRetarget's export macro"
+    },
+    {
+      "kind": "identifier",
+      "text": "VRMRETARGET_STATIC",
+      "disposition": "identity",
+      "to": "motionRetarget's export macro"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/api.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/Diagnostics.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/HumanoidMap.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/PoseRetargeter.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/RestPose.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/RootMotionPolicy.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "vrmRetarget/TargetSkeleton.h",
+      "disposition": "identity",
+      "to": "motionRetarget/"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_MISSING_REQUIRED_BONE",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_UNBOUND_DRIVEN_BONE",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_DUPLICATE_TARGET",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_INVALID_HIERARCHY",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_INVALID_ROOT_JOINT",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_NON_UNIT_SCALE",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_TIME_RANGE_DERIVED",
+      "disposition": "diagnostic"
+    },
+    {
+      "kind": "string",
+      "text": "VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT",
+      "disposition": "diagnostic"
+    }
   ]
 }

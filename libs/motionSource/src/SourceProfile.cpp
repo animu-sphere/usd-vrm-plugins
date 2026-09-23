@@ -16,7 +16,7 @@ namespace
 constexpr std::size_t kNoJoint = static_cast<std::size_t>(-1);
 
 std::size_t
-BoneIndex(motion::HumanBone bone) noexcept
+BoneIndex(openstrata::motion::HumanJoint bone) noexcept
 {
     return static_cast<std::size_t>(bone);
 }
@@ -417,7 +417,7 @@ SourceProfile::FindMapping(std::string_view sourceName) const
 }
 
 std::optional<std::size_t>
-SourceProfile::FindBoneMapping(motion::HumanBone bone) const
+SourceProfile::FindBoneMapping(openstrata::motion::HumanJoint bone) const
 {
     for (std::size_t i = 0; i < joints.size(); ++i)
     {
@@ -529,7 +529,7 @@ ValidateSourceProfile(const SourceProfile& profile, std::string* reason)
             std::snprintf(buffer, sizeof(buffer), "mapping %zu has no name", i);
             return Fail(reason, buffer);
         }
-        if (!motion::IsValidHumanBone(mapping.bone))
+        if (!openstrata::motion::IsValidHumanJoint(mapping.bone))
         {
             return Fail(reason, MappingLabel(i, mapping) + " names no canonical bone");
         }
@@ -546,7 +546,7 @@ ValidateSourceProfile(const SourceProfile& profile, std::string* reason)
                 // rotation, with nothing in a conversion able to arbitrate.
                 return Fail(reason, MappingLabel(i, mapping) + " and " +
                                         MappingLabel(j, profile.joints[j]) + " map the same bone " +
-                                        std::string(motion::HumanBoneName(mapping.bone)));
+                                        std::string(openstrata::motion::HumanJointName(mapping.bone)));
             }
         }
         if (profile.IgnoresJoint(mapping.sourceName))
@@ -577,11 +577,11 @@ ValidateSourceProfile(const SourceProfile& profile, std::string* reason)
     // them describes a rig no conversion can place. Required rather than merely
     // present: a hips mapping the rig is allowed to omit is the same profile
     // with the refusal deferred to the converter.
-    const std::optional<std::size_t> hips = profile.FindBoneMapping(motion::HumanBone::Hips);
+    const std::optional<std::size_t> hips = profile.FindBoneMapping(openstrata::motion::HumanJoint::Hips);
     if (!hips)
     {
         return Fail(reason, std::string("profile maps no ") +
-                                std::string(motion::HumanBoneName(motion::HumanBone::Hips)));
+                                std::string(openstrata::motion::HumanJointName(openstrata::motion::HumanJoint::Hips)));
     }
     if (!profile.joints[*hips].required)
     {
@@ -597,7 +597,7 @@ ValidateSourceProfile(const SourceProfile& profile, std::string* reason)
 }
 
 std::optional<std::size_t>
-SourceProfileMatch::JointFor(motion::HumanBone bone) const
+SourceProfileMatch::JointFor(openstrata::motion::HumanJoint bone) const
 {
     for (const SourceProfileBinding& binding : bound)
     {
@@ -638,12 +638,12 @@ MatchSourceProfile(const SourceProfile& profile, const SourceSkeleton& skeleton)
     // would leave it nothing to report with (SourceProfile.h).
     match.rootMatched = !skeleton.joints.empty() && skeleton.joints[0].name == profile.rootJoint;
 
-    std::bitset<motion::HumanBoneCount> boundBones;
-    std::vector<std::size_t> boneJoint(motion::HumanBoneCount, kNoJoint);
+    std::bitset<openstrata::motion::HumanJointCount> boundBones;
+    std::vector<std::size_t> boneJoint(openstrata::motion::HumanJointCount, kNoJoint);
 
     for (const SourceJointMapping& mapping : profile.joints)
     {
-        if (!motion::IsValidHumanBone(mapping.bone))
+        if (!openstrata::motion::IsValidHumanJoint(mapping.bone))
         {
             // An invalid profile, already refused above. Counting it as missing
             // would put `Count` in a vector of bones.
@@ -687,8 +687,8 @@ MatchSourceProfile(const SourceProfile& profile, const SourceSkeleton& skeleton)
     std::string hierarchyDetail;
     for (const SourceProfileBinding& binding : match.bound)
     {
-        const std::optional<motion::HumanBone> ancestorBone =
-            motion::NearestPresentAncestor(binding.bone, boundBones);
+        const std::optional<openstrata::motion::HumanJoint> ancestorBone =
+            openstrata::motion::NearestPresentAncestor(binding.bone, boundBones);
         if (!ancestorBone)
         {
             continue;
@@ -701,10 +701,10 @@ MatchSourceProfile(const SourceProfile& profile, const SourceSkeleton& skeleton)
         if (hierarchyDetail.empty())
         {
             hierarchyDetail = JointLabel(skeleton, binding.jointIndex) + " carries " +
-                              std::string(motion::HumanBoneName(binding.bone)) +
+                              std::string(openstrata::motion::HumanJointName(binding.bone)) +
                               " but does not sit under " + JointLabel(skeleton, ancestorJoint) +
                               ", which carries its " + "nearest bound ancestor " +
-                              std::string(motion::HumanBoneName(*ancestorBone));
+                              std::string(openstrata::motion::HumanJointName(*ancestorBone));
         }
     }
 
@@ -736,7 +736,7 @@ MatchSourceProfile(const SourceProfile& profile, const SourceSkeleton& skeleton)
     {
         match.refusal = SourceProfileRefusal::RequiredJointMissing;
         match.detail = "the rig carries no joint for required bone " +
-                       std::string(motion::HumanBoneName(match.missingRequired.front()));
+                       std::string(openstrata::motion::HumanJointName(match.missingRequired.front()));
     }
     else if (!hierarchyDetail.empty())
     {

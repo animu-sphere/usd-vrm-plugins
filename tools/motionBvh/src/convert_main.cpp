@@ -47,7 +47,7 @@
 #include "motionSource/SourceProfileFile.h"
 #include "motionSource/SourceSkeleton.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include <cstdio>
 #include <filesystem>
@@ -119,19 +119,19 @@ Number(double value)
     return buffer;
 }
 
-// The bones a conversion composed a chain into, in `HumanBone` order, as the
+// The bones a conversion composed a chain into, in `HumanJoint` order, as the
 // report prints them and as the clip records them.
 std::string
-BoneList(const std::vector<motion::HumanBone>& bones)
+BoneList(const std::vector<openstrata::motion::HumanJoint>& bones)
 {
     std::string text;
-    for (const motion::HumanBone bone : bones)
+    for (const openstrata::motion::HumanJoint bone : bones)
     {
         if (!text.empty())
         {
             text += ", ";
         }
-        text += std::string(motion::HumanBoneName(bone));
+        text += std::string(openstrata::motion::HumanJointName(bone));
     }
     return text;
 }

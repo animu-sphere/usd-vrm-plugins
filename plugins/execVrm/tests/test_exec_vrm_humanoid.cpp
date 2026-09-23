@@ -55,7 +55,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/TargetSkeleton.h>
 
@@ -73,7 +73,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace
 {
 
-using motion::HumanBone;
+using openstrata::motion::HumanJoint;
 
 const TfToken kTargetSkeleton("vrm.computeTargetSkeleton");
 const TfToken kHumanoidMap("vrm.computeHumanoidMap");
@@ -90,9 +90,9 @@ const char* const kHips = "Root/J_Bip_C_Hips";
 const char* const kUpperArm = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm";
 
 TfToken
-BoneAttribute(HumanBone bone)
+BoneAttribute(HumanJoint bone)
 {
-    return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
+    return TfToken("vrm:humanBones:" + std::string(openstrata::motion::HumanJointName(bone)));
 }
 
 bool
@@ -274,9 +274,9 @@ TestTheSchemaDefinesEveryBoneOfTheVocabulary()
     }
 
     std::set<TfToken> vocabulary;
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
-        vocabulary.insert(BoneAttribute(static_cast<HumanBone>(slot)));
+        vocabulary.insert(BoneAttribute(static_cast<HumanJoint>(slot)));
     }
 
     for (const TfToken& bone : vocabulary)
@@ -353,12 +353,12 @@ TestTheRigComputes(const std::string& fixture)
     // would be a duplicate-joint refusal.
     assert(map.GetMappedCount() == 6 &&
            "the map does not hold exactly the six bones the humanoid states");
-    assert(map.GetJointIndex(HumanBone::Hips) == 1);
-    assert(map.GetJointIndex(HumanBone::Spine) == 2);
-    assert(map.GetJointIndex(HumanBone::Chest) == 3);
-    assert(map.GetJointIndex(HumanBone::Neck) == 4);
-    assert(map.GetJointIndex(HumanBone::Head) == 5);
-    assert(map.GetJointIndex(HumanBone::LeftUpperArm) == 6);
+    assert(map.GetJointIndex(HumanJoint::Hips) == 1);
+    assert(map.GetJointIndex(HumanJoint::Spine) == 2);
+    assert(map.GetJointIndex(HumanJoint::Chest) == 3);
+    assert(map.GetJointIndex(HumanJoint::Neck) == 4);
+    assert(map.GetJointIndex(HumanJoint::Head) == 5);
+    assert(map.GetJointIndex(HumanJoint::LeftUpperArm) == 6);
     assert(map.FindMissingRequiredBones().size() == 11);
 
     // ---- what the forty-nine unauthored bones cost -------------------------
@@ -380,7 +380,7 @@ TestTheRigComputes(const std::string& fixture)
         std::printf("execVrm humanoid: the first compute warned %zu times, "
                     "about %zu distinct bone inputs\n",
                     unset.size(), bonesWarned.size());
-        assert(unset.size() == motion::HumanBoneCount - 6 && bonesWarned.size() == unset.size() &&
+        assert(unset.size() == openstrata::motion::HumanJointCount - 6 && bonesWarned.size() == unset.size() &&
                "not exactly one warning per unauthored bone");
     }
 
@@ -434,7 +434,7 @@ TestInvalidationFollowsTheRelationship(const std::string& fixture)
 
     // ---- a binding moves: the map is reported, the skeleton is not ---------
     reported.clear();
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Head)).Set(TfToken(kRoot)));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Head)).Set(TfToken(kRoot)));
     assert(reported.count(kMapKey) && "rebinding a bone did not reach vrm.computeHumanoidMap");
     assert(!reported.count(kSkeletonKey) &&
            "rebinding a bone reported the skeleton, which does not read it");
@@ -442,7 +442,7 @@ TestInvalidationFollowsTheRelationship(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         assert(SkeletonAt(view) == skeleton);
         map = MapAt(view);
-        assert(map.GetJointIndex(HumanBone::Head) == 0);
+        assert(map.GetJointIndex(HumanJoint::Head) == 0);
     }
 
     // ---- the skeleton's rest moves: both are reported ----------------------
@@ -496,9 +496,9 @@ TestInvalidationFollowsTheRelationship(const std::string& fixture)
         const vrmRetarget::HumanoidMap reversed = MapAt(view);
         // Seven joints reversed: index i becomes 6 - i. Head was rebound to
         // Root above, and Root is last now.
-        assert(reversed.GetJointIndex(HumanBone::Hips) == 5);
-        assert(reversed.GetJointIndex(HumanBone::LeftUpperArm) == 0);
-        assert(reversed.GetJointIndex(HumanBone::Head) == 6);
+        assert(reversed.GetJointIndex(HumanJoint::Hips) == 5);
+        assert(reversed.GetJointIndex(HumanJoint::LeftUpperArm) == 0);
+        assert(reversed.GetJointIndex(HumanJoint::Head) == 6);
     }
     std::printf("execVrm humanoid: a binding, a rest transform and the "
                 "relationship's target each reach the map, with no request "
@@ -652,7 +652,7 @@ TestABindingTheSkeletonCannotHonourIsRefused(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     // The leaf name, which is the thing a joint-name heuristic would try.
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips)).Set(TfToken("J_Bip_C_Hips")));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Hips)).Set(TfToken("J_Bip_C_Hips")));
 
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -670,7 +670,7 @@ void
 TestTwoBonesOnOneJointAreRefused(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Spine)).Set(TfToken(kHips)));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Spine)).Set(TfToken(kHips)));
 
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -784,7 +784,7 @@ TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
     for (const bool block : {false, true})
     {
         const Rig rig = Open(fixture);
-        UsdAttribute arm = rig.humanoid.GetAttribute(BoneAttribute(HumanBone::LeftUpperArm));
+        UsdAttribute arm = rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::LeftUpperArm));
         assert(arm);
         if (block)
         {
@@ -800,7 +800,7 @@ TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
         TfErrorMark mark;
         const vrmRetarget::HumanoidMap map = MapAt(system.Compute(request));
         assert(mark.IsClean() && "saying nothing about a bone was refused");
-        assert(map.GetMappedCount() == 5 && !map.IsMapped(HumanBone::LeftUpperArm));
+        assert(map.GetMappedCount() == 5 && !map.IsMapped(HumanJoint::LeftUpperArm));
     }
     std::printf("execVrm humanoid: an empty token and a value block both "
                 "leave a bone unbound\n");
@@ -819,7 +819,7 @@ TestAnUnappliedHumanoidHasNoMap(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     UsdPrim bare = rig.stage->DefinePrim(SdfPath("/Asset/rig/Unapplied"), TfToken("Scope"));
-    assert(bare.CreateAttribute(BoneAttribute(HumanBone::Hips), SdfValueTypeNames->Token,
+    assert(bare.CreateAttribute(BoneAttribute(HumanJoint::Hips), SdfValueTypeNames->Token,
                                 /*custom=*/true, SdfVariabilityUniform)
                .Set(TfToken(kHips)));
     assert(bare.CreateRelationship(kSkeletonRel, /*custom=*/true)

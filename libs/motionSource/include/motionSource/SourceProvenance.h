@@ -3,12 +3,12 @@
 // Where a recorded clip came from — the reader's and the profile's answers about
 // the file itself, kept apart from the motion it carried.
 //
-// **This is a neighbour of `motion::MotionSourceMetadata`, not the same type and
+// **This is a neighbour of `openstrata::motion::SourceMetadata`, not the same type and
 // not a superset**, and settling that was owed before a converter set its first
 // field (roadmap/recorded-motion-sources.md §10). Two things separate them, and
 // either one alone would have been enough:
 //
-// *They travel differently.* `MotionSourceMetadata` rides on every pose and
+// *They travel differently.* `SourceMetadata` rides on every pose and
 // every canonical animation, is compared by `operator==`, and is written into
 // the recorded-trace format — so a field added to it is a field every sample
 // carries and every trace must round-trip. A file's producer version and the
@@ -19,7 +19,7 @@
 // *They are answerable by different layers.* Everything here is known before any
 // motion is: a reader supplies the format and the file's identity, a profile
 // supplies the producer label, and a caller supplies which profile it named.
-// `MotionSourceMetadata` describes motion that by then already exists.
+// `SourceMetadata` describes motion that by then already exists.
 //
 // The relationship is one-way and narrowing: `CanonicalMetadata.h` derives the
 // canonical value from this one, and nothing derives this one back. What the

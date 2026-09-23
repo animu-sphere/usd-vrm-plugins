@@ -2,7 +2,7 @@
 //
 // Turns the place a clip looks at into the way one rig's eyes look at it.
 //
-// A producer reports a target *point* (motionCore's `HumanoidPose::lookAtTarget`)
+// A producer reports a target *point* (motionCore's `MotionPose::lookAtTarget`)
 // because a direction is only meaningful next to a head, and where the head is
 // -- and how far the eyes sit from it -- belongs to an avatar rather than to a
 // clip. This is the layer that has the avatar, so this is where a point becomes
@@ -17,7 +17,7 @@
 // stage, because a VRM 0.x rig and a VRM 1.0 rig state the same four curves in
 // two different shapes and neither caller should have to know both.
 //
-// An expression-type rig resolves to `motion::ExpressionWeights` on purpose:
+// An expression-type rig resolves to `openstrata::motion::MotionChannelSet` on purpose:
 // that is precisely the value `ExpressionResolver` consumes, so a caller pipes
 // this into that and the gaze reaches the same binds the face already does,
 // with no second path into a rig.
@@ -25,7 +25,7 @@
 
 #include "vrmRetarget/api.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
@@ -161,7 +161,7 @@ struct LookAtInput
 {
     double timestamp = 0.0;
 
-    // Optional for the reason `HumanoidPose::lookAtTarget` is: the origin is a
+    // Optional for the reason `MotionPose::lookAtTarget` is: the origin is a
     // place a producer can legitimately look at, so "reported no target" cannot
     // be spelled as a value of the target.
     std::optional<pxr::GfVec3f> target;
@@ -214,7 +214,7 @@ struct ResolvedLookAt
     // reported zero, and it is load-bearing here for the same reason: a gaze
     // that swings left after a sample that looked right has to *say* that
     // `lookRight` is now 0, or the previous sample's weight stands on the rig.
-    motion::ExpressionWeights expressions;
+    openstrata::motion::MotionChannelSet expressions;
 };
 
 struct LookAtDiagnostics
@@ -298,7 +298,7 @@ class VRMRETARGET_API LookAtEvaluator
     // The same, taking the target and the timestamp off a pose -- the call a
     // consumer walking a retargeted clip actually makes, with `head` the head
     // transform that clip's own body produced at that sample.
-    ResolvedLookAt Evaluate(const motion::HumanoidPose& pose, const LookAtHead& head,
+    ResolvedLookAt Evaluate(const openstrata::motion::MotionPose& pose, const LookAtHead& head,
                             LookAtDiagnostics* diagnostics = nullptr) const;
 
   private:

@@ -58,9 +58,9 @@ in a diff:
 | The rest pose is built by that same walk, because a second traversal is a second traversal that can disagree with the first | `CanonicalConversion.h` |
 | A quaternion track is refused with a reason, because no reader writes one and converting it would test a path against a value this repository invented | `CanonicalConversion.h` |
 
-## Provenance is a neighbour of `MotionSourceMetadata`, not the same type
+## Provenance is a neighbour of `SourceMetadata`, not the same type
 
-`SourceProvenance` describes the **file**; `motion::MotionSourceMetadata`
+`SourceProvenance` describes the **file**; `motion::SourceMetadata`
 describes the **motion**, rides on every pose, and is compared and serialised as
 part of it. The derivation is one-way and narrowing, and
 [`CanonicalMetadata.h`](include/motionSource/CanonicalMetadata.h) states what it

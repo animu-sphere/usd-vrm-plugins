@@ -14,7 +14,7 @@
 // measured rather than assumed:
 //
 //   * un-overridden, `motion.filterPose` is `motion.sampleAnimation`;
-//   * overridden, it is one step of `motion::PoseFilter` at the clip's stated
+//   * overridden, it is one step of `openstrata::motion::PoseFilter` at the clip's stated
 //     cutoff, and the step's weight is checked against the library's own
 //     formula rather than against the library;
 //   * the override reaches exactly one value key, and does not survive the
@@ -45,7 +45,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 
 #include <algorithm>
 #include <cassert>
@@ -88,13 +88,13 @@ constexpr double kSecond = 1.0;
 constexpr double kStep = 0.02;
 
 bool
-Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
+Has(const openstrata::motion::MotionPose& pose, openstrata::motion::HumanJoint bone)
 {
     return pose.validRotations.test(static_cast<std::size_t>(bone));
 }
 
 const GfQuatf&
-RotationOf(const motion::HumanoidPose& pose, motion::HumanBone bone)
+RotationOf(const openstrata::motion::MotionPose& pose, openstrata::motion::HumanJoint bone)
 {
     return pose.localRotations[static_cast<std::size_t>(bone)];
 }
@@ -123,7 +123,7 @@ NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
            NearlyEqual(a[2], b[2], tolerance);
 }
 
-// `motion::PoseFilter`'s step weight, written out rather than called.
+// `openstrata::motion::PoseFilter`'s step weight, written out rather than called.
 //
 // The suite does not link motionRuntime on purpose: an expected value computed
 // by the same function under test would assert that the library equals itself
@@ -147,13 +147,13 @@ StepWeight(double cutoffHz, double dt)
 // The four bones are the ones the fixtures name, all at identity, with the hips
 // at the origin -- so the sampled pose at frame 50 differs from it in both a
 // rotation and a translation, and one step of the filter has to move both.
-motion::HumanoidPose
+openstrata::motion::MotionPose
 PriorPose(double timestamp)
 {
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = timestamp;
-    for (const motion::HumanBone bone : {motion::HumanBone::Hips, motion::HumanBone::Spine,
-                                         motion::HumanBone::Chest, motion::HumanBone::Head})
+    for (const openstrata::motion::HumanJoint bone : {openstrata::motion::HumanJoint::Hips, openstrata::motion::HumanJoint::Spine,
+                                         openstrata::motion::HumanJoint::Chest, openstrata::motion::HumanJoint::Head})
     {
         pose.validRotations.set(static_cast<std::size_t>(bone));
     }
@@ -162,19 +162,19 @@ PriorPose(double timestamp)
     return pose;
 }
 
-motion::HumanoidPose
+openstrata::motion::MotionPose
 PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
                                "looks like, not a load error");
-    assert(value.IsHolding<motion::HumanoidPose>() &&
+    assert(value.IsHolding<openstrata::motion::MotionPose>() &&
            "the canonical aggregate did not survive the boundary");
-    return value.UncheckedGet<motion::HumanoidPose>();
+    return value.UncheckedGet<openstrata::motion::MotionPose>();
 }
 
 ExecUsdValueOverrideVector
-PriorOverride(const UsdPrim& clip, const motion::HumanoidPose& pose)
+PriorOverride(const UsdPrim& clip, const openstrata::motion::MotionPose& pose)
 {
     ExecUsdValueOverrideVector overrides;
     overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose), VtValue(pose)});
@@ -247,18 +247,18 @@ TestAClipWithAPolicy(const std::string& fixture)
 
     // ---- un-overridden, the filter is the sampler -------------------------
     // `motion.priorPose` forwards the clip's own pose, so the filter smooths the
-    // pose against itself: `dt` is zero, `motion::PoseFilter` reseeds and
+    // pose against itself: `dt` is zero, `openstrata::motion::PoseFilter` reseeds and
     // returns its argument. Nothing in the bundle special-cases this; it is the
     // library's documented answer to a non-increasing timestamp.
     {
         ExecUsdCacheView view = system.Compute(request);
-        const motion::HumanoidPose sampled = PoseAt(view, kSampled);
-        const motion::HumanoidPose prior = PoseAt(view, kPrior);
-        const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
+        const openstrata::motion::MotionPose sampled = PoseAt(view, kSampled);
+        const openstrata::motion::MotionPose prior = PoseAt(view, kPrior);
+        const openstrata::motion::MotionPose filtered = PoseAt(view, kFiltered);
 
         assert(NearlyEqual(sampled.timestamp, kSecond, 1e-12));
         assert(
-            NearlyEqual(AngleDegrees(RotationOf(sampled, motion::HumanBone::Head)), 45.0, 1e-2) &&
+            NearlyEqual(AngleDegrees(RotationOf(sampled, openstrata::motion::HumanJoint::Head)), 45.0, 1e-2) &&
             "the fixture is not the sampled clip's frame 50 after all");
         assert(prior == sampled && "motion.priorPose did not forward the sampled pose unchanged");
         assert(filtered == sampled &&
@@ -267,14 +267,14 @@ TestAClipWithAPolicy(const std::string& fixture)
     }
 
     // ---- overridden, the filter is one step -------------------------------
-    const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
+    const openstrata::motion::MotionPose prior = PriorPose(kSecond - kStep);
     const double weight = StepWeight(12.0, kStep);
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
-        const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
-        const motion::HumanoidPose sampled = PoseAt(view, kSampled);
-        const motion::HumanoidPose seen = PoseAt(view, kPrior);
+        const openstrata::motion::MotionPose filtered = PoseAt(view, kFiltered);
+        const openstrata::motion::MotionPose sampled = PoseAt(view, kSampled);
+        const openstrata::motion::MotionPose seen = PoseAt(view, kPrior);
 
         // The override reached the value key it named. Asserted rather than
         // inferred from the filtered pose, because everything below depends on
@@ -287,16 +287,16 @@ TestAClipWithAPolicy(const std::string& fixture)
         // below a step between two known poses rather than between two unknown
         // ones.
         assert(
-            NearlyEqual(AngleDegrees(RotationOf(sampled, motion::HumanBone::Head)), 45.0, 1e-2) &&
+            NearlyEqual(AngleDegrees(RotationOf(sampled, openstrata::motion::HumanJoint::Head)), 45.0, 1e-2) &&
             "the override leaked into motion.sampleAnimation");
 
         // A quaternion slerp between two rotations about the same axis moves
         // the angle linearly, so the head lands at `weight` of the 45 degrees
         // the clip states. This is the assertion that says the cutoff the
-        // *clip* authored reached `motion::PoseFilter`: at the library's
+        // *clip* authored reached `openstrata::motion::PoseFilter`: at the library's
         // default of 6 Hz the same step lands somewhere else, and the two are
         // checked apart below.
-        assert(NearlyEqual(AngleDegrees(RotationOf(filtered, motion::HumanBone::Head)),
+        assert(NearlyEqual(AngleDegrees(RotationOf(filtered, openstrata::motion::HumanJoint::Head)),
                            45.0 * weight, 1e-2) &&
                "the head did not land one filter step from the prior pose");
 
@@ -311,7 +311,7 @@ TestAClipWithAPolicy(const std::string& fixture)
         // for.
         assert(NearlyEqual(filtered.timestamp, kSecond, 1e-12));
         assert(filtered.validRotations == sampled.validRotations);
-        assert(Has(filtered, motion::HumanBone::Head));
+        assert(Has(filtered, openstrata::motion::HumanJoint::Head));
     }
 
     // ---- an override does not survive the call ----------------------------
@@ -345,10 +345,10 @@ TestAClipWithAPolicy(const std::string& fixture)
     assert(clip.GetAttribute(kRootPosition).Set(false));
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
-        const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
+        const openstrata::motion::MotionPose filtered = PoseAt(view, kFiltered);
         assert(NearlyEqual(filtered.root.worldPosition, GfVec3f(0.0f, 0.5f, 1.0f), 1e-6) &&
                "the root position was smoothed although the clip said not to");
-        assert(NearlyEqual(AngleDegrees(RotationOf(filtered, motion::HumanBone::Head)),
+        assert(NearlyEqual(AngleDegrees(RotationOf(filtered, openstrata::motion::HumanJoint::Head)),
                            45.0 * weight, 1e-2) &&
                "turning off root filtering stopped the rotations too");
     }
@@ -368,7 +368,7 @@ TestAClipWithAPolicy(const std::string& fixture)
                "a clip-sourced pose grew a root orientation");
     }
 
-    std::printf("execMotion filter: a clip's policy reaches motion::PoseFilter, "
+    std::printf("execMotion filter: a clip's policy reaches openstrata::motion::PoseFilter, "
                 "and the prior pose reaches it as an override\n");
 }
 
@@ -402,18 +402,18 @@ TestAClipWithNoPolicy(const std::string& fixture)
 
     system.ChangeTime(UsdTimeCode(kFrame));
 
-    const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
+    const openstrata::motion::MotionPose prior = PriorPose(kSecond - kStep);
     ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
-    const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
+    const openstrata::motion::MotionPose filtered = PoseAt(view, kFiltered);
 
-    // `motion::PoseFilter::Options`' own default is 6 Hz, and that is what a
+    // `openstrata::motion::PoseFilter::Options`' own default is 6 Hz, and that is what a
     // clip stating nothing gets. The negative half is the one that matters: the
     // same step at the policy fixture's 12 Hz lands somewhere else, so this
     // assertion would not pass if the bundle had picked a default of its own or
     // carried the last clip's.
     const double defaultWeight = StepWeight(6.0, kStep);
     const double policyWeight = StepWeight(12.0, kStep);
-    const double head = AngleDegrees(RotationOf(filtered, motion::HumanBone::Head));
+    const double head = AngleDegrees(RotationOf(filtered, openstrata::motion::HumanJoint::Head));
     assert(NearlyEqual(head, 45.0 * defaultWeight, 1e-2) &&
            "a clip stating no cutoff was not filtered at the library's own "
            "default of 6 Hz");
@@ -429,7 +429,7 @@ TestAClipWithNoPolicy(const std::string& fixture)
            "a clip stating nothing did not get PoseFilter's root defaults");
 
     std::printf("execMotion filter: a clip stating no policy is filtered with "
-                "motion::PoseFilter's own defaults\n");
+                "openstrata::motion::PoseFilter's own defaults\n");
 }
 
 } // namespace

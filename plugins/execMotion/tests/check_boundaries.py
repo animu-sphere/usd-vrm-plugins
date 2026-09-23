@@ -567,7 +567,8 @@ def main() -> int:
     errors += purity_import_errors(library)
     errors += link_errors(
         "execMotion", sys.argv[3],
-        {"motionCore::motionCore", "motionRuntime::motionRuntime"})
+        {"motionCore::motionCore", "motionSampling::motionSampling",
+         "motionRecording::motionRecording"})
     errors += schema_errors("execMotion", source)[1]
 
     # Vendor-neutral by specification: nothing VRM-shaped, no live leaf, and

@@ -100,7 +100,7 @@ bundle with a symmetric structure.
 ```text
 .vrma
 → VrmaDocumentReader
-→ HumanoidAnimation
+→ MotionClip
 → UsdVrmaAuthorer
 → Motion USD
 ```
@@ -325,8 +325,8 @@ motion
 Recommended types:
 
 ```cpp
-motion::HumanoidPose
-motion::HumanoidAnimation
+motion::MotionPose
+motion::MotionClip
 motion::RootMotion
 motion::MotionConstraintSet
 motion::MotionGenerationRequest
@@ -337,7 +337,7 @@ motion::SourceMetadata
 "Canonical" is defined as a documented property, and may be omitted from public
 type names.
 
-### 5.2 HumanoidPose
+### 5.2 MotionPose
 
 ```cpp
 struct RootMotion {
@@ -353,15 +353,15 @@ struct RootMotion {
     bool hasAngularVelocity = false;
 };
 
-struct HumanoidPose {
+struct MotionPose {
     double timestamp;
 
     RootMotion root;
 
-    std::array<GfQuatf, HumanBoneCount> localRotations;
-    std::bitset<HumanBoneCount> validRotations;
+    std::array<GfQuatf, HumanJointCount> localRotations;
+    std::bitset<HumanJointCount> validRotations;
 
-    std::optional<std::array<float, HumanBoneCount>> confidence;
+    std::optional<std::array<float, HumanJointCount>> confidence;
     std::optional<ContactState> contacts;
 };
 ```
@@ -374,20 +374,20 @@ Load-bearing points:
 - timestamps are seconds-based, not integer frames
 - confidence, contact, and source provenance must be addable later
 
-### 5.3 HumanoidAnimation
+### 5.3 MotionClip
 
 ```cpp
-struct HumanoidAnimation {
-    std::vector<HumanoidPose> samples;
+struct MotionClip {
+    std::vector<MotionPose> samples;
     double startTime;
     double endTime;
     double nominalFrameRate;
 };
 ```
 
-The VRMA reader produces a `HumanoidAnimation`. Live input produces
-`HumanoidPose` incrementally, and a recorder accumulates it into a
-`HumanoidAnimation` when needed.
+The VRMA reader produces a `MotionClip`. Live input produces
+`MotionPose` incrementally, and a recorder accumulates it into a
+`MotionClip` when needed.
 
 ---
 
@@ -426,12 +426,12 @@ public:
 };
 ```
 
-A generation result is a `HumanoidAnimation`, so downstream it becomes just
+A generation result is a `MotionClip`, so downstream it becomes just
 another `GeneratedClipSource`:
 
 ```text
 IMotionGenerator
-→ HumanoidAnimation
+→ MotionClip
 → GeneratedClipSource
 → IMotionSource
 ```
@@ -531,7 +531,7 @@ motion capture system
 → protocol decode
 → coordinate conversion
 → LiveCaptureSource
-→ HumanoidPose
+→ MotionPose
 ```
 
 Live capture arrives two ways, and both are kept:
@@ -582,7 +582,7 @@ another:
 
 ```text
 live:      sensors -> phone or PC app -> UDP -> live adapter -> LiveCaptureSource
-recorded:  sensors -> PC app          -> a motion file -> reader -> HumanoidAnimation
+recorded:  sensors -> PC app          -> a motion file -> reader -> MotionClip
 ```
 
 The live surface deals in packets, arrival timestamps, restarts, and tracking
@@ -604,13 +604,13 @@ motionSource           source skeleton/animation, no format  (motionSource)
     ↓
 source profile         what one producer's export means      (data)
     ↓
-canonical conversion   -> motion::HumanoidAnimation          (motionSource)
+canonical conversion   -> motion::MotionClip          (motionSource)
 ```
 
 Two rules make the difference between this and a product importer:
 
 - **The syntax layer decides nothing semantic.** Not which joint is a
-  `HumanBone`, not whether a unit is centimetres, not the up axis or handedness,
+  `HumanJoint`, not whether a unit is centimetres, not the up axis or handedness,
   not what a root translation means. Those are the profile's, because they are
   facts about a *writer*, not about the format.
 - **There is no default profile.** A file arrives with no reliable statement of
@@ -633,7 +633,7 @@ acquires a socket's assumptions, or a socket a file's.
 ```text
 text / trajectory / sparse constraints / pose history
 → motion generator adapter
-→ HumanoidAnimation
+→ MotionClip
 ```
 
 ARDY is one concrete adapter:
@@ -667,7 +667,7 @@ enum class MotionSourceKind {
     Simulated
 };
 
-struct MotionSourceMetadata {
+struct SourceMetadata {
     MotionSourceKind kind;
     std::string provider;
     std::string protocol;
@@ -710,7 +710,7 @@ libs/vrmRetarget/
 
 `ExpressionResolver` landed on 2026-09-01 and is the layer §4.1 defers the
 expression join to: `ExpressionRig` holds what the avatar declared, keyed by
-`vrm:expressionName`, and one sample's `ExpressionWeights` resolve into
+`vrm:expressionName`, and one sample's `MotionChannelSet` resolve into
 blend-shape weights and material colours for that rig alone. It takes plain
 values like every other piece here — the caller reads the binds off the stage —
 so `execVrm`'s `Vrm.ExpressionResolve` is a wrapper over it rather than a second
@@ -973,7 +973,7 @@ Record / publish:
 ```text
 pose buffer
 → resample
-→ HumanoidAnimation
+→ MotionClip
 → UsdSkelAnimation
 → USDA / VRMA
 ```
@@ -988,7 +988,7 @@ network receive
 → timestamped pose buffer
 → interpolation / extrapolation
 → requested evaluation time
-→ HumanoidPose
+→ MotionPose
 ```
 
 ---
@@ -1107,7 +1107,7 @@ optional adapters
 ```
 
 `motionSource` hangs off `motionCore` beside `motionRuntime` rather than under
-it: a recorded file becomes a `HumanoidAnimation` without ever entering the live
+it: a recorded file becomes a `MotionClip` without ever entering the live
 intake, and nothing in the runtime knows a file format exists.
 
 Forbidden:
@@ -1159,8 +1159,8 @@ enforces via `ost plugin test --workspace`.
 ### Motion Phase A: freeze the contract
 
 - hand-author the ideal VRMA→USDA conversion
-- define `motion::HumanoidPose`
-- define `motion::HumanoidAnimation`
+- define `motion::MotionPose`
+- define `motion::MotionClip`
 - make `RootMotion` an independent type
 - define `MotionConstraintSet`
 - write down the source/target coordinate spaces
@@ -1313,7 +1313,7 @@ Milestones E–F).
 - pose and constraint are separate
 - future-time constraints are expressible
 - root trajectory is separate from body pose
-- results are storable as a `HumanoidAnimation`
+- results are storable as a `MotionClip`
 - swapping the generator does not change anything downstream
 
 ---
@@ -1372,8 +1372,8 @@ MotionGenerator                     │
     ↓                               │
 GeneratedClipSource ────────────────┘
                     ↓
-             motion::HumanoidPose
-             motion::HumanoidAnimation
+             motion::MotionPose
+             motion::MotionClip
                     ↓
         Buffer / Resample / Filter / Blend
                     ↓
@@ -1417,7 +1417,7 @@ their meaning; what changes is who owns each.
 | Section | Owner from now on | Note |
 | --- | --- | --- |
 | §2–§4 — VRM and VRMA plugins, composition, VRMA authoring | this document | VRMA is the VRM repository's (motion-plugins policy §26) |
-| §5 — Motion Core | the motion-plugins policy §5 | `HumanoidPose` → `MotionPose`, `HumanoidAnimation` → `MotionClip` ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)) |
+| §5 — Motion Core | the motion-plugins policy §5 | `MotionPose` → `MotionPose`, `MotionClip` → `MotionClip` ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)) |
 | §6 — motion source and generator | the motion-plugins policy §6–§7, §35 "Later" | the generator interface is specified there |
 | §7 — motion constraints | the motion-plugins policy (constraints, §12.2) | moves with `motionCore` |
 | §8.1–§8.2 — adapters, product names | `motion-connectors` | the naming rule survives unchanged: product names are provenance, never control flow (motion-plugins policy §4.1) |

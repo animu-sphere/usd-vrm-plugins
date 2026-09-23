@@ -275,7 +275,7 @@ ExpressionResolver::ResolveWeight(const std::string& name, float reported, float
 }
 
 ResolvedExpressions
-ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
+ExpressionResolver::Resolve(const openstrata::motion::MotionChannelSet& weights,
                             ExpressionDiagnostics* diagnostics) const
 {
     // Ordered containers, so the result is the rig's own order rather than the
@@ -297,7 +297,7 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
     std::vector<Contribution> contributions;
     contributions.reserve(weights.entries.size());
 
-    for (const motion::ExpressionWeight& reported : weights.entries)
+    for (const openstrata::motion::MotionChannel& reported : weights.entries)
     {
         const ExpressionDefinition* definition = _rig.Find(reported.name);
         if (!definition)
@@ -313,7 +313,7 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
             continue;
         }
 
-        float weight = reported.weight;
+        float weight = reported.value;
         if (IsOutsideUnitRange(weight))
         {
             if (_options.clampWeights)
@@ -521,10 +521,10 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
 }
 
 ResolvedExpressions
-ExpressionResolver::Resolve(const motion::HumanoidPose& pose,
+ExpressionResolver::Resolve(const openstrata::motion::MotionPose& pose,
                             ExpressionDiagnostics* diagnostics) const
 {
-    ResolvedExpressions result = Resolve(pose.expressions, diagnostics);
+    ResolvedExpressions result = Resolve(pose.channels, diagnostics);
     result.timestamp = pose.timestamp;
     return result;
 }
