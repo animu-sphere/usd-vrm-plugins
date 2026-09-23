@@ -65,13 +65,11 @@ release_members = [
   "motion_bvh",
   "motion_retarget",
 ]
-release_exclude = [
-  # Every adapter CLI. WORKSPACE.md §5: an adapter ships as its own artifact
-  # with its library, never inside the aggregate.
-  "mocopi_record",
-  "vmc_record",
-  "vrchat_osc_record",
-]
+# Empty since MIG-4: the three adapter CLIs it named left for
+# `motion-connectors`, and `ost` refuses an exclusion naming a member it does
+# not discover (AGGREGATE_MEMBERSHIP_MISMATCH), so keeping them here stopped
+# the release lane's packaging from 2026-09-21 until this was measured.
+release_exclude = []
 
 # The motion profiles, installed once into the product's shared tree.
 #
