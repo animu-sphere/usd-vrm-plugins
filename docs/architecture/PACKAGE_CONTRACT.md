@@ -211,7 +211,7 @@ this document of what `find_dependency(pxr)` is carrying.
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
 | `vrmContainer` | `vrmContainer::vrmContainer` | `include/vrmContainer/` | — | — | yes | **measured** |
-| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | **measured** |
+| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionSampling`, `motionRecording` | — | yes | **measured** |
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
 

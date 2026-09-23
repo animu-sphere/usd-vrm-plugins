@@ -172,6 +172,27 @@ def repair_runtime_python_include(prefix: str, include_dir: str) -> tuple:
     return (baked, changed, "repaired")
 
 
+def external_library_prefixes(names: list) -> tuple:
+    """Where `ost library pull` put each consumed package, and what is missing.
+
+    One target directory per checkout, so the digest directory under it is the
+    prefix a consumer adds to CMAKE_PREFIX_PATH. Globbed rather than composed
+    from the platform and profile: the target id carries the OS, the
+    architecture and the Python ABI, and deriving it here would be a fourth
+    place that has to agree about how a target is spelled.
+    """
+    root = REPO_ROOT / ".strata" / "external-libraries"
+    found: list = []
+    missing: list = []
+    for name in names:
+        prefixes = sorted(root.glob(f"*/{name}/*"))
+        if not prefixes:
+            missing.append(name)
+            continue
+        found.append((name, str(prefixes[-1])))
+    return found, missing
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -214,16 +235,38 @@ def main() -> int:
         packages = [p for p in packages if p in args.package]
 
     extra = list(args.extra_prefix)
-    if not extra:
+
+    # The packages this workspace consumes rather than builds arrive the way
+    # OpenUSD does: as prefixes the fixture resolves, not as something the
+    # driver installs. `ost library pull` materializes them under
+    # `.strata/external-libraries/<target>/<library>/<digest>/`, and this lane
+    # refuses to run without them rather than measuring the packages that
+    # happen not to need one -- a consumer that cannot resolve `motionCore` is
+    # a fact about this checkout, not about the package under test.
+    consumed = sorted(driver.consumed_packages())
+    if consumed:
+        materialized, missing = external_library_prefixes(consumed)
+        if missing:
+            return fail_setup(
+                f"{', '.join(missing)} is declared as a consumed artifact and "
+                f"is not materialized; run `ost library pull --target "
+                f"{args.platform} --profile {args.profile}` first")
+        print("Consumed packages, materialized by `ost library pull`:")
+        for name, prefix in materialized:
+            print(f"  {name}: {prefix}")
+        extra.extend(prefix for _, prefix in materialized)
+
+    if not args.extra_prefix:
         prefix = runtime_prefix(args.platform, args.profile)
         if prefix:
-            extra = [prefix]
+            extra.append(prefix)
             print(f"OpenUSD from `ost env {args.platform} "
                   f"--profile {args.profile}`: {prefix}")
         else:
-            # Four of the twelve need no OpenUSD, so this is not fatal -- but
-            # it is the difference between a lane that measured twelve packages
-            # and one that measured four while printing nothing about it.
+            # Not every package needs OpenUSD, so this is not fatal -- but it
+            # is the difference between a lane that measured every package and
+            # one that measured the OpenUSD-free ones while printing nothing
+            # about the rest.
             print("note: no materialized runtime and no --extra-prefix; only "
                   "the packages that need no OpenUSD can pass")
 

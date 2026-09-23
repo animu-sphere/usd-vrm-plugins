@@ -160,6 +160,15 @@ jobs:
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.host_python }}
+      - name: Materialize the packages this workspace consumes
+        shell: bash
+        # The libraries this repository no longer builds -- usd-motion-plugins'
+        # motionCore, motionSampling and motionRecording -- are declared by
+        # digest in the descriptors and resolved like OpenUSD: as a prefix the
+        # consumer is handed. Pulled here rather than by the driver, because a
+        # lane that reaches the network from inside a consumer fixture would be
+        # measuring something other than the package.
+        run: ost library pull --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json
       - name: Consume every installed package from outside the workspace
         shell: bash
         # No `ost build` before this, and that is the point: nothing in this
