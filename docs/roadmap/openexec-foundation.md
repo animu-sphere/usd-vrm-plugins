@@ -511,13 +511,13 @@ Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
 is left of this task is not a node (see "Still open here" below).
 
 **Step 1 landed on 2026-09-06** — `plugins/execMotion`, and the seven items above
-are done as one: `motion::HumanoidPose` registers as an execution value type, a
+are done as one: `motion::MotionPose` registers as an execution value type, a
 `motion.identityPose` computation on `UsdSkelAnimation` returns the identity pose
 over the bones a clip's `joints` name, and `execMotion_mechanism` drives all of
 request-compile, compute, an unchanged recompute, an authored-value
 invalidation, a time change and an explicit invalidation against the built
 bundle. The pose carries no timestamp, which is a measurement rather than a
-shortcut: a computation is handed a frame, `HumanoidPose::timestamp` is seconds,
+shortcut: a computation is handed a frame, `MotionPose::timestamp` is seconds,
 and the rate between them is stage metadata exec does not deliver to a callback
 — so **P0-4's remaining nodes need the rate as an explicit input**, decided
 before `motion.sampleAnimation` rather than after
@@ -653,7 +653,7 @@ position would answer a question P0-6 then has to explain rather than measure.
 and three change tasks below.** A bundle **registers more than one value type**,
 and a computation may answer in a type other than the one it reads — one request
 returns a pose and a root motion side by side — so nothing forces the remaining
-nodes through `HumanoidPose`. **Time dependence follows the link and not the
+nodes through `MotionPose`. **Time dependence follows the link and not the
 type**: this node declares no `computeTime`, inherits its input's, and the change
 of result type costs nothing. **One override drives every node that depends on
 the key it names**: a single `motion.priorPose` substitution steps the filter and
@@ -724,7 +724,7 @@ answered for the first time outside `motionCore`.
 
 **Four measurements, in [the interpolation report](../reports/openusd/26.08-openexec-interpolation.md),
 and two of them change what P0-6's harness has to do.** An override of a key whose type is a **whole
-history** (`motion::HumanoidAnimation`) reaches its dependent like a pose-typed
+history** (`motion::MotionClip`) reaches its dependent like a pose-typed
 one, closing the root-motion report's open question for a second registered
 type. **Two overrides of two keys in one call** each reach only their own
 dependents, so a driver holds one previous answer *and one snapshot* per prim.
@@ -999,7 +999,7 @@ SkelRoot is retargeted. An explicit unbinding, which exec cannot tell from no
 binding, is pinned. Where the root lands is four `vrm:retarget:*` attributes on the
 humanoid, `motion_retarget`'s four flags word for word. `vrmRetarget::RetargetedPose`
 gained the exact `operator==` the registry requires, and `execVrm` registers
-`motion::HumanoidPose` as well as `execMotion` does.
+`motion::MotionPose` as well as `execMotion` does.
 
 **Six measurements, in [the retarget report](../reports/openusd/26.08-openexec-retarget.md).**
 **The node is one library call**, bit for bit, and applies exactly the

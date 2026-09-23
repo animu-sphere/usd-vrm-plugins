@@ -111,11 +111,20 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
 | `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary, `motion.identityPose`, `motion.sampleAnimation`, `motion.priorPose`, `motion.filterPose` and `motion.extractRootMotion` exist (2026-09-06), and `motion.poseHistory` and `motion.interpolatePose` (2026-09-12), and `motion.blendPoses` (2026-09-13), which completes the OpenExec plan's P0-4 node set; the rest of this row's list is outside P0-4 and does not exist yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
 | `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). |
-| `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
-| `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). **Completed before OpenExec** (motion policy §18.12). |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
+
+**`motionCore` and `motionRuntime` left with MIG-1 and MIG-2** (2026-09-21),
+and this workspace consumes them: they are `usd-motion-plugins`' `motionCore`,
+`motionSampling` and `motionRecording` — one library became two there — pinned
+by digest per target in every descriptor that names one. What that changes for
+this table is what it is a table *of*: an identity here is something this
+workspace builds, and a consumed package is named in a descriptor rather than
+listed here. `motionSource`, `motionBvh` and the BVH tools are next, and they
+wait for one thing only — an external artifact declared by a tool descriptor is
+not materialized by `ost` 0.23.2, and those two have no library consumer left
+here.
 
 **Ten identities left this table with MIG-4**, on 2026-09-21, and are
 `motion-connectors`' now: the two shared live leaves (`liveTransport`, `osc`),
@@ -137,8 +146,8 @@ Recorded motion sources — the file half of the input layer (motion policy §8.
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `SourceProfile` contract, the reader for the profile *file*, and the converter from those plus a profile to `motion::HumanoidAnimation`. Knows no file format and no producer — a profile file is data this layer reads, not a motion format it parses. **All of it is implemented**, the converter last. The `motionCore` edge below is carried by four files and no others: `CanonicalMetadata`, which derives canonical provenance, `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side, `SourceProfileFile`, which reads that side out of a file, and `CanonicalConversion`, which is the crossing rather than a corner of one. `CanonicalConversion` is also the only file here permitted a `Gf` type: everywhere else a value in a basis this layer does not know is still not a geometric vector, and the converter is the one file that *does* know the basis. Stage, `Sdf` and plugin APIs stay forbidden in all four — authoring is a caller's. |
-| `motionBvh` | plain static CMake library (`libs/motionBvh/`) | BVH **syntax** only — `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame time, channel values in declaration order — plus the extractor that turns a `BvhDocument` into `motionSource` values. Decides no semantics: not which joint is which `HumanBone`, not the unit, not the axes, not what a root translation means. **Both halves are implemented**, and the extractor is what took the declared edge below. It still names no OpenUSD of its own — `motionSource` is its one link, and `motionCore`'s `Gf` value types arrive behind it and are named nowhere here. |
+| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `SourceProfile` contract, the reader for the profile *file*, and the converter from those plus a profile to `motion::MotionClip`. Knows no file format and no producer — a profile file is data this layer reads, not a motion format it parses. **All of it is implemented**, the converter last. The `motionCore` edge below is carried by four files and no others: `CanonicalMetadata`, which derives canonical provenance, `SourceProfile`, whose joint map has a `HumanJoint` on its right-hand side, `SourceProfileFile`, which reads that side out of a file, and `CanonicalConversion`, which is the crossing rather than a corner of one. `CanonicalConversion` is also the only file here permitted a `Gf` type: everywhere else a value in a basis this layer does not know is still not a geometric vector, and the converter is the one file that *does* know the basis. Stage, `Sdf` and plugin APIs stay forbidden in all four — authoring is a caller's. |
+| `motionBvh` | plain static CMake library (`libs/motionBvh/`) | BVH **syntax** only — `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame time, channel values in declaration order — plus the extractor that turns a `BvhDocument` into `motionSource` values. Decides no semantics: not which joint is which `HumanJoint`, not the unit, not the axes, not what a root translation means. **Both halves are implemented**, and the extractor is what took the declared edge below. It still names no OpenUSD of its own — `motionSource` is its one link, and `motionCore`'s `Gf` value types arrive behind it and are named nowhere here. |
 | `motion_bvh_inspect` | CLI executable (`tools/motionBvh/`, v0.6.0) | Reports what a BVH file contains, and optionally which profiles are candidates for it, with the reasons. Links `motionBvh` and nothing else. **The reporting half is implemented**; candidate profiles arrive with the profile contract, because a detector written before it would settle the profile schema on whichever file was inspected first. |
 | `motion_bvh_convert` | CLI executable (`tools/motionBvh/`, v0.6.0) | BVH + an explicitly named profile → the avatar-independent semantic clip `motion_retarget` already consumes. Links `motionBvh` and `motionSource`, and authors a stage. Never binds to a target avatar. **Implemented.** It is the first program anywhere that holds a reader and a profile at once, which is why the six *semantic* diagnostics are raised here and nowhere lower: `MatchSourceProfile` returns a typed refusal naming the event, and this is the caller that maps it onto the reader's frozen codes. There is no default profile — a missing `--profile` is `VRM_BVH_PROFILE_REQUIRED` and stops the run — and a profile **id** is resolved to a file relative to the executable, so a packaged artifact finds the profiles shipped beside it. Its boundary check is a different one from `motion_bvh_inspect`'s and runs per target: it may author a stage and speak the humanoid vocabulary, and it still may not name `vrmRetarget` or `vrmSchema`. |
 | motion source profiles | package data (`profiles/motion/*.yaml`) | One declarative file per producer *and export preset*: joint map, coordinate basis, unit, root and rest-pose policy, required/optional joints, provenance label. Data, never code — see below. |
@@ -351,7 +360,7 @@ since `--source vmc` invites `--source mocopi` behind it. The hand-off is a file
 instead. An adapter's tool writes what its adapter delivered as a
 `motion-capture-trace`, which is that format's stated content — *what an adapter
 delivered, after protocol decode and coordinate conversion, before any intake
-policy* (`motionRuntime/CaptureTrace.h`) — and `motion_capture` replays it
+policy* (`motionRecording/CaptureTrace.h`) — and `motion_capture` replays it
 through `LiveCaptureSource` exactly as it replays any other trace, unchanged and
 knowing nothing about where it came from.
 
@@ -405,10 +414,10 @@ to be the one nobody wrote down.
 
 **`motionTracking`'s last prohibition is the only one here that forbids a
 `typedef`, and it is the one the library exists to make true.** A region is a
-place a strap goes; a `motion::HumanBone` is a joint in a skeleton. They read as
+place a strap goes; a `motion::HumanJoint` is a joint in a skeleton. They read as
 the same list until the rig has a knee tracker — there is no knee bone, and the
 device sits between two — or a chest strap, which observes a torso rather than a
-`Chest`. The day `TrackerRegion` becomes an alias for `HumanBone`, assignment has
+`Chest`. The day `TrackerRegion` becomes an alias for `HumanJoint`, assignment has
 become a lookup and the solve has nothing left to do, which is exactly the
 collapse [the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5.1 separates
 three decisions to prevent. So the vocabulary is this library's own, and
@@ -507,9 +516,9 @@ motionTracking        -> motionRuntime, vrmRetarget, motionSource, motionBvh,
                          file-format bundle, OpenExec, ExecIr, adapters/*
                          (motionCore left this list at VRC-5; it is above)
 motionTracking        -> an OSC or vendor address literal, a product or SDK
-                         name, any adapter's diagnostic code, a `HumanBone` in
+                         name, any adapter's diagnostic code, a `HumanJoint` in
                          the region vocabulary or in the assignment, or a
-                         `motion::HumanBone` standing in for a region anywhere
+                         `motion::HumanJoint` standing in for a region anywhere
 motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> motionTracking
 execMotion/execVrm    -> motionTracking
 
@@ -1055,8 +1064,6 @@ consumer in any case.
 
 | Identity | Destination | What arrives there | What stays here |
 | --- | --- | --- | --- |
-| `motionCore` | `usd-motion-plugins` (`motionCore`) | pose, animation, root motion, constraints, source metadata — renamed on arrival (§9.3) | nothing |
-| `motionRuntime` | `usd-motion-plugins` (`motionSampling`, `motionRecording`) | buffer, interpolation, resample, filter, blend, the capture session's conditioning | nothing |
 | `vrmRetarget` | split, along the line §9.5 draws | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget` | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38); building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
@@ -1131,13 +1138,13 @@ every consumer here twice.
 | Here | In `usd-motion-plugins` |
 | --- | --- |
 | namespace `motion` | `openstrata::motion` |
-| `motion::HumanoidPose` | `MotionPose` |
-| `motion::HumanoidAnimation` | `MotionClip` |
-| `motion::HumanBone` | `HumanJoint` |
+| `motion::MotionPose` | `MotionPose` |
+| `motion::MotionClip` | `MotionClip` |
+| `motion::HumanJoint` | `HumanJoint` |
 | `motion::RootMotion` | `RootMotion` |
 | `vrmRetarget::TargetSkeleton` | `SkeletonDescriptor` |
 | `vrmRetarget::HumanoidMap` | `RetargetMap` |
-| `motion::ExpressionWeights` on the pose | `MotionChannelSet` |
+| `motion::MotionChannelSet` on the pose | `MotionChannelSet` |
 | the generic half of `vrmRetarget` (namespace, `VRMRETARGET_*` macros, include root) | `motionRetarget` |
 | `VRM_RETARGET_*` diagnostic codes | the destination's code style (its DIAG-O1) |
 
@@ -1169,7 +1176,7 @@ inferred from the names:
 | Header | Declares | Goes to | Why |
 | --- | --- | --- | --- |
 | `TargetSkeleton.h` | `TargetJoint`, `TargetSkeleton`, `DecomposeRestTransform` | `motionRetarget` as `SkeletonDescriptor` | a rig as plain values: joint tokens, parents, rest transforms |
-| `HumanoidMap.h` | `HumanoidMap`, without `GetRequiredBones` | `motionRetarget` as `RetargetMap` | it maps `motion::HumanBone` to a joint index, and it never reads a VRM binding. Every caller builds one from `VrmHumanoidAPI` (`execVrm`'s `ExecVrmRig`, `motion_retarget`'s `StageIo`), and that reading stays with the caller |
+| `HumanoidMap.h` | `HumanoidMap`, without `GetRequiredBones` | `motionRetarget` as `RetargetMap` | it maps `motion::HumanJoint` to a joint index, and it never reads a VRM binding. Every caller builds one from `VrmHumanoidAPI` (`execVrm`'s `ExecVrmRig`, `motion_retarget`'s `StageIo`), and that reading stays with the caller |
 | `HumanoidMap.h` | `GetRequiredBones`, and the check that reads it | **cut**: the set stays here, the check moves with a caller-supplied set | finding 1 below |
 | `RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` | `motionRetarget` | the rest-pose path rule, stated for any two rigs |
 | `RootMotionPolicy.h` | `RootMotionMode`, `RootMotionOptions`, `ResolveRootTranslation` | `motionRetarget` | the root-motion policy. `Hips` is the default because the motion contract records body translation on the hips ([Root and hips](../design/MOTION_CONTRACT.md#root-and-hips-v070)), which is a rule for every producer and not a `.vrma` convention |
@@ -1209,7 +1216,7 @@ rule 4):
    caller. This repository supplies VRM 1.0's, and `usd-mmd-plugins` supplies
    its own or none.
 2. **The look-at target is a pose field, not a channel.**
-   `HumanoidPose::lookAtTarget` is a point, and the destination carries gaze
+   `MotionPose::lookAtTarget` is a point, and the destination carries gaze
    as a channel in `MotionChannelSet`, whose value type is still open (its
    MC-O4, a first non-scalar channel). This one is not a VRM concept. It is a
    shape the destination has not decided yet, and it is recorded here so that

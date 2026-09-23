@@ -43,8 +43,13 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 if(NOT TARGET motionCore::motionCore)
     find_package(motionCore REQUIRED CONFIG)
 endif()
-if(NOT TARGET motionRuntime::motionRuntime)
-    find_package(motionRuntime REQUIRED CONFIG)
+if(NOT TARGET motionSampling::motionSampling)
+    find_package(motionSampling REQUIRED CONFIG)
+endif()
+# The other half of what was one `motionRuntime`: the live-capture intake and
+# the capture trace are `motionRecording`'s.
+if(NOT TARGET motionRecording::motionRecording)
+    find_package(motionRecording REQUIRED CONFIG)
 endif()
 
 add_library(vrmRetarget STATIC
@@ -70,7 +75,8 @@ target_include_directories(vrmRetarget
 target_link_libraries(vrmRetarget
     PUBLIC
         motionCore::motionCore
-        motionRuntime::motionRuntime)
+        motionSampling::motionSampling
+        motionRecording::motionRecording)
 
 # `js` is the one OpenUSD library beyond Gf this library links, and it is a
 # value library: JsValue parses a string into numbers and objects, with no

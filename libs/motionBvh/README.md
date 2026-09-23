@@ -4,7 +4,7 @@
 `CHANNELS`, `End Site`, `MOTION`, the frame count, the frame time, and the
 channel values in **declaration order**. That is the whole of its job.
 
-It deliberately does not know which joint is a `HumanBone`, what unit an offset
+It deliberately does not know which joint is a `HumanJoint`, what unit an offset
 is in, which way is up, whether the file is left- or right-handed, what a root
 translation means, or how to read a rest pose. Those are facts about the
 application that *wrote* the file rather than about the format, so they live in

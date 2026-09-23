@@ -237,10 +237,10 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
         return fail("[VRMA004] humanoid.humanBones is required for VRMA import");
     }
 
-    std::map<motion::HumanBone, int> boneNodes;
+    std::map<openstrata::motion::HumanJoint, int> boneNodes;
     for (const auto& entry : *humanBones)
     {
-        const auto bone = motion::FindHumanBone(entry.first);
+        const auto bone = openstrata::motion::FindHumanJoint(entry.first);
         const JsObject* nodeObject = AsObject(&entry.second);
         const int node = nodeObject ? AsInt(Find(*nodeObject, "node")) : -1;
         if (!bone || node < 0 || node >= static_cast<int>(data->nodes_count))
@@ -401,16 +401,16 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
     // here: the live-capture path authors the same skeleton, and two humanoid
     // taxonomies that can disagree would produce two skeletons that look alike
     // and do not compose.
-    std::bitset<motion::HumanBoneCount> presentBones;
+    std::bitset<openstrata::motion::HumanJointCount> presentBones;
     for (const auto& mapping : boneNodes)
     {
         presentBones.set(static_cast<std::size_t>(mapping.first));
     }
 
-    std::map<motion::HumanBone, std::size_t> jointByBone;
-    for (std::size_t value = 0; value != motion::HumanBoneCount; ++value)
+    std::map<openstrata::motion::HumanJoint, std::size_t> jointByBone;
+    for (std::size_t value = 0; value != openstrata::motion::HumanJointCount; ++value)
     {
-        const auto bone = static_cast<motion::HumanBone>(value);
+        const auto bone = static_cast<openstrata::motion::HumanJoint>(value);
         const auto nodeIt = boneNodes.find(bone);
         if (nodeIt == boneNodes.end())
             continue;
@@ -427,7 +427,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
                                              static_cast<float>(rotation.GetImaginary()[1]),
                                              static_cast<float>(rotation.GetImaginary()[2])));
 
-        joint.path = motion::HumanBoneJointPath(bone, presentBones);
+        joint.path = openstrata::motion::HumanJointPath(bone, presentBones);
         jointByBone[bone] = outDocument->joints.size();
         outDocument->joints.push_back(std::move(joint));
     }
@@ -543,7 +543,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
         }
         else if (channel.target_path == cgltf_animation_path_type_translation)
         {
-            if (outDocument->joints[jointIt->second].bone == motion::HumanBone::Hips)
+            if (outDocument->joints[jointIt->second].bone == openstrata::motion::HumanJoint::Hips)
             {
                 translations[jointIt->second] = channel.sampler;
             }
@@ -641,7 +641,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
     outDocument->animation.samples.reserve(timeSet.size());
     for (const float time : timeSet)
     {
-        motion::HumanoidPose pose;
+        openstrata::motion::MotionPose pose;
         pose.timestamp = time;
         for (std::size_t index = 0; index != outDocument->joints.size(); ++index)
         {
@@ -678,7 +678,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
                                                 "' has a weight outside [0, 1]; carried unclamped");
                 warnedWeightRange = true;
             }
-            pose.expressions.Set(name, value);
+            pose.channels.Set(name, value);
         };
         for (const auto& weight : weights)
         {
@@ -711,7 +711,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
     outDocument->animation.startTime = outDocument->animation.samples.front().timestamp;
     outDocument->animation.endTime = outDocument->animation.samples.back().timestamp;
     outDocument->animation.nominalFrameRate = 30.0;
-    outDocument->animation.source.kind = motion::MotionSourceKind::Clip;
+    outDocument->animation.source.kind = openstrata::motion::MotionSourceKind::Clip;
     outDocument->animation.source.provider = "VRMC_vrm_animation";
     outDocument->specVersion = specVersion->GetString();
     outDocument->rawExtensionJson = extensionJson;

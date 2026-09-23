@@ -5,7 +5,7 @@
 // This is the first thing anyone runs against a file the pipeline has never
 // seen, and its whole job is to answer that with the file's own words. It names
 // no producer, guesses no unit, labels no axis and maps no joint to a
-// `HumanBone`, because a BVH file states none of those — they are facts about
+// `HumanJoint`, because a BVH file states none of those — they are facts about
 // the application that wrote it (roadmap/recorded-motion-sources.md §2).
 //
 // **Reporting a producer's candidate profiles is the other half of this tool,

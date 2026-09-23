@@ -16,7 +16,7 @@
 #include "vrmRetarget/RestPose.h"
 #include "vrmRetarget/TargetSkeleton.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/usd/stage.h"
@@ -66,7 +66,7 @@ struct Clip
 {
     pxr::UsdStageRefPtr stage;
     pxr::SdfPath skeletonPath;
-    motion::HumanoidAnimation animation;
+    openstrata::motion::MotionClip animation;
     vrmRetarget::SourceRestPose restPose;
     double timeCodesPerSecond = 30.0;
 

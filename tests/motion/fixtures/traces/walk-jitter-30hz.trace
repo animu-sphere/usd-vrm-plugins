@@ -1,4 +1,4 @@
-!motion-capture-trace 3
+!motion-capture-trace 4
 provider example.synthetic
 protocol replay
 sourceId walk-jitter-01

@@ -146,7 +146,7 @@ def check_clip_shape(clip: pathlib.Path, failures: Failures) -> None:
     failures.check(bool(root.GetCustomDataByKey("capture:sourceId")),
                    f"{clip.name} does not record capture:sourceId")
     failures.check(
-        root.GetCustomDataByKey("capture:missingBones") is not None,
+        root.GetCustomDataByKey("capture:missingJoints") is not None,
         f"{clip.name} does not record the intake policy")
 
     # The clip has to actually move; a bound clip that holds one pose would

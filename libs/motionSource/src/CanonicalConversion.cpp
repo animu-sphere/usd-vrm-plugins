@@ -168,48 +168,48 @@ PathFromNearestBoundAncestor(const SourceSkeleton& skeleton, std::size_t jointIn
 // contributes identity, so a rig carrying fingers or a jaw is not refused; it
 // simply gets no T-pose opinion about them.
 pxr::GfVec3f
-TPoseDirection(motion::HumanBone bone) noexcept
+TPoseDirection(openstrata::motion::HumanJoint bone) noexcept
 {
     const pxr::GfVec3f up(0.0f, 1.0f, 0.0f);
     const pxr::GfVec3f left(1.0f, 0.0f, 0.0f);
     const pxr::GfVec3f forward(0.0f, 0.0f, 1.0f);
     switch (bone)
     {
-    case motion::HumanBone::Hips:
-    case motion::HumanBone::Spine:
-    case motion::HumanBone::Chest:
-    case motion::HumanBone::UpperChest:
-    case motion::HumanBone::Neck:
+    case openstrata::motion::HumanJoint::Hips:
+    case openstrata::motion::HumanJoint::Spine:
+    case openstrata::motion::HumanJoint::Chest:
+    case openstrata::motion::HumanJoint::UpperChest:
+    case openstrata::motion::HumanJoint::Neck:
         return up;
-    case motion::HumanBone::LeftShoulder:
-    case motion::HumanBone::LeftUpperArm:
-    case motion::HumanBone::LeftLowerArm:
+    case openstrata::motion::HumanJoint::LeftShoulder:
+    case openstrata::motion::HumanJoint::LeftUpperArm:
+    case openstrata::motion::HumanJoint::LeftLowerArm:
         return left;
-    case motion::HumanBone::RightShoulder:
-    case motion::HumanBone::RightUpperArm:
-    case motion::HumanBone::RightLowerArm:
+    case openstrata::motion::HumanJoint::RightShoulder:
+    case openstrata::motion::HumanJoint::RightUpperArm:
+    case openstrata::motion::HumanJoint::RightLowerArm:
         return -left;
-    case motion::HumanBone::LeftUpperLeg:
-    case motion::HumanBone::LeftLowerLeg:
-    case motion::HumanBone::RightUpperLeg:
-    case motion::HumanBone::RightLowerLeg:
+    case openstrata::motion::HumanJoint::LeftUpperLeg:
+    case openstrata::motion::HumanJoint::LeftLowerLeg:
+    case openstrata::motion::HumanJoint::RightUpperLeg:
+    case openstrata::motion::HumanJoint::RightLowerLeg:
         return -up;
-    case motion::HumanBone::LeftFoot:
-    case motion::HumanBone::RightFoot:
+    case openstrata::motion::HumanJoint::LeftFoot:
+    case openstrata::motion::HumanJoint::RightFoot:
         return forward;
     // The chain-ending bones. Their own segment still has a direction in a
     // T-pose -- a skull rises, a hand continues outward, a toe points
     // ahead -- and stating it is what lets the walk above recognise which
     // child *continues* a bone when the alternatives leave it sideways. A
     // rig that ends a chain here simply has no child to aim.
-    case motion::HumanBone::Head:
+    case openstrata::motion::HumanJoint::Head:
         return up;
-    case motion::HumanBone::LeftHand:
+    case openstrata::motion::HumanJoint::LeftHand:
         return left;
-    case motion::HumanBone::RightHand:
+    case openstrata::motion::HumanJoint::RightHand:
         return -left;
-    case motion::HumanBone::LeftToes:
-    case motion::HumanBone::RightToes:
+    case openstrata::motion::HumanJoint::LeftToes:
+    case openstrata::motion::HumanJoint::RightToes:
         return forward;
     default:
         return pxr::GfVec3f(0.0f);
@@ -268,7 +268,7 @@ ConversionRefusalName(ConversionRefusal refusal) noexcept
 CanonicalRestPose::CanonicalRestPose()
 {
     // Exported rather than inline so every consumer receives the same identity
-    // defaults, the way `motion::HumanoidPose` does.
+    // defaults, the way `openstrata::motion::MotionPose` does.
     localRotations.fill(Identity());
     localTranslations.fill(pxr::GfVec3f(0.0f));
 }
@@ -445,7 +445,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
 
     // Which rig joint carries which bone, and the inverse question the path
     // walk asks per joint.
-    std::vector<motion::HumanBone> boneForJoint(skeleton.joints.size(), motion::HumanBone::Count);
+    std::vector<openstrata::motion::HumanJoint> boneForJoint(skeleton.joints.size(), openstrata::motion::HumanJoint::Count);
     std::vector<bool> bound(skeleton.joints.size(), false);
     for (const SourceProfileBinding& binding : result.match.bound)
     {
@@ -471,7 +471,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
     // per-bone offset that looks like a bad capture.
     struct BoundPath
     {
-        motion::HumanBone bone = motion::HumanBone::Count;
+        openstrata::motion::HumanJoint bone = openstrata::motion::HumanJoint::Count;
         std::vector<std::size_t> joints;
         // Whether anything on the path states a rotation at all. An absent bone
         // is not an identity sample (MOTION_CONTRACT.md), so a bone whose whole
@@ -523,7 +523,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
     std::vector<std::size_t> rootPath;
     for (const BoundPath& path : paths)
     {
-        if (path.bone == motion::HumanBone::Hips)
+        if (path.bone == openstrata::motion::HumanJoint::Hips)
         {
             rootPath = path.joints;
             break;
@@ -538,7 +538,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
         // dereference if either of those two ever stops being true.
         return Refuse(std::move(result), ConversionRefusal::ProfileMismatch,
                       "the profile binds no " +
-                          std::string(motion::HumanBoneName(motion::HumanBone::Hips)) +
+                          std::string(openstrata::motion::HumanJointName(openstrata::motion::HumanJoint::Hips)) +
                           ", so the body has no placement");
     }
     std::vector<bool> onRootPath(skeleton.joints.size(), false);
@@ -640,7 +640,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
                 continue;
             }
 
-            const pxr::GfVec3f wanted = boneForJoint[index] != motion::HumanBone::Count
+            const pxr::GfVec3f wanted = boneForJoint[index] != openstrata::motion::HumanJoint::Count
                                             ? TPoseDirection(boneForJoint[index])
                                             : pxr::GfVec3f(0.0f);
             if (wanted == pxr::GfVec3f(0.0f) || children[index].empty())
@@ -659,8 +659,8 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
                 bool found = false;
                 for (const std::size_t child : children[index])
                 {
-                    const motion::HumanBone bone = boneForJoint[child];
-                    if (bone != motion::HumanBone::Count && TPoseDirection(bone) == wanted)
+                    const openstrata::motion::HumanJoint bone = boneForJoint[child];
+                    if (bone != openstrata::motion::HumanJoint::Count && TPoseDirection(bone) == wanted)
                     {
                         follower = child;
                         found = true;
@@ -784,7 +784,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
     }
 
     // --- the frames --------------------------------------------------------
-    motion::HumanoidAnimation& clip = result.animation;
+    openstrata::motion::MotionClip& clip = result.animation;
     clip.startTime = animation.startTime;
     clip.endTime = animation.EndTime();
     if (const std::optional<double> rate = animation.FrameRate())
@@ -819,7 +819,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
                 ConvertRotation(*basis, SourceRotationAt(animation.tracks[index], frame));
         }
 
-        motion::HumanoidPose pose;
+        openstrata::motion::MotionPose pose;
         if (const std::optional<double> time = animation.Time(frame))
         {
             pose.timestamp = *time;

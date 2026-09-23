@@ -9,14 +9,14 @@
 // crossings and for the converter that follows them, and keeping them to a named
 // set is what lets `motionSource_boundaries` check the claim rather than leave
 // it as a habit. `SourceProfile.h` is the other, because a joint map's
-// right-hand side is a `HumanBone` and there is no way to express one without
+// right-hand side is a `HumanJoint` and there is no way to express one without
 // naming it; the list lives in the check, so a third is granted in review.
 #pragma once
 
 #include "motionSource/SourceProvenance.h"
 #include "motionSource/api.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 namespace motionSource
 {
@@ -39,11 +39,11 @@ namespace motionSource
 //
 // *`producerVersion` and `profileId` are dropped, and that is the narrowing.*
 // Neither has a home on the canonical type and neither should get one: they
-// cannot vary within a clip, and `MotionSourceMetadata` is carried per sample.
+// cannot vary within a clip, and `SourceMetadata` is carried per sample.
 // They survive beside the motion — in the semantic clip's authored metadata,
 // where this repository's other clip readers already record the file facts of
 // their own sources — and a caller that needs them keeps the `SourceProvenance`
 // it converted from.
-MOTIONSOURCE_API motion::MotionSourceMetadata CanonicalMetadata(const SourceProvenance& provenance);
+MOTIONSOURCE_API openstrata::motion::SourceMetadata CanonicalMetadata(const SourceProvenance& provenance);
 
 } // namespace motionSource

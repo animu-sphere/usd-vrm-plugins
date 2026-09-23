@@ -11,12 +11,12 @@ computations, and one attribute expression that reaches a display
 
 | Computation | Provider | Result |
 | --- | --- | --- |
-| `motion.identityPose` | a `UsdSkelAnimation` prim | the identity `motion::HumanoidPose` over the canonical bones the clip's `joints` name |
+| `motion.identityPose` | a `UsdSkelAnimation` prim | the identity `motion::MotionPose` over the canonical bones the clip's `joints` name |
 | `motion.sampleAnimation` | a `UsdSkelAnimation` prim | the pose the clip states **at the frame the system is evaluating**, stamped in seconds |
 | `motion.priorPose` | a `UsdSkelAnimation` prim | the sampled pose, forwarded — the value key a driver **overrides** with the previous frame's answer |
 | `motion.filterPose` | a `UsdSkelAnimation` prim | one `motion::PoseFilter` step from `motion.priorPose` toward the sampled pose |
 | `motion.extractRootMotion` | a `UsdSkelAnimation` prim | the `motion::RootMotion` the sampled pose states, under the clip's intake policy |
-| `motion.poseHistory` | a `UsdSkelAnimation` prim | the sampled pose as a one-sample `motion::HumanoidAnimation` — the value key a driver **overrides** with its buffer's snapshot |
+| `motion.poseHistory` | a `UsdSkelAnimation` prim | the sampled pose as a one-sample `motion::MotionClip` — the value key a driver **overrides** with its buffer's snapshot |
 | `motion.interpolatePose` | a `UsdSkelAnimation` prim | the `motion::PoseSampleResult` `motion::ClipSource` answers over `motion.poseHistory`, **at the instant the system is evaluating** |
 | `motion.blendPoses` | a `UsdSkelAnimation` prim | `motion::BlendPoses` over the clips `motion:blend:sources` targets, each sampled at the evaluated frame and weighted by `motion:blend:weights` |
 
@@ -30,7 +30,7 @@ rules apply ([below](#a-blend-reads-its-sources-through-a-relationship)).
 
 ## A clip has to state the rate its frames are counted at
 
-`motion::HumanoidPose::timestamp` is **seconds**; an OpenExec computation is
+`motion::MotionPose::timestamp` is **seconds**; an OpenExec computation is
 handed a **frame**; and the rate between them is stage metadata a computation
 cannot reach — `Stage().Metadata<double>(timeCodesPerSecond)` is accepted, is
 not refused even with `.Required()`, and still yields no value
@@ -84,7 +84,7 @@ overrides.push_back({ExecUsdValueKey(clip, TfToken("motion.priorPose")),
                      VtValue(previousAnswer)});
 ExecUsdCacheView view = system.ComputeWithOverrides(request,
                                                     std::move(overrides));
-previousAnswer = view.Get(0).UncheckedGet<motion::HumanoidPose>();
+previousAnswer = view.Get(0).UncheckedGet<motion::MotionPose>();
 ```
 
 **Exec does the step and the driver owns the sequence.** For a live source that
@@ -211,7 +211,7 @@ That makes two keys here a driver fills, and they are different kinds of thing:
 | Key | What a driver puts there | What it is |
 | --- | --- | --- |
 | `motion.priorPose` | the previous frame's answer | the graph's own output, **fed back** — the state a recurrence needs |
-| `motion.poseHistory` | its buffer's samples, as a `motion::HumanoidAnimation` | the source's input, **handed in** |
+| `motion.poseHistory` | its buffer's samples, as a `motion::MotionClip` | the source's input, **handed in** |
 
 So a driver holds **one previous answer and one snapshot per prim**, and may
 hand both over in one `ComputeWithOverrides` — each reaches only the nodes that
@@ -438,9 +438,9 @@ default-constructed result fails that test for every type this bundle produces:
 
 | Type | A default-constructed value is also… |
 | --- | --- |
-| `motion::HumanoidPose` | what a clip whose `joints` name no canonical bone legitimately samples to |
+| `motion::MotionPose` | what a clip whose `joints` name no canonical bone legitimately samples to |
 | `motion::RootMotion` | `motion:root:intake = "ignore"`'s own answer, **bit for bit** |
-| `motion::HumanoidAnimation` | an empty history — which `motion.interpolatePose` answers, as `Unavailable` |
+| `motion::MotionClip` | an empty history — which `motion.interpolatePose` answers, as `Unavailable` |
 | `motion::PoseSampleResult` | `Unavailable`: the answer for a history that holds nothing, which is not the same statement as "this history cannot be sampled" |
 
 So a refusal spelled that way would hand a misspelled `passthrough` the exact
@@ -468,7 +468,7 @@ drop back into a refusal.
 An exec input arrives **already resolved at the evaluated time**, so a frame
 between two keys of a clip is USD's answer and not this bundle's. That is why
 `motion.sampleAnimation` is *not* a wrapper over `motion::SampleAnimation`,
-which is handed a whole `HumanoidAnimation` and performs its own hold-at-the-
+which is handed a whole `MotionClip` and performs its own hold-at-the-
 edges lookup. The two are compared at P0-6 parity rather than assumed equal; what
 26.08 does between keys is measured in
 [the sampling report](../../docs/reports/openusd/26.08-openexec-sampling.md).

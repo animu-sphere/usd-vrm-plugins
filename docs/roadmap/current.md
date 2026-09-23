@@ -186,7 +186,18 @@ API defects the move fixes on arrival, and they only exist once its nodes do.
 `motionCore` (MIG-1) and `motionRuntime` (MIG-2's first item, as
 `motionSampling` and `motionRecording`) have arrived in `usd-motion-plugins`
 with their history, and so have `vrmRetarget`'s generic half, `motionUsd`'s
-authoring half and the recorded sources (MIG-3). **MIG-4 is done on both sides (2026-09-21).** All six connector-bound
+authoring half and the recorded sources (MIG-3). **MIG-1 and MIG-2's library half is done too (2026-09-21).** `motionCore` and
+`motionRuntime` are consumed packages: `motionCore`, `motionSampling` and
+`motionRecording` from `usd-motion-plugins` v0.5.0, pinned by digest per target
+in five descriptors, with the whole suite green against them. What is left of
+the consuming side is three items, and each waits on something specific:
+`motionSource` / `motionBvh` and the BVH tools wait on `ost` materializing an
+external artifact a **tool** declares; `execMotion` waits on that repository
+publishing a bundle artifact, without which the parity rows cannot be re-run
+against the consumed package before the copy here is deleted; and
+`vrmRetarget`'s generic half waits on neither and is next.
+
+**MIG-4 is done on both sides (2026-09-21).** All six connector-bound
 identities arrived in `motion-connectors` — the two leaves, the tracker layer
 and the three adapters with their recorders — and this repository deleted its
 copies in one change, under [WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)

@@ -4,7 +4,7 @@
 //
 // The question this file answers in code is the one the plan asked to have
 // settled before a converter set its first field: whether a recorded file's
-// provenance is `motion::MotionSourceMetadata`, a superset of it, or a
+// provenance is `openstrata::motion::SourceMetadata`, a superset of it, or a
 // neighbour. It is a neighbour, and the derivation below is one-way and
 // narrowing -- so the test that matters most here is the one asserting that two
 // files differing only in what the canonical type does not carry produce the
@@ -68,12 +68,12 @@ TestEquality()
 void
 TestCanonicalMapping()
 {
-    const motion::MotionSourceMetadata metadata = CanonicalMetadata(MakeProvenance());
+    const openstrata::motion::SourceMetadata metadata = CanonicalMetadata(MakeProvenance());
 
     // A recorded file is a clip by the time anything here sees it. `LiveCapture`
     // says values arrived over time from a running source, which is the property
     // the runtime's intake acts on, and a file has none of it.
-    assert(metadata.kind == motion::MotionSourceKind::Clip);
+    assert(metadata.kind == openstrata::motion::MotionSourceKind::Clip);
     assert(metadata.provider == "example.studio");
     // `protocol` answers *how did these values arrive*, and for a recording that
     // is the format it was read from.
@@ -101,8 +101,8 @@ TestNarrowingIsDeliberate()
 void
 TestEmptyProvenance()
 {
-    const motion::MotionSourceMetadata metadata = CanonicalMetadata(SourceProvenance{});
-    assert(metadata.kind == motion::MotionSourceKind::Clip);
+    const openstrata::motion::SourceMetadata metadata = CanonicalMetadata(SourceProvenance{});
+    assert(metadata.kind == openstrata::motion::MotionSourceKind::Clip);
     assert(metadata.provider.empty());
     assert(metadata.protocol.empty());
     assert(metadata.sourceId.empty());

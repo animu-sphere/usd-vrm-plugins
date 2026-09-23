@@ -930,8 +930,8 @@ BuildProfile(const Node& document, SourceProfile* profile, SourceProfileParseErr
         {
             return false;
         }
-        const std::optional<motion::HumanBone> named = motion::FindHumanBone(bone->scalar);
-        if (!named || !motion::IsValidHumanBone(*named))
+        const std::optional<openstrata::motion::HumanJoint> named = openstrata::motion::FindHumanJoint(bone->scalar);
+        if (!named || !openstrata::motion::IsValidHumanJoint(*named))
         {
             // The one vocabulary whose words are not listed back: fifty-five
             // bone names in a refusal is a wall of text, and the humanoid

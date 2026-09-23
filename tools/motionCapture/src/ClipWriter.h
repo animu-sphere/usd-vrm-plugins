@@ -12,7 +12,7 @@
 // session ever happened.
 #pragma once
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include <map>
 #include <string>
@@ -23,7 +23,7 @@ namespace motionCaptureTool
 // `provenance` is written verbatim into the clip's customData under
 // `capture:*`, so a baked result can be traced back to the session and the
 // intake settings that produced it.
-bool WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation& animation,
+bool WriteSemanticClip(const std::string& outputPath, const openstrata::motion::MotionClip& animation,
                        const std::string& clipName,
                        const std::map<std::string, std::string>& provenance, std::string* error);
 

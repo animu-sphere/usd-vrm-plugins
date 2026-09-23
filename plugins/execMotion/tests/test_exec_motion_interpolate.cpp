@@ -9,8 +9,8 @@
 // snapshot" motion policy §11.4 puts between a live source's buffer and every
 // computation. Four things are measured here that no earlier suite could:
 //
-//   * a **third and fourth** registered value type: `motion::HumanoidAnimation`
-//     crosses as the snapshot, and `motion::PoseSampleResult` -- `motionRuntime`'s
+//   * a **third and fourth** registered value type: `openstrata::motion::MotionClip`
+//     crosses as the snapshot, and `openstrata::motion::PoseSampleResult` -- `motionRuntime`'s
 //     type rather than `motionCore`'s -- comes back as the answer;
 //   * an override of a value key whose type is **not a pose** reaches its
 //     dependents the way the pose-typed one does (the root-motion report §8 left
@@ -24,7 +24,7 @@
 //     node's "nothing" had to be a refusal.
 //
 // Like every suite here but `execMotion_pose`, this executable does not link the
-// plugin. It does link motionRuntime, because `motion::PoseSampleResult` is
+// plugin. It does link motionRuntime, because `openstrata::motion::PoseSampleResult` is
 // declared there -- and it calls none of the library's functions: it reads the
 // result's plain fields, so an expected value cannot come from the code under
 // test.
@@ -49,8 +49,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
-#include <motionRuntime/MotionSource.h>
+#include <motionCore/MotionPose.h>
+#include <motionSampling/MotionSource.h>
 
 #include <algorithm>
 #include <cassert>
@@ -84,7 +84,7 @@ constexpr double kSecond = 1.0;
 constexpr float kClipHeadDegrees = 45.0f;
 const GfVec3f kClipHips(0.0f, 0.5f, 1.0f);
 
-constexpr std::size_t kHead = static_cast<std::size_t>(motion::HumanBone::Head);
+constexpr std::size_t kHead = static_cast<std::size_t>(openstrata::motion::HumanJoint::Head);
 
 bool
 NearlyEqual(double a, double b, double tolerance)
@@ -100,7 +100,7 @@ NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 }
 
 float
-HeadDegrees(const motion::HumanoidPose& pose)
+HeadDegrees(const openstrata::motion::MotionPose& pose)
 {
     const GfQuatf head = pose.localRotations[kHead].GetNormalized();
     const double w = std::min(1.0, std::max(-1.0, double(head.GetReal())));
@@ -109,13 +109,13 @@ HeadDegrees(const motion::HumanoidPose& pose)
 
 // A pose a driver's buffer would hold: the four bones the fixture names, the
 // head turned about +Y, the hips somewhere.
-motion::HumanoidPose
+openstrata::motion::MotionPose
 BufferedPose(double timestamp, float headDegrees, const GfVec3f& hips)
 {
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = timestamp;
-    for (const motion::HumanBone bone : {motion::HumanBone::Hips, motion::HumanBone::Spine,
-                                         motion::HumanBone::Chest, motion::HumanBone::Head})
+    for (const openstrata::motion::HumanJoint bone : {openstrata::motion::HumanJoint::Hips, openstrata::motion::HumanJoint::Spine,
+                                         openstrata::motion::HumanJoint::Chest, openstrata::motion::HumanJoint::Head})
     {
         pose.validRotations.set(static_cast<std::size_t>(bone));
     }
@@ -126,10 +126,10 @@ BufferedPose(double timestamp, float headDegrees, const GfVec3f& hips)
     return pose;
 }
 
-motion::HumanoidAnimation
-HistoryOf(std::vector<motion::HumanoidPose> samples)
+openstrata::motion::MotionClip
+HistoryOf(std::vector<openstrata::motion::MotionPose> samples)
 {
-    motion::HumanoidAnimation history;
+    openstrata::motion::MotionClip history;
     history.samples = std::move(samples);
     if (!history.samples.empty())
     {
@@ -144,7 +144,7 @@ HistoryOf(std::vector<motion::HumanoidPose> samples)
 // every field this suite reads -- the head turns 60 degrees rather than 90 and
 // the hips travel along +X rather than up and forward -- so an answer that came
 // from the clip instead of the snapshot cannot land on the right number.
-motion::HumanoidAnimation
+openstrata::motion::MotionClip
 Bracketing()
 {
     return HistoryOf({BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f)),
@@ -159,7 +159,7 @@ HistoryOverride(const UsdPrim& clip, const VtValue& history)
     return overrides;
 }
 
-motion::PoseSampleResult
+openstrata::motion::PoseSampleResult
 ResultAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
@@ -168,28 +168,28 @@ ResultAt(const ExecUsdCacheView& view, int index)
     // The fourth registered type, and the first that is motionRuntime's. A
     // callback whose declared result type had drifted from what it sets would
     // surface here and nowhere earlier.
-    assert(value.IsHolding<motion::PoseSampleResult>() &&
-           "motion.interpolatePose did not return a motion::PoseSampleResult");
-    return value.UncheckedGet<motion::PoseSampleResult>();
+    assert(value.IsHolding<openstrata::motion::PoseSampleResult>() &&
+           "motion.interpolatePose did not return a openstrata::motion::PoseSampleResult");
+    return value.UncheckedGet<openstrata::motion::PoseSampleResult>();
 }
 
-motion::HumanoidAnimation
+openstrata::motion::MotionClip
 HistoryAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty());
-    assert(value.IsHolding<motion::HumanoidAnimation>() &&
-           "motion.poseHistory did not return a motion::HumanoidAnimation");
-    return value.UncheckedGet<motion::HumanoidAnimation>();
+    assert(value.IsHolding<openstrata::motion::MotionClip>() &&
+           "motion.poseHistory did not return a openstrata::motion::MotionClip");
+    return value.UncheckedGet<openstrata::motion::MotionClip>();
 }
 
-motion::HumanoidPose
+openstrata::motion::MotionPose
 PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty());
-    assert(value.IsHolding<motion::HumanoidPose>());
-    return value.UncheckedGet<motion::HumanoidPose>();
+    assert(value.IsHolding<openstrata::motion::MotionPose>());
+    return value.UncheckedGet<openstrata::motion::MotionPose>();
 }
 
 // A refusal, which in this bundle is **no value at all** (README, "How a
@@ -271,11 +271,11 @@ TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
     assert(interpolateReported && "motion.interpolatePose was NOT reported when the frame moved");
 
     ExecUsdCacheView view = system.Compute(request);
-    const motion::HumanoidPose sampled = PoseAt(view, kSampled);
+    const openstrata::motion::MotionPose sampled = PoseAt(view, kSampled);
     assert(NearlyEqual(sampled.timestamp, kSecond, 1e-12));
 
     // The third registered type, carrying the clip's pose as a history of one.
-    const motion::HumanoidAnimation history = HistoryAt(view, kHistory);
+    const openstrata::motion::MotionClip history = HistoryAt(view, kHistory);
     assert(history.samples.size() == 1);
     assert(history.samples.front() == sampled &&
            "the ordinary history is not the pose the clip states");
@@ -284,8 +284,8 @@ TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
     // And the answer is that pose, sampled at its own instant: no bracket, no
     // hold, no lag. The pass-through `motion.filterPose` has un-overridden,
     // special-cased in neither.
-    const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-    assert(result.status == motion::PoseSampleStatus::Sampled);
+    const openstrata::motion::PoseSampleResult result = ResultAt(view, kInterpolated);
+    assert(result.status == openstrata::motion::PoseSampleStatus::Sampled);
     assert(result.pose && *result.pose == sampled &&
            "un-overridden, motion.interpolatePose is not motion.sampleAnimation");
     assert(result.lag == 0.0);
@@ -309,7 +309,7 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     ExecUsdRequest request = system.BuildRequest(KeysFor(clip));
     assert(request.IsValid());
 
-    const motion::HumanoidAnimation bracketing = Bracketing();
+    const openstrata::motion::MotionClip bracketing = Bracketing();
 
     // ---- a driver's first compute, with its buffer, before any ChangeTime ----
     // The shape a naive driver takes: it has samples, so it hands them over on
@@ -343,10 +343,10 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
         // pose-typed key by the filtering report, and here for a key whose type
         // is a whole history.
         assert(HistoryAt(view, kHistory) == bracketing &&
-               "an override of a HumanoidAnimation-typed key did not reach it");
+               "an override of a MotionClip-typed key did not reach it");
 
-        const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-        assert(result.status == motion::PoseSampleStatus::Sampled);
+        const openstrata::motion::PoseSampleResult result = ResultAt(view, kInterpolated);
+        assert(result.status == openstrata::motion::PoseSampleStatus::Sampled);
         assert(result.pose);
         // Halfway between 0 and 60 degrees about one axis, and halfway from
         // (2, 0, 0) to (4, 0, 0): the snapshot's midpoint, which the clip's
@@ -360,7 +360,7 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
 
         // The sibling that reads the clip is untouched: the history override
         // reaches its dependents and nothing else.
-        const motion::HumanoidPose sampled = PoseAt(view, kSampled);
+        const openstrata::motion::MotionPose sampled = PoseAt(view, kSampled);
         assert(std::abs(HeadDegrees(sampled) - kClipHeadDegrees) < 1e-3f);
         assert(NearlyEqual(sampled.root.worldPosition, kClipHips, 1e-6));
     }
@@ -371,14 +371,14 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     // are the only fields that say the source has stopped -- which is why the
     // node returns them rather than the pose alone.
     {
-        const motion::HumanoidAnimation stopped =
+        const openstrata::motion::MotionClip stopped =
             HistoryOf({BufferedPose(0.5, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f)),
                        BufferedPose(0.9, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f))});
         ExecUsdCacheView view =
             system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue(stopped)));
 
-        const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-        assert(result.status == motion::PoseSampleStatus::Held &&
+        const openstrata::motion::PoseSampleResult result = ResultAt(view, kInterpolated);
+        assert(result.status == openstrata::motion::PoseSampleStatus::Held &&
                "a request past the newest sample was not reported as a hold");
         assert(result.pose);
         assert(std::abs(HeadDegrees(*result.pose) - 60.0f) < 1e-3f);
@@ -396,9 +396,9 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue(motion::HumanoidAnimation{})));
-        const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-        assert(result.status == motion::PoseSampleStatus::Unavailable);
+            request, HistoryOverride(clip, VtValue(openstrata::motion::MotionClip{})));
+        const openstrata::motion::PoseSampleResult result = ResultAt(view, kInterpolated);
+        assert(result.status == openstrata::motion::PoseSampleStatus::Unavailable);
         assert(!result.pose);
         assert(mark.IsClean() && "an empty history posted an error, as though it were a refusal");
     }
@@ -407,7 +407,7 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     // The one refusal the node has. Every value of the result type is an
     // answer, `Unavailable` included, so the refusal is no value at all.
     {
-        const motion::HumanoidAnimation backwards =
+        const openstrata::motion::MotionClip backwards =
             HistoryOf({BufferedPose(kSecond + 0.02, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f)),
                        BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f))});
 
@@ -439,7 +439,7 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
         assert(!mark.IsClean() && "a wrongly typed override was accepted without a word");
         // The coding error names the key and both types -- measured text is
         // "Expected override of value key '/Clip [motion.poseHistory]' to have
-        // type 'motion::HumanoidAnimation'; got 'motion::HumanoidPose'".
+        // type 'openstrata::motion::MotionClip'; got 'openstrata::motion::MotionPose'".
         assert(MarkNames(mark, "motion.poseHistory") &&
                "the wrongly typed override's error does not name the key");
 
@@ -449,8 +449,8 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
                "a wrongly typed override no longer falls back to the key's "
                "ordinary value");
 
-        const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-        assert(result.status == motion::PoseSampleStatus::Sampled);
+        const openstrata::motion::PoseSampleResult result = ResultAt(view, kInterpolated);
+        assert(result.status == openstrata::motion::PoseSampleStatus::Sampled);
         assert(result.pose);
         assert(std::abs(HeadDegrees(*result.pose) - kClipHeadDegrees) < 1e-3f &&
                "a wrongly typed override no longer falls back to the ordinary "
@@ -471,7 +471,7 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
                "an empty override was accepted without a word");
         assert(HistoryAt(view, kHistory).samples.size() == 1 &&
                "an empty override emptied the key rather than being dropped");
-        assert(ResultAt(view, kInterpolated).status == motion::PoseSampleStatus::Sampled);
+        assert(ResultAt(view, kInterpolated).status == openstrata::motion::PoseSampleStatus::Sampled);
         mark.Clear();
     }
 
@@ -481,7 +481,7 @@ TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
         assert(HistoryAt(view, kHistory).samples.size() == 1 &&
                "a history override outlived the ComputeWithOverrides that "
                "supplied it");
-        const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
+        const openstrata::motion::PoseSampleResult result = ResultAt(view, kInterpolated);
         assert(result.pose && std::abs(HeadDegrees(*result.pose) - kClipHeadDegrees) < 1e-3f);
     }
 
@@ -523,8 +523,8 @@ TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
 
     // The previous frame's answer: the four bones at identity, the hips at the
     // origin, one frame earlier.
-    motion::HumanoidPose prior = BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(0.0f));
-    const motion::HumanoidAnimation bracketing = Bracketing();
+    openstrata::motion::MotionPose prior = BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(0.0f));
+    const openstrata::motion::MotionClip bracketing = Bracketing();
 
     ExecUsdValueOverrideVector overrides;
     overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose), VtValue(prior)});
@@ -537,14 +537,14 @@ TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
     assert(HistoryAt(view, 3) == bracketing);
 
     // ...the history reached the sampler of histories...
-    const motion::PoseSampleResult result = ResultAt(view, 0);
+    const openstrata::motion::PoseSampleResult result = ResultAt(view, 0);
     assert(result.pose && std::abs(HeadDegrees(*result.pose) - 30.0f) < 1e-3f);
 
     // ...and the prior reached the filter, which smoothed the **clip** against
     // it: the filtered hips are strictly between the prior's origin and the
     // clip's (0, 0.5, 1), and nowhere near the history's +X. Neither override
     // leaked into the other's dependents.
-    const motion::HumanoidPose filtered = PoseAt(view, 1);
+    const openstrata::motion::MotionPose filtered = PoseAt(view, 1);
     assert(filtered.root.hasPosition);
     assert(filtered.root.worldPosition[2] > 0.0f && filtered.root.worldPosition[2] < kClipHips[2] &&
            "the prior-pose override did not reach motion.filterPose");

@@ -136,29 +136,39 @@ add_subdirectory("libs/vrmContainer")
 find_package(pxr REQUIRED CONFIG)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/UsdVrmOpenUsd.cmake")
 
-# motionCore has only Gf value-type dependencies. Add it after pxr so the
-# composed plain-CMake build never asks pxrConfig.cmake to define its imported
-# targets a second time; standalone builds still resolve pxr themselves.
-# motionRuntime and vrmRetarget stack on top of it in dependency order
-# (WORKSPACE.md §2): motionRuntime -> motionCore, vrmRetarget -> both.
-add_subdirectory("libs/motionCore")
-add_subdirectory("libs/motionRuntime")
+# The generic motion libraries are consumed, not built (MIG-1..MIG-3).
+# `motionCore`, `motionSampling`, `motionRecording`, `motionSource` and
+# `motionBvh` are published `usd-motion-plugins` artifacts, pinned by digest per
+# target in each descriptor that names one; `ost` materializes them and puts
+# their prefixes on CMAKE_PREFIX_PATH before this file is configured, so every
+# `find_package` below resolves against a package rather than a sibling
+# directory. A plain-CMake build resolves them from CMAKE_PREFIX_PATH the same
+# way it resolves OpenUSD.
+#
+# Resolved once here, after pxr, so the composed build never asks any of their
+# configs to define OpenUSD's imported targets a second time. Each member still
+# guards its own `find_package` with `if(NOT TARGET ...)`, which is what keeps a
+# standalone configure of that member working.
+foreach(_consumed IN ITEMS motionCore motionSampling motionRecording)
+    if(NOT TARGET ${_consumed}::${_consumed})
+        find_package(${_consumed} REQUIRED CONFIG)
+    endif()
+endforeach()
+
+# What is still built here from this layer: the VRM retarget, which stacks on
+# the consumed core (WORKSPACE.md §2), and the recorded-file pair.
 add_subdirectory("libs/vrmRetarget")
 
-# The recorded-file half's middle layer: motionSource -> motionCore and nothing
-# else (WORKSPACE.md §2). It is added after motionCore for the same reason
-# motionRuntime is, and it sits beside motionRuntime rather than above it -- live
-# input and recorded files meet at motionCore and nowhere earlier
-# (motion policy §8.3).
+# The recorded-file half stays for now, and the reason is a toolchain fact
+# rather than a design one: `ost` 0.23.2 materializes an external library
+# artifact declared by a library or a plugin descriptor and not one declared
+# only by a tool, and `motion_bvh` is the only consumer these two have left
+# here. They leave with that tool (MIG-3's consuming half), not before.
+#
+# motionSource -> motionCore and nothing else (WORKSPACE.md §2); motionBvh ->
+# motionSource, which is the edge that decides this order. Neither names
+# OpenUSD of its own.
 add_subdirectory("libs/motionSource")
-
-# The recorded-file half's reader, above the layer it hands its extraction to.
-# It used to be added before the OpenUSD resolution above, and that position was
-# a statement rather than a convenience: the syntax layer reads three numbers off
-# an OFFSET line and has no value type to borrow from Gf. It moved here when the
-# extractor took the declared motionBvh -> motionSource edge (WORKSPACE.md §2),
-# which is the arrow this line's position now says out loud. It still names no
-# OpenUSD of its own; what it needs configured first is motionSource.
 add_subdirectory("libs/motionBvh")
 
 # Discover every plugin bundle under plugins/ rather than naming them one by one:
@@ -346,7 +356,7 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
             --vrma "${_unicode_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
             --bvh-corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
             --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion"
-            --trace "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionRuntime/tests/corpus/walk-clean-30hz.trace")
+            --trace "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/traces/walk-clean-30hz.trace")
     # The three file-format bundles as their own suites load them, and the
     # Python runtime the remaining tools load through Gf.
     set_tests_properties(workspace_unicode_paths PROPERTIES

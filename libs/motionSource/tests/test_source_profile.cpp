@@ -65,7 +65,7 @@ using motionSource::UnmappedJointPolicyCount;
 using motionSource::UnmappedJointPolicyName;
 using motionSource::ValidateSourceProfile;
 
-using Bone = motion::HumanBone;
+using Bone = openstrata::motion::HumanJoint;
 
 SourceJoint
 MakeJoint(std::string name, int parent)

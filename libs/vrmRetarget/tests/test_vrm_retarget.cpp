@@ -136,9 +136,9 @@ vrmRetarget::HumanoidMap
 DesignMap(const vrmRetarget::TargetSkeleton& skeleton)
 {
     vrmRetarget::HumanoidMap map;
-    assert(map.SetJointToken(motion::HumanBone::Hips, "Root/Pelvis", skeleton));
-    assert(map.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA", skeleton));
-    assert(map.SetJointToken(motion::HumanBone::Chest, "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::Hips, "Root/Pelvis", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::Spine, "Root/Pelvis/SpineA", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::Chest, "Root/Pelvis/SpineA/ChestA", skeleton));
     return map;
 }
 
@@ -147,10 +147,10 @@ vrmRetarget::SourceRestPose
 DesignSourceRest()
 {
     vrmRetarget::SourceRestPose rest;
-    rest.localTranslations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
+    rest.localTranslations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips)] =
         pxr::GfVec3f(0.0f, 1.0f, 0.0f);
-    rest.SetParent(motion::HumanBone::Spine, motion::HumanBone::Hips);
-    rest.SetParent(motion::HumanBone::Chest, motion::HumanBone::Spine);
+    rest.SetParent(openstrata::motion::HumanJoint::Spine, openstrata::motion::HumanJoint::Hips);
+    rest.SetParent(openstrata::motion::HumanJoint::Chest, openstrata::motion::HumanJoint::Spine);
     return rest;
 }
 
@@ -167,26 +167,26 @@ TestAMissingOptionalBoneIsNotAMissingBone()
 {
     using Code = vrmRetarget::RetargetDiagnosticCode;
     vrmRetarget::TargetSkeleton skeleton;
-    for (const motion::HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    for (const openstrata::motion::HumanJoint bone : vrmRetarget::HumanoidMap::GetRequiredBones())
     {
         vrmRetarget::TargetJoint joint;
-        joint.token = std::string(motion::HumanBoneName(bone));
+        joint.token = std::string(openstrata::motion::HumanJointName(bone));
         skeleton.AddJoint(joint);
     }
     skeleton.ResolveParentsFromTokens();
     vrmRetarget::HumanoidMap map;
-    for (const motion::HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    for (const openstrata::motion::HumanJoint bone : vrmRetarget::HumanoidMap::GetRequiredBones())
     {
-        assert(map.SetJointToken(bone, std::string(motion::HumanBoneName(bone)), skeleton));
+        assert(map.SetJointToken(bone, std::string(openstrata::motion::HumanJointName(bone)), skeleton));
     }
 
     const vrmRetarget::RetargetDiagnostics rig = vrmRetarget::DiagnoseRig(skeleton, map);
     assert(rig.reported.empty() && "a rig with every required bone reported something");
 
-    motion::HumanoidPose pose;
-    for (const motion::HumanBone bone :
-         {motion::HumanBone::Hips, motion::HumanBone::LeftEye, motion::HumanBone::Jaw,
-          motion::HumanBone::LeftIndexProximal})
+    openstrata::motion::MotionPose pose;
+    for (const openstrata::motion::HumanJoint bone :
+         {openstrata::motion::HumanJoint::Hips, openstrata::motion::HumanJoint::LeftEye, openstrata::motion::HumanJoint::Jaw,
+          openstrata::motion::HumanJoint::LeftIndexProximal})
     {
         pose.localRotations[static_cast<std::size_t>(bone)] = Rotation(kAxisX, 10.0f);
         pose.validRotations.set(static_cast<std::size_t>(bone));
@@ -228,20 +228,20 @@ TestAHierarchyMismatchCarriesEachBoneRelativeToItsOwnParent()
     skeleton.ResolveParentsFromTokens();
 
     vrmRetarget::HumanoidMap map;
-    assert(map.SetJointToken(motion::HumanBone::Chest, "Chest", skeleton));
-    assert(map.SetJointToken(motion::HumanBone::Neck, "Chest/Collar/Neck", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::Chest, "Chest", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::Neck, "Chest/Collar/Neck", skeleton));
 
     vrmRetarget::SourceRestPose sourceRest;
-    sourceRest.SetParent(motion::HumanBone::UpperChest, motion::HumanBone::Chest);
-    sourceRest.SetParent(motion::HumanBone::Neck, motion::HumanBone::UpperChest);
+    sourceRest.SetParent(openstrata::motion::HumanJoint::UpperChest, openstrata::motion::HumanJoint::Chest);
+    sourceRest.SetParent(openstrata::motion::HumanJoint::Neck, openstrata::motion::HumanJoint::UpperChest);
 
     const pxr::GfQuatf a = Rotation(kAxisY, 20.0f);
     const pxr::GfQuatf b = Rotation(kAxisX, 35.0f);
     const pxr::GfQuatf c = Rotation(kAxisZ, -25.0f);
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     for (const auto& [bone, rotation] :
-         {std::pair{motion::HumanBone::Chest, a}, std::pair{motion::HumanBone::UpperChest, b},
-          std::pair{motion::HumanBone::Neck, c}})
+         {std::pair{openstrata::motion::HumanJoint::Chest, a}, std::pair{openstrata::motion::HumanJoint::UpperChest, b},
+          std::pair{openstrata::motion::HumanJoint::Neck, c}})
     {
         pose.localRotations[static_cast<std::size_t>(bone)] = rotation;
         pose.validRotations.set(static_cast<std::size_t>(bone));
@@ -282,15 +282,15 @@ TestADuplicateMappingKeepsTheLaterDrivenBone()
     using Code = vrmRetarget::RetargetDiagnosticCode;
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::HumanoidMap map = DesignMap(skeleton);
-    assert(map.SetJointToken(motion::HumanBone::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
 
-    motion::HumanoidPose pose;
-    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Chest)] =
+    openstrata::motion::MotionPose pose;
+    pose.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Chest)] =
         Rotation(kAxisX, 15.0f);
-    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Chest));
-    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::UpperChest)] =
+    pose.validRotations.set(static_cast<std::size_t>(openstrata::motion::HumanJoint::Chest));
+    pose.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::UpperChest)] =
         Rotation(kAxisZ, 40.0f);
-    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::UpperChest));
+    pose.validRotations.set(static_cast<std::size_t>(openstrata::motion::HumanJoint::UpperChest));
 
     vrmRetarget::RetargetOptions options;
     options.rootMotion.mode = vrmRetarget::RootMotionMode::Ignore;
@@ -300,7 +300,7 @@ TestADuplicateMappingKeepsTheLaterDrivenBone()
     assert(SameOrientation(both.rotations[3], Rotation(kAxisZ, 40.0f)));
 
     // Driven by the earlier bone alone, the joint follows it.
-    pose.validRotations.reset(static_cast<std::size_t>(motion::HumanBone::UpperChest));
+    pose.validRotations.reset(static_cast<std::size_t>(openstrata::motion::HumanJoint::UpperChest));
     const vrmRetarget::RetargetedPose chestOnly = retargeter.Retarget(pose);
     assert(SameOrientation(chestOnly.rotations[3], Rotation(kAxisX, 15.0f)));
 
@@ -339,21 +339,21 @@ TestHumanoidMapReportsGapsAndCollisions()
     vrmRetarget::HumanoidMap map = DesignMap(skeleton);
 
     assert(map.GetMappedCount() == 3);
-    assert(map.IsMapped(motion::HumanBone::Hips));
-    assert(!map.IsMapped(motion::HumanBone::Head));
-    assert(map.GetJointIndex(motion::HumanBone::Head) == vrmRetarget::HumanoidMap::kUnmapped);
+    assert(map.IsMapped(openstrata::motion::HumanJoint::Hips));
+    assert(!map.IsMapped(openstrata::motion::HumanJoint::Head));
+    assert(map.GetJointIndex(openstrata::motion::HumanJoint::Head) == vrmRetarget::HumanoidMap::kUnmapped);
 
     // An unknown token leaves the bone unmapped instead of guessing.
-    assert(!map.SetJointToken(motion::HumanBone::Head, "NoSuchJoint", skeleton));
-    assert(!map.IsMapped(motion::HumanBone::Head));
+    assert(!map.SetJointToken(openstrata::motion::HumanJoint::Head, "NoSuchJoint", skeleton));
+    assert(!map.IsMapped(openstrata::motion::HumanJoint::Head));
 
-    const std::vector<motion::HumanBone> missing = map.FindMissingRequiredBones();
+    const std::vector<openstrata::motion::HumanJoint> missing = map.FindMissingRequiredBones();
     assert(!missing.empty());
-    assert(std::find(missing.begin(), missing.end(), motion::HumanBone::Head) != missing.end());
-    assert(std::find(missing.begin(), missing.end(), motion::HumanBone::Hips) == missing.end());
+    assert(std::find(missing.begin(), missing.end(), openstrata::motion::HumanJoint::Head) != missing.end());
+    assert(std::find(missing.begin(), missing.end(), openstrata::motion::HumanJoint::Hips) == missing.end());
 
     assert(map.FindDuplicateJointIndices().empty());
-    assert(map.SetJointToken(motion::HumanBone::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
     const std::vector<int> duplicates = map.FindDuplicateJointIndices();
     assert(duplicates.size() == 1 && duplicates[0] == 3);
 }
@@ -380,7 +380,7 @@ TestRigValuesCompareExactly()
     assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
 
     // A rest rotation and its negation rest identically and are different
-    // values -- the conservative answer, and HumanoidPose's.
+    // values -- the conservative answer, and MotionPose's.
     joints = skeleton.GetJoints();
     joints[1].restRotation = pxr::GfQuatf(-1.0f, pxr::GfVec3f(0.0f));
     assert(SameOrientation(joints[1].restRotation, skeleton.GetJoints()[1].restRotation));
@@ -397,13 +397,13 @@ TestRigValuesCompareExactly()
     assert(map != vrmRetarget::HumanoidMap());
 
     vrmRetarget::HumanoidMap moved = DesignMap(skeleton);
-    assert(moved.SetJointToken(motion::HumanBone::Chest, "Root/Pelvis/SpineA", skeleton));
+    assert(moved.SetJointToken(openstrata::motion::HumanJoint::Chest, "Root/Pelvis/SpineA", skeleton));
     assert(moved != map);
 
     // A rejected binding of a bone that was never mapped leaves the map as it
     // was, and so equal to it.
     vrmRetarget::HumanoidMap rejected = DesignMap(skeleton);
-    assert(!rejected.SetJointToken(motion::HumanBone::Head, "NoSuchJoint", skeleton));
+    assert(!rejected.SetJointToken(openstrata::motion::HumanJoint::Head, "NoSuchJoint", skeleton));
     assert(rejected == map);
 
     // The correction, for `vrm.computeRestPoseCorrection`: a rig whose hips
@@ -413,7 +413,7 @@ TestRigValuesCompareExactly()
     const vrmRetarget::TargetSkeleton turned(turnedJoints);
     const vrmRetarget::RestPoseCorrection correction =
         vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned, map);
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
     assert(!correction.identity[hips]);
     assert(correction == vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned, map));
     assert(correction != vrmRetarget::RestPoseCorrection());
@@ -436,13 +436,13 @@ TestRigValuesCompareExactly()
     changed.pre[hips] =
         pxr::GfQuatf(-correction.pre[hips].GetReal(), -correction.pre[hips].GetImaginary());
     const pxr::GfQuatf sample = Rotation(kAxisX, 20.0f);
-    assert(SameOrientation(changed.Apply(motion::HumanBone::Hips, sample),
-                           correction.Apply(motion::HumanBone::Hips, sample)));
+    assert(SameOrientation(changed.Apply(openstrata::motion::HumanJoint::Hips, sample),
+                           correction.Apply(openstrata::motion::HumanJoint::Hips, sample)));
     assert(changed != correction);
 
     // The retargeted pose, for `vrm.humanoidRetarget`: one sample expanded
     // onto the turned rig, so its arrays are not all rest.
-    motion::HumanoidPose source;
+    openstrata::motion::MotionPose source;
     source.timestamp = 0.5;
     source.localRotations[hips] = Rotation(kAxisX, 20.0f);
     source.validRotations.set(hips);
@@ -530,16 +530,16 @@ TestARejectedRebindingUnmapsTheBone()
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
 
     vrmRetarget::HumanoidMap byToken = DesignMap(skeleton);
-    assert(byToken.IsMapped(motion::HumanBone::Spine));
-    assert(!byToken.SetJointToken(motion::HumanBone::Spine, "NoSuchJoint", skeleton));
-    assert(!byToken.IsMapped(motion::HumanBone::Spine) &&
+    assert(byToken.IsMapped(openstrata::motion::HumanJoint::Spine));
+    assert(!byToken.SetJointToken(openstrata::motion::HumanJoint::Spine, "NoSuchJoint", skeleton));
+    assert(!byToken.IsMapped(openstrata::motion::HumanJoint::Spine) &&
            "a failed token lookup left the earlier binding standing");
-    assert(byToken.GetJointIndex(motion::HumanBone::Spine) == vrmRetarget::HumanoidMap::kUnmapped);
+    assert(byToken.GetJointIndex(openstrata::motion::HumanJoint::Spine) == vrmRetarget::HumanoidMap::kUnmapped);
     assert(byToken.GetMappedCount() == 2);
 
     vrmRetarget::HumanoidMap byIndex = DesignMap(skeleton);
-    assert(!byIndex.SetJointIndex(motion::HumanBone::Spine, 99, skeleton.GetSize()));
-    assert(!byIndex.IsMapped(motion::HumanBone::Spine));
+    assert(!byIndex.SetJointIndex(openstrata::motion::HumanJoint::Spine, 99, skeleton.GetSize()));
+    assert(!byIndex.IsMapped(openstrata::motion::HumanJoint::Spine));
 
     // Both routes land on the same map.
     assert(byToken == byIndex);
@@ -554,8 +554,8 @@ TestIdentityRestPosesPassRotationsThrough()
         vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), skeleton, map);
 
     const pxr::GfQuatf sample = Rotation(kAxisY, 90.0f);
-    assert(SameOrientation(correction.Apply(motion::HumanBone::Hips, sample), sample));
-    assert(correction.identity[static_cast<std::size_t>(motion::HumanBone::Hips)]);
+    assert(SameOrientation(correction.Apply(openstrata::motion::HumanJoint::Hips, sample), sample));
+    assert(correction.identity[static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips)]);
 }
 
 // The correction's contract is that the bone's world rotation *away from its
@@ -581,21 +581,21 @@ TestRestPoseCorrectionPreservesTheWorldDelta()
     skeleton.ResolveParentsFromTokens();
 
     vrmRetarget::SourceRestPose sourceRestPose;
-    sourceRestPose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
+    sourceRestPose.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips)] =
         sourceParentRest;
-    sourceRestPose.localRotations[static_cast<std::size_t>(motion::HumanBone::Spine)] = sourceRest;
-    sourceRestPose.SetParent(motion::HumanBone::Spine, motion::HumanBone::Hips);
+    sourceRestPose.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine)] = sourceRest;
+    sourceRestPose.SetParent(openstrata::motion::HumanJoint::Spine, openstrata::motion::HumanJoint::Hips);
 
     vrmRetarget::HumanoidMap map;
-    map.SetJointToken(motion::HumanBone::Hips, "Hips", skeleton);
-    map.SetJointToken(motion::HumanBone::Spine, "Hips/Spine", skeleton);
+    map.SetJointToken(openstrata::motion::HumanJoint::Hips, "Hips", skeleton);
+    map.SetJointToken(openstrata::motion::HumanJoint::Spine, "Hips/Spine", skeleton);
 
     const vrmRetarget::RestPoseCorrection correction =
         vrmRetarget::ComputeRestPoseCorrection(sourceRestPose, skeleton, map);
-    assert(!correction.identity[static_cast<std::size_t>(motion::HumanBone::Spine)]);
+    assert(!correction.identity[static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine)]);
 
     const pxr::GfQuatf animated = Rotation(kAxisY, 42.0f) * sourceRest;
-    const pxr::GfQuatf retargeted = correction.Apply(motion::HumanBone::Spine, animated);
+    const pxr::GfQuatf retargeted = correction.Apply(openstrata::motion::HumanJoint::Spine, animated);
 
     // World delta = worldAnimated * worldRest^-1, with world = parent * local
     // (OpenUSD composition: `a * b` applies `b` first).
@@ -606,7 +606,7 @@ TestRestPoseCorrectionPreservesTheWorldDelta()
     assert(SameOrientation(sourceDelta, targetDelta));
 
     // A sample sitting at the source rest must land exactly on the target rest.
-    assert(SameOrientation(correction.Apply(motion::HumanBone::Spine, sourceRest), targetRest));
+    assert(SameOrientation(correction.Apply(openstrata::motion::HumanJoint::Spine, sourceRest), targetRest));
 }
 
 // The same invariant one level deeper. A grandparent's rest rotation reaches
@@ -638,31 +638,31 @@ TestRestPoseCorrectionAccountsForTheWholeAncestorChain()
     skeleton.ResolveParentsFromTokens();
 
     vrmRetarget::SourceRestPose sourceRest;
-    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = sourceHipsRest;
-    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Spine)] = sourceSpineRest;
-    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Chest)] = sourceChestRest;
-    sourceRest.SetParent(motion::HumanBone::Spine, motion::HumanBone::Hips);
-    sourceRest.SetParent(motion::HumanBone::Chest, motion::HumanBone::Spine);
+    sourceRest.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips)] = sourceHipsRest;
+    sourceRest.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine)] = sourceSpineRest;
+    sourceRest.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Chest)] = sourceChestRest;
+    sourceRest.SetParent(openstrata::motion::HumanJoint::Spine, openstrata::motion::HumanJoint::Hips);
+    sourceRest.SetParent(openstrata::motion::HumanJoint::Chest, openstrata::motion::HumanJoint::Spine);
 
     // Both accumulators compose root-first.
     assert(SameOrientation(skeleton.GetWorldRestRotation(2),
                            targetHipsRest * targetSpineRest * targetChestRest));
-    assert(SameOrientation(sourceRest.GetWorldRestRotation(motion::HumanBone::Chest),
+    assert(SameOrientation(sourceRest.GetWorldRestRotation(openstrata::motion::HumanJoint::Chest),
                            sourceHipsRest * sourceSpineRest * sourceChestRest));
     // A root joint's absent parent contributes identity, not a dangling index.
     assert(SameOrientation(skeleton.GetWorldRestRotation(vrmRetarget::TargetSkeleton::kNoParent),
                            pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 
     vrmRetarget::HumanoidMap map;
-    map.SetJointToken(motion::HumanBone::Hips, "Hips", skeleton);
-    map.SetJointToken(motion::HumanBone::Spine, "Hips/Spine", skeleton);
-    map.SetJointToken(motion::HumanBone::Chest, "Hips/Spine/Chest", skeleton);
+    map.SetJointToken(openstrata::motion::HumanJoint::Hips, "Hips", skeleton);
+    map.SetJointToken(openstrata::motion::HumanJoint::Spine, "Hips/Spine", skeleton);
+    map.SetJointToken(openstrata::motion::HumanJoint::Chest, "Hips/Spine/Chest", skeleton);
 
     const vrmRetarget::RestPoseCorrection correction =
         vrmRetarget::ComputeRestPoseCorrection(sourceRest, skeleton, map);
 
     const pxr::GfQuatf animated = Rotation(kAxisY, 42.0f) * sourceChestRest;
-    const pxr::GfQuatf retargeted = correction.Apply(motion::HumanBone::Chest, animated);
+    const pxr::GfQuatf retargeted = correction.Apply(openstrata::motion::HumanJoint::Chest, animated);
 
     const pxr::GfQuatf sourceParentWorld = sourceHipsRest * sourceSpineRest;
     const pxr::GfQuatf targetParentWorld = targetHipsRest * targetSpineRest;
@@ -673,7 +673,7 @@ TestRestPoseCorrectionAccountsForTheWholeAncestorChain()
     assert(SameOrientation(sourceDelta, targetDelta));
 
     // And the rest pose itself still maps onto the target's rest pose.
-    assert(SameOrientation(correction.Apply(motion::HumanBone::Chest, sourceChestRest),
+    assert(SameOrientation(correction.Apply(openstrata::motion::HumanJoint::Chest, sourceChestRest),
                            targetChestRest));
 }
 
@@ -709,19 +709,19 @@ TestRootMotionModes()
                     pxr::GfVec3f(0.0f, 1.6f, 0.5f)));
 }
 
-motion::HumanoidAnimation
+openstrata::motion::MotionClip
 DesignClip()
 {
-    motion::HumanoidAnimation animation;
+    openstrata::motion::MotionClip animation;
     animation.startTime = 0.0;
     animation.endTime = 1.0;
     animation.nominalFrameRate = 30.0;
 
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
-    const auto chest = static_cast<std::size_t>(motion::HumanBone::Chest);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
+    const auto chest = static_cast<std::size_t>(openstrata::motion::HumanJoint::Chest);
 
-    motion::HumanoidPose first;
+    openstrata::motion::MotionPose first;
     first.timestamp = 0.0;
     first.validRotations.set(hips);
     first.validRotations.set(spine);
@@ -730,7 +730,7 @@ DesignClip()
     first.root.hasPosition = true;
     animation.samples.push_back(first);
 
-    motion::HumanoidPose last;
+    openstrata::motion::MotionPose last;
     last.timestamp = 1.0;
     last.localRotations[hips] = Rotation(kAxisY, 90.0f);
     last.localRotations[chest] = Rotation(kAxisX, 90.0f);
@@ -799,7 +799,7 @@ TestUnmappedJointsStayAtRestAndAreReported()
     vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::HumanoidMap map;
     // Bind hips only: the clip also drives spine and chest.
-    map.SetJointToken(motion::HumanBone::Hips, "Root/Pelvis", skeleton);
+    map.SetJointToken(openstrata::motion::HumanJoint::Hips, "Root/Pelvis", skeleton);
 
     const vrmRetarget::PoseRetargeter retargeter(skeleton, map, DesignSourceRest());
     vrmRetarget::RetargetDiagnostics diagnostics;
@@ -970,7 +970,7 @@ TestTheRigIsDiagnosedBeforeAnyClip()
     using Code = vrmRetarget::RetargetDiagnosticCode;
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::HumanoidMap map = DesignMap(skeleton);
-    assert(map.SetJointToken(motion::HumanBone::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(openstrata::motion::HumanJoint::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
 
     const vrmRetarget::RetargetDiagnostics rig = vrmRetarget::DiagnoseRig(skeleton, map);
     assert(rig.Subjects(Code::DuplicateTarget) ==
@@ -995,7 +995,7 @@ TestTheRigIsDiagnosedBeforeAnyClip()
     // No hips: under 'hips' the root lands nowhere, and the detail says so;
     // under 'ignore' the same bone is only a missing bone.
     vrmRetarget::HumanoidMap noHips;
-    assert(noHips.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA", skeleton));
+    assert(noHips.SetJointToken(openstrata::motion::HumanJoint::Spine, "Root/Pelvis/SpineA", skeleton));
     const vrmRetarget::RetargetDiagnostics underHips = vrmRetarget::DiagnoseRig(skeleton, noHips);
     assert(underHips.reported.front().subject == "hips");
     assert(underHips.reported.front().detail.find("root motion was dropped") != std::string::npos);
@@ -1022,8 +1022,8 @@ TestAClipReportsTheRigThenWhatItDrives()
     assert(clip == vrmRetarget::DiagnoseRig(skeleton, map));
 
     vrmRetarget::RetargetDiagnostics perPose = vrmRetarget::DiagnoseRig(skeleton, map);
-    const motion::HumanoidAnimation animation = DesignClip();
-    for (const motion::HumanoidPose& pose : animation.samples)
+    const openstrata::motion::MotionClip animation = DesignClip();
+    for (const openstrata::motion::MotionPose& pose : animation.samples)
     {
         retargeter.Retarget(pose, &perPose);
     }
@@ -1041,8 +1041,8 @@ TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot()
     using Code = vrmRetarget::RetargetDiagnosticCode;
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::HumanoidMap foreign = DesignMap(skeleton);
-    assert(foreign.SetJointIndex(motion::HumanBone::Hips, 7, 10));
-    assert(foreign.IsMapped(motion::HumanBone::Hips));
+    assert(foreign.SetJointIndex(openstrata::motion::HumanJoint::Hips, 7, 10));
+    assert(foreign.IsMapped(openstrata::motion::HumanJoint::Hips));
 
     const vrmRetarget::RetargetDiagnostics rig = vrmRetarget::DiagnoseRig(skeleton, foreign);
     assert(rig.reported.front().code == Code::MissingRequiredBone);
@@ -1062,8 +1062,8 @@ TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot()
 
     // One pose at a time reaches the same single report.
     vrmRetarget::RetargetDiagnostics perPose;
-    const motion::HumanoidAnimation animation = DesignClip();
-    for (const motion::HumanoidPose& pose : animation.samples)
+    const openstrata::motion::MotionClip animation = DesignClip();
+    for (const openstrata::motion::MotionPose& pose : animation.samples)
     {
         retargeter.Retarget(pose, &perPose);
     }
@@ -1078,8 +1078,8 @@ TestABoneDrivenOnlyLaterIsStillReported()
 {
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton), DesignSourceRest());
-    motion::HumanoidAnimation animation = DesignClip();
-    animation.samples.back().validRotations.set(static_cast<std::size_t>(motion::HumanBone::Jaw));
+    openstrata::motion::MotionClip animation = DesignClip();
+    animation.samples.back().validRotations.set(static_cast<std::size_t>(openstrata::motion::HumanJoint::Jaw));
 
     vrmRetarget::RetargetDiagnostics diagnostics;
     retargeter.Retarget(animation, &diagnostics);
@@ -1117,10 +1117,10 @@ DesignExpressionRig()
     return rig;
 }
 
-motion::ExpressionWeights
+openstrata::motion::MotionChannelSet
 Weights(std::initializer_list<std::pair<const char*, float>> entries)
 {
-    motion::ExpressionWeights weights;
+    openstrata::motion::MotionChannelSet weights;
     for (const auto& entry : entries)
     {
         weights.Set(entry.first, entry.second);
@@ -1207,7 +1207,7 @@ TestReportedZeroIsAuthoredAndUnreportedIsAbsent()
     }
 
     // Nothing reported resolves to nothing at all.
-    assert(resolver.Resolve(motion::ExpressionWeights()).IsEmpty());
+    assert(resolver.Resolve(openstrata::motion::MotionChannelSet()).IsEmpty());
 }
 
 void
@@ -1308,12 +1308,12 @@ TestAnUnresolvedNameIsNamedOnceForAWholeClip()
 {
     const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
 
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = 0.5;
-    pose.expressions.Set("happy", 0.25f);
+    pose.channels.Set("happy", 0.25f);
     // A custom name this avatar does not declare. The clip is not wrong -- it
     // was authored against no avatar in particular -- but the loss is named.
-    pose.expressions.Set("照れ", 1.0f);
+    pose.channels.Set("照れ", 1.0f);
 
     vrmRetarget::ExpressionDiagnostics diagnostics;
     for (int sample = 0; sample < 3; ++sample)
@@ -2277,7 +2277,7 @@ void
 TestThePoseOverloadCarriesTheSampleThrough()
 {
     const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = 1.25;
     assert(!pose.lookAtTarget);
 

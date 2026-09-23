@@ -92,10 +92,10 @@ unifying *that* would put a transport shape into a library that must not have
 one:
 
 ```text
-Recorded:   SourceAnimation          -> motion::HumanoidAnimation
-Live:       timestamp + HumanoidPose
+Recorded:   SourceAnimation          -> motion::MotionClip
+Live:       timestamp + MotionPose
 Tracker:    timestamp + TrackerFrame
-Generator:  request/context          -> HumanoidAnimation or a pose stream
+Generator:  request/context          -> MotionClip or a pose stream
 ```
 
 - ⬜ State each crossing as a contract, written from the three that are
@@ -115,7 +115,7 @@ tests along its own path. There is no single test that says *the same thing*
 happens to all of them.
 
 ```text
-source → canonical HumanoidAnimation → vrmRetarget → UsdSkelAnimation → validation
+source → canonical MotionClip → vrmRetarget → UsdSkelAnimation → validation
 ```
 
 - ⬜ One integration test, three sources: a `.vrma` clip, a BVH export, and a

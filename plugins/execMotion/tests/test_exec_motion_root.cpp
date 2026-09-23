@@ -5,24 +5,24 @@
 // three settings rather than a number.
 //
 // What it answers is where the body is, under the intake policy the clip
-// states -- `motion::RootMotionIntake`, the library's own enum, spelled as a
+// states -- `openstrata::motion::RootMotionIntake`, the library's own enum, spelled as a
 // token. Three things are measured here that no earlier suite could:
 //
 //   * a **second registered value type** in one bundle: one request returns a
-//     `motion::HumanoidPose` and a `motion::RootMotion` side by side, and the
+//     `openstrata::motion::MotionPose` and a `openstrata::motion::RootMotion` side by side, and the
 //     dependent value key is a different type from the input it reads;
 //   * a **derived velocity** -- a number that exists nowhere in the clip, is
 //     the difference between two instants, and reaches the graph through the
 //     same `motion.priorPose` override the filter takes; and
 //   * **absent and unrecognized are different answers**: a clip stating no
-//     policy gets `motion::LiveCaptureConfig`'s own default, and a clip stating
+//     policy gets `openstrata::motion::LiveCaptureConfig`'s own default, and a clip stating
 //     a token that names no policy is refused. The rate is refused when absent,
 //     the filter's cutoff is defaulted when absent, and this attribute is the
 //     one that does both -- which is what makes the rule "what an absent value
 //     costs" rather than "what the node feels like".
 //
 // And a refusal here carries **no value at all**, which this node is the reason
-// for. A cleared `motion::RootMotion` is `ignore`'s own legitimate answer, bit
+// for. A cleared `openstrata::motion::RootMotion` is `ignore`'s own legitimate answer, bit
 // for bit, so a refusal that produced one would hand a misspelled `passthrough`
 // the behaviour of a deliberate `ignore` -- indistinguishable to anyone not
 // reading `TfError`s. The `ignore` block and the unrecognized-token block sit
@@ -52,7 +52,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 
 #include <cassert>
 #include <cmath>
@@ -104,7 +104,7 @@ NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
            NearlyEqual(a[2], b[2], tolerance);
 }
 
-motion::RootMotion
+openstrata::motion::RootMotion
 RootAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
@@ -114,15 +114,15 @@ RootAt(const ExecUsdCacheView& view, int index)
     // returned a pose here would mean the computation's declared result type
     // and its callback had drifted apart, which is not a thing the compiler
     // catches on the far side of a VtValue.
-    assert(value.IsHolding<motion::RootMotion>() &&
-           "motion.extractRootMotion did not return a motion::RootMotion");
-    return value.UncheckedGet<motion::RootMotion>();
+    assert(value.IsHolding<openstrata::motion::RootMotion>() &&
+           "motion.extractRootMotion did not return a openstrata::motion::RootMotion");
+    return value.UncheckedGet<openstrata::motion::RootMotion>();
 }
 
 // A refusal, which in this bundle is **no value at all**.
 //
 // The distinction this asserts is the whole of the review finding that produced
-// it: a cleared `motion::RootMotion` is `ignore`'s own legitimate answer, bit
+// it: a cleared `openstrata::motion::RootMotion` is `ignore`'s own legitimate answer, bit
 // for bit, so a refusal that produced one would be indistinguishable from a
 // deliberate "this clip does not place the body" for anyone not reading
 // `TfError`s. An empty `VtValue` is the one shape no computation here ever
@@ -133,30 +133,30 @@ AssertRefused(const ExecUsdCacheView& view, int index)
     const VtValue value = view.Get(index);
     assert(value.IsEmpty() && "a refusal came back carrying a value, which puts it back where a "
                               "consumer cannot tell it from an answer");
-    assert(!value.IsHolding<motion::RootMotion>());
+    assert(!value.IsHolding<openstrata::motion::RootMotion>());
 }
 
-motion::HumanoidPose
+openstrata::motion::MotionPose
 PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty());
-    assert(value.IsHolding<motion::HumanoidPose>() &&
+    assert(value.IsHolding<openstrata::motion::MotionPose>() &&
            "the canonical aggregate did not survive the boundary");
-    return value.UncheckedGet<motion::HumanoidPose>();
+    return value.UncheckedGet<openstrata::motion::MotionPose>();
 }
 
 // The pose a driver would hand back as "the previous frame's answer": the four
 // bones the fixtures name, at identity, with the hips at the origin. So the
 // sampled pose at frame 50 is a known distance away from it, and the velocity
 // between them is a number this suite can write out.
-motion::HumanoidPose
+openstrata::motion::MotionPose
 PriorPose(double timestamp)
 {
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = timestamp;
-    for (const motion::HumanBone bone : {motion::HumanBone::Hips, motion::HumanBone::Spine,
-                                         motion::HumanBone::Chest, motion::HumanBone::Head})
+    for (const openstrata::motion::HumanJoint bone : {openstrata::motion::HumanJoint::Hips, openstrata::motion::HumanJoint::Spine,
+                                         openstrata::motion::HumanJoint::Chest, openstrata::motion::HumanJoint::Head})
     {
         pose.validRotations.set(static_cast<std::size_t>(bone));
     }
@@ -166,7 +166,7 @@ PriorPose(double timestamp)
 }
 
 ExecUsdValueOverrideVector
-PriorOverride(const UsdPrim& clip, const motion::HumanoidPose& pose)
+PriorOverride(const UsdPrim& clip, const openstrata::motion::MotionPose& pose)
 {
     ExecUsdValueOverrideVector overrides;
     overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose), VtValue(pose)});
@@ -238,10 +238,10 @@ TestAClipWithAPolicy(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         // A cleared root, and an **answer** rather than a refusal: `RootAt`
         // requires the value to be present. This is the third way a cleared
-        // `motion::RootMotion` legitimately arises -- beside `ignore` and a
+        // `openstrata::motion::RootMotion` legitimately arises -- beside `ignore` and a
         // pose that states no position -- which is why a refusal cannot be
         // spelled that way.
-        assert(RootAt(view, kRoot) == motion::RootMotion{} &&
+        assert(RootAt(view, kRoot) == openstrata::motion::RootMotion{} &&
                "a pose with no root produced a root anyway");
     }
 
@@ -263,8 +263,8 @@ TestAClipWithAPolicy(const std::string& fixture)
     // The same shape the filter has un-overridden, and special-cased nowhere.
     {
         ExecUsdCacheView view = system.Compute(request);
-        const motion::HumanoidPose sampled = PoseAt(view, kSampled);
-        const motion::RootMotion root = RootAt(view, kRoot);
+        const openstrata::motion::MotionPose sampled = PoseAt(view, kSampled);
+        const openstrata::motion::RootMotion root = RootAt(view, kRoot);
 
         // Both registered types, out of one request, side by side.
         assert(NearlyEqual(sampled.timestamp, kSecond, 1e-12));
@@ -279,17 +279,17 @@ TestAClipWithAPolicy(const std::string& fixture)
 
     // ---- overridden, passthrough still derives nothing ---------------------
     // The negative half of the pair, and the one that says the *clip's* token
-    // reached `motion::RootMotionIntake`: the same two poses under the
+    // reached `openstrata::motion::RootMotionIntake`: the same two poses under the
     // library's default produce a velocity, asserted in the no-policy suite
     // below. A bundle that ignored the attribute would fail one of the two
     // whichever way it defaulted.
-    const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
+    const openstrata::motion::MotionPose prior = PriorPose(kSecond - kStep);
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
         assert(PoseAt(view, kPrior) == prior && "the override did not reach motion.priorPose");
 
-        const motion::RootMotion root = RootAt(view, kRoot);
+        const openstrata::motion::RootMotion root = RootAt(view, kRoot);
         assert(root.hasPosition);
         assert(NearlyEqual(root.worldPosition, kHipsAtFrame50, 1e-6));
         assert(!root.hasLinearVelocity &&
@@ -306,7 +306,7 @@ TestAClipWithAPolicy(const std::string& fixture)
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("deriveVelocity")));
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
-        const motion::RootMotion root = RootAt(view, kRoot);
+        const openstrata::motion::RootMotion root = RootAt(view, kRoot);
 
         assert(root.hasLinearVelocity &&
                "deriveVelocity derived nothing, or the authored token never "
@@ -325,7 +325,7 @@ TestAClipWithAPolicy(const std::string& fixture)
     }
 
     // ---- ignore, which is the policy that answers with nothing -------------
-    // A cleared `motion::RootMotion` rather than a zeroed position: every
+    // A cleared `openstrata::motion::RootMotion` rather than a zeroed position: every
     // presence flag is false, which is what "this clip's placement is not the
     // capture's to decide" looks like downstream. A zero position with
     // `hasPosition` set would put the avatar at the origin instead.
@@ -338,8 +338,8 @@ TestAClipWithAPolicy(const std::string& fixture)
         // **answer**, and it stays one. The block below states the same clip's
         // refusal, and the pair is what makes the two distinguishable rather
         // than merely differently commented.
-        const motion::RootMotion root = RootAt(view, kRoot);
-        assert(root == motion::RootMotion{} && "ignore left something of the root behind");
+        const openstrata::motion::RootMotion root = RootAt(view, kRoot);
+        assert(root == openstrata::motion::RootMotion{} && "ignore left something of the root behind");
         assert(!root.hasPosition && "ignore zeroed the position instead of clearing it");
 
         // The pose it read is unchanged, so `ignore` is this node's answer and
@@ -356,7 +356,7 @@ TestAClipWithAPolicy(const std::string& fixture)
     //
     // And the refusal carries **no value**, which is the mirror of that same
     // argument and the reason this suite has an `AssertRefused` at all: a
-    // cleared `motion::RootMotion` is what the block immediately above returns
+    // cleared `openstrata::motion::RootMotion` is what the block immediately above returns
     // for a deliberate `ignore`, bit for bit, so a refusal producing one would
     // hand a misspelled `passthrough` the behaviour of an `ignore` nobody
     // asked for. The two blocks are next to each other on purpose.
@@ -388,7 +388,7 @@ TestAClipWithAPolicy(const std::string& fixture)
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("passthrough")));
 
     std::printf("execMotion root: a clip's intake policy reaches "
-                "motion::RootMotionIntake, and a token naming none is "
+                "openstrata::motion::RootMotionIntake, and a token naming none is "
                 "refused\n");
 }
 
@@ -414,12 +414,12 @@ TestAClipWithNoPolicy(const std::string& fixture)
 
     system.ChangeTime(UsdTimeCode(kFrame));
 
-    const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
+    const openstrata::motion::MotionPose prior = PriorPose(kSecond - kStep);
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
-        const motion::RootMotion root = RootAt(view, kRoot);
+        const openstrata::motion::RootMotion root = RootAt(view, kRoot);
 
-        // `motion::LiveCaptureConfig`'s own default is `DeriveVelocity`, and
+        // `openstrata::motion::LiveCaptureConfig`'s own default is `DeriveVelocity`, and
         // that is what a clip stating nothing gets. The assertion is the same
         // shape as the filter suite's 6 Hz: the *other* two policies are
         // distinguishable here, so this would not pass if the bundle had picked
@@ -437,7 +437,7 @@ TestAClipWithNoPolicy(const std::string& fixture)
     // is the override's doing and not the clip's.
     {
         ExecUsdCacheView view = system.Compute(request);
-        const motion::RootMotion root = RootAt(view, kRoot);
+        const openstrata::motion::RootMotion root = RootAt(view, kRoot);
         assert(!root.hasLinearVelocity &&
                "a velocity survived the ComputeWithOverrides that supplied the "
                "prior pose it was derived from");
@@ -445,7 +445,7 @@ TestAClipWithNoPolicy(const std::string& fixture)
     }
 
     std::printf("execMotion root: a clip stating no policy is taken in with "
-                "motion::LiveCaptureConfig's own default\n");
+                "openstrata::motion::LiveCaptureConfig's own default\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -478,11 +478,11 @@ TestOneOverrideDrivesBothRecurrences(const std::string& fixture)
 
     system.ChangeTime(UsdTimeCode(kFrame));
 
-    const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
+    const openstrata::motion::MotionPose prior = PriorPose(kSecond - kStep);
     ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
     // The root derived its velocity from the substituted pose...
-    const motion::RootMotion root = RootAt(view, 0);
+    const openstrata::motion::RootMotion root = RootAt(view, 0);
     assert(root.hasLinearVelocity && "the override did not reach motion.extractRootMotion");
     assert(NearlyEqual(root.linearVelocity,
                        VelocityBetween(prior.root.worldPosition, kHipsAtFrame50, kStep), 1e-3));
@@ -490,7 +490,7 @@ TestOneOverrideDrivesBothRecurrences(const std::string& fixture)
     // ...and the filter took its step from the same one, in the same call. The
     // filtered hips are strictly between the prior's origin and the clip's
     // position, which is what a step looks like and neither endpoint does.
-    const motion::HumanoidPose filtered = PoseAt(view, 1);
+    const openstrata::motion::MotionPose filtered = PoseAt(view, 1);
     assert(filtered.root.hasPosition);
     assert(filtered.root.worldPosition[2] > 0.0f &&
            filtered.root.worldPosition[2] < kHipsAtFrame50[2] &&

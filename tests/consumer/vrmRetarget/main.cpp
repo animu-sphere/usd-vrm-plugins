@@ -34,7 +34,7 @@ main()
     skeleton.AddJoint(root);
 
     vrmRetarget::HumanoidMap map;
-    if (!map.SetJointToken(motion::HumanBone::Hips, "Root", skeleton))
+    if (!map.SetJointToken(openstrata::motion::HumanJoint::Hips, "Root", skeleton))
     {
         std::fprintf(stderr, "consumer: the installed package would not bind "
                              "hips to the rig's only joint\n");
@@ -43,10 +43,10 @@ main()
 
     // A quarter turn about Y on the one bone the rig drives.
     const pxr::GfQuatf quarter(0.70710678f, pxr::GfVec3f(0.0f, 0.70710678f, 0.0f));
-    motion::HumanoidPose pose;
+    openstrata::motion::MotionPose pose;
     pose.timestamp = 0.25;
-    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = quarter;
-    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
+    pose.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips)] = quarter;
+    pose.validRotations.set(static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips));
 
     const vrmRetarget::PoseRetargeter retargeter(skeleton, map);
     const vrmRetarget::RetargetedPose expanded = retargeter.Retarget(pose);

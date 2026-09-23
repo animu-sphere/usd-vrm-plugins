@@ -80,7 +80,7 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 
 #include <cassert>
 #include <cmath>
@@ -363,7 +363,7 @@ TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     // as an override. A quarter turn about +Y at (1, 0, 0) must turn the prop
     // about the root's own origin and then carry it there, under /World.
     {
-        motion::HumanoidPose pose;
+        openstrata::motion::MotionPose pose;
         pose.timestamp = 2.0;
         pose.root.worldPosition = GfVec3f(1.0f, 0.0f, 0.0f);
         pose.root.hasPosition = true;

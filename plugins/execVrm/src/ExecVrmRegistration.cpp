@@ -143,8 +143,8 @@ TF_REGISTRY_FUNCTION(ExecTypeRegistry)
     // that reads a value type has to register it itself. 26.08 allows several
     // plugins to register one type, provided the fallbacks are equal
     // (`VdfExecutionTypeRegistry::_Define`), and both are
-    // `motion::HumanoidPose{}`.
-    ExecTypeRegistry::RegisterType(motion::HumanoidPose{});
+    // `openstrata::motion::MotionPose{}`.
+    ExecTypeRegistry::RegisterType(openstrata::motion::MotionPose{});
 }
 
 namespace
@@ -184,12 +184,12 @@ _ForwardBoundPose(const VdfContext& ctx, const char* computation, bool reportUnb
         targets.push_back(*path);
     }
     inputs.animationTargetCount = targets.size();
-    for (VdfReadIterator<motion::HumanoidPose> pose(ctx, _tokens->animationSourcePoses);
+    for (VdfReadIterator<openstrata::motion::MotionPose> pose(ctx, _tokens->animationSourcePoses);
          !pose.IsAtEnd(); ++pose)
     {
         inputs.poses.push_back(*pose);
     }
-    inputs.inherited = ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->inheritedPose);
+    inputs.inherited = ctx.GetInputValuePtr<openstrata::motion::MotionPose>(_tokens->inheritedPose);
 
     execvrm::BoundPoseOutcome outcome = execvrm::BoundPoseFor(inputs);
     if (outcome.pose)
@@ -232,7 +232,7 @@ _ForwardBoundPose(const VdfContext& ctx, const char* computation, bool reportUnb
 // pointing at the correction, which a request need not ask for.
 std::string
 _SourceRestReason(const std::string& named, execvrm::SourceRestRefusal refusal,
-                  const std::vector<std::pair<motion::HumanBone, std::string>>& offending)
+                  const std::vector<std::pair<openstrata::motion::HumanJoint, std::string>>& offending)
 {
     if (refusal == execvrm::SourceRestRefusal::NoHumanBone)
     {
@@ -244,7 +244,7 @@ _SourceRestReason(const std::string& named, execvrm::SourceRestRefusal refusal,
     for (const auto& [bone, token] : offending)
     {
         bones += bones.empty() ? "" : ", ";
-        bones += std::string(motion::HumanBoneName(bone));
+        bones += std::string(openstrata::motion::HumanJointName(bone));
         bones += " at '";
         bones += token;
         bones += "'";
@@ -305,7 +305,7 @@ _ReadRetargetInputs(const VdfContext& ctx, std::vector<SdfPath>* sources)
     {
         inputs.sources.push_back(*skeleton);
     }
-    for (VdfReadIterator<motion::HumanoidPose> pose(ctx, _tokens->sourcePoses); !pose.IsAtEnd();
+    for (VdfReadIterator<openstrata::motion::MotionPose> pose(ctx, _tokens->sourcePoses); !pose.IsAtEnd();
          ++pose)
     {
         inputs.poses.push_back(*pose);
@@ -505,7 +505,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
     // dropped from the fan-in while the network compiles, exactly as one that
     // is not an animation is.
     self.PrimComputation(_tokens->computeBoundPose)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext& ctx)
+        .Callback<openstrata::motion::MotionPose>(+[](const VdfContext& ctx)
                                         {
                                             _ForwardBoundPose(ctx, "vrm.computeBoundPose",
                                                               /* reportUnbound = */ true);
@@ -514,9 +514,9 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
                     .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
                     .InputName(_tokens->animationSourcePaths),
                 Relationship(_tokens->animationSource)
-                    .TargetedObjects<motion::HumanoidPose>(_tokens->sampleAnimation)
+                    .TargetedObjects<openstrata::motion::MotionPose>(_tokens->sampleAnimation)
                     .InputName(_tokens->animationSourcePoses),
-                NamespaceAncestor<motion::HumanoidPose>(_tokens->computeBindingPose)
+                NamespaceAncestor<openstrata::motion::MotionPose>(_tokens->computeBindingPose)
                     .InputName(_tokens->inheritedPose));
 }
 
@@ -541,7 +541,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelBindingAPI)
 {
     self.PrimComputation(_tokens->computeBindingPose)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext& ctx)
+        .Callback<openstrata::motion::MotionPose>(+[](const VdfContext& ctx)
                                         {
                                             _ForwardBoundPose(ctx, "vrm.computeBindingPose",
                                                               /* reportUnbound = */ false);
@@ -550,9 +550,9 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelBindingAPI)
                     .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
                     .InputName(_tokens->animationSourcePaths),
                 Relationship(_tokens->animationSource)
-                    .TargetedObjects<motion::HumanoidPose>(_tokens->sampleAnimation)
+                    .TargetedObjects<openstrata::motion::MotionPose>(_tokens->sampleAnimation)
                     .InputName(_tokens->animationSourcePoses),
-                NamespaceAncestor<motion::HumanoidPose>(_tokens->computeBindingPose)
+                NamespaceAncestor<openstrata::motion::MotionPose>(_tokens->computeBindingPose)
                     .InputName(_tokens->inheritedPose));
 }
 
@@ -611,7 +611,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 // bone reads as unbound, which is what the empty token means too.
                 if (const TfToken* const token = ctx.GetInputValuePtr<TfToken>(names[slot]))
                 {
-                    inputs.bindings.emplace_back(static_cast<motion::HumanBone>(slot),
+                    inputs.bindings.emplace_back(static_cast<openstrata::motion::HumanJoint>(slot),
                                                  token->GetString());
                 }
             }
@@ -634,13 +634,13 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 }
                 return named;
             };
-            auto bones = [](const std::vector<std::pair<motion::HumanBone, std::string>>& bound)
+            auto bones = [](const std::vector<std::pair<openstrata::motion::HumanJoint, std::string>>& bound)
             {
                 std::string named;
                 for (const auto& [bone, token] : bound)
                 {
                     named += named.empty() ? "" : ", ";
-                    named += std::string(motion::HumanBoneName(bone));
+                    named += std::string(openstrata::motion::HumanJointName(bone));
                     named += " -> '";
                     named += token;
                     named += "'";
@@ -866,7 +866,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
                 .InputName(_tokens->sourceSkeletons),
             Relationship(_tokens->sourceSkeleton)
-                .TargetedObjects<motion::HumanoidPose>(_tokens->computeBoundPose)
+                .TargetedObjects<openstrata::motion::MotionPose>(_tokens->computeBoundPose)
                 .InputName(_tokens->sourcePoses),
             AttributeValue<TfToken>(_tokens->rootMotion),
             AttributeValue<TfToken>(_tokens->rootJoint),

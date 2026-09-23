@@ -302,7 +302,7 @@ its subject happened to contain.
 - **Nothing about calibration.** These positions are in the space the sending
   application established; that a second session's origin is the same as this
   one's is not something six captures on one afternoon can show.
-- **Nothing about a pose.** No `HumanoidPose` is produced anywhere in this
+- **Nothing about a pose.** No `MotionPose` is produced anywhere in this
   change, and no avatar is named.
 - **The Euler order is three-of-six**, quantified in §2.3, and the take that
   would finish it is one sentence long.

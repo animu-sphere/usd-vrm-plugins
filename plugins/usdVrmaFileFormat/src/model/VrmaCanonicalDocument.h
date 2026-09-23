@@ -6,7 +6,7 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 
 #include <optional>
 #include <string>
@@ -18,7 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // document, its motion values are the public motionCore contract.
 struct VrmaJoint
 {
-    motion::HumanBone bone;
+    openstrata::motion::HumanJoint bone;
     std::string path;
     GfMatrix4d restTransform = GfMatrix4d(1.0);
     GfVec3f restTranslation = GfVec3f(0.0f);
@@ -30,7 +30,7 @@ struct VrmaJoint
 //
 // The declaration is separate from the weights on the poses because the two say
 // different things: this is the set of expressions the clip is *about*, while
-// `HumanoidPose::expressions` is what a given instant reported.
+// `MotionPose::expressions` is what a given instant reported.
 //
 // A clip can say one of three things about an expression it declares, and they
 // are not the same statement (MOTION_CONTRACT.md, "Expression semantics"):
@@ -92,7 +92,7 @@ struct VrmaCanonicalDocument
     std::vector<VrmaJoint> joints;
     std::vector<VrmaExpression> expressions;
     VrmaLookAt lookAt;
-    motion::HumanoidAnimation animation;
+    openstrata::motion::MotionClip animation;
     std::vector<std::string> warnings;
 };
 

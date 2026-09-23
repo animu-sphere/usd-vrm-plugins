@@ -17,7 +17,7 @@ Three claims are checked, and each one is load-bearing rather than tidy:
   raises it holds none.
 * **No OpenUSD name, no humanoid vocabulary, no stage.** Three numbers on an
   OFFSET line are not a vector in any basis this layer knows, and which joint is
-  a `HumanBone` is a profile's answer. This is a rule about *source*, and since
+  a `HumanJoint` is a profile's answer. This is a rule about *source*, and since
   the extractor landed it is the only form the rule can take -- see below.
 
 **There is no binary import check here any more, and its removal is a

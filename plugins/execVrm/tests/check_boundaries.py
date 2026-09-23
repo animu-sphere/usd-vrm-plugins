@@ -61,7 +61,8 @@ def main() -> int:
     errors += rules.purity_import_errors(library)
     errors += rules.link_errors(
         "execVrm", sys.argv[3],
-        {"motionCore::motionCore", "motionRuntime::motionRuntime",
+        {"motionCore::motionCore", "motionSampling::motionSampling",
+         "motionRecording::motionRecording",
          "vrmRetarget::vrmRetarget"})
 
     declared, schema_errors = rules.schema_errors("execVrm", source)

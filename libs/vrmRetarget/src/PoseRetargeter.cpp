@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "vrmRetarget/PoseRetargeter.h"
 
-#include "motionRuntime/Resample.h"
+#include "motionSampling/Resample.h"
 
 #include <cstddef>
 #include <string>
@@ -14,18 +14,18 @@ namespace
 {
 
 std::string
-Describe(motion::HumanBone bone)
+Describe(openstrata::motion::HumanJoint bone)
 {
-    return std::string(motion::HumanBoneName(bone));
+    return std::string(openstrata::motion::HumanJointName(bone));
 }
 
 // The one required bone whose absence costs more than its own motion: under
 // the default root-motion mode the hips are where the root lands, so a rig
 // without them drops the body's translation as well.
 std::string
-MissingRequiredDetail(motion::HumanBone bone, const RootMotionOptions& options)
+MissingRequiredDetail(openstrata::motion::HumanJoint bone, const RootMotionOptions& options)
 {
-    if (bone == motion::HumanBone::Hips && options.mode == RootMotionMode::Hips)
+    if (bone == openstrata::motion::HumanJoint::Hips && options.mode == RootMotionMode::Hips)
     {
         return "the target rig binds no joint for this required bone, and "
                "root-motion mode 'hips' lands the root on it, so root motion "
@@ -157,7 +157,7 @@ PoseRetargeter::_RestPose() const
 }
 
 RetargetedPose
-PoseRetargeter::Retarget(const motion::HumanoidPose& pose, RetargetDiagnostics* diagnostics) const
+PoseRetargeter::Retarget(const openstrata::motion::MotionPose& pose, RetargetDiagnostics* diagnostics) const
 {
     // Joints the clip does not drive stay at rest rather than collapsing to
     // identity, so a partial clip leaves the rest of the rig alone.
@@ -165,20 +165,20 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose, RetargetDiagnostics* 
     result.timestamp = pose.timestamp;
     const std::size_t jointCount = _skeleton.GetSize();
 
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
         if (!pose.validRotations.test(slot))
         {
             continue;
         }
-        const auto bone = static_cast<motion::HumanBone>(slot);
+        const auto bone = static_cast<openstrata::motion::HumanJoint>(slot);
         const int jointIndex = _map.GetJointIndex(bone);
         if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= jointCount)
         {
             // Checked before the detail is built: a clip reports the same bone
             // on every sample, and only the first report is kept.
             if (diagnostics && !diagnostics->Has(RetargetDiagnosticCode::UnboundDrivenBone,
-                                                 motion::HumanBoneName(bone)))
+                                                 openstrata::motion::HumanJointName(bone)))
             {
                 diagnostics->Report(MakeRetargetDiagnostic(
                     RetargetDiagnosticCode::UnboundDrivenBone, Describe(bone),
@@ -197,8 +197,8 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose, RetargetDiagnostics* 
     const RootMotionOptions& rootOptions = _options.rootMotion;
     if (rootOptions.mode != RootMotionMode::Ignore)
     {
-        const auto hipsSlot = static_cast<std::size_t>(motion::HumanBone::Hips);
-        const int hipsJoint = _map.GetJointIndex(motion::HumanBone::Hips);
+        const auto hipsSlot = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
+        const int hipsJoint = _map.GetJointIndex(openstrata::motion::HumanJoint::Hips);
 
         int receiver = hipsJoint;
         if (rootOptions.mode == RootMotionMode::RootJoint)
@@ -233,7 +233,7 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose, RetargetDiagnostics* 
         }
         else if (rootOptions.mode == RootMotionMode::Hips && diagnostics &&
                  !diagnostics->Has(RetargetDiagnosticCode::MissingRequiredBone,
-                                   motion::HumanBoneName(motion::HumanBone::Hips)))
+                                   openstrata::motion::HumanJointName(openstrata::motion::HumanJoint::Hips)))
         {
             // Under 'root' the hips are not where the root lands, so their
             // absence costs no root motion and the invalid index above is the
@@ -243,8 +243,8 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose, RetargetDiagnostics* 
             // skeleton -- and both drop the root. Checked before the detail is
             // built, since every sample of a clip lands here.
             diagnostics->Report(MakeRetargetDiagnostic(
-                RetargetDiagnosticCode::MissingRequiredBone, Describe(motion::HumanBone::Hips),
-                MissingRequiredDetail(motion::HumanBone::Hips, rootOptions)));
+                RetargetDiagnosticCode::MissingRequiredBone, Describe(openstrata::motion::HumanJoint::Hips),
+                MissingRequiredDetail(openstrata::motion::HumanJoint::Hips, rootOptions)));
         }
     }
 
@@ -262,7 +262,7 @@ DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map, const Retarg
     // them against, so one built against another rig binds a bone the
     // retarget can only drop -- and `FindMissingRequiredBones`, which reads
     // the map alone, cannot see that.
-    for (const motion::HumanBone bone : HumanoidMap::GetRequiredBones())
+    for (const openstrata::motion::HumanJoint bone : HumanoidMap::GetRequiredBones())
     {
         const int jointIndex = map.GetJointIndex(bone);
         if (jointIndex >= 0 && static_cast<std::size_t>(jointIndex) < joints.size())
@@ -282,17 +282,17 @@ DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map, const Retarg
         const bool inRig = duplicate >= 0 && static_cast<std::size_t>(duplicate) < joints.size();
         const std::string subject =
             inRig ? joints[static_cast<std::size_t>(duplicate)].token : std::to_string(duplicate);
-        std::vector<motion::HumanBone> bound;
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        std::vector<openstrata::motion::HumanJoint> bound;
+        for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
         {
-            const auto bone = static_cast<motion::HumanBone>(slot);
+            const auto bone = static_cast<openstrata::motion::HumanJoint>(slot);
             if (map.GetJointIndex(bone) == duplicate)
             {
                 bound.push_back(bone);
             }
         }
         std::string names;
-        for (const motion::HumanBone bone : bound)
+        for (const openstrata::motion::HumanJoint bone : bound)
         {
             names += names.empty() ? "'" : ", '";
             names += Describe(bone);
@@ -334,7 +334,7 @@ DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map, const Retarg
 }
 
 RetargetedAnimation
-PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
+PoseRetargeter::Retarget(const openstrata::motion::MotionClip& animation,
                          RetargetDiagnostics* diagnostics) const
 {
     RetargetedAnimation result;
@@ -352,11 +352,11 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
         diagnostics->Merge(DiagnoseRig(_skeleton, _map, _options));
     }
 
-    const motion::HumanoidAnimation* source = &animation;
-    motion::HumanoidAnimation resampled;
+    const openstrata::motion::MotionClip* source = &animation;
+    openstrata::motion::MotionClip resampled;
     if (_options.resampleRate > 0.0)
     {
-        resampled = motion::Resample(animation, _options.resampleRate);
+        resampled = openstrata::motion::Resample(animation, _options.resampleRate);
         result.frameRate = _options.resampleRate;
         source = &resampled;
     }
@@ -365,7 +365,7 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
     // Every sample reports into one list, which keeps each bone once. Until
     // P1-1 only the first sample was asked, which kept each bone once as well
     // and missed any bone the clip started driving later.
-    for (const motion::HumanoidPose& pose : source->samples)
+    for (const openstrata::motion::MotionPose& pose : source->samples)
     {
         result.samples.push_back(Retarget(pose, diagnostics));
     }

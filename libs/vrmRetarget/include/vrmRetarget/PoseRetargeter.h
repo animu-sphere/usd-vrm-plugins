@@ -9,7 +9,7 @@
 #include "vrmRetarget/RootMotionPolicy.h"
 #include "vrmRetarget/TargetSkeleton.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
@@ -39,7 +39,7 @@ struct RetargetedPose
 //
 // Exact means a rotation and its negation are *different* poses although they
 // pose the joint identically -- the conservative answer, and the one
-// `motion::HumanoidPose`'s `operator==` gives. There is no `NearlyEqual`: the
+// `openstrata::motion::MotionPose`'s `operator==` gives. There is no `NearlyEqual`: the
 // OpenExec plan's parity step (P0-6) decides whether it compares these values
 // or the arrays a bake authors from them, and asks for one if it is the first.
 VRMRETARGET_API bool operator==(const RetargetedPose& a, const RetargetedPose& b) noexcept;
@@ -54,7 +54,7 @@ struct RetargetedAnimation
     double startTime = 0.0;
     double endTime = 0.0;
     double frameRate = 30.0;
-    motion::MotionSourceMetadata source;
+    openstrata::motion::SourceMetadata source;
 };
 
 // One retargeted sample in the shape a UsdSkelAnimation states it at one time
@@ -168,14 +168,14 @@ class VRMRETARGET_API PoseRetargeter
     // what it drives: a bone the rig does not bind, and the root motion a
     // missing hips joint or a missing root joint drops. The rig's own report
     // is DiagnoseRig's.
-    RetargetedPose Retarget(const motion::HumanoidPose& pose,
+    RetargetedPose Retarget(const openstrata::motion::MotionPose& pose,
                             RetargetDiagnostics* diagnostics = nullptr) const;
 
     // Expands a whole clip, resampling first when RetargetOptions asks for it.
     // Reports DiagnoseRig's list and then every sample's, so a bone the clip
     // starts driving halfway through is reported like one it drives from the
     // first sample.
-    RetargetedAnimation Retarget(const motion::HumanoidAnimation& animation,
+    RetargetedAnimation Retarget(const openstrata::motion::MotionClip& animation,
                                  RetargetDiagnostics* diagnostics = nullptr) const;
 
   private:

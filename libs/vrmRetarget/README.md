@@ -88,7 +88,7 @@ live source that has no stage at all.
   version would be carrying the importer's job. A `bone`-type rig answers with
   eye rotations, the eye on the side the gaze goes to taking the *outer* map and
   the other the *inner* one; an `expression`-type rig answers with
-  `motion::ExpressionWeights` for `lookLeft`, `lookRight`, `lookUp` and
+  `motion::MotionChannelSet` for `lookLeft`, `lookRight`, `lookUp` and
   `lookDown` — which is exactly what `ExpressionResolver` consumes, so a gaze
   reaches the avatar's binds through the path the face already uses rather than
   through a second one. All four names are reported every sample, zeros

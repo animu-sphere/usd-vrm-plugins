@@ -25,7 +25,7 @@
 #include "motionSource/SourceProfileFile.h"
 
 #include "motionCore/Compare.h"
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include <algorithm>
 #include <cmath>
@@ -45,7 +45,7 @@ using motionSource::SourceConversion;
 using motionSource::SourceProfile;
 using motionSource::SourceSkeleton;
 
-const motion::MotionTolerance kTolerance;
+const openstrata::motion::MotionTolerance kTolerance;
 
 int failures = 0;
 
@@ -140,22 +140,22 @@ Run(const std::filesystem::path& recordedDir, const std::filesystem::path& profi
     // `rest-offsets`, so every rest rotation is identity and every rest
     // translation is the sum of the offsets from the nearest bound ancestor
     // down. The hips are the root's own offset, in metres.
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
     Check(NearVector(result.rest.localTranslations[hips],
                      pxr::GfVec3f(0.0f, kHipHeightCm / 100.0f, 0.0f)),
           "the hips rest is not the root's offset in metres");
-    Check(motion::AngleBetween(result.rest.localRotations[hips],
+    Check(openstrata::motion::AngleBetween(result.rest.localRotations[hips],
                                pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))) <= kTolerance.angle,
           "a rest-offsets profile produced a non-identity rest rotation");
     // The upper arm is one joint below a bound one, so its rest is that joint's
     // own offset: 13.3291, 3.34342, -3.36319 centimetres.
-    const auto leftUpperArm = static_cast<std::size_t>(motion::HumanBone::LeftUpperArm);
+    const auto leftUpperArm = static_cast<std::size_t>(openstrata::motion::HumanJoint::LeftUpperArm);
     Check(NearVector(result.rest.localTranslations[leftUpperArm],
                      pxr::GfVec3f(0.133291f, 0.0334342f, -0.0336319f)),
           "the left upper arm's rest moved");
     // The spine is two joints below the hips, and the segment nothing maps is on
     // the path: 5.22546 + 5.77894 up, -1.18466 + 1.10239 forward.
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
     Check(NearVector(result.rest.localTranslations[spine],
                      pxr::GfVec3f(0.0f, 0.110044f, -0.0008227f)),
           "the spine's rest is not the sum along its path");
@@ -165,15 +165,15 @@ Run(const std::filesystem::path& recordedDir, const std::filesystem::path& profi
     // Four bones sit below an unmapped segment: three spine segments and the
     // second of two neck ones. Measured from the hierarchy, not from the
     // conversion.
-    const std::vector<motion::HumanBone> expectedComposed = {
-        motion::HumanBone::Spine,
-        motion::HumanBone::Chest,
-        motion::HumanBone::UpperChest,
-        motion::HumanBone::Head,
+    const std::vector<openstrata::motion::HumanJoint> expectedComposed = {
+        openstrata::motion::HumanJoint::Spine,
+        openstrata::motion::HumanJoint::Chest,
+        openstrata::motion::HumanJoint::UpperChest,
+        openstrata::motion::HumanJoint::Head,
     };
-    std::vector<motion::HumanBone> composed = result.report.composedBones;
+    std::vector<openstrata::motion::HumanJoint> composed = result.report.composedBones;
     std::sort(composed.begin(), composed.end());
-    std::vector<motion::HumanBone> expected = expectedComposed;
+    std::vector<openstrata::motion::HumanJoint> expected = expectedComposed;
     std::sort(expected.begin(), expected.end());
     Check(composed == expected, "a different set of bones absorbed a chain of source joints");
 
@@ -231,7 +231,7 @@ Run(const std::filesystem::path& recordedDir, const std::filesystem::path& profi
         const double span = static_cast<double>(rootAngles[highest].third) -
                             static_cast<double>(rootAngles[lowest].third);
         const float carried =
-            motion::AngleBetween(result.animation.samples[lowest].localRotations[hips],
+            openstrata::motion::AngleBetween(result.animation.samples[lowest].localRotations[hips],
                                  result.animation.samples[highest].localRotations[hips]);
         const double expectedRadians = span * 3.14159265358979323846 / 180.0;
         Check(span > 90.0, "the session no longer turns");
@@ -246,7 +246,7 @@ Run(const std::filesystem::path& recordedDir, const std::filesystem::path& profi
           "the conversion did not take the producer from the profile");
     Check(result.provenance.format == motionBvh::BvhFormatLabel(),
           "the reader's format label did not survive the conversion");
-    Check(result.animation.source.kind == motion::MotionSourceKind::Clip,
+    Check(result.animation.source.kind == openstrata::motion::MotionSourceKind::Clip,
           "a recorded file did not become a clip");
 
     // --- determinism --------------------------------------------------------

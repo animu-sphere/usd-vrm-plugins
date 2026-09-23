@@ -245,7 +245,7 @@ struct that both raise. Both homes a reader reaches for first are already ruled
 out, and neither ruling is new here.
 
 **It cannot be `motionRuntime`**, and this is enforced rather than agreed:
-[`libs/motionRuntime/tests/check_boundaries.py:94`](../../libs/motionRuntime/tests/check_boundaries.py)
+[`libs/motionRuntime/tests/check_boundaries.py:94`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionSampling/tests/check_boundaries.py)
 refuses `winsock`, `sys/socket.h`, `asio`, `curl` and `websocket` in that
 library's sources. The contract behind the check is
 [WORKSPACE.md §2](../architecture/WORKSPACE.md): `motion_capture` is a member of
@@ -371,15 +371,15 @@ sender or device pose   tracker observations
         ↓                       ↓
 bone transforms         calibration / assignment
         ↓                       ↓
-HumanoidPose                   IK
+MotionPose                   IK
                                 ↓
-                         HumanoidPose
+                         MotionPose
 ```
 
 VRChat's tracker addresses carry a numbered tracker's position and rotation.
 **A tracker index is not a body role** — it is an index into whatever the user
 calibrated, and the mapping from one to the other is a solve, not a lookup. An
-adapter that maps `/tracking/trackers/1/*` onto `HumanBone::hips` has invented a
+adapter that maps `/tracking/trackers/1/*` onto `HumanJoint::hips` has invented a
 calibration and hidden it in a decoder.
 
 So the adapter's intermediate is an observation, not a pose:
@@ -393,7 +393,7 @@ and the pipeline is
 
 ```text
 VRChat OSC tracker messages -> TrackerFrame -> tracking-space normalisation
-    -> tracker-to-humanoid solve -> HumanoidPose -> LiveCaptureSource
+    -> tracker-to-humanoid solve -> MotionPose -> LiveCaptureSource
 ```
 
 Two consequences bind the rest of this plan. The adapter must **not** grow a
@@ -419,7 +419,7 @@ any two of them is how VRChat semantics leak upward:
 | --- | --- | --- |
 | **Decode** — bytes to `TrackerSample` | the adapter | addresses, type tags, argument order. No body roles, no basis. |
 | **Assignment** — which tracker is which body region | a **generic** policy, outside the adapter | tracker count, relative rest geometry, an operator's explicit statement. **Never a VRChat address literal.** |
-| **Solve** — assigned observations to `HumanoidPose` | the motion layer | canonical bones, target-independent. Never an avatar. |
+| **Solve** — assigned observations to `MotionPose` | the motion layer | canonical bones, target-independent. Never an avatar. |
 
 **Assignment is not a lookup and it is not IK either.** A three-point setup, a
 six-point setup and a full-body setup differ in what is observable, not in what
@@ -443,7 +443,7 @@ it is generic, so it is not the adapter's, and it names tracker regions, which
 ahead of any code** ([§10](#10-contract-changes-this-plan-requires)): a new leaf
 `libs/motionTracking`, on the terms
 [WORKSPACE.md §1](../architecture/WORKSPACE.md) states, with the region
-vocabulary as its own rather than as an alias for `HumanBone` — the aliasing is
+vocabulary as its own rather than as an alias for `HumanJoint` — the aliasing is
 what would collapse this table's middle row into its first, and the contract
 forbids it by name.
 
@@ -983,7 +983,7 @@ vocabularies and the rules relating them.
 **A region is not a bone, and the check reads the sources to say so.** Every
 other boundary rule in this repository is about an edge, and an edge is visible
 on a link line; this one is about an **alias**, which leaves no link line to
-fail on — so `TrackerRegion` is refused the `HumanBone` enumerators that are not
+fail on — so `TrackerRegion` is refused the `HumanJoint` enumerators that are not
 regions, in the sources, while `Head`, `Chest` and `Hips` are deliberately
 absent from that list because a region named `Chest` is the point. The two rigs
 that make the distinction real are the ordinary ones: a knee tracker sits on a
@@ -1031,7 +1031,7 @@ paragraph above holding rather than an omission.
 
 ### VRC-5 — the humanoid solve boundary
 
-Tracker observations reach a `HumanoidPose`. Reuse the existing surface where
+Tracker observations reach a `MotionPose`. Reuse the existing surface where
 one exists; where none does, define a **generic** contract in the motion layer
 rather than a solve inside the adapter ([§10](#10-contract-changes-this-plan-requires)).
 No target-avatar-specific logic enters the adapter under any outcome — that is
@@ -1429,7 +1429,7 @@ depends on them ([docs/README.md](../README.md)).
   **Three things were decided rather than transcribed.** Its **edge set is
   empty**, `motionCore` included, and that is the row that carries the weight
   here rather than a tidy property: a region vocabulary that resolved to
-  `HumanBone` would make assignment a lookup and leave the solve nothing to do,
+  `HumanJoint` would make assignment a lookup and leave the solve nothing to do,
   so §2 forbids the alias *by name* and the check reads the sources rather than
   the link line — an enum copied by hand leaves no link line to fail on. It
   takes the **product side** of §5's split, and it is the first identity where
@@ -1449,7 +1449,7 @@ depends on them ([docs/README.md](../README.md)).
   timeout were left to OSC-2. VRC-4a decides it.
 - ✅ **A tracker observation has no representation in the motion contract**
   *(answered 2026-08-31, in its own change ahead of VRC-5's code)*. `motionCore`
-  carries `HumanoidPose`, which is post-solve, and the question was which of two
+  carries `MotionPose`, which is post-solve, and the question was which of two
   answers to take: a generic tracker-sample type there, or nothing there at all
   and the observation stays in the adapter until it becomes a pose.
 

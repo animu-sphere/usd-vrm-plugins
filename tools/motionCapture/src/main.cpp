@@ -17,10 +17,10 @@
 #include "ClipWriter.h"
 #include "Options.h"
 
-#include "motionRuntime/CaptureTrace.h"
-#include "motionRuntime/LiveCaptureSource.h"
-#include "motionRuntime/Recorder.h"
-#include "motionRuntime/ReplaySender.h"
+#include "motionRecording/CaptureTrace.h"
+#include "motionRecording/LiveCaptureSource.h"
+#include "motionRecording/MotionRecorder.h"
+#include "motionRecording/ReplaySender.h"
 
 #include <cstdio>
 #include <iostream>
@@ -46,38 +46,38 @@ Count(unsigned long long value)
 }
 
 const char*
-MissingBoneName(motion::MissingBonePolicy policy)
+MissingBoneName(openstrata::motion::MissingJointPolicy policy)
 {
-    return policy == motion::MissingBonePolicy::HoldLast ? "hold" : "unbound";
+    return policy == openstrata::motion::MissingJointPolicy::HoldLast ? "hold" : "unbound";
 }
 
 const char*
-RootMotionName(motion::RootMotionIntake intake)
+RootMotionName(openstrata::motion::RootMotionIntake intake)
 {
     switch (intake)
     {
-    case motion::RootMotionIntake::Ignore:
+    case openstrata::motion::RootMotionIntake::Ignore:
         return "ignore";
-    case motion::RootMotionIntake::Passthrough:
+    case openstrata::motion::RootMotionIntake::Passthrough:
         return "passthrough";
-    case motion::RootMotionIntake::DeriveVelocity:
+    case openstrata::motion::RootMotionIntake::DeriveVelocity:
         break;
     }
     return "derive";
 }
 
 void
-PrintReport(const motion::LiveCaptureSource& source, const motion::RecordReport& report,
+PrintReport(const openstrata::motion::LiveCaptureSource& source, const openstrata::motion::RecordReport& report,
             std::size_t observedBones)
 {
-    const motion::LiveCaptureStats& stats = source.GetStats();
+    const openstrata::motion::LiveCaptureStats& stats = source.GetStats();
     std::printf("intake:     %s accepted, %s out-of-order, %s stale, %s empty\n",
                 Count(stats.framesAccepted).c_str(), Count(stats.framesRejectedOutOfOrder).c_str(),
                 Count(stats.framesRejectedStale).c_str(), Count(stats.framesRejectedEmpty).c_str());
     std::printf("bones:      %zu of %zu observed; %s gated by confidence, "
                 "%s held, %s left unbound\n",
-                observedBones, motion::HumanBoneCount, Count(stats.bonesGatedByConfidence).c_str(),
-                Count(stats.bonesHeld).c_str(), Count(stats.bonesUnbound).c_str());
+                observedBones, openstrata::motion::HumanJointCount, Count(stats.jointsGatedByConfidence).c_str(),
+                Count(stats.jointsHeld).c_str(), Count(stats.jointsUnbound).c_str());
     std::printf("root:       %s samples observed, %s velocities derived\n",
                 Count(stats.rootSamplesObserved).c_str(),
                 Count(stats.rootVelocitiesDerived).c_str());
@@ -108,9 +108,9 @@ main(int argc, char** argv)
         return 0;
     }
 
-    motion::HumanoidAnimation trace;
-    motion::CaptureTraceError traceError;
-    if (!motion::ReadCaptureTraceFile(options.tracePath, &trace, &traceError))
+    openstrata::motion::MotionClip trace;
+    openstrata::motion::CaptureTraceError traceError;
+    if (!openstrata::motion::ReadCaptureTraceFile(options.tracePath, &trace, &traceError))
     {
         std::cerr << "motion_capture: " << options.tracePath;
         if (traceError.line != 0)
@@ -123,7 +123,7 @@ main(int argc, char** argv)
 
     if (!options.normalizePath.empty())
     {
-        if (!motion::WriteCaptureTraceFile(options.normalizePath, trace))
+        if (!openstrata::motion::WriteCaptureTraceFile(options.normalizePath, trace))
         {
             std::cerr << "motion_capture: could not write " << options.normalizePath << "\n";
             return 1;
@@ -139,11 +139,11 @@ main(int argc, char** argv)
     const double rate =
         options.evaluationRate > 0.0 ? options.evaluationRate : trace.nominalFrameRate;
 
-    motion::LiveCaptureSource source(options.capture);
+    openstrata::motion::LiveCaptureSource source(options.capture);
     source.SetSourceMetadata(trace.source);
 
-    motion::ReplaySender sender(trace, &source);
-    motion::CaptureRecorder recorder(rate);
+    openstrata::motion::ReplaySender sender(trace, &source);
+    openstrata::motion::MotionRecorder recorder(rate);
 
     // The session runs from the first recorded frame to the last, plus enough
     // ticks to consume the delivery lag -- otherwise the tail of the trace is
@@ -156,7 +156,7 @@ main(int argc, char** argv)
     const double duration = trace.endTime - trace.startTime;
     const double span = duration + options.deliveryLag;
     const auto tickCount =
-        static_cast<std::size_t>(span * rate + motion::PoseSampleTimeTolerance * rate) + 1;
+        static_cast<std::size_t>(span * rate + openstrata::motion::PoseSampleTimeTolerance * rate) + 1;
 
     // Pin the capture clock to the consumer's: a trace may be stamped in any
     // epoch (a real session's timestamps start wherever the device's clock
@@ -177,8 +177,8 @@ main(int argc, char** argv)
         recorder.Record(source.Sample(now));
     }
 
-    const motion::RecordReport report = recorder.GetReport();
-    const motion::HumanoidAnimation recorded = recorder.Take();
+    const openstrata::motion::RecordReport report = recorder.GetReport();
+    const openstrata::motion::MotionClip recorded = recorder.Take();
 
     if (recorded.samples.empty())
     {
@@ -201,7 +201,7 @@ main(int argc, char** argv)
 
     if (options.report)
     {
-        PrintReport(source, report, source.GetObservedBones().count());
+        PrintReport(source, report, source.GetObservedJoints().count());
     }
 
     if (options.dryRun)
@@ -218,7 +218,7 @@ main(int argc, char** argv)
     provenance["evaluationRate"] = Number(rate);
     provenance["deliveryLag"] = Number(options.deliveryLag);
     provenance["confidenceFloor"] = Number(options.capture.confidenceFloor);
-    provenance["missingBones"] = MissingBoneName(options.capture.missingBones);
+    provenance["missingJoints"] = MissingBoneName(options.capture.missingJoints);
     provenance["rootMotion"] = RootMotionName(options.capture.rootMotion);
     provenance["smoothingCutoffHz"] = Number(options.capture.smoothingCutoffHz);
     provenance["framesEvaluated"] = Count(report.ticks);
@@ -237,7 +237,7 @@ main(int argc, char** argv)
     if (!options.quiet)
     {
         std::cerr << "motion_capture: wrote " << recorded.samples.size() << " frame(s) over "
-                  << source.GetObservedBones().count() << " observed bone(s) to "
+                  << source.GetObservedJoints().count() << " observed bone(s) to "
                   << options.outputPath << "\n";
     }
     return 0;

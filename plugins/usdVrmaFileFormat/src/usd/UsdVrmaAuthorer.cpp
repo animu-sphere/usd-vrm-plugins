@@ -74,7 +74,7 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document, std::strin
     // identity array exists only so the clip evaluates.
     const VtVec3hArray identityScales(document.joints.size(), GfVec3h(1.0f));
     body.CreateScalesAttr(VtValue(identityScales));
-    for (const motion::HumanoidPose& pose : document.animation.samples)
+    for (const openstrata::motion::MotionPose& pose : document.animation.samples)
     {
         VtVec3fArray valuesT;
         VtQuatfArray valuesR;
@@ -83,7 +83,7 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document, std::strin
         for (const VrmaJoint& joint : document.joints)
         {
             GfVec3f translation = joint.restTranslation;
-            if (joint.bone == motion::HumanBone::Hips && pose.root.hasPosition)
+            if (joint.bone == openstrata::motion::HumanJoint::Hips && pose.root.hasPosition)
             {
                 translation = pose.root.worldPosition;
             }
@@ -166,9 +166,9 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document, std::strin
             }
             UsdAttribute weight = prim.CreateAttribute(TfToken("vrm:expressionWeight"),
                                                        SdfValueTypeNames->Float, false);
-            for (const motion::HumanoidPose& pose : document.animation.samples)
+            for (const openstrata::motion::MotionPose& pose : document.animation.samples)
             {
-                if (const float* value = pose.expressions.Find(expression.name))
+                if (const float* value = pose.channels.Find(expression.name))
                 {
                     weight.Set(*value, pose.timestamp * document.animation.nominalFrameRate);
                 }
@@ -208,7 +208,7 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document, std::strin
         {
             UsdAttribute target = prim.CreateAttribute(TfToken("vrm:lookAtTarget"),
                                                        SdfValueTypeNames->Point3f, false);
-            for (const motion::HumanoidPose& pose : document.animation.samples)
+            for (const openstrata::motion::MotionPose& pose : document.animation.samples)
             {
                 if (pose.lookAtTarget)
                 {

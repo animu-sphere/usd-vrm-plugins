@@ -491,7 +491,7 @@ monolithic update function.
 
 > **Superseded** by motion policy §8.2. The flow below is correct in shape but
 > is now expressed generically: a motion-capture system decodes into a
-> `LiveCaptureSource` producing `motion::HumanoidPose`, and Mocopi is one
+> `LiveCaptureSource` producing `motion::MotionPose`, and Mocopi is one
 > concrete adapter under `adapters/liveCapture/mocopi/`. No core code, shared
 > schema, retarget API, or shared OpenExec node names it.
 >

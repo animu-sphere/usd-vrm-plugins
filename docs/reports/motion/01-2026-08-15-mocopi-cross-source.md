@@ -136,7 +136,7 @@ prediction.
 defect.** The device sends the hips joint's absolute position in every frame —
 the only translating joint on this rig — and while
 [§5.2](../../roadmap/adapters-mocopi-vmc-ardy.md) is open no layer on the live
-path will call it root motion, so it reaches no `HumanoidPose` and no trace.
+path will call it root motion, so it reaches no `MotionPose` and no trace.
 Retargeted onto an avatar, this session walks on the spot: the legs step, the
 body turns, and nothing travels.
 

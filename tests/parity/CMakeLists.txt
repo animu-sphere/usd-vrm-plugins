@@ -57,7 +57,7 @@ endif()
 # result type, which is one of the keys it declares.
 add_executable(exec_driver_contract test_exec_driver.cpp)
 target_link_libraries(exec_driver_contract PRIVATE
-    exec_driver motionCore::motionCore motionRuntime::motionRuntime)
+    exec_driver motionCore::motionCore motionSampling::motionSampling)
 add_dependencies(exec_driver_contract ExecMotion)
 target_compile_options(exec_driver_contract PRIVATE ${_parity_assertions})
 if(MSVC)

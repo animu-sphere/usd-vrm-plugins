@@ -10,7 +10,7 @@
 //
 // This is the second of two headers permitted to name a canonical type, and the
 // permission is still narrow: a joint map's right-hand side is a
-// `motion::HumanBone`, which is the entire point of the map.
+// `openstrata::motion::HumanJoint`, which is the entire point of the map.
 // `CanonicalMetadata.h` argues the general case; `motionSource_boundaries`
 // carries the list, so a third file joins it in review rather than quietly.
 //
@@ -49,7 +49,7 @@
 // which; the check that catches it is that each bound bone's nearest bound
 // humanoid ancestor is also a source ancestor. It does not require the source
 // hierarchy to match the humanoid one — a rig that solves no upper chest still
-// parents its shoulders somewhere — and `motion::NearestPresentAncestor` is what
+// parents its shoulders somewhere — and `openstrata::motion::NearestPresentAncestor` is what
 // answers that, rather than a second copy of the humanoid taxonomy here.
 //
 // **A profile knows the joints it deliberately does not map.** Every real
@@ -62,7 +62,7 @@
 #include "motionSource/SourceSkeleton.h"
 #include "motionSource/api.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -296,7 +296,7 @@ struct SourceJointMapping
 
     // The canonical bone this joint carries. `Count` is not a bone and is the
     // default for the reason every convention above has an `Unspecified`.
-    motion::HumanBone bone = motion::HumanBone::Count;
+    openstrata::motion::HumanJoint bone = openstrata::motion::HumanJoint::Count;
 
     // Whether a rig missing this joint is still described by this profile. An
     // export preset that drops fingers is the ordinary case, and it is a
@@ -370,7 +370,7 @@ struct SourceProfile
     // Index into `joints`, or nullopt. Names are unique in a valid profile, so
     // unlike a rig's joints this really is a key.
     MOTIONSOURCE_API std::optional<std::size_t> FindMapping(std::string_view sourceName) const;
-    MOTIONSOURCE_API std::optional<std::size_t> FindBoneMapping(motion::HumanBone bone) const;
+    MOTIONSOURCE_API std::optional<std::size_t> FindBoneMapping(openstrata::motion::HumanJoint bone) const;
     MOTIONSOURCE_API bool IgnoresJoint(std::string_view sourceName) const;
 
     // How many mappings this profile declares required. The denominator of a
@@ -438,7 +438,7 @@ MOTIONSOURCE_API std::string_view SourceProfileRefusalName(SourceProfileRefusal 
 // One bone the profile bound to one joint of the rig.
 struct SourceProfileBinding
 {
-    motion::HumanBone bone = motion::HumanBone::Count;
+    openstrata::motion::HumanJoint bone = openstrata::motion::HumanJoint::Count;
     std::size_t jointIndex = 0;
 
     // Carried from the mapping, so a match can be counted without the profile
@@ -478,8 +478,8 @@ struct SourceProfileMatch
 
     // In the profile's declaration order.
     std::vector<SourceProfileBinding> bound;
-    std::vector<motion::HumanBone> missingRequired;
-    std::vector<motion::HumanBone> missingOptional;
+    std::vector<openstrata::motion::HumanJoint> missingRequired;
+    std::vector<openstrata::motion::HumanJoint> missingOptional;
     // Rig joints the profile neither maps nor ignores, in joint order.
     std::vector<std::size_t> unmappedJoints;
     // Mapped names the rig carries more than once, in the profile's order. A
@@ -496,7 +496,7 @@ struct SourceProfileMatch
     }
 
     // The rig joint bound to `bone`, or nullopt when nothing was.
-    MOTIONSOURCE_API std::optional<std::size_t> JointFor(motion::HumanBone bone) const;
+    MOTIONSOURCE_API std::optional<std::size_t> JointFor(openstrata::motion::HumanJoint bone) const;
 
     // How many of the profile's *required* mappings actually bound — the
     // numerator of a detector's "required joints matched: n/m", whose

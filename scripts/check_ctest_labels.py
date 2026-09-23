@@ -43,9 +43,13 @@ from pathlib import Path
 # The plan's labels (docs/roadmap/openexec-foundation.md, P0-2) and the
 # directories each must come from, relative to the source root ("." is the
 # root CMakeLists.txt itself).
+# `motion.core` and `motion.runtime` have no source here since MIG-1..MIG-2:
+# the core and the runtime are consumed packages, and their suites run in
+# `usd-motion-plugins` against the code. A label with no directory left is not
+# a label this workspace can carry, so it is gone rather than left to pass
+# vacuously -- what replaced it as evidence is the consumer-side suites below,
+# which exercise the same values through the packages.
 LABEL_SOURCES = {
-    "motion.core": ["libs/motionCore/tests"],
-    "motion.runtime": ["libs/motionRuntime/tests"],
     "motion.retarget": ["libs/vrmRetarget/tests"],
     "motion.cli": [
         "tools/motionRetarget/tests",
@@ -68,8 +72,6 @@ LABEL_SOURCES = {
 
 # Where a label means every test the directory registers.
 EVERY_TEST = {
-    "motion.core": ["libs/motionCore/tests"],
-    "motion.runtime": ["libs/motionRuntime/tests"],
     "motion.retarget": ["libs/vrmRetarget/tests"],
     "motion.cli": LABEL_SOURCES["motion.cli"],
     "motion.openexec": ["plugins/execMotion/tests", "plugins/execVrm/tests"],

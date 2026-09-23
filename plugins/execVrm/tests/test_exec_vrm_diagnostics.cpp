@@ -54,7 +54,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <motionCore/Humanoid.h>
+#include <motionCore/MotionPose.h>
 #include <vrmRetarget/Diagnostics.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/PoseRetargeter.h>
@@ -75,7 +75,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace
 {
 
-using motion::HumanBone;
+using openstrata::motion::HumanJoint;
 using vrmRetarget::RetargetDiagnosticCode;
 
 const TfToken kTargetSkeleton("vrm.computeTargetSkeleton");
@@ -112,9 +112,9 @@ const char* const kHeadToken =
 const char* const kChestToken = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest";
 
 TfToken
-BoneAttribute(HumanBone bone)
+BoneAttribute(HumanJoint bone)
 {
-    return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
+    return TfToken("vrm:humanBones:" + std::string(openstrata::motion::HumanJointName(bone)));
 }
 
 GfQuatf
@@ -292,11 +292,11 @@ std::vector<std::string>
 MissingRequired(const vrmRetarget::HumanoidMap& map)
 {
     std::vector<std::string> missing;
-    for (const HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    for (const HumanJoint bone : vrmRetarget::HumanoidMap::GetRequiredBones())
     {
         if (!map.IsMapped(bone))
         {
-            missing.emplace_back(motion::HumanBoneName(bone));
+            missing.emplace_back(openstrata::motion::HumanJointName(bone));
         }
     }
     return missing;
@@ -333,7 +333,7 @@ TestTheNodesAreTheLibrarysReports(const std::string& fixture)
         const auto target =
             ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
         const auto map = ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
-        const auto pose = ValueAt<motion::HumanoidPose>(view, kBoundKey, "bound pose");
+        const auto pose = ValueAt<openstrata::motion::MotionPose>(view, kBoundKey, "bound pose");
         const vrmRetarget::RetargetDiagnostics rigReport = RigAt(view);
         const vrmRetarget::RetargetDiagnostics sampleReport = SampleAt(view);
         assert(mark.IsClean() && "the fixture's diagnostics posted an error");
@@ -490,7 +490,7 @@ TestWhatTheRetargetCannotHonourRefusesBoth(const std::string& fixture)
     {
         const Rig rig = Open(fixture);
         assert(rig.humanoid
-                   .CreateAttribute(BoneAttribute(HumanBone::UpperChest), SdfValueTypeNames->Token,
+                   .CreateAttribute(BoneAttribute(HumanJoint::UpperChest), SdfValueTypeNames->Token,
                                     false, SdfVariabilityUniform)
                    .Set(TfToken(kChestToken)));
         ExecUsdSystem system(rig.stage);
@@ -556,7 +556,7 @@ TestInvalidationReachesTheReports(const std::string& fixture)
     // The head unbound: the rig lacks a required bone, and the clip, which
     // drives the head at every key, now drives a bone the rig does not bind.
     reported.clear();
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Head)).Set(TfToken()));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanJoint::Head)).Set(TfToken()));
     assert(reported.count(kMapKey) && reported.count(kRigKey) && reported.count(kSampleKey));
     {
         ExecUsdCacheView view = system.Compute(request);
@@ -618,16 +618,16 @@ TestADriversPoseIsDiagnosedAndItsRetargetIsNot(const std::string& fixture)
     ArmAt(system, request, 24.0);
     ExecUsdCacheView view = system.Compute(request);
     const vrmRetarget::RetargetDiagnostics unchanged = SampleAt(view);
-    const motion::HumanoidPose clipPose =
-        ValueAt<motion::HumanoidPose>(view, kBoundKey, "bound pose");
+    const openstrata::motion::MotionPose clipPose =
+        ValueAt<openstrata::motion::MotionPose>(view, kBoundKey, "bound pose");
 
     // A pose a driver hands in -- a live source's, say -- that drives a bone
     // the clip never did: diagnosed like the clip's own. This is the case the
     // library's per-sample report exists for, since a clip's joints are
     // uniform and a live source's bones are not.
     {
-        motion::HumanoidPose live = clipPose;
-        const auto slot = static_cast<std::size_t>(HumanBone::LeftLowerArm);
+        openstrata::motion::MotionPose live = clipPose;
+        const auto slot = static_cast<std::size_t>(HumanJoint::LeftLowerArm);
         live.localRotations[slot] = About(GfVec3f(0, 1, 0), 20.0f);
         live.validRotations.set(slot);
         std::vector<ExecUsdValueOverride> overrides;

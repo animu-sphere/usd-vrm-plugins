@@ -97,7 +97,7 @@ are built from consumers, not from predictions.
 
 ## 4. Canonical motion is the only confluence
 
-Every producer terminates at `motion::HumanoidAnimation` / `HumanoidPose`, and
+Every producer terminates at `motion::MotionClip` / `MotionPose`, and
 nothing downstream of that point knows which producer it was. This is the
 invariant the motion layer is arranged around
 ([motion policy §5](MOTION_ARCHITECTURE_POLICY.md), §8.3), and it is what makes
@@ -277,7 +277,7 @@ Not the number of supported formats. These five:
 
 - `avatar.vrm` produces a deterministic OpenUSD asset.
 - A clip, a capture, a corpus file, a live trace and a generated take all
-  converge on `HumanoidAnimation`.
+  converge on `MotionClip`.
 - Canonical motion plus a VRM target goes through one retarget and runtime
   contract, whichever produced the motion.
 - A CLI and an OpenExec graph call the same computation library.

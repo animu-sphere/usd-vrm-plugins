@@ -42,8 +42,6 @@ project's central design decision, and it is described below.
 | [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | `ArPackageResolver` bundle (`usd-package-resolver`) | Embedded resource resolution from `.vrm` | Shipped |
 | [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
-| [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral humanoid pose / animation / root-motion / constraint types | v0.3.0 |
-| [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend; live-capture intake, recorded traces, replay | v0.4.0 · v0.5.0 |
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter | v0.4.0 |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
@@ -61,6 +59,13 @@ that predate that rename use it in the old sense.
 
 ### The motion layer
 
+> **The core and the runtime have moved too (2026-09-21), and are consumed.**
+> `motionCore` and `motionRuntime` are `usd-motion-plugins`' `motionCore`,
+> `motionSampling` and `motionRecording`; this workspace resolves them as
+> published packages, pinned by digest, and builds neither. Every type this
+> product's motion layer speaks — `MotionPose`, `MotionClip`, `HumanJoint` —
+> is that repository's vocabulary now, under `openstrata::motion`.
+>
 > **The live inputs have moved (2026-09-21).** `liveTransport`, `osc`,
 > `motionTracking`, the three adapters and their record tools are
 > [`motion-connectors`](https://github.com/animu-sphere/motion-connectors)'
@@ -107,8 +112,6 @@ bit. They shipped in v0.9.0. What comes next:
 | Component | Type | Role |
 | --- | --- | --- |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
-| [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral pose / animation / root-motion / constraint types |
-| [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend |
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |

@@ -11,7 +11,7 @@
 // mirrored implementation as readily as with a correct one. Everything above
 // them is checked structurally, over rigs assembled by hand.
 //
-// Tolerances are `motion::MotionTolerance`'s and never a number chosen here: an
+// Tolerances are `openstrata::motion::MotionTolerance`'s and never a number chosen here: an
 // epsilon picked to make one machine pass is the defect the contract's
 // comparison semantics exist to avoid.
 //
@@ -23,7 +23,7 @@
 #include "motionSource/SourceSkeleton.h"
 
 #include "motionCore/Compare.h"
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include <cassert>
 #include <cmath>
@@ -64,7 +64,7 @@ using motionSource::SourceSkeleton;
 using motionSource::SourceVec3;
 using motionSource::UnmappedJointPolicy;
 
-const motion::MotionTolerance kTolerance;
+const openstrata::motion::MotionTolerance kTolerance;
 
 SourceVec3
 Vec(float x, float y, float z)
@@ -85,7 +85,7 @@ NearVector(const pxr::GfVec3f& actual, const pxr::GfVec3f& expected)
 bool
 NearRotation(const pxr::GfQuatf& actual, const pxr::GfQuatf& expected)
 {
-    return motion::AngleBetween(actual, expected) <= kTolerance.angle;
+    return openstrata::motion::AngleBetween(actual, expected) <= kTolerance.angle;
 }
 
 pxr::GfQuatf
@@ -113,9 +113,9 @@ BaseProfile()
     profile.restPose = RestPoseSource::RestOffsets;
     profile.unmappedJoints = UnmappedJointPolicy::Refuse;
     profile.joints = {
-        SourceJointMapping{"root", motion::HumanBone::Hips, true},
-        SourceJointMapping{"back", motion::HumanBone::Spine, true},
-        SourceJointMapping{"crown", motion::HumanBone::Head, true},
+        SourceJointMapping{"root", openstrata::motion::HumanJoint::Hips, true},
+        SourceJointMapping{"back", openstrata::motion::HumanJoint::Spine, true},
+        SourceJointMapping{"crown", openstrata::motion::HumanJoint::Head, true},
     };
     // The segment between `root` and `back` carries no canonical bone and is
     // named here so that `refuse` above means what it says.
@@ -412,7 +412,7 @@ TestARotationTooSmallToSquareIsStillNormalised()
     profile.restPose = RestPoseSource::StatedRestRotations;
     const SourceConversion result = ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
     assert(result.Converted());
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
     assert(NearRotation(result.rest.localRotations[spine], AboutY(45.0f)));
     assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f) <= kTolerance.angle);
 }
@@ -475,9 +475,9 @@ TestRestPoseFromOffsets()
         ConvertSourceToCanonical(BaseSkeleton(), BaseAnimation(), BaseProfile());
     assert(result.Converted());
 
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
-    const auto head = static_cast<std::size_t>(motion::HumanBone::Head);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
+    const auto head = static_cast<std::size_t>(openstrata::motion::HumanJoint::Head);
     assert(result.rest.present.test(hips));
     assert(result.rest.present.test(spine));
     assert(result.rest.present.test(head));
@@ -497,7 +497,7 @@ TestRestPoseFromOffsets()
     // Which bone absorbed a chain is reported, because a cross-source
     // comparison will want to know.
     assert(result.report.composedBones.size() == 1);
-    assert(result.report.composedBones[0] == motion::HumanBone::Spine);
+    assert(result.report.composedBones[0] == openstrata::motion::HumanJoint::Spine);
 }
 
 // `stated-rest-rotations`: the source states a rest orientation per joint, and
@@ -525,14 +525,14 @@ TestRestPoseFromStatedRotations()
     const SourceConversion result = ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
     assert(result.Converted());
 
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
     assert(NearRotation(result.rest.localRotations[spine], AboutY(45.0f)));
     // Normalised on the way in: the double-length quaternion above describes a
     // 45-degree turn and nothing else, and `GetLength` says so.
     assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f) <= kTolerance.angle);
     // The hips are above it and unaffected; the head is below a bound joint that
     // states nothing.
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
     assert(NearRotation(result.rest.localRotations[hips], pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 
     // The same rig read as `rest-offsets` states no rest rotation at all, which
@@ -558,7 +558,7 @@ TestRestPoseFromFirstFrame()
     const SourceConversion result = ConvertSourceToCanonical(BaseSkeleton(), animation, profile);
     assert(result.Converted());
 
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
     // The rest is frame 0's rotation.
     assert(NearRotation(result.rest.localRotations[spine], AboutY(30.0f)));
     // And the samples are unchanged by that: frame 0 still reports 30, not the
@@ -596,8 +596,8 @@ TestABoneNothingRotatesIsNotValid()
         ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
     assert(result.Converted());
 
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
-    const auto head = static_cast<std::size_t>(motion::HumanBone::Head);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
+    const auto head = static_cast<std::size_t>(openstrata::motion::HumanJoint::Head);
     assert(!result.animation.samples[0].validRotations.test(spine));
     // The head is below a silent joint but states its own rotation, so it is
     // reported.
@@ -621,14 +621,14 @@ TestUnmappedJointRotationIsComposedNotDropped()
         ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
     assert(result.Converted());
 
-    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    const auto spine = static_cast<std::size_t>(openstrata::motion::HumanJoint::Spine);
     // Ninety, not sixty: the segment's thirty degrees would otherwise be lost
     // and everything below it would sit thirty degrees wrong -- a subtly
     // misassembled body rather than a failure.
     assert(NearRotation(result.animation.samples[0].localRotations[spine], AboutY(90.0f)));
 
     // The head is directly under a bound joint, so nothing is composed into it.
-    const auto head = static_cast<std::size_t>(motion::HumanBone::Head);
+    const auto head = static_cast<std::size_t>(openstrata::motion::HumanJoint::Head);
     assert(NearRotation(result.animation.samples[0].localRotations[head],
                         pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 }
@@ -683,7 +683,7 @@ TestRootRotationPolicies()
     SourceAnimation animation = BaseAnimation();
     animation.tracks[0] = RotationTrack({Angles(0.0f, 0.0f, 45.0f), Angles(0.0f, 0.0f, 45.0f)});
     animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f), Vec(0.0f, 90.0f, 0.0f)};
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
     {
         const SourceConversion result =
             ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
@@ -763,7 +763,7 @@ TestRootPlacementComposesThePathToTheHips()
 void
 TestRestFromFirstFrameTakesTranslationsToo()
 {
-    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    const auto hips = static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips);
     {
         const SourceConversion result =
             ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
@@ -876,12 +876,12 @@ BoneLocalProfile()
     profile.rootJoint = "reference";
     profile.restPose = RestPoseSource::TPose;
     profile.joints = {
-        SourceJointMapping{"root", motion::HumanBone::Hips, true},
-        SourceJointMapping{"back", motion::HumanBone::Spine, true},
-        SourceJointMapping{"crown", motion::HumanBone::Head, true},
-        SourceJointMapping{"wing", motion::HumanBone::LeftShoulder, true},
-        SourceJointMapping{"limb", motion::HumanBone::LeftUpperArm, true},
-        SourceJointMapping{"tip", motion::HumanBone::LeftHand, true},
+        SourceJointMapping{"root", openstrata::motion::HumanJoint::Hips, true},
+        SourceJointMapping{"back", openstrata::motion::HumanJoint::Spine, true},
+        SourceJointMapping{"crown", openstrata::motion::HumanJoint::Head, true},
+        SourceJointMapping{"wing", openstrata::motion::HumanJoint::LeftShoulder, true},
+        SourceJointMapping{"limb", openstrata::motion::HumanJoint::LeftUpperArm, true},
+        SourceJointMapping{"tip", openstrata::motion::HumanJoint::LeftHand, true},
     };
     profile.ignoredJoints = {"reference"};
     return profile;
@@ -943,11 +943,11 @@ BoneLocalAnimation()
 // states each bone from its nearest *present* ancestor, so this is the same walk
 // its consumers make and not a shortcut past one.
 std::pair<pxr::GfQuatf, pxr::GfVec3f>
-WorldRest(const motionSource::CanonicalRestPose& rest, motion::HumanBone bone)
+WorldRest(const motionSource::CanonicalRestPose& rest, openstrata::motion::HumanJoint bone)
 {
-    std::vector<motion::HumanBone> chain;
-    for (std::optional<motion::HumanBone> at = bone; at;
-         at = motion::NearestPresentAncestor(*at, rest.present))
+    std::vector<openstrata::motion::HumanJoint> chain;
+    for (std::optional<openstrata::motion::HumanJoint> at = bone; at;
+         at = openstrata::motion::NearestPresentAncestor(*at, rest.present))
     {
         chain.push_back(*at);
     }
@@ -971,10 +971,10 @@ TestTPoseRestStandsTheRigUp()
         ConvertSourceToCanonical(BoneLocalSkeleton(), BoneLocalAnimation(), BoneLocalProfile());
     assert(result.Converted());
 
-    const pxr::GfVec3f hips = WorldRest(result.rest, motion::HumanBone::Hips).second;
-    const pxr::GfVec3f spine = WorldRest(result.rest, motion::HumanBone::Spine).second;
-    const pxr::GfVec3f head = WorldRest(result.rest, motion::HumanBone::Head).second;
-    const pxr::GfVec3f hand = WorldRest(result.rest, motion::HumanBone::LeftHand).second;
+    const pxr::GfVec3f hips = WorldRest(result.rest, openstrata::motion::HumanJoint::Hips).second;
+    const pxr::GfVec3f spine = WorldRest(result.rest, openstrata::motion::HumanJoint::Spine).second;
+    const pxr::GfVec3f head = WorldRest(result.rest, openstrata::motion::HumanJoint::Head).second;
+    const pxr::GfVec3f hand = WorldRest(result.rest, openstrata::motion::HumanJoint::LeftHand).second;
 
     // Centimetres in, metres out. The spine sits its own offset above the hips
     // and the head above that: 0.20 and 0.30 of the rig's own bone lengths,
@@ -1002,9 +1002,9 @@ TestTPoseRestStandsTheRigUp()
     const SourceConversion flat =
         ConvertSourceToCanonical(BoneLocalSkeleton(), BoneLocalAnimation(), offsets);
     assert(flat.Converted());
-    assert(NearVector(WorldRest(flat.rest, motion::HumanBone::Head).second,
+    assert(NearVector(WorldRest(flat.rest, openstrata::motion::HumanJoint::Head).second,
                       pxr::GfVec3f(0.50f, 0.90f, 0.0f)));
-    assert(NearVector(WorldRest(flat.rest, motion::HumanBone::LeftHand).second,
+    assert(NearVector(WorldRest(flat.rest, openstrata::motion::HumanJoint::LeftHand).second,
                       pxr::GfVec3f(0.60f, 0.90f, 0.0f)));
 }
 
@@ -1033,7 +1033,7 @@ TestTPoseRestObeysADroppedRootRotation()
     // is the chain aimed: 0.20 out, 0.30 up. Built the other way round -- the
     // root aimed and then erased -- the head lands at (0.50, 0.90, 0), flat
     // along the axis the offsets happen to use.
-    assert(NearVector(WorldRest(result.rest, motion::HumanBone::Head).second,
+    assert(NearVector(WorldRest(result.rest, openstrata::motion::HumanJoint::Head).second,
                       pxr::GfVec3f(0.20f, 1.20f, 0.0f)));
 
     // And with the rotation kept, the same rig stands all the way up, which is
@@ -1041,7 +1041,7 @@ TestTPoseRestObeysADroppedRootRotation()
     const SourceConversion kept =
         ConvertSourceToCanonical(HipsRootedSkeleton(), HipsRootedAnimation(), HipsRootedProfile());
     assert(kept.Converted());
-    assert(NearVector(WorldRest(kept.rest, motion::HumanBone::Head).second,
+    assert(NearVector(WorldRest(kept.rest, openstrata::motion::HumanJoint::Head).second,
                       pxr::GfVec3f(0.0f, 1.40f, 0.0f)));
 }
 
@@ -1056,7 +1056,7 @@ TestTPoseRestKeepsTheRigsOwnProportions()
     const SourceConversion result =
         ConvertSourceToCanonical(skeleton, BoneLocalAnimation(), BoneLocalProfile());
     assert(result.Converted());
-    assert(NearVector(WorldRest(result.rest, motion::HumanBone::Head).second,
+    assert(NearVector(WorldRest(result.rest, openstrata::motion::HumanJoint::Head).second,
                       pxr::GfVec3f(0.0f, 1.55f, 0.0f)));
 }
 
@@ -1112,12 +1112,15 @@ TestProvenance()
 
     // The narrowing: producer -> provider, format -> protocol, always a clip,
     // and the producer version and profile id dropped.
-    assert(result.animation.source.kind == motion::MotionSourceKind::Clip);
+    assert(result.animation.source.kind == openstrata::motion::MotionSourceKind::Clip);
     assert(result.animation.source.provider == "Example Producer");
     assert(result.animation.source.protocol == "example");
     assert(result.animation.source.sourceId == "capture.example");
-    // Not repeated per sample: it cannot vary within a clip.
-    assert(!result.animation.samples[0].source.has_value());
+    // Not repeated per sample: it cannot vary within a clip. The contract's
+    // metadata is always present now, so what says "this sample stamped
+    // nothing" is a default value rather than an absent optional.
+    assert(result.animation.samples[0].metadata.provider.empty());
+    assert(result.animation.samples[0].metadata.sourceId.empty());
 }
 
 void

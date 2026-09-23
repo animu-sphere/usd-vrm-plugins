@@ -13,7 +13,7 @@
 #include "vrmRetarget/LookAtEvaluator.h"
 #include "vrmRetarget/PoseRetargeter.h"
 
-#include "motionRuntime/Resample.h"
+#include "motionSampling/Resample.h"
 
 #include <algorithm>
 #include <cmath>
@@ -138,12 +138,12 @@ CountMaterialColors(const std::vector<vrmRetarget::ResolvedExpressions>& express
 // same space.
 std::vector<vrmRetarget::ResolvedLookAt>
 EvaluateGaze(const motionRetargetTool::Avatar& avatar, const motionRetargetTool::Clip& clip,
-             const motion::HumanoidAnimation& source,
+             const openstrata::motion::MotionClip& source,
              const vrmRetarget::RetargetedAnimation& retargeted,
              vrmRetarget::LookAtDiagnostics* diagnostics)
 {
     std::vector<vrmRetarget::ResolvedLookAt> gaze;
-    const int head = avatar.map.GetJointIndex(motion::HumanBone::Head);
+    const int head = avatar.map.GetJointIndex(openstrata::motion::HumanJoint::Head);
     if (head == vrmRetarget::HumanoidMap::kUnmapped)
     {
         // Without a head there is no place for the eyes to be, so there is
@@ -189,7 +189,7 @@ EvaluateGaze(const motionRetargetTool::Avatar& avatar, const motionRetargetTool:
 // usual shape, a glTF node with a translation and nothing else -- and a rig
 // where they do not is told about rather than silently read one way.
 std::size_t
-ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const motion::HumanoidAnimation& source,
+ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const openstrata::motion::MotionClip& source,
                   const std::vector<vrmRetarget::ResolvedLookAt>& gaze,
                   vrmRetarget::RetargetedAnimation* retargeted, std::vector<std::string>* warnings)
 {
@@ -224,20 +224,20 @@ ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const motion::Humano
         // about to overwrite -- and losing a channel the clip explicitly
         // authored is exactly the silence the expression collision one branch
         // over is reported for. Say it once, naming the bone.
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
         {
-            const auto bone = static_cast<motion::HumanBone>(slot);
+            const auto bone = static_cast<openstrata::motion::HumanJoint>(slot);
             if (avatar.map.GetJointIndex(bone) != index)
             {
                 continue;
             }
             const bool driven = std::any_of(source.samples.begin(), source.samples.end(),
-                                            [slot](const motion::HumanoidPose& pose)
+                                            [slot](const openstrata::motion::MotionPose& pose)
                                             { return pose.validRotations.test(slot); });
             if (driven)
             {
                 warnings->push_back("the clip animates '" +
-                                    std::string(motion::HumanBoneName(bone)) +
+                                    std::string(openstrata::motion::HumanJointName(bone)) +
                                     "' and the avatar aims that joint with its look-at; the "
                                     "gaze this rig resolves wins");
             }
@@ -349,11 +349,11 @@ main(int argc, char** argv)
     // timeline is that they expand the same list: a retargeter-side resample
     // would move the joints onto a uniform timeline while the expressions
     // stayed on the clip's key times, and the two would meet at neither.
-    motion::HumanoidAnimation resampled;
-    const motion::HumanoidAnimation* source = &clip.animation;
+    openstrata::motion::MotionClip resampled;
+    const openstrata::motion::MotionClip* source = &clip.animation;
     if (options.resampleRate > 0.0)
     {
-        resampled = motion::Resample(clip.animation, options.resampleRate);
+        resampled = openstrata::motion::Resample(clip.animation, options.resampleRate);
         source = &resampled;
     }
 
@@ -452,16 +452,16 @@ main(int argc, char** argv)
         expressions.reserve(source->samples.size());
         for (std::size_t i = 0; i < source->samples.size(); ++i)
         {
-            const motion::HumanoidPose& pose = source->samples[i];
+            const openstrata::motion::MotionPose& pose = source->samples[i];
             if (!gazeDrivesExpressions || i >= gaze.size() || !gaze[i].hasGaze)
             {
                 expressions.push_back(resolver.Resolve(pose, &expressionDiagnostics));
                 continue;
             }
-            motion::ExpressionWeights weights = pose.expressions;
-            for (const motion::ExpressionWeight& gazeWeight : gaze[i].expressions.entries)
+            openstrata::motion::MotionChannelSet weights = pose.channels;
+            for (const openstrata::motion::MotionChannel& gazeWeight : gaze[i].expressions.entries)
             {
-                if (!weights.Set(gazeWeight.name, gazeWeight.weight))
+                if (!weights.Set(gazeWeight.name, gazeWeight.value))
                 {
                     // The clip drives a gaze expression by name *and* names a
                     // look-at target. Both are legitimate authoring, and one

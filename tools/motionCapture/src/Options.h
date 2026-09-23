@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "motionRuntime/LiveCaptureSource.h"
+#include "motionRecording/LiveCaptureSource.h"
 
 #include <string>
 #include <vector>
@@ -31,7 +31,7 @@ struct Options
     // transport falls behind.
     double deliveryLag = 0.0;
 
-    motion::LiveCaptureConfig capture;
+    openstrata::motion::LiveCaptureConfig capture;
 
     // Prim name for the authored UsdSkelAnimation.
     std::string clipName = "BodyAnimation";

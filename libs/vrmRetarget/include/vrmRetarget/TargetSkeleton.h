@@ -118,7 +118,7 @@ class VRMRETARGET_API TargetSkeleton
 // Exact means a rest rotation and its negation are *different* skeletons here,
 // though they rest identically. Downstream of an exec computation that is the
 // conservative answer -- a flipped sign recomputes what depends on it, which is
-// wasteful and never wrong -- and it is the same one `HumanoidPose` gives. There
+// wasteful and never wrong -- and it is the same one `MotionPose` gives. There
 // is no `NearlyEqual`: nothing yet asks whether two rigs are the same rig, and a
 // parity check compares the poses retargeted onto them.
 VRMRETARGET_API bool operator==(const TargetJoint& a, const TargetJoint& b) noexcept;

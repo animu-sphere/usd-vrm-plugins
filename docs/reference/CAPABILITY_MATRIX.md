@@ -93,12 +93,12 @@ Its own status:
 | `usdVrmaFileFormat` | v0.7.0 | Expression animation read: declared expressions become `/Animation/Expressions/<name>` prims carrying a time-sampled weight, unexpanded and unclamped (Motion Phase G, first half) |
 | `motionCore` | v0.3.0 | Vendor-neutral pose/animation types (Motion Phase A contract) |
 | `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
-| `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder` (Motion Phase D) |
+| `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `MotionRecorder` (Motion Phase D) |
 | `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
 | `vrmRetarget` | v0.9.0 | `ExpressionResolver`: a clip's named expression weight resolved onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName`, with the avatar's `overrideBlink` / `overrideLookAt` / `overrideMouth` arbitrating co-active expressions (Motion Phase G) |
 | `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
 | `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
-| `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
+| `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanJoint` mapping, `LiveCaptureSource` bridge, UDP receiver |
 | `vmc_record` | v0.6.0 | CLI: records a bounded live VMC session to a `vmc-packet-capture` file, or inspects one, with a decode report; `--export-trace` writes what the adapter delivered as a `motion-capture-trace`, which is the adapter's whole hand-off to the product's tools |
 | `vrmAdapterMocopi` | v0.7.0 | Native UDP input for one capture product: bounded receiver, packet capture, decoder for an unpublished wire grammar, joint map and basis change, frame assembly with restart detection, `LiveCaptureSource` bridge, and `BodyPlacementPolicy` composing `RootMotion` from a hips-only translating rig |
 | `mocopi_record` | v0.7.0 | CLI: records a bounded live mocopi session or inspects a capture; `--export-trace` (from `--inspect` only) writes the same `motion-capture-trace` the product's tools replay unchanged, and reports the hips travel a path carries |
@@ -109,7 +109,7 @@ Its own status:
 | `osc` | v0.8.0 | The OSC 1.0 wire format once instead of once per adapter: packets, bundles and their flattening, addresses, type tags, arguments, and a refusal naming the byte it refused at — no address semantics |
 | `vrmAdapterVrchatOsc` | v0.8.0 | VRChat OSC tracker input: semantic decode of numbered trackers and a named `head`, tracking-space conversion to VRM 1.0's basis, and frame assembly with restart, timeout and partial-set policies. Unknown traffic is recoverable — the message is dropped and the datagram is not |
 | `vrchat_osc_record` | v0.8.0 | CLI: records or inspects a VRChat OSC packet capture; `--export-trace --assign` writes the `motion-capture-trace` the product's tools replay unchanged |
-| `motionTracking` | v0.8.0 | Which tracker is which body region, and the direct solve from assigned observations to a `HumanoidPose`. Generic and outside every adapter; a region vocabulary that is deliberately not a bone list, and an observed position the solve cannot consume is reported rather than dropped, because consuming one is IK |
+| `motionTracking` | v0.8.0 | Which tracker is which body region, and the direct solve from assigned observations to a `MotionPose`. Generic and outside every adapter; a region vocabulary that is deliberately not a bone list, and an observed position the solve cannot consume is reported rather than dropped, because consuming one is IK |
 | `vrmRetarget` | v0.9.0 | `LookAtEvaluator`, frozen `VRM_RETARGET_*` diagnostic codes as values, `DiagnoseRig`, the scale policy (`TargetJoint::restScale`) and the partial skeleton policy as a contract |
 | `execMotion` | v0.9.0 | OpenExec bundle: `motion.sampleAnimation`, `motion.filterPose`, `motion.extractRootMotion`, `motion.interpolatePose` and `motion.blendPoses` over `UsdSkelAnimation`, each a wrapper over `motionRuntime`; a clip's root drives a prop on screen through `usdExecImaging` |
 | `execVrm` | v0.9.0 | OpenExec bundle over the applied `VrmHumanoidAPI`: target skeleton, humanoid map, rest-pose correction, retarget, joint-local transforms and retarget diagnostics, each a wrapper over `vrmRetarget` and equal to `motion_retarget`'s bake bit for bit |
@@ -121,7 +121,7 @@ the first decoding with zero diagnostics — and one of them reached a released
 avatar through the unchanged product tools. Those sessions are committed as
 measured manifests with **no bytes**, since a session is a real person's motion.
 Everything else behind this table is still generated: the
-[motion traces](../../libs/motionRuntime/tests/corpus/README.md) are closed-form
+[motion traces](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionRecording/tests/corpus/README.md) are closed-form
 maths, and the VMC captures reproduce the protocol's shapes. That is deliberate —
 a corpus recorded from a commercial SDK could not be redistributed and CI could
 not run it — but it bounds what the table claims. **No VMC sender application or

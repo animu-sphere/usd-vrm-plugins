@@ -21,7 +21,8 @@ target_include_directories(execMotion_pose_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
 target_link_libraries(execMotion_pose_tests PRIVATE
     motionCore::motionCore
-    motionRuntime::motionRuntime)
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_pose_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -40,7 +41,10 @@ add_test(NAME execMotion_pose COMMAND execMotion_pose_tests)
 add_executable(execMotion_mechanism_tests test_exec_motion_mechanism.cpp)
 target_include_directories(execMotion_mechanism_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execMotion_mechanism_tests PRIVATE motionCore::motionCore)
+target_link_libraries(execMotion_mechanism_tests PRIVATE
+    motionCore::motionCore
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_mechanism_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -76,7 +80,10 @@ add_test(NAME execMotion_mechanism
 add_executable(execMotion_sample_tests test_exec_motion_sample.cpp)
 target_include_directories(execMotion_sample_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execMotion_sample_tests PRIVATE motionCore::motionCore)
+target_link_libraries(execMotion_sample_tests PRIVATE
+    motionCore::motionCore
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_sample_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -114,7 +121,10 @@ add_test(NAME execMotion_sample
 add_executable(execMotion_filter_tests test_exec_motion_filter.cpp)
 target_include_directories(execMotion_filter_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execMotion_filter_tests PRIVATE motionCore::motionCore)
+target_link_libraries(execMotion_filter_tests PRIVATE
+    motionCore::motionCore
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_filter_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -140,7 +150,7 @@ add_test(NAME execMotion_filter
 # ---------------------------------------------------------------------------
 # The first computation that returns something other than a pose, so this is
 # where the bundle's SECOND registered value type is exercised: one request
-# hands back a `motion::HumanoidPose` and a `motion::RootMotion` side by side,
+# hands back a `motion::MotionPose` and a `motion::RootMotion` side by side,
 # and the dependent value key is a different type from the one it reads.
 #
 # Like the filter suite it does not link motionRuntime. The rule under test has
@@ -151,7 +161,10 @@ add_test(NAME execMotion_filter
 add_executable(execMotion_root_tests test_exec_motion_root.cpp)
 target_include_directories(execMotion_root_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execMotion_root_tests PRIVATE motionCore::motionCore)
+target_link_libraries(execMotion_root_tests PRIVATE
+    motionCore::motionCore
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_root_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -178,7 +191,7 @@ add_test(NAME execMotion_root
 # The first node whose input a driver hands in rather than feeds back: a
 # timestamped history, supplied as an override on `motion.poseHistory` and
 # sampled at the evaluated instant. So this is where the bundle's third and
-# fourth registered value types are exercised -- `motion::HumanoidAnimation` in,
+# fourth registered value types are exercised -- `motion::MotionClip` in,
 # `motion::PoseSampleResult` out -- and where an override of a key that is not a
 # pose, two overrides in one call, and an override of the wrong type are
 # measured.
@@ -192,7 +205,8 @@ target_include_directories(execMotion_interpolate_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
 target_link_libraries(execMotion_interpolate_tests PRIVATE
     motionCore::motionCore
-    motionRuntime::motionRuntime)
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_interpolate_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -227,7 +241,10 @@ add_test(NAME execMotion_interpolate
 add_executable(execMotion_blend_tests test_exec_motion_blend.cpp)
 target_include_directories(execMotion_blend_tests PRIVATE
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execMotion_blend_tests PRIVATE motionCore::motionCore)
+target_link_libraries(execMotion_blend_tests PRIVATE
+    motionCore::motionCore
+    motionSampling::motionSampling
+    motionRecording::motionRecording)
 target_compile_options(execMotion_blend_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)

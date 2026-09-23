@@ -3,7 +3,7 @@
 
 #include "vrmRetarget/api.h"
 
-#include "motionCore/Humanoid.h"
+#include "motionCore/MotionPose.h"
 
 #include "pxr/base/gf/vec3f.h"
 
@@ -20,7 +20,7 @@ enum class RootMotionMode
     // translation, so the avatar animates in place.
     Ignore,
 
-    // Apply the root delta to the joint bound to HumanBone::Hips. This is the
+    // Apply the root delta to the joint bound to HumanJoint::Hips. This is the
     // default: it matches how `.vrma` carries body translation, and it keeps
     // the result playable on a rig with no dedicated motion root.
     Hips,
