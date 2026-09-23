@@ -53,7 +53,6 @@ members = [
   "libs/vrmContainer",
   "libs/vrmRig",
   "tools/motionBvh",
-  "tools/motionCapture",
   "tools/motionRetarget",
 ]
 release_members = [
@@ -64,7 +63,6 @@ release_members = [
   "usdVrmaFileFormat",
   "usdVrmPackageResolver",
   "motion_bvh",
-  "motion_capture",
   "motion_retarget",
 ]
 release_exclude = [

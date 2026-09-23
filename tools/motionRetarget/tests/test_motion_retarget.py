@@ -1192,6 +1192,73 @@ def check_a_gaze_expression_collision_is_reported_once(
         f"the clip's own lookLeft weight survived the gaze: {left}")
 
 
+def check_a_recorded_session_bakes(tool: str, tool_fixtures: pathlib.Path,
+                                   avatar: pathlib.Path, humanoid_map: str,
+                                   workspace: pathlib.Path,
+                                   failures: Failures) -> None:
+    """A clip `usd-motion-plugins`' recorder wrote reaches an avatar.
+
+    `recorded_session_clip.usda` is what the published `motion_record` 0.5.0
+    authored from a recorded session, byte for byte (the fixtures' README). It
+    is that repository's `/Animation` stage, not a `.vrma`'s and not this
+    tool's own design clip, so the claim is the one `motion_capture_replay`
+    made here until MIG-4 took the recorder: a live session bakes through this
+    tool unchanged. A clip that binds and holds the rest pose resolves fine and
+    animates nothing -- the v0.4.0 regression (#64) -- so the bake is resolved
+    through a skeleton query and has to move.
+    """
+    baked = workspace / "recorded_session_bake.usda"
+    result = run_tool(tool,
+                      "--avatar", str(avatar),
+                      "--animation",
+                      str(tool_fixtures / "recorded_session_clip.usda"),
+                      "--output", str(baked),
+                      "--humanoid-map", humanoid_map,
+                      "--root-motion", "hips")
+    if not failures.check(
+            result.returncode == EXIT_SUCCESS,
+            f"motion_retarget could not bake the recorded session "
+            f"({result.returncode}): {result.stderr.strip()}"):
+        return
+
+    # Both stay in locals: the query holds no strong reference back, so a
+    # temporary would be released out from under it.
+    stage = Usd.Stage.Open(str(baked))
+    cache = UsdSkel.Cache()
+    query = cache.GetSkelQuery(find_skeleton(stage))
+    if not failures.check(bool(query),
+                          f"{baked.name} yields no UsdSkel skeleton query"):
+        return
+    times = find_animation(stage).GetRotationsAttr().GetTimeSamples()
+    if not failures.check(len(times) == 61,
+                          f"{baked.name} has {len(times)} time samples, "
+                          f"expected the session's 61"):
+        return
+
+    def rotations_at(time) -> list[Gf.Quatf]:
+        transforms = query.ComputeJointLocalTransforms(Usd.TimeCode(time))
+        if transforms is None:
+            return []
+        return [Gf.Quatf(rotation.GetReal(), Gf.Vec3f(*rotation.GetImaginary()))
+                for rotation in (transform.ExtractRotationQuat()
+                                 for transform in transforms)]
+
+    reference = rotations_at(times[0])
+    if not failures.check(
+            len(reference) > 0,
+            f"UsdSkel resolved no joint transforms from {baked.name}: the "
+            f"animation is bound but does not drive the rig"):
+        return
+    # Across the whole timeline, not endpoint to endpoint: the walk spans whole
+    # gait cycles and legitimately returns to its opening pose.
+    failures.check(
+        any(any(not quaternions_match(a, b)
+                for a, b in zip(reference, rotations_at(time)))
+            for time in times[1:]),
+        f"UsdSkel resolves {baked.name} to the same pose at every time: the "
+        f"recorded session bound to the avatar but did not animate it")
+
+
 def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
                      humanoid_map: str, workspace: pathlib.Path,
                      failures: Failures) -> None:
@@ -1415,7 +1482,8 @@ def main() -> int:
                  tool_fixtures / "expressive_clip.usda",
                  tool_fixtures / "gazing_avatar.usda",
                  tool_fixtures / "gazing_expression_avatar.usda",
-                 tool_fixtures / "gazing_clip.usda"):
+                 tool_fixtures / "gazing_clip.usda",
+                 tool_fixtures / "recorded_session_clip.usda"):
         if not path.is_file():
             print(f"FAIL: missing fixture {path}", file=sys.stderr)
             return 1
@@ -1613,6 +1681,10 @@ def main() -> int:
 
         check_provenance_flags(options.tool, avatar, clip,
                                options.humanoid_map, workspace, failures)
+
+        check_a_recorded_session_bakes(options.tool, tool_fixtures, avatar,
+                                       options.humanoid_map, workspace,
+                                       failures)
 
         check_exit_codes(options.tool, avatar, clip, options.humanoid_map,
                          workspace, failures)

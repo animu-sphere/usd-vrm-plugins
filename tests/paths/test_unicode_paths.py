@@ -256,7 +256,6 @@ def legs(failures: Failures, arguments: argparse.Namespace,
                              "プロファイル")
     avatar = workspace.copy(arguments.avatar, "avatar", "アバター")
     vrma = workspace.copy(arguments.vrma, "walk", "歩き")
-    trace = workspace.copy(arguments.trace, "capture", "収録トレース")
     out = {"bvh": bvh, "avatar": avatar, "vrma": vrma}
 
     # The recorded path: syntax, conversion through a profile named by path,
@@ -277,22 +276,17 @@ def legs(failures: Failures, arguments: argparse.Namespace,
         "--avatar", avatar, "--animation", vrma,
         "--output", out["vrma_bake"], "--quiet")
 
-    # The live path, from a committed trace rather than from a recorder. The
-    # three recorders left with MIG-4, and with them the step that turned a
-    # capture into a trace; what stays here is the half this workspace still
-    # ships -- `motion_capture` replaying a `motion-capture-trace` whose path
-    # no ANSI code page can spell.
-    out["live_clip"] = workspace.name("live", "ライブ", ".usda")
-    run(failures, "motion_capture", arguments.capture,
-        "--trace", trace, "--output", out["live_clip"], "--quiet")
+    # The live path left with MIG-4: the three recorders to `motion-connectors`
+    # and `motion_capture` to `usd-motion-plugins`, as `motion_record`, whose
+    # own suite replays a trace from a directory no ANSI code page can spell.
     return out
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    for tool in ("bvh-inspect", "bvh-convert", "retarget", "capture"):
+    for tool in ("bvh-inspect", "bvh-convert", "retarget"):
         parser.add_argument(f"--{tool}", type=pathlib.Path, required=True)
-    for data in ("avatar", "vrma", "bvh-corpus", "profiles", "trace"):
+    for data in ("avatar", "vrma", "bvh-corpus", "profiles"):
         parser.add_argument(f"--{data}", type=pathlib.Path, required=True)
     arguments = parser.parse_args()
     # A failure names a non-ASCII file, and a pipe on Windows is otherwise
@@ -312,7 +306,7 @@ def main() -> int:
             return failures.report()
         unicode = legs(failures, arguments, Workspace(root, unicode=True))
 
-        for key in ("clip", "bake", "vrma_bake", "live_clip"):
+        for key in ("clip", "bake", "vrma_bake"):
             failures.check(unicode[key].exists(),
                            f"{unicode[key].name} was not written")
 
@@ -335,10 +329,6 @@ def main() -> int:
                 check_bake_composes(failures, leg, unicode[key],
                                     unicode["avatar"])
                 check_same_animation(failures, leg, unicode[key], ascii_[key])
-
-        if unicode["live_clip"].exists():
-            check_same_animation(failures, "motion_capture",
-                                 unicode["live_clip"], ascii_["live_clip"])
 
         check_plugin_host(failures, unicode["avatar"], ascii_["avatar"],
                           unicode["vrma"], ascii_["vrma"])

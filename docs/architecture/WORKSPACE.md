@@ -113,7 +113,6 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). |
 | `vrmRig` | plain static CMake library (`libs/vrmRig/`; `vrmRetarget` until 2026-09-23) | What a VRM rig adds to a retarget, and none of it retargets: VRM 1.0's required-bone set, which every caller hands the retarget, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). Links `motionCore` and nothing else of `usd-motion-plugins` (§9.5). |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
-| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `motionRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
 
 **`motionCore` and `motionRuntime` left with MIG-1 and MIG-2** (2026-09-21),
 and this workspace consumes them: they are `usd-motion-plugins`' `motionCore`,
@@ -133,6 +132,15 @@ body retarget's codes are `usd-motion-plugins`' `motionRetarget`, and
 stayed of `vrmRetarget` is the row above, renamed `vrmRig` because the old name
 would have outlived every retarget in it.
 
+**The capture-replay CLI left with MIG-4** (2026-09-23): `motion_capture` is
+`usd-motion-plugins`' `motion_record`, and this workspace no longer builds or
+ships it. Deleting a member consumes nothing, so this waited on no `ost` release.
+What the tool carried here was two claims, and each one moved rather than
+lapsed. The non-ASCII path case is now `motion_record_replay`'s
+(usd-motion-plugins #23). The bake of a recorded session onto an avatar is now
+`motion_retarget`'s suite, over a clip the published recorder wrote
+(`tools/motionRetarget/tests/fixtures/`).
+
 **Ten identities left this table with MIG-4**, on 2026-09-21, and are
 `motion-connectors`' now: the two shared live leaves (`liveTransport`, `osc`),
 the tracker layer (`motionTracking`), the three input adapters and their three
@@ -145,8 +153,8 @@ with generic motion still to follow under MIG-1..MIG-3.
 The rule those adapters' CLIs were the first readers of stays, because it is
 about a *kind* of member rather than about them: a library that carries a
 producer's name may also carry one CLI, declared beside it as an
-`openstrata.tool.yaml` workspace tool in the way `motion_retarget` and
-`motion_capture` are, and that CLI is outside the aggregate product
+`openstrata.tool.yaml` workspace tool in the way `motion_retarget` is, and
+that CLI is outside the aggregate product
 ([§5](#5-the-aggregate-product)).
 
 Recorded motion sources — the file half of the input layer (motion policy §8.3):
@@ -313,7 +321,6 @@ motionRuntime         -> motionCore
 vrmRig                -> motionCore
 motion_retarget       -> motionRetarget, vrmRig, motionSampling, motionCore,
                          OpenUSD stage
-motion_capture        -> motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
 execVrm               -> vrmSchema

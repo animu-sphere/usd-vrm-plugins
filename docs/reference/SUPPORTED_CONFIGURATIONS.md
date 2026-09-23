@@ -153,7 +153,7 @@ no supported static-plugin build. `vrmRig`, and the `usd-motion-plugins`
 packages this product consumes (`motionCore`, `motionSampling`,
 `motionRecording`, `motionRetarget`), are intentionally static and are linked
 into their consumers;
-`motion_retarget` and `motion_capture` are ordinary executables and register
+`motion_retarget` and the BVH CLIs are ordinary executables and register
 nothing with OpenUSD.
 Discovery follows OpenUSD's standard mechanism: add
 the required bundle's `plugin/resources/<bundle>` directory to

@@ -532,7 +532,12 @@ lag.
 same avatar-independent shape `usdVrmaFileFormat` produces — a `UsdSkelSkeleton`
 over humanoid joint paths, a `UsdSkelAnimation` bound to it, a constant identity
 `scales` array for the reason given above — so `motion_retarget` bakes a live
-session with no changes. Two details are specific to capture:
+session with no changes. Since 2026-09-23 the authoring tool is
+`usd-motion-plugins`' `motion_record`, which writes that repository's
+`/Animation` stage rather than a `/Capture` scope. The shape rules below still
+hold for it. `motion_retarget_design_triplet` bakes a clip the published
+recorder wrote, so this claim is checked against that tool's output and not
+against a copy kept here. Two details are specific to capture:
 
 - **Rest transforms are identity, except the hips.** A capture stream reports
   rotations relative to the humanoid rest, never the rest itself, so identity

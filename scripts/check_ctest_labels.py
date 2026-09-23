@@ -53,7 +53,6 @@ LABEL_SOURCES = {
     "motion.retarget": ["libs/vrmRig/tests"],
     "motion.cli": [
         "tools/motionRetarget/tests",
-        "tools/motionCapture/tests",
         "tools/motionBvh/tests",
     ],
     "motion.integration": [".", "tests/parity"],

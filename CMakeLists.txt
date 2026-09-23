@@ -204,20 +204,15 @@ foreach(_bundle ${_schema_bundles} ${_other_bundles})
     add_subdirectory("plugins/${_bundle}")
 endforeach()
 
-# The motion layer's CLI tools. Both are executables, not bundles: they have no
+# The motion layer's CLI tools. They are executables, not bundles: they have no
 # plugInfo.json and register nothing with OpenUSD -- they open stages the
 # plugins above already know how to read. Added last so their end-to-end tests
 # can rely on those bundles existing in the same build tree.
 #
-# Order matters for the tests, not the build. The Phase D end-to-end test drives
-# motion_capture and then motion_retarget, so motionRetarget is added FIRST and
-# motionCapture's test wiring picks it up with `if(TARGET motion_retarget)`.
-# A standalone `ost plugin build tools/motionCapture` has no such target, and
-# referencing one that does not exist fails at generate time rather than at run
-# time -- so the guard, not a bare $<TARGET_FILE:>, is what keeps both
-# configurations green.
+# The capture-replay CLI left with MIG-4: `tools/motionCapture` is
+# `usd-motion-plugins`' `motion_record` now. What it authored still reaches an
+# avatar here, as a committed clip that motionRetarget's suite bakes.
 add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarget
-add_subdirectory("tools/motionCapture")     # Motion Phase D — live capture
 
 # The BVH path's CLIs. `motion_bvh_inspect` is the exception to the paragraph
 # above: it opens no stage and links no OpenUSD, because the syntax layer under
@@ -331,14 +326,16 @@ endif()
 # the OpenExec plan's P0-2 "Windows Unicode paths" row and Product P3's Unicode
 # item.
 #
-# **Four executables, where there were seven.** The three adapter recorders
+# **Three executables, where there were seven.** The three adapter recorders
 # left with MIG-4, and with them the three recorded captures this test opened
-# from a non-ASCII directory. What that costs is stated rather than absorbed:
-# the claim "every executable this workspace ships opens a non-ASCII path" is
-# now over four, and the recorders' half of it is `motion-connectors`' to make.
+# from a non-ASCII directory; `motion_capture` followed, as `usd-motion-plugins`'
+# `motion_record`, whose own suite now makes the claim (usd-motion-plugins #23).
+# What that costs is stated rather than absorbed: the claim "every executable
+# this workspace ships opens a non-ASCII path" is now over three, and the rest
+# of it is made where the executables went.
 if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
    AND TARGET motion_bvh_inspect AND TARGET motion_bvh_convert
-   AND TARGET motion_retarget AND TARGET motion_capture
+   AND TARGET motion_retarget
    AND TARGET UsdVrmFileFormat AND TARGET UsdVrmaFileFormat
    AND TARGET UsdVrmPackageResolver AND EXISTS "${_real_avatar}")
     set(_unicode_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
@@ -351,12 +348,10 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
             --bvh-inspect "$<TARGET_FILE:motion_bvh_inspect>"
             --bvh-convert "$<TARGET_FILE:motion_bvh_convert>"
             --retarget "$<TARGET_FILE:motion_retarget>"
-            --capture "$<TARGET_FILE:motion_capture>"
             --avatar "${_real_avatar}"
             --vrma "${_unicode_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
             --bvh-corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
-            --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion"
-            --trace "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/traces/walk-clean-30hz.trace")
+            --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
     # The three file-format bundles as their own suites load them, and the
     # Python runtime the remaining tools load through Gf.
     set_tests_properties(workspace_unicode_paths PROPERTIES

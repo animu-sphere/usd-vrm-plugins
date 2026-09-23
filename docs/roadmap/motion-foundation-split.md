@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left waits on `ost` materializing an artifact only a tool declares (`motionUsd`, `motionSource`, `motionBvh`) or on a published `execMotion` bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture`'s own arrival in `usd-motion-plugins` (2026-09-20) still owes its deletion here · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left waits on `ost` materializing an artifact only a tool declares (`motionUsd`, `motionSource`, `motionBvh`) or on a published `execMotion` bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -112,7 +112,7 @@ repository's, and needs nothing from this one.
   | MIG-1 | `motionCore_unit`, `motionCore_compare` | the whole suite: every identity here links `motionCore` |
   | MIG-2 | `motionRuntime_unit`, `_liveCapture`, `_corpus`, `_traceGen`; the generic half of `vrmRetarget_unit`; every `execMotion_*` suite | `workspace_exec_driver` and the five `workspace_exec_parity_*` cases (**414 598 values, every one `==`**, at v0.9.0); `motion_retarget_design_triplet`; every `execVrm_*` suite |
   | MIG-3 | every `motionSource_*` and `motionBvh_*` suite; `motion_bvh_convert_clip`, `motion_bvh_inspect_report`; `workspace_motion_profiles` and its `_absent` pair | `workspace_bvh_end_to_end` (a BVH export through the product's tools onto a VRM) |
-  | MIG-4 | `motion_capture_replay`; `liveTransport_packetCapture`; `motionTracking_trackerAssignment`, `_trackerSolve`; every `vrmAdapter*` capture and packet suite | `workspace_unicode_paths`, which runs the three recorders, loses them with this move |
+  | MIG-4 | `motion_capture_replay`; `liveTransport_packetCapture`; `motionTracking_trackerAssignment`, `_trackerSolve`; every `vrmAdapter*` capture and packet suite | `workspace_unicode_paths`, which runs the three recorders and `motion_capture`, loses them with this move; `motion_retarget_design_triplet` gains `motion_capture_replay`'s bake, over a clip the published recorder wrote (2026-09-23) |
 
   Boundary suites (`*_boundaries`) travel too, and they are rewritten there
   for that repository's edges rather than reproduced.
@@ -370,7 +370,8 @@ repository's, and needs nothing from this one.
 
 ## 6. MIG-4 — recording and live input 🚧
 
-- 🚧 `motion_capture` arrives as `usd-motion-plugins`' recording tool.
+- ✅ `motion_capture` arrives as `usd-motion-plugins`' recording tool, and
+  leaves here.
   - ✅ Imported with its history as `motion_record`
     ([usd-motion-plugins #10](https://github.com/animu-sphere/usd-motion-plugins/pull/10), merged as f2e7e9b):
     17 commits, without the clip writer, which had arrived as `motionUsd`.
@@ -381,12 +382,26 @@ repository's, and needs nothing from this one.
   - ✅ `motion_capture_replay` travelled as `motion_record_replay`. Its last
     leg bakes the recorded clip onto `docs/design/fixtures/motion/avatar.usda`
     with `motion_retarget`. That leg is this repository's, because it reads a
-    VRM avatar, and it stays here: the consuming change re-points it at the
-    consumed tool. There, the stage is resolved through a
+    VRM avatar, and it stays here. There, the stage is resolved through a
     `UsdSkelSkeletonQuery` instead.
-  - ⬜ This repository deletes `tools/motionCapture` in the consuming change,
-    and for the same reason it waits
-    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+  - ✅ The non-ASCII path case arrived in `motion_record_replay` first
+    ([usd-motion-plugins #23](https://github.com/animu-sphere/usd-motion-plugins/pull/23)).
+    It replays a trace from `ユニコード-é/` and holds the stage to the ASCII
+    replay. Built without the UTF-8 code-page manifest, the Windows executable
+    cannot open the trace. That was `workspace_unicode_paths`' `motion_capture`
+    leg here.
+  - ✅ **This repository deleted `tools/motionCapture`** (2026-09-23), with the
+    three trace fixtures only its suite read and its member, product and label
+    entries. It waited on nothing external. This line used to say it waited on
+    [ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md),
+    which `ost` 0.23.0 answered, and deleting a member consumes nothing that
+    report 44's P1 could block. The bake could not be re-pointed at the
+    consumed tool as planned: `ost` has no way for this workspace to consume
+    another repository's tool. So `motion_retarget_design_triplet` bakes a
+    committed clip instead, which the published `motion_record` 0.5.0 wrote
+    from the corpus trace, byte for byte. The fixture's README records the
+    archive digest and the command. The product's archive carries two tools
+    from the next release.
 - 🚧 `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
   `motion-connectors`, which depends on `usd-motion-plugins` and on nothing

@@ -44,7 +44,6 @@ project's central design decision, and it is described below.
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
 | [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at | v0.4.0 (as `vrmRetarget`) |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
-| [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
 | [`motionSource`](libs/motionSource) | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | v0.7.0 |
 | [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | v0.7.0 |
 | [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
@@ -71,12 +70,17 @@ that predate that rename use it in the old sense.
 > `usd-motion-plugins`' `motionRetarget`, consumed the same way. What stayed
 > of `vrmRetarget` is what a VRM rig adds to it, as `vrmRig`.
 >
+> **And the capture-replay CLI (2026-09-23).** `motion_capture` is
+> `usd-motion-plugins`' `motion_record`, and this product no longer ships it.
+> A recorded session still reaches an avatar here: `motion_retarget`'s suite
+> bakes a clip that the published recorder wrote.
+>
 > **The live inputs have moved (2026-09-21).** `liveTransport`, `osc`,
 > `motionTracking`, the three adapters and their record tools are
 > [`motion-connectors`](https://github.com/animu-sphere/motion-connectors)'
 > now, under `motionConnector*` names, and this repository no longer builds,
 > ships or tests any of them. What is left of the generic half of this layer
-> — `motionSource`, `motionBvh`, `motion_capture` and `execMotion` — moves to
+> — `motionSource`, `motionBvh` and `execMotion` — moves to
 > `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
 > resolution and `execVrm`, and consumes the rest as installed packages
 > ([WORKSPACE.md §9](docs/architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
@@ -348,7 +352,7 @@ macOS arm64 / Linux:
   tree is the only configuration in which the plain libraries and the CLI tools
   exist, and its suite also contains every bundle's own tests, so it is the
   coverage `vrmRig`, `vrmContainer`, `motionSource`, `motionBvh`,
-  `motion_retarget`, `motion_capture`, all four plugin bundles and the
+  `motion_retarget`, all four plugin bundles and the
   whole-workspace `usdvrm_baseline` gate get.
 - **Three bundle cells** — `usdVrmFileFormat` on each OS — which build that
   bundle *standalone* (`ost plugin build`, no root tree in scope), run its

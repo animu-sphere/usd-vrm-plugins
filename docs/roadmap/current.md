@@ -210,7 +210,10 @@ rule 7. `ost` 0.23.2 is what made the cross-repository edge declarable
 ([report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)),
 so MIG-1..MIG-3's consuming change — this repository resolving `motionCore` and
 the rest as installed packages — is unblocked and is the next thing the track
-owes.
+owes. MIG-4's other half, `motion_capture`, followed on 2026-09-23. It is
+`usd-motion-plugins`' `motion_record`, and `motion_retarget`'s suite bakes a
+clip the published recorder wrote
+([the migration track](motion-foundation-split.md#6-mig-4--recording-and-live-input-) §6).
 Until an identity moves, it takes fixes and the work v0.9.0 owes, and **no new
 generic capability** ([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
 
