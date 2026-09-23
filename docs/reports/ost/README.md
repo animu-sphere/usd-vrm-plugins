@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.23.4, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.23.5, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,8 +17,13 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 46 is the
-one to read first: 0.23.4 delivers all three of report 45's asks — member
+The current `ost` ask list is always in the **newest** report. Report 47 is the
+one to read first: 0.23.5 delivers report 46's P1. The root build composes a
+member's external bundle and exports its root, so `execMotion` is consumed and
+this repository's copy deleted, with parity at divergence 0. The same release
+breaks the product package: `vrmSchema`, the one bundle other members link,
+records `lib/vrmSchema.exp` in its managed build and its package stage does not
+carry it. Report 46 is next: 0.23.4 delivers all three of report 45's asks — member
 build trees follow the runtime, `requires.bundles` takes an artifact pin and
 `requires.tools` pins a published tool — and each works inside every
 `ost plugin` session, where the parity rows pass against a consumed
@@ -82,6 +87,7 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 47 | 2026-09-24 | [The bundle reaches the suite, and the schema bundle's stage loses a file](47-2026-09-24-v0.23.5-the-bundle-reaches-the-suite-and-the-schema-stage-loses-a-file.md) | 0.23.5 | MIG-2's last item (#227): `execVrm` pins `usd-motion-plugins` v0.5.1's `execMotion` and the copy is deleted. Report 46's P1 is delivered: the root toolchain exports `OPENSTRATA_EXTERNAL_BUNDLE_execMotion_ROOT`, and every composing suite passes against the pulled bundle (38/38, parity divergence 0), with the bundle embedded once in the product. But `ost plugin package` fails `PLUGIN_PACKAGE_OUTPUT_MISMATCH` on `vrmSchema`: its workspace-installed build records `lib/vrmSchema.exp`, its install stage lacks it, and 0.23.4 packaged the same tree. Plus a consumer-side `include_guard(GLOBAL)` trap. **One live P1 (regression)** |
 | 46 | 2026-09-24 | [A published bundle reaches a session, and not the suite that needs it](46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md) | 0.23.4 | The ecosystem pin to 0.23.4 (#225, usd-motion-plugins #26, motion-connectors #17, usd-mmd-plugins #23) and a scratch rehearsal of deleting `execMotion`. All three of report 45's asks are delivered: six bundle trees rebuilt once and reused, a tree with another runtime's identity discarded; `execVrm` pins an external `execMotion` and, inside `ost plugin run`, its four exec suites, the driver contract and all five parity cases pass against it; a pinned `motion_convert` runs by bare name. But the root configure composes external libraries only, and every suite that composes the bundle or a moved tool is a root CTest suite: 48 → 32 tests, 5 failing, 6 unregistered. Corrects 45 §5 (the bundle was attached, not pushed). **One live P1** |
 | 45 | 2026-09-23 | [A tool edge arrives, and a bundle tree still keeps its runtime](45-2026-09-23-v0.23.3-a-tool-edge-arrives-and-a-bundle-tree-keeps-its-runtime.md) | 0.23.3 | The ecosystem pin to 0.23.3 (#221, usd-motion-plugins #24, motion-connectors #16, usd-mmd-plugins #21), `motionUsd` consumed through a tool-only edge (#221) and MIG-3 (#223). Report 44's tool-edge P1 is delivered: pull, root toolchain, graph (15 → 22 edges) and validation (a missing tool edge is exit 5). Its runtime P1 is delivered for `ost build` — an unmarked or mismatched root tree is discarded — but not for `ost plugin build`/`ost library build`, which kept every bundle tree's adopt `pxr_DIR` and wrote the artifact's digest marker into it. Also: `requires.bundles` has no artifact pin, so the published `execMotion` cannot be consumed; and no descriptor can name another repository's tool. **One live P1 + two P2s** |
 | 44 | 2026-09-23 | [A tool's library edge reaches nothing, and a build tree keeps the runtime it was born with](44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md) | 0.23.2 | MIG-2's retarget item (#218). Report 43's P1 is delivered: the root toolchain prepends every member's materialized external prefix, and the workspace builds and tests against four `usd-motion-plugins` packages. But a **tool** descriptor's `requires.libraries` is read by nothing: `library pull` skips an artifact only a tool declares, the graph carries no tool edge, and a tool naming a library that does not exist is `valid` — where the same misspelling in a bundle is `WORKSPACE_LIBRARY_DEPENDENCY_MISSING`. And the root tree had compiled against an adopted runtime since 2026-09-04 while `target.lock.json` recorded the pulled artifact: a cached `pxr_DIR` beats the toolchain's `pxr_ROOT`, and the build directory is keyed by target id, not runtime. Also `layout-complete` passes a runtime the OS emptied to four files. **Two live P1s + one P3** |
