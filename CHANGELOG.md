@@ -127,12 +127,49 @@ Current schema contract version: **1**.
 
 ### Removed
 
+- **The recorded-file path left for `usd-motion-plugins`** (MIG-3,
+  2026-09-23). `libs/motionSource`, `libs/motionBvh`, `tools/motionBvh`
+  (`motion_bvh_inspect`, `motion_bvh_convert`) and `profiles/motion/` are
+  that repository's, published in its v0.5.0 with the converter as
+  `motion_convert`. They went with their members, product entry,
+  `[[workspace.install_data]]` mapping, consumer fixtures and package-contract
+  rows, the producer-profile check and its fixtures, and 26 suites that travel
+  with the code. **From the next release the product archive carries one tool,
+  `motion_retarget`, and reads no BVH file.** Nothing here consumes the moved
+  packages, so this was a deletion like `motion_capture`'s, not a consuming
+  change.
+  - **A converted recording still reaches a VRM rig here, over the converter's
+    own output.** `workspace_bvh_end_to_end`, `workspace_real_avatar_bake`,
+    `workspace_unicode_paths`, the three `workspace_exec_parity_recorded_*`
+    cases and the release lane's exec smoke used to run `motion_bvh_convert`
+    first. They now read `tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda`,
+    the clip the published `motion_convert` 0.5.0 wrote from the same mocopi
+    export and profile, byte for byte. The fixtures' README records the archive
+    digest and the command. Before the swap, all six suites ran with the
+    published executable in the converter's place and passed unchanged, parity
+    rows included.
+  - **The non-ASCII claims moved first.** `workspace_unicode_paths`' two BVH legs
+    are `usd-motion-plugins`' `motion_convert_clip` and
+    `motion_bvh_inspect_report` cases now (its #25, mutation-checked against
+    the missing manifest). What stays here is over `motion_retarget` alone.
+  - **The artifact-only BVH smoke is gone.** It drove the product's converter
+    over the product's installed profiles, and neither is in the product now.
+    Its shared helpers stay as `scripts/artifact_smoke.py`, which the exec
+    smoke and the product-library check import.
+  - **`check_docs.py` no longer checks the mocopi rig agreement.** The profile
+    and the export it compared are `usd-motion-plugins`', and its
+    `workspace_motion_profiles` checks the same property.
+  - **`scripts/fetch_corpus.py` serves the VRM corpus only.** The recorded
+    corpus's licence-gated rows left with `motionBvh`, and `usd-motion-plugins`
+    has no fetcher yet. That gap is recorded in the migration track, not
+    closed.
+
 - **`motion_capture` left for `usd-motion-plugins`** (MIG-4, 2026-09-23). The
   capture-replay CLI is that repository's `motion_record`, published in its
   v0.5.0, and `tools/motionCapture` is gone with its member, its product entry,
   its `motion.cli` directory and the three trace fixtures only its suite read.
   From the next release the product archive carries two tools, `motion_retarget`
-  and `motion_bvh`.
+  and `motion_bvh` (one, since MIG-3 — above).
   - **The bake of a recorded session stays, over the recorder's own output.**
     `motion_capture_replay` ended by baking its clip onto the design avatar
     with `motion_retarget`. `ost` cannot consume another repository's tool, so

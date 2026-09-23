@@ -9,7 +9,9 @@ a narrow `std::ifstream` opens a string in that same code page. So until
 test had ever handed a tool one:
 
   * `motion_retarget` could not find the avatar;
-  * `motion_bvh_convert` read `é` as `e` and could not open the file;
+  * `motion_bvh_convert` read `é` as `e` and could not open the file -- a claim
+    `usd-motion-plugins`' `motion_convert_clip` makes since MIG-3, where the
+    converter went;
   * `usdVrmFileFormat` could not open a `.vrm` from **any** host, Python and
     usdview included, and the package path it builds for an embedded texture
     was the same string round-tripped through the code page.
@@ -47,10 +49,6 @@ from pxr import Ar, Sdf, Usd, UsdSkel
 
 UNICODE_DIRECTORY = "ユニコード-é"
 
-# The recorded mocopi export and the profile that reads it, the pair the
-# real-avatar bake already proves onto this avatar.
-RECORDED = "mocopi-mobile-arm-raise-turn.bvh"
-PROFILE = "mocopi-mobile-bvh-default-v1.yaml"
 
 
 class Failures:
@@ -250,25 +248,20 @@ def check_textures(failures: Failures, stage: Usd.Stage,
 def legs(failures: Failures, arguments: argparse.Namespace,
          workspace: Workspace) -> dict[str, pathlib.Path]:
     """Run every leg in one workspace and return what it produced."""
-    corpus = arguments.bvh_corpus / "recorded" / "redistributable"
-    bvh = workspace.copy(corpus / RECORDED, "recorded", "収録")
-    profile = workspace.copy(arguments.profiles / PROFILE, "profile",
-                             "プロファイル")
+    clip = workspace.copy(arguments.clip, "clip", "クリップ")
     avatar = workspace.copy(arguments.avatar, "avatar", "アバター")
     vrma = workspace.copy(arguments.vrma, "walk", "歩き")
-    out = {"bvh": bvh, "avatar": avatar, "vrma": vrma}
+    out = {"clip": clip, "avatar": avatar, "vrma": vrma}
 
-    # The recorded path: syntax, conversion through a profile named by path,
-    # and a bake onto a real avatar.
-    run(failures, "motion_bvh_inspect", arguments.bvh_inspect, bvh, "--all")
-    out["clip"] = workspace.name("clip", "クリップ", ".usda")
-    run(failures, "motion_bvh_convert", arguments.bvh_convert, bvh,
-        "--profile", profile, "--output", out["clip"], "--quiet")
+    # The recorded path: a converted recording baked onto a real avatar. The
+    # syntax and conversion legs left with the BVH tools in MIG-3, as
+    # `usd-motion-plugins`' `motion_bvh_inspect_report` and
+    # `motion_convert_clip` cases (its #25), so the clip is the converter's
+    # committed output (tests/motion/fixtures/README.md).
     out["bake"] = workspace.name("bake", "焼き込み", ".usda")
-    if out["clip"].exists():
-        run(failures, "motion_retarget", arguments.retarget,
-            "--avatar", avatar, "--animation", out["clip"],
-            "--output", out["bake"], "--quiet")
+    run(failures, "motion_retarget", arguments.retarget,
+        "--avatar", avatar, "--animation", clip,
+        "--output", out["bake"], "--quiet")
 
     # A `.vrma` clip, which reaches usdVrmaFileFormat through the tool.
     out["vrma_bake"] = workspace.name("vrma-bake", "歩きの焼き込み", ".usda")
@@ -284,9 +277,8 @@ def legs(failures: Failures, arguments: argparse.Namespace,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    for tool in ("bvh-inspect", "bvh-convert", "retarget"):
-        parser.add_argument(f"--{tool}", type=pathlib.Path, required=True)
-    for data in ("avatar", "vrma", "bvh-corpus", "profiles"):
+    parser.add_argument("--retarget", type=pathlib.Path, required=True)
+    for data in ("avatar", "vrma", "clip"):
         parser.add_argument(f"--{data}", type=pathlib.Path, required=True)
     arguments = parser.parse_args()
     # A failure names a non-ASCII file, and a pipe on Windows is otherwise
@@ -306,23 +298,10 @@ def main() -> int:
             return failures.report()
         unicode = legs(failures, arguments, Workspace(root, unicode=True))
 
-        for key in ("clip", "bake", "vrma_bake"):
+        for key in ("bake", "vrma_bake"):
             failures.check(unicode[key].exists(),
                            f"{unicode[key].name} was not written")
 
-        # The converter records the file's own name as provenance, so the name
-        # has to come back as the one it was given rather than a code page's
-        # rendering of it.
-        if unicode["clip"].exists():
-            clip = Usd.Stage.Open(str(unicode["clip"]))
-            source_id = clip.GetDefaultPrim().GetCustomDataByKey(
-                "source:sourceId")
-            failures.check(
-                source_id == unicode["bvh"].name,
-                f"motion_bvh_convert: the clip records its source as "
-                f"'{source_id}', not '{unicode['bvh'].name}'")
-            check_same_animation(failures, "motion_bvh_convert",
-                                 unicode["clip"], ascii_["clip"])
         for key, leg in (("bake", "motion_retarget"),
                          ("vrma_bake", "motion_retarget (.vrma)")):
             if unicode[key].exists():

@@ -48,7 +48,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from artifact_only_bvh_smoke import (  # noqa: E402
+from artifact_smoke import (  # noqa: E402
     REPO_ROOT, Failures, fail_setup, package_product, run, workspace_target)
 
 

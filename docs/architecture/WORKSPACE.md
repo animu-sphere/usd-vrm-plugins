@@ -122,8 +122,8 @@ this table is what it is a table *of*: an identity here is something this
 workspace builds, and a consumed package is named in a descriptor rather than
 listed here. `motionUsd`'s reading half followed on 2026-09-23 through
 `motion_retarget`'s own descriptor, the first edge here only a tool declares,
-which `ost` 0.23.3 materializes. `motionSource`, `motionBvh` and the BVH tools
-are next, and leave as a deletion.
+which `ost` 0.23.3 materializes. `motionSource`, `motionBvh`, the BVH tools and
+the producer profiles left the same day as a deletion (MIG-3), below.
 
 **The generic retarget left with MIG-2** (2026-09-23): the pose retargeter,
 the skeleton and the joint map, rest-pose handling, root-motion policy and the
@@ -157,52 +157,19 @@ producer's name may also carry one CLI, declared beside it as an
 that CLI is outside the aggregate product
 ([§5](#5-the-aggregate-product)).
 
-Recorded motion sources — the file half of the input layer (motion policy §8.3):
-
-| Identity | Kind | Role |
-| --- | --- | --- |
-| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `SourceProfile` contract, the reader for the profile *file*, and the converter from those plus a profile to `motion::MotionClip`. Knows no file format and no producer — a profile file is data this layer reads, not a motion format it parses. **All of it is implemented**, the converter last. The `motionCore` edge below is carried by four files and no others: `CanonicalMetadata`, which derives canonical provenance, `SourceProfile`, whose joint map has a `HumanJoint` on its right-hand side, `SourceProfileFile`, which reads that side out of a file, and `CanonicalConversion`, which is the crossing rather than a corner of one. `CanonicalConversion` is also the only file here permitted a `Gf` type: everywhere else a value in a basis this layer does not know is still not a geometric vector, and the converter is the one file that *does* know the basis. Stage, `Sdf` and plugin APIs stay forbidden in all four — authoring is a caller's. |
-| `motionBvh` | plain static CMake library (`libs/motionBvh/`) | BVH **syntax** only — `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame time, channel values in declaration order — plus the extractor that turns a `BvhDocument` into `motionSource` values. Decides no semantics: not which joint is which `HumanJoint`, not the unit, not the axes, not what a root translation means. **Both halves are implemented**, and the extractor is what took the declared edge below. It still names no OpenUSD of its own — `motionSource` is its one link, and `motionCore`'s `Gf` value types arrive behind it and are named nowhere here. |
-| `motion_bvh_inspect` | CLI executable (`tools/motionBvh/`, v0.6.0) | Reports what a BVH file contains, and optionally which profiles are candidates for it, with the reasons. Links `motionBvh` and nothing else. **The reporting half is implemented**; candidate profiles arrive with the profile contract, because a detector written before it would settle the profile schema on whichever file was inspected first. |
-| `motion_bvh_convert` | CLI executable (`tools/motionBvh/`, v0.6.0) | BVH + an explicitly named profile → the avatar-independent semantic clip `motion_retarget` already consumes. Links `motionBvh` and `motionSource`, and authors a stage. Never binds to a target avatar. **Implemented.** It is the first program anywhere that holds a reader and a profile at once, which is why the six *semantic* diagnostics are raised here and nowhere lower: `MatchSourceProfile` returns a typed refusal naming the event, and this is the caller that maps it onto the reader's frozen codes. There is no default profile — a missing `--profile` is `VRM_BVH_PROFILE_REQUIRED` and stops the run — and a profile **id** is resolved to a file relative to the executable, so a packaged artifact finds the profiles shipped beside it. Its boundary check is a different one from `motion_bvh_inspect`'s and runs per target: it may author a stage and speak the humanoid vocabulary, and it still may not name `vrmRetarget` or `vrmSchema`. |
-| motion source profiles | package data (`profiles/motion/*.yaml`) | One declarative file per producer *and export preset*: joint map, coordinate basis, unit, root and rest-pose policy, required/optional joints, provenance label. Data, never code — see below. |
-| `motionFbx` | plain static CMake library (deferred) | A second reader behind the same `motionSource` boundary, if and when a consumer needs FBX. Named here so the boundary is designed for two readers rather than retrofitted for the second. |
-| `usdBvhFileFormat` | plugin bundle (deferred) | A thin `SdfFileFormat` over `motionBvh`, only if reading `.bvh` directly off a stage is wanted. It would re-implement no parsing and no conversion. |
-
-> **A producer profile is the one place a product name may appear outside
-> `adapters/`, because it is data and not a branch.** `profiles/motion/` holds
-> files named for Mocopi, Rokoko Studio, MotionBuilder and Blender, which
-> reads at first like the rule below being broken. It is not, and the distinction
-> is worth stating precisely: the *rule* forbids product-conditional code in the
-> core, and a profile is a declaration the code never has a name for. `motionBvh`
-> and `motionSource` contain no producer identifier, no `if (producer == ...)`,
-> and no default profile — a caller names one, or the conversion is refused
-> (`VRM_BVH_PROFILE_REQUIRED`). Ship every profile file and the libraries are
-> byte-identical; that is the test of whether this line has been crossed.
->
-> The profile **id** carries producer, format, skeleton preset, and contract
-> version — `<producer>-<format>-<preset>-v<N>` — because a producer is not a
-> profile: one application's export presets can disagree with each other, and two
-> applications can agree. Application versions belong in a corpus manifest; the
-> contract version moves only when a producer's output contract breaks.
-
-A profile file is declarative and stays that way: mappings, units, axes, root
-policy, rest-pose policy, and required/optional joints. **No arbitrary code, no
-expression language, no embedded producer-specific algorithm, and no target VRM
-path** — a profile that could name an avatar would have made the converter
-avatar-aware through the back door. A producer that genuinely needs an algorithm
-gets a profile implementation in code, not a richer file format.
-
-> **A profile refuses a rig in terms no format supplies, and the caller turns
-> that into a diagnostic.** The semantic half of a reader's frozen diagnostic set
-> is raised where a document meets a profile — which is `motionSource`, the one
-> library forbidden to know that reader exists (§2). So `MatchSourceProfile`
-> returns a typed `SourceProfileRefusal` naming the event, and whoever holds both
-> a reader and a profile maps it onto that reader's codes. A `VRM_BVH_*` string
-> in `motionSource` is the reversal however it got there, and a second
-> `VRM_MOTION_SOURCE_*` namespace would give one event two spellings; the
-> argument is in
-> [recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md).
+**The recorded-file path left with MIG-3** (2026-09-23): `motionSource`,
+`motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert` and the producer
+profiles are `usd-motion-plugins`' — the converter as `motion_convert` — with
+the rules this section used to state about them: a reader knows a format and no
+semantics, a profile is declarative data and the one place a product name may
+appear, there is no default profile, and a profile refuses a rig in terms the
+caller turns into a diagnostic (that repository's design policy §26–§27, §42).
+Nothing here links them, so no descriptor names them and this table no longer
+lists them. This workspace no longer reads a BVH file: what a converted
+recording does to a VRM rig is still its claim, and its suites make it over a
+clip the published converter wrote (`tests/motion/fixtures/README.md`). The
+deferred `motionFbx` and `usdBvhFileFormat` went with the layer they would have
+joined.
 
 > **An adapter is a library, not a plugin bundle.** The three rows above read
 > "optional bundle" until 2026-07-29, which no manifest could have expressed. An
@@ -319,8 +286,8 @@ usdVrmaFileFormat     -> vrmContainer
 usdVrmaFileFormat     -> motionCore
 motionRuntime         -> motionCore
 vrmRig                -> motionCore
-motion_retarget       -> motionRetarget, vrmRig, motionSampling, motionCore,
-                         OpenUSD stage
+motion_retarget       -> motionRetarget, vrmRig, motionSampling, motionUsd,
+                         motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
 execVrm               -> vrmSchema
@@ -775,8 +742,8 @@ mistaken for the artifact this section promises.
 
 `release.yml`'s staging step keeps its own count against the tree beside `ost`'s
 check, because the declaration is the thing a mistaken commit would edit: moving
-`motion_bvh` into `release_exclude` satisfies `ost` and leaves the product a CLI
-short.
+`motion_retarget` into `release_exclude` satisfies `ost` and leaves the product a
+CLI short.
 
 `liveTransport` is excluded from the aggregate on the same terms and carries no
 CLI, so its artifact is named for the library alone:
@@ -823,6 +790,12 @@ reason, which is the half worth recording.
 2026-08-29 — the smallest thing on this side, and smaller than the transport
 leaf's nine for the reason its identity row gives: one source file, two headers,
 and no platform dependency for a config file to re-find.
+
+> **Until MIG-3 (2026-09-23).** `motionSource`, `motionBvh`, both BVH tools
+> and the profiles are `usd-motion-plugins`' now: the product ships no BVH tool
+> and no profile, `openstrata.toml` maps no `[[workspace.install_data]]`, and
+> the artifact-only BVH smoke left with them. The paragraphs below record how
+> this product carried them, and the reasoning is that repository's to keep.
 
 `motionSource` and `motionBvh` are **not** adapters and take the opposite
 decision: they carry no product name in code, so they belong in the aggregate
@@ -1086,7 +1059,7 @@ consumer in any case.
 | Identity | Destination | What arrives there | What stays here |
 | --- | --- | --- | --- |
 | `vrmRetarget` | split, along the line §9.5 draws — **done 2026-09-23** | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget`, consumed here | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38), as `vrmRig`; building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
-| `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
+| `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) — **done 2026-09-23**, deleted here | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
 | `motion_capture` | `usd-motion-plugins` (`motion_record`) | trace → avatar-independent clip | nothing |
 | `motion_retarget` | split | the generic half of the stage **reading** (`StageIo`, §9.5) → `motionUsd`, arrived 2026-09-20, consumed 2026-09-23 | a VRM retarget CLI over the shared libraries, and the bake: `WriteRetargetedAnimation` authors onto a VRM avatar |

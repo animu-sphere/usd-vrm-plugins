@@ -7,14 +7,15 @@ packaged plugin rather than a build tree (P0-4 step 7), which is also P0-7's
 "works from packaged plugins" row. Every exec suite until now loaded a *built*
 bundle through its source directory. This is the packaged run, and it is the
 parity harness rather than a new one: the five `workspace_exec_parity_*` cases,
-with the product's own tools producing the input and the bake and the product's
-own bundles evaluating it.
+with the product's own tool producing the bake and the product's own bundles
+evaluating it. The recorded input is the converted mocopi export committed in
+`tests/motion/fixtures/` -- an input, not the artifact -- since the product's
+BVH converter left with MIG-3.
 
     ost plugin package --workspace --product   -> the product dist
     ost plugin product verify  <dist>          -> archive + every member checksum
     ost plugin product install <dist> --prefix -> a fresh prefix outside the repo
     tests/parity/test_exec_parity.py --case ...
-        --convert  <prefix>/tools/motion_bvh/bin/motion_bvh_convert
         --retarget <prefix>/tools/motion_retarget/bin/motion_retarget
         --parity   <build tree>/tests/parity/exec_parity
     <build tree>/plugins/execMotion/tests/execMotion_display_tests
@@ -71,7 +72,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from artifact_only_bvh_smoke import (  # noqa: E402
+from artifact_smoke import (  # noqa: E402
     REPO_ROOT, Failures, apply_product_activation, fail_setup, ost_json,
     package_product, run, workspace_target)
 
@@ -97,7 +98,6 @@ REAL_AVATAR = ("plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/"
 VRMA_WALK = "plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
 DESIGN_MAP = "tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json"
 DISPLAY_FIXTURE = "plugins/execMotion/tests/fixtures/displayed_clip.usda"
-PROFILE_DESTINATION = ("share", "usd-vrm-plugins", "profiles", "motion")
 
 
 def suffix() -> str:
@@ -243,14 +243,8 @@ def run_case(case: str, prefix: pathlib.Path, env: dict,
                             / "test_exec_parity.py"),
         "--case", case,
         "--parity", str(parity),
-        "--convert", str(tools / "motion_bvh" / "bin"
-                         / f"motion_bvh_convert{suffix()}"),
         "--retarget", str(tools / "motion_retarget" / "bin"
                           / f"motion_retarget{suffix()}"),
-        "--corpus", str(REPO_ROOT / "libs" / "motionBvh" / "tests" / "corpus"),
-        # The product's profiles, not the source tree's: the converter is the
-        # product's, and so is what it reads.
-        "--profiles", str(prefix.joinpath(*PROFILE_DESTINATION)),
         "--fixtures", str(REPO_ROOT / "tests" / "motion" / "fixtures"),
         "--design-fixtures", str(REPO_ROOT / "docs" / "design" / "fixtures"
                                  / "motion"),

@@ -134,10 +134,7 @@ endif()
 set(_parity_driver
     "${USDVRM_TEST_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/test_exec_parity.py"
     --parity "$<TARGET_FILE:exec_parity>"
-    --convert "$<TARGET_FILE:motion_bvh_convert>"
     --retarget "$<TARGET_FILE:motion_retarget>"
-    --corpus "${_repo_root}/libs/motionBvh/tests/corpus"
-    --profiles "${_repo_root}/profiles/motion"
     --fixtures "${_repo_root}/tests/motion/fixtures"
     --design-fixtures "${_repo_root}/docs/design/fixtures/motion"
     --design-map

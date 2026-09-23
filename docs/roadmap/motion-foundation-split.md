@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget` and `motionUsd`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left is MIG-3's deletion of `motionSource`, `motionBvh` and the BVH tools, and `execMotion`, which waits on consuming a published bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; ✅ MIG-3 — `motionSource`, `motionBvh`, the BVH tools and the profiles deleted here on 2026-09-23; 🚧 MIG-1 and MIG-2 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget` and `motionUsd`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left is `execMotion`, which waits on consuming a published bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -355,7 +355,7 @@ repository's, and needs nothing from this one.
   packages before anything here is deleted — done for the retarget on
   2026-09-23 (identical), and owed again when `execMotion` goes.
 
-## 5. MIG-3 — recorded sources 🚧
+## 5. MIG-3 — recorded sources ✅
 
 - ✅ `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`
   and the producer profiles arrived together, with their history, on
@@ -367,16 +367,40 @@ repository's, and needs nothing from this one.
   - `USDVRM_MOTION_PROFILE_PATH` is `USDMOTION_PROFILE_PATH`.
   - The `VRM_BVH_*` codes are `MOTION_BVH_*` (that repository's design policy
     §42.8).
-- ⛔ This repository deletes its copies in a consuming change of its own. It
-  no longer waits on report 41 but on the next thing down: `ost` 0.23.2
-  materializes an external artifact declared by a library or a plugin
-  descriptor and not one declared only by a tool, and `motion_bvh` is the only
-  consumer these have left here. The change
-  re-runs `workspace_bvh_end_to_end` against the consumed tools.
-  `workspace_unicode_paths` loses `motion_bvh_convert` in it, so the
-  non-ASCII path case needs a home in `usd-motion-plugins` first.
-- ⬜ NPZ / AMASS is no longer this repository's track: its identity decision
-  ([the recorded track](recorded-motion-sources.md) §13) moves with
+- ✅ The non-ASCII path cases arrived first (2026-09-23,
+  [usd-motion-plugins #25](https://github.com/animu-sphere/usd-motion-plugins/pull/25)):
+  `motion_convert_clip` converts a BVH and a profile named by path from
+  `ユニコード-é/`, and `motion_bvh_inspect_report` reports over such a path,
+  each held to an ASCII twin. Built without the UTF-8 code-page manifest, both
+  fail. They were `workspace_unicode_paths`' two BVH legs here.
+- ✅ **This repository deleted its copies** (2026-09-23): `libs/motionSource`,
+  `libs/motionBvh`, `tools/motionBvh`, `profiles/motion/`, the profile check and
+  its fixtures, the two consumer fixtures and package-contract rows, the
+  `install_data` mapping, and the artifact-only BVH smoke. It **consumes
+  nothing**: no member reads a BVH file any more, so this was a deletion like
+  `motion_capture`'s. It did not wait on `ost` either — the tool-only
+  artifact edge it was listed behind (report 44) is what `motionUsd` needed,
+  not this.
+  - The tests that baked a real capture keep baking it:
+    `workspace_bvh_end_to_end`, `workspace_real_avatar_bake`,
+    `workspace_unicode_paths`, the three `workspace_exec_parity_recorded_*`
+    cases and the release lane's exec smoke read a clip the published
+    `motion_convert` 0.5.0 wrote, committed with its archive digest and command
+    (`tests/motion/fixtures/README.md`). `ost` cannot consume another
+    repository's tool, so this is `motion_capture`'s recipe again.
+  - Before the in-tree converter went, all six of those suites were run with
+    the published executable in its place, and every one passed unchanged —
+    the parity rows included.
+  - `workspace_unicode_paths` is over one executable now, `motion_retarget`,
+    which is every executable this product ships.
+  - The mocopi rig agreement in `check_docs.py` went too: the profile and the
+    export it compared are that repository's, and its
+    `workspace_motion_profiles` checks the same thing.
+  - One gap is recorded rather than closed: `scripts/fetch_corpus.py` fetched
+    the recorded corpus's licence-gated rows, and `usd-motion-plugins` has no
+    fetcher yet.
+- ✅ NPZ / AMASS is no longer this repository's track: its identity decision
+  ([the recorded track](recorded-motion-sources.md) §13) moved with
   `motionSource`, behind the versioned NPZ payload contract the motion-plugins
   policy requires first (its §28).
 

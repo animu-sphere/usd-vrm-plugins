@@ -1109,7 +1109,7 @@ three paths had the evidence to decide and one did not.
 | Path | Channels that could be body translation | What the producer says | Evidence |
 | --- | --- | --- | --- |
 | **mocopi, native UDP** | the hips joint's translation, and nothing else | absolute, metres, every frame | 207,064 measured bone-frames in which **every non-root translation equalled its rest offset bit for bit**, over five device sessions |
-| **mocopi, BVH export** | the root joint's translation, which is that rig's hips | `absolute-position` and `body-orientation`, declared in [`mocopi-mobile-bvh-default-v1`](../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml), centimetres | one 17-second export, measured 2026-08-04 |
+| **mocopi, BVH export** | the root joint's translation, which is that rig's hips | `absolute-position` and `body-orientation`, declared in [`mocopi-mobile-bvh-default-v1`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/profiles/motion/mocopi-mobile-bvh-default-v1.yaml), centimetres | one 17-second export, measured 2026-08-04 |
 | **VMC Protocol** | `/VMC/Ext/Root/Pos` **and** the hips local position, both reachable | nothing: the protocol defines both and composes neither | generated corpus only — **no real sender has been recorded** |
 
 Two of those rows are the same application, and their rest offsets agree sign

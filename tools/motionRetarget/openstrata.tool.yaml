@@ -13,10 +13,10 @@ requires:
   libraries:
     - id: vrmRig
       version: ">=0.9,<0.10"
-    # By name rather than only through another library, the way `motion_bvh`
-    # declares `motionSource`: the tool resamples the clip itself so that the
-    # body and the face expand one sample list, which is an edge of its own and
-    # not one to be inferred from a dependency that could stop being transitive.
+    # By name rather than only through another library: the tool resamples the
+    # clip itself so that the body and the face expand one sample list, which is
+    # an edge of its own and not one to be inferred from a dependency that could
+    # stop being transitive.
     # What was one `motionRuntime` is two published packages now, and this tool
     # names the half it uses -- the resample is `motionSampling`'s -- plus the
     # core its values come from.
