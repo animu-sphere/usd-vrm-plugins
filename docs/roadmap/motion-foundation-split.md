@@ -346,9 +346,11 @@ repository's, and needs nothing from this one.
     [§3](#3-mig-1--the-core-)'s last item still holds. USD-O4 does answer half
     of §8's open question about the `vrm:` expression weights — see there.
   - ⛔ This repository deletes `plugins/execMotion` in a consuming change of
-    its own, and it waits on `usd-motion-plugins` publishing the bundle as an
-    artifact: the parity rows are re-run against the consumed bundle before
-    the copy here goes, and nothing publishes one yet.
+    its own: the parity rows are re-run against the consumed bundle before the
+    copy here goes. `usd-motion-plugins` published the bundle in its v0.5.0
+    (2026-09-20), so what it waits on is `ost`: `requires.bundles` takes no
+    artifact pin, so no descriptor here can name a bundle from another
+    repository (ost report 45 §5, #224).
 - 🚧 What stays is re-read as a consumer: the VRM humanoid map,
   `ExpressionResolver`, `LookAtEvaluator`, `motion_retarget` as a VRM CLI,
   `execVrm`. The OpenExec parity values are re-run against the consumed
