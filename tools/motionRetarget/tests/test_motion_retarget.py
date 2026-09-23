@@ -60,7 +60,7 @@ def run_tool(tool: str, *arguments: str) -> subprocess.CompletedProcess:
 def diagnostic_subjects(stderr: str, code: str) -> list[str]:
     """The subjects the tool reported under one frozen retarget code.
 
-    Read off the coded line (vrmRetarget/Diagnostics.h) rather than the
+    Read off the coded line (motionRetarget/Diagnostics.h) rather than the
     sentence after it, since the code and the subject are the contract and the
     sentence is not.
     """
@@ -244,7 +244,7 @@ def check_scale_policy(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
     replaced a scaled rest (the joint-transforms report, section 4). The
     policy (MOTION_CONTRACT.md, "Scale policy") authors each joint's rest
     scale, and reports a clip that animates scale as
-    `VRM_RETARGET_NON_UNIT_SCALE` rather than carrying or silently dropping it.
+    `MOTION_RETARGET_NON_UNIT_SCALE` rather than carrying or silently dropping it.
     """
     scaled_avatar = workspace / "scaled_rest_avatar.usda"
     shutil.copy(avatar, scaled_avatar)
@@ -266,7 +266,7 @@ def check_scale_policy(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
                           f"bake onto a scaled rest failed: {result.stderr}"):
         return
     failures.check(
-        not diagnostic_subjects(result.stderr, "VRM_RETARGET_NON_UNIT_SCALE"),
+        not diagnostic_subjects(result.stderr, "MOTION_RETARGET_NON_UNIT_SCALE"),
         f"a clip with identity scales reported a non-unit scale: "
         f"{result.stderr.strip()}")
     baked = Usd.Stage.Open(str(output))
@@ -308,7 +308,7 @@ def check_scale_policy(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
                           f"bake of a clip that scales failed: {result.stderr}"):
         return
     failures.check(
-        diagnostic_subjects(result.stderr, "VRM_RETARGET_NON_UNIT_SCALE")
+        diagnostic_subjects(result.stderr, "MOTION_RETARGET_NON_UNIT_SCALE")
         == [animation.GetPath().pathString],
         f"a clip that scales a joint did not report it once, on its "
         f"animation: {result.stderr.strip()}")
@@ -1225,6 +1225,18 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
         ["Root", "Root/Pelvis", "Root/Pelvis/SpineA"])
     unsemantic_stage.GetRootLayer().Save()
 
+    # A clip whose skeleton names one bone on two joints: its animation is
+    # untouched, and which of the two rests it meant cannot be known. `execVrm`
+    # refuses it, and so does the builder both of them call.
+    twice_named = cases / "twice_named_clip.usda"
+    shutil.copy(clip, twice_named)
+    twice_named_stage = Usd.Stage.Open(str(twice_named))
+    for prim in twice_named_stage.Traverse():
+        if prim.IsA(UsdSkel.Skeleton):
+            UsdSkel.Skeleton(prim).GetJointsAttr().Set(
+                ["hips", "hips/spine", "hips/spine/spine"])
+    twice_named_stage.GetRootLayer().Save()
+
     # A stage with a default prim and nothing else. As a clip it is a source
     # with no skeleton; as an avatar, a rig with no skeleton.
     empty = cases / "empty.usda"
@@ -1293,6 +1305,10 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
         # --- 2: the clip is not one this tool reads --------------------------
         ("a clip naming no human bone", bake(clip_path=unsemantic),
          EXIT_UNSUPPORTED_SOURCE_FEATURE, "names a VRM human bone"),
+        ("a clip skeleton naming one bone twice", bake(clip_path=twice_named),
+         EXIT_UNSUPPORTED_SOURCE_FEATURE,
+         "names a human bone on more than one joint ('spine' by 'hips/spine', "
+         "'spine' by 'hips/spine/spine')"),
         ("a clip with no skeleton", bake(clip_path=empty),
          EXIT_UNSUPPORTED_SOURCE_FEATURE,
          "the animation stage has no UsdSkelSkeleton"),
@@ -1336,7 +1352,7 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
     failures.check(guarded.read_bytes() == before,
                    "the avatar was modified by a refused in-place bake")
     failures.check(
-        "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error" in result.stderr,
+        "[MOTION_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error" in result.stderr,
         f"the refused in-place bake did not name its code: "
         f"{result.stderr.strip()}")
 
@@ -1400,7 +1416,7 @@ def main() -> int:
         # clip drives only those three: fourteen coded lines, one per bone and
         # in vocabulary order, and nothing unbound.
         missing = diagnostic_subjects(
-            result.stderr, "VRM_RETARGET_MISSING_REQUIRED_BONE")
+            result.stderr, "MOTION_RETARGET_MISSING_REQUIRED_BONE")
         failures.check(
             len(missing) == 14 and missing[0] == "neck"
             and missing[-1] == "rightHand",
@@ -1408,12 +1424,12 @@ def main() -> int:
             f"{missing}, expected the fourteen from neck to rightHand")
         failures.check(
             not diagnostic_subjects(result.stderr,
-                                    "VRM_RETARGET_UNBOUND_DRIVEN_BONE"),
+                                    "MOTION_RETARGET_UNBOUND_DRIVEN_BONE"),
             f"a clip driving only bound bones reported an unbound one: "
             f"{result.stderr.strip()}")
         failures.check(
             not diagnostic_subjects(result.stderr,
-                                    "VRM_RETARGET_TIME_RANGE_DERIVED"),
+                                    "MOTION_RETARGET_TIME_RANGE_DERIVED"),
             f"a keyed clip reported a derived time range: "
             f"{result.stderr.strip()}")
 
@@ -1443,7 +1459,7 @@ def main() -> int:
                           f"bake of a held pose failed: {result.stderr}"):
             failures.check(
                 diagnostic_subjects(result.stderr,
-                                    "VRM_RETARGET_TIME_RANGE_DERIVED")
+                                    "MOTION_RETARGET_TIME_RANGE_DERIVED")
                 == [held_animation.GetPath().pathString],
                 f"a clip with no time samples did not report its derived "
                 f"time range once, on its animation: {result.stderr.strip()}")

@@ -143,16 +143,16 @@ FailToOpen(const std::string& path, const char* what, Failure* failure)
                 std::string("OpenUSD could not open the ") + what + " stage " + path);
 }
 
-// Decomposes a clip rest transform through the library's one decomposition.
-// A clip's rest scale is dropped: the correction reads rotations and
-// translations, and scale is not retargeted.
-void
-DecomposeRest(const GfMatrix4d& matrix, GfQuatf* rotation, GfVec3f* translation)
+std::vector<std::string>
+TokenStrings(const VtTokenArray& tokens)
 {
-    vrmRetarget::TargetJoint joint;
-    vrmRetarget::DecomposeRestTransform(matrix, &joint);
-    *rotation = joint.restRotation;
-    *translation = joint.restTranslation;
+    std::vector<std::string> strings;
+    strings.reserve(tokens.size());
+    for (const TfToken& token : tokens)
+    {
+        strings.push_back(token.GetString());
+    }
+    return strings;
 }
 
 bool
@@ -229,7 +229,8 @@ IsLookAtPrim(const UsdPrim& prim)
 // vanishing, with nothing said about why the eye did not move.
 std::string
 ReadEyeJoint(const UsdPrim& prim, const TfToken& attributeName,
-             const vrmRetarget::TargetSkeleton& skeleton, std::vector<std::string>* warnings)
+             const openstrata::motion::SkeletonDescriptor& skeleton,
+             std::vector<std::string>* warnings)
 {
     const UsdAttribute attribute = prim.GetAttribute(attributeName);
     TfToken token;
@@ -237,7 +238,7 @@ ReadEyeJoint(const UsdPrim& prim, const TfToken& attributeName,
     {
         return std::string();
     }
-    if (skeleton.FindJoint(token.GetString()) == vrmRetarget::TargetSkeleton::kNoParent)
+    if (skeleton.FindJoint(token.GetString()) == openstrata::motion::SkeletonDescriptor::kNoParent)
     {
         warnings->push_back("avatar look-at names '" + token.GetString() + "' as its " +
                             attributeName.GetString() +
@@ -584,14 +585,21 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
                     "target skeleton <" + avatar->skeletonPath.GetString() + "> has no joints");
     }
 
-    for (std::size_t i = 0; i < joints.size(); ++i)
+    // The library's builder, which `execVrm` calls too: one decomposition and
+    // one "a/b/c" parent rule for every reader of a UsdSkelSkeleton.
+    openstrata::motion::SkeletonDescriptorResult built =
+        openstrata::motion::BuildSkeletonDescriptor(
+            TokenStrings(joints),
+            std::vector<GfMatrix4d>(restTransforms.begin(), restTransforms.end()));
+    if (!built.skeleton)
     {
-        vrmRetarget::TargetJoint joint;
-        joint.token = joints[i].GetString();
-        vrmRetarget::DecomposeRestTransform(restTransforms[i], &joint);
-        avatar->skeleton.AddJoint(joint);
+        // ReadSkeletonRest pairs every joint with a rest transform, so the one
+        // refusal left to reach here is a joint token that is empty.
+        return Fail(failure, ExitCode::RetargetContractViolation,
+                    "target skeleton <" + avatar->skeletonPath.GetString() +
+                        "> has a joint whose token is empty");
     }
-    avatar->skeleton.ResolveParentsFromTokens();
+    avatar->skeleton = std::move(*built.skeleton);
     if (!avatar->skeleton.IsTopologicallyOrdered())
     {
         avatar->warnings.push_back("target skeleton joints are not in parent-before-child order");
@@ -801,44 +809,53 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
                         "avatar-independent semantic clip?");
     }
 
+    // The clip's rest pose, per bone, through the library's two builders --
+    // the ones `execVrm` calls, so the tool and the exec bundle read one rest
+    // off one skeleton. The clip skeleton's joint paths give the semantic
+    // parent, so the rest correction needs no second copy of the humanoid
+    // taxonomy.
+    //
+    // Both refusals are the builder's and fail the bake. A tool that kept the
+    // later of two joints naming one bone, or baked against an identity rest
+    // for a skeleton naming none, would answer a clip `execVrm` refuses; and
+    // neither is a rest pose anyone could tell from a measured one.
     VtTokenArray restJoints;
     VtMatrix4dArray restTransforms;
     if (ReadSkeletonRest(skeleton, &restJoints, &restTransforms, &clip->warnings))
     {
-        std::map<std::string, std::size_t> restIndexByJoint;
-        for (std::size_t i = 0; i < restJoints.size(); ++i)
+        const openstrata::motion::SkeletonDescriptorResult semantic =
+            openstrata::motion::BuildSkeletonDescriptor(
+                TokenStrings(restJoints),
+                std::vector<GfMatrix4d>(restTransforms.begin(), restTransforms.end()));
+        if (!semantic.skeleton)
         {
-            restIndexByJoint[restJoints[i].GetString()] = i;
+            return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                        "clip skeleton <" + clip->skeletonPath.GetString() +
+                            "> has a joint whose token is empty");
         }
-        // The clip skeleton's joint paths give the semantic parent, so the rest
-        // correction does not need a second copy of the humanoid taxonomy.
-        for (std::size_t i = 0; i < restJoints.size(); ++i)
+        openstrata::motion::SourceRestPoseResult rest =
+            openstrata::motion::BuildSourceRestPose(*semantic.skeleton);
+        if (rest.error == openstrata::motion::SourceRestPoseError::DuplicateBone)
         {
-            const std::string jointPath = restJoints[i].GetString();
-            const auto bone = openstrata::motion::FindHumanJoint(LeafToken(jointPath));
-            if (!bone)
+            std::string named;
+            for (const auto& [bone, token] : rest.offending)
             {
-                continue;
+                named += std::string(named.empty() ? "" : ", ") + "'" +
+                         std::string(openstrata::motion::HumanJointName(bone)) + "' by '" + token +
+                         "'";
             }
-            const auto slot = static_cast<std::size_t>(*bone);
-            GfQuatf rotation;
-            GfVec3f translation;
-            DecomposeRest(restTransforms[i], &rotation, &translation);
-            clip->restPose.localRotations[slot] = rotation;
-            clip->restPose.localTranslations[slot] = translation;
-
-            const std::size_t separator = jointPath.rfind('/');
-            if (separator == std::string::npos)
-            {
-                continue;
-            }
-            const auto parentBone =
-                openstrata::motion::FindHumanJoint(LeafToken(jointPath.substr(0, separator)));
-            if (parentBone)
-            {
-                clip->restPose.SetParent(*bone, *parentBone);
-            }
+            return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                        "clip skeleton <" + clip->skeletonPath.GetString() +
+                            "> names a human bone on more than one joint (" + named +
+                            "), and which rest the clip meant cannot be known");
         }
+        if (!rest.rest)
+        {
+            return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                        "no joint of clip skeleton <" + clip->skeletonPath.GetString() +
+                            "> names a VRM human bone, so its rest pose cannot be read");
+        }
+        clip->restPose = std::move(*rest.rest);
     }
 
     const UsdAttribute rotationsAttr = animation.GetRotationsAttr();
@@ -943,8 +960,8 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
         // single pose at the stage's start -- an instant the stage chose, not
         // one the clip stated, which is what the code says.
         timeCodes.insert(clip->stage->GetStartTimeCode());
-        clip->diagnostics.Report(vrmRetarget::MakeRetargetDiagnostic(
-            vrmRetarget::RetargetDiagnosticCode::TimeRangeDerived,
+        clip->diagnostics.Report(openstrata::motion::MakeRetargetDiagnostic(
+            openstrata::motion::RetargetDiagnosticCode::TimeRangeDerived,
             animationPrim.GetPath().GetString(),
             "the clip states no time samples, so its one pose is placed at "
             "the stage's start time code, " +
@@ -979,8 +996,9 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
         const std::string joint = index < animationJoints.size()
                                       ? animationJoints[index].GetString()
                                       : std::to_string(index);
-        clip->diagnostics.Report(vrmRetarget::MakeRetargetDiagnostic(
-            vrmRetarget::RetargetDiagnosticCode::NonUnitScale, animationPrim.GetPath().GetString(),
+        clip->diagnostics.Report(openstrata::motion::MakeRetargetDiagnostic(
+            openstrata::motion::RetargetDiagnosticCode::NonUnitScale,
+            animationPrim.GetPath().GetString(),
             "the clip scales joint '" + joint + "' to " + TfStringify(GfVec3f(*nonUnit)) +
                 (at.IsDefault() ? std::string(" by default")
                                 : " at time code " + TfStringify(at.GetValue())) +
@@ -1184,7 +1202,7 @@ AuthorBlendShapeWeights(const UsdSkelAnimation& authored, const Avatar& avatar,
 
 bool
 WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, const Clip& clip,
-                         const vrmRetarget::RetargetedAnimation& animation,
+                         const openstrata::motion::RetargetedAnimation& animation,
                          const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
                          const std::string& animationName, WriteResult* result, Failure* failure)
 {
@@ -1218,13 +1236,14 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, co
         {
             // The arguments' fault and not the output's: the same file was
             // named twice, and nothing has been written.
-            return Fail(
-                failure, ExitCode::InvalidUserInput,
-                vrmRetarget::FormatRetargetDiagnostic(vrmRetarget::MakeRetargetDiagnostic(
-                    vrmRetarget::RetargetDiagnosticCode::OutputCollidesWithInput, outputPath,
-                    std::string("--output names the ") + collided +
-                        " layer this retarget read, and writing it "
-                        "would replace it")));
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        openstrata::motion::FormatRetargetDiagnostic(
+                            openstrata::motion::MakeRetargetDiagnostic(
+                                openstrata::motion::RetargetDiagnosticCode::OutputCollidesWithInput,
+                                outputPath,
+                                std::string("--output names the ") + collided +
+                                    " layer this retarget read, and writing it "
+                                    "would replace it")));
         }
         layer->Clear();
     }
@@ -1277,7 +1296,7 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, co
     for (std::size_t i = 0; i < animation.joints.size(); ++i)
     {
         const int joint = avatar.skeleton.FindJoint(animation.joints[i]);
-        if (joint != vrmRetarget::TargetSkeleton::kNoParent)
+        if (joint != openstrata::motion::SkeletonDescriptor::kNoParent)
         {
             restScales[i] =
                 GfVec3h(avatar.skeleton.GetJoints()[static_cast<std::size_t>(joint)].restScale);
@@ -1287,7 +1306,7 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, co
 
     const UsdAttribute rotations = authored.CreateRotationsAttr();
     const UsdAttribute translations = authored.CreateTranslationsAttr();
-    for (const vrmRetarget::RetargetedPose& sample : animation.samples)
+    for (const openstrata::motion::RetargetedPose& sample : animation.samples)
     {
         const UsdTimeCode timeCode(sample.timestamp * clip.timeCodesPerSecond);
         rotations.Set(VtQuatfArray(sample.rotations.begin(), sample.rotations.end()), timeCode);

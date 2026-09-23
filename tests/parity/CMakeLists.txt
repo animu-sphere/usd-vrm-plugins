@@ -40,11 +40,11 @@ if(MSVC)
 endif()
 
 add_executable(exec_parity exec_parity.cpp)
-# vrmRetarget for the result type, motionCore for the bone vocabulary and the
-# contract's comparison. Neither exec bundle: they are found at run time, the
+# motionRetarget for the result type, motionCore for the bone vocabulary and
+# the contract's comparison. Neither exec bundle: they are found at run time, the
 # way a packaged bundle is.
 target_link_libraries(exec_parity PRIVATE
-    exec_driver vrmRetarget::vrmRetarget motionCore::motionCore)
+    exec_driver motionRetarget::motionRetarget motionCore::motionCore)
 # Not linked, and still what the harness runs: building it builds them.
 add_dependencies(exec_parity ExecMotion ExecVrm)
 target_compile_options(exec_parity PRIVATE ${_parity_assertions})

@@ -56,11 +56,15 @@ endif()
 # The OpenUSD pin and the OpenExec capability probe, as in execMotion.
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
-# The retarget core, and through it motionCore and motionRuntime: every node
-# here is a thin wrapper over a `vrmRetarget` call, and the values that cross
-# the boundary are `vrmRetarget`'s own (WORKSPACE.md §2, motion policy §11.4).
+# The retarget, usd-motion-plugins' `motionRetarget`, and what it is built on:
+# every node here is a thin wrapper over a `motionRetarget` call, and the
+# values that cross the boundary are its own (WORKSPACE.md §2, motion policy
+# §11.4). `vrmRetarget` is what a VRM rig adds -- here, the required bones.
 if(NOT TARGET motionCore::motionCore)
     find_package(motionCore CONFIG REQUIRED)
+endif()
+if(NOT TARGET motionRetarget::motionRetarget)
+    find_package(motionRetarget CONFIG REQUIRED)
 endif()
 if(NOT TARGET motionSampling::motionSampling)
     find_package(motionSampling CONFIG REQUIRED)
@@ -93,6 +97,7 @@ target_include_directories(${PLUGIN_NAME} PRIVATE
     ${PXR_INCLUDE_DIRS})
 target_link_libraries(${PLUGIN_NAME} PRIVATE
     motionCore::motionCore
+    motionRetarget::motionRetarget
     motionSampling::motionSampling
     motionRecording::motionRecording
     vrmRetarget::vrmRetarget)

@@ -3,8 +3,7 @@
 add_executable(vrmRetarget_tests test_vrm_retarget.cpp)
 target_link_libraries(vrmRetarget_tests PRIVATE vrmRetarget::vrmRetarget)
 # This suite checks with `assert()`, which NDEBUG compiles away -- and Release is
-# the default build type. See libs/motionRuntime/tests/CMakeLists.txt for the
-# full rationale.
+# the default build type, so a Release build would pass every check vacuously.
 target_compile_options(vrmRetarget_tests
     PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 add_test(NAME vrmRetarget_unit COMMAND vrmRetarget_tests)
@@ -16,8 +15,7 @@ if(WIN32)
         set(_vrm_retarget_gf pxr::gf)
     endif()
     # Static library, but exported Gf entry points still pull usd_gf.dll and its
-    # own dependencies in at run time; see the note in
-    # libs/motionRuntime/tests/CMakeLists.txt.
+    # own dependencies in at run time, and the runtime's bin/ is not on PATH.
     set(_vrm_retarget_test_path
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmRetarget>"
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_vrm_retarget_gf}>"

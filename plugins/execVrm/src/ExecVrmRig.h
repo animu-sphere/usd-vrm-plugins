@@ -6,18 +6,18 @@
 // -- joint tokens, rest matrices, the joint token each human bone names -- never
 // a `VdfContext` and never a stage. Marshalling exec's inputs into these
 // arguments is the registration TU's job, so a computation stays a thin wrapper
-// over `vrmRetarget` (motion policy §11.4), and the seam is testable with no
+// over `motionRetarget` (motion policy §11.4), and the seam is testable with no
 // stage, no system and no request -- a failure in the mechanism cannot be
 // mistaken for a failure in the value.
 #pragma once
 
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/Diagnostics.h>
-#include <vrmRetarget/HumanoidMap.h>
-#include <vrmRetarget/PoseRetargeter.h>
-#include <vrmRetarget/RestPose.h>
-#include <vrmRetarget/RootMotionPolicy.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/Diagnostics.h>
+#include <motionRetarget/RetargetMap.h>
+#include <motionRetarget/PoseRetargeter.h>
+#include <motionRetarget/RestPose.h>
+#include <motionRetarget/RootMotionPolicy.h>
+#include <motionRetarget/SkeletonDescriptor.h>
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/token.h"
@@ -48,7 +48,7 @@ const std::array<pxr::TfToken, openstrata::motion::HumanJointCount>& HumanBoneAt
 struct SkeletonRest
 {
     /// `joints`, in the skeleton's own order. That order is the one every index
-    /// in a `vrmRetarget::HumanoidMap` counts into.
+    /// in a `openstrata::motion::RetargetMap` counts into.
     std::vector<std::string> joints;
 
     /// `restTransforms`, one per joint, local to the parent.
@@ -84,28 +84,27 @@ enum class SkeletonRefusal
 
 struct SkeletonOutcome
 {
-    std::optional<vrmRetarget::TargetSkeleton> skeleton;
+    std::optional<openstrata::motion::SkeletonDescriptor> skeleton;
     SkeletonRefusal refusal = SkeletonRefusal::RestTransformCount;
 };
 
 /// The target rig `rest` states, or a refusal.
 ///
 /// Each joint's rest transform is decomposed into the rotation and translation
-/// `vrmRetarget::TargetJoint` carries, **scale and shear dropped** -- the motion
+/// `openstrata::motion::SkeletonJoint` carries, **scale and shear dropped** -- the motion
 /// contract ignores scale channels and a retargeted clip never authors one --
 /// and each joint's parent is derived from its token by
-/// `TargetSkeleton::ResolveParentsFromTokens`, the library's own "a/b/c" rule.
+/// `SkeletonDescriptor::ResolveParentsFromTokens`, the library's own "a/b/c" rule.
 ///
-/// **This node is the plan's sixth boundary finding, and of the sampler's
-/// kind.** Building a `TargetSkeleton` from a skeleton's rest transforms exists
-/// in this repository -- in `tools/motionRetarget`'s `StageIo.cpp`
-/// (`ReadSkeletonRest` and `DecomposeRest`), in a *tool*, where a bundle cannot
-/// call it -- and the half that is plain arithmetic, matrix to rotation and
-/// translation, has no `vrmRetarget` entry point. So the decomposition is here,
-/// matched to the tool's line for line, and the ask for
-/// [boundary consolidation](../../../docs/roadmap/boundary-consolidation.md) is
-/// a `TargetSkeleton` built from tokens and rest matrices, beside the class,
-/// so the rule has one implementation again.
+/// **This node was the plan's sixth boundary finding, and it is closed.**
+/// Building a skeleton from its rest transforms existed only in
+/// `tools/motionRetarget`'s `StageIo.cpp`, in a *tool*, where a bundle cannot
+/// call it, so this node carried a copy matched to the tool's line for line.
+/// The ask for [boundary consolidation](../../../docs/roadmap/boundary-consolidation.md)
+/// -- a `SkeletonDescriptor` built from tokens and rest matrices -- arrived in
+/// `motionRetarget` as `BuildSkeletonDescriptor`, and this node and the tool
+/// both call it, so the rule has one implementation again. What stays here is
+/// naming its refusals in this bundle's vocabulary.
 ///
 /// **Two refusals, and the first is where this node and the tool disagree.** A
 /// skeleton whose `restTransforms` do not pair with its `joints` is refused.
@@ -117,7 +116,7 @@ struct SkeletonOutcome
 /// an empty joint token (`SkeletonRefusal::EmptyJointToken`).
 ///
 /// A skeleton that authors **no joints** -- `joints = []` -- is an answer, not a
-/// refusal, **whatever its `restTransforms` say**: an empty `TargetSkeleton`
+/// refusal, **whatever its `restTransforms` say**: an empty `SkeletonDescriptor`
 /// says exactly that, it is distinguishable from every skeleton that has a
 /// joint, and with no joint for a rest transform to belong to, no rest
 /// transform can become a number. So `joints = []` beside an unauthored
@@ -136,7 +135,7 @@ struct SkeletonOutcome
 /// measured one, on the one rig shape where nothing here can see it.
 ///
 /// A rest pose that is not in parent-before-child order is also an answer. The
-/// skeleton carries it faithfully and `TargetSkeleton::IsTopologicallyOrdered`
+/// skeleton carries it faithfully and `SkeletonDescriptor::IsTopologicallyOrdered`
 /// reports it, which is what the retargeter already reads it through.
 SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest);
 
@@ -163,7 +162,7 @@ struct HumanoidInputs
     std::size_t skeletonTargetCount = 0;
 
     /// The skeletons that came back from those objects.
-    std::vector<vrmRetarget::TargetSkeleton> skeletons;
+    std::vector<openstrata::motion::SkeletonDescriptor> skeletons;
 
     /// The joint token each canonical bone names, in vocabulary order.
     ///
@@ -202,7 +201,7 @@ enum class MapRefusal
 
 struct MapOutcome
 {
-    std::optional<vrmRetarget::HumanoidMap> map;
+    std::optional<openstrata::motion::RetargetMap> map;
     MapRefusal refusal = MapRefusal::NoSkeleton;
 
     /// For `UnknownJoint` and `DuplicateJoint`: the bones concerned, in
@@ -213,7 +212,7 @@ struct MapOutcome
 
 /// The humanoid map `inputs` state, or a refusal.
 ///
-/// **The whole node, and it is a wrapper**: `HumanoidMap::SetJointToken` for
+/// **The whole node, and it is a wrapper**: `RetargetMap::SetJointToken` for
 /// each binding, against the one skeleton `vrm:skeleton` reaches. Resolution is
 /// exact on the full joint path -- the library's rule, and the reason the map
 /// never guesses from a joint's name.
@@ -243,7 +242,7 @@ struct MapOutcome
 /// anything else; nothing in the schema asks it to.
 ///
 /// What is **not** refused, because the value answers it: a humanoid missing a
-/// bone VRM 1.0 requires. `HumanoidMap::FindMissingRequiredBones` states the
+/// bone VRM 1.0 requires. `RetargetMap::FindMissingRequiredBones` states the
 /// gap, the library says a rig missing one "can still be retargeted onto", and
 /// the retargeter already reports it. A humanoid stating no bone at all is the
 /// empty map, for the same reason.
@@ -258,15 +257,15 @@ enum class SourceRestRefusal
     /// rest.
     NoHumanBone,
 
-    /// Two joints' leaves name the same bone. The offline tool keeps the later
-    /// one without a word; which of the two rests the clip meant is exactly
-    /// what cannot be known from here.
+    /// Two joints' leaves name the same bone. Which of the two rests the clip
+    /// meant is exactly what cannot be known from here, and the offline tool
+    /// refuses it too: both call `BuildSourceRestPose`.
     DuplicateBone,
 };
 
 struct SourceRestOutcome
 {
-    std::optional<vrmRetarget::SourceRestPose> rest;
+    std::optional<openstrata::motion::SourceRestPose> rest;
     SourceRestRefusal refusal = SourceRestRefusal::NoHumanBone;
 
     /// For `DuplicateBone`: every joint token that named a bone some other
@@ -294,14 +293,13 @@ struct SourceRestOutcome
 /// is `SourceRestPose`'s shape (one slot per bone and no other), shared with the
 /// tool, not a divergence P0-6 has to explain.
 ///
-/// **This is the seventh boundary finding, and the sampler's kind a third
-/// time**: the reading exists only in the tool, beside the decomposition
-/// `vrm.computeTargetSkeleton` already copies from it. The rest rotations and
-/// translations arrive here already decomposed -- the source skeleton is read
-/// through `vrm.computeTargetSkeleton`, so the two rigs of a retarget are
-/// decomposed by one implementation -- and only the bone assignment is this
-/// function's.
-SourceRestOutcome SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skeleton);
+/// **This was the seventh boundary finding, and it is closed**: the reading
+/// existed only in the tool, and this function carried a copy. It is
+/// `motionRetarget`'s `BuildSourceRestPose` now, which the tool calls too. The
+/// rest rotations and translations arrive here already decomposed -- the source
+/// skeleton is read through `vrm.computeTargetSkeleton`, so the two rigs of a
+/// retarget are decomposed by one implementation.
+SourceRestOutcome SourceRestFromSkeleton(const openstrata::motion::SkeletonDescriptor& skeleton);
 
 /// What `vrm.computeRestPoseCorrection` reads, as plain values.
 ///
@@ -317,16 +315,16 @@ SourceRestOutcome SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skel
 struct CorrectionInputs
 {
     /// Null when `vrm.computeHumanoidMap` answered nothing.
-    const vrmRetarget::HumanoidMap* map = nullptr;
+    const openstrata::motion::RetargetMap* map = nullptr;
 
     /// What came back across `vrm:skeleton`. When the map answered, the map
     /// already counted this relationship and it reached exactly one skeleton.
-    std::vector<vrmRetarget::TargetSkeleton> targets;
+    std::vector<openstrata::motion::SkeletonDescriptor> targets;
 
     /// How many objects `vrm:retarget:sourceSkeleton` reaches, and the
     /// skeletons that came back from them.
     std::size_t sourceTargetCount = 0;
-    std::vector<vrmRetarget::TargetSkeleton> sources;
+    std::vector<openstrata::motion::SkeletonDescriptor> sources;
 };
 
 /// Why a correction was refused.
@@ -357,7 +355,7 @@ enum class CorrectionRefusal
 
 struct CorrectionOutcome
 {
-    std::optional<vrmRetarget::RestPoseCorrection> correction;
+    std::optional<openstrata::motion::RestPoseCorrection> correction;
     CorrectionRefusal refusal = CorrectionRefusal::RigUnanswered;
 
     /// For `CorrectionRefusal::SourceRest`.
@@ -368,7 +366,7 @@ struct CorrectionOutcome
 /// The correction carrying a rest-relative rotation from the clip's rig onto
 /// the humanoid's, or a refusal.
 ///
-/// **The node is one library call**: `vrmRetarget::ComputeRestPoseCorrection`
+/// **The node is one library call**: `openstrata::motion::ComputeRestPoseCorrection`
 /// over the source rest, the target skeleton and the map -- asserted as that in
 /// `execVrm_rig`, where the node's correction is compared with the library's
 /// over the same values. Every mapped bone gets a correction and every unmapped
@@ -529,20 +527,20 @@ enum class RootMotionRefusal
 
 struct RootMotionOutcome
 {
-    std::optional<vrmRetarget::RootMotionOptions> options;
+    std::optional<openstrata::motion::RootMotionOptions> options;
     RootMotionRefusal refusal = RootMotionRefusal::UnknownMode;
 };
 
 /// The root-motion options `statements` state against `target`, or a refusal.
 ///
-/// Each absent statement keeps `vrmRetarget::RootMotionOptions`' own default --
+/// Each absent statement keeps `openstrata::motion::RootMotionOptions`' own default --
 /// `hips`, a scale of 1, the source's height -- because an absent value there
 /// selects the library's documented behaviour, which is both exec bundles'
 /// rule. Each stated one the layer cannot honour is refused, the rule's other
 /// half. A `vrm:retarget:rootJoint` stated beside a mode other than `root` is
 /// not read, as `--root-joint` is not.
 RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
-                                       const vrmRetarget::TargetSkeleton& target);
+                                       const openstrata::motion::SkeletonDescriptor& target);
 
 /// What `vrm.humanoidRetarget` reads, as plain values.
 ///
@@ -558,16 +556,16 @@ RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
 ///   * `computeTime`'s time code, read only for whether it is the default one.
 ///
 /// It does **not** read `vrm.computeRestPoseCorrection`, and that is the
-/// finding rather than an omission: `vrmRetarget::PoseRetargeter` computes its
+/// finding rather than an omission: `openstrata::motion::PoseRetargeter` computes its
 /// own correction in its constructor and accepts none, so a wrapper has nowhere
 /// to hand the cached one (the retarget report, section 2).
 struct RetargetInputs
 {
-    const vrmRetarget::HumanoidMap* map = nullptr;
-    std::vector<vrmRetarget::TargetSkeleton> targets;
+    const openstrata::motion::RetargetMap* map = nullptr;
+    std::vector<openstrata::motion::SkeletonDescriptor> targets;
 
     std::size_t sourceTargetCount = 0;
-    std::vector<vrmRetarget::TargetSkeleton> sources;
+    std::vector<openstrata::motion::SkeletonDescriptor> sources;
     std::vector<openstrata::motion::MotionPose> poses;
 
     RootMotionStatements rootMotion;
@@ -616,7 +614,7 @@ enum class RetargetRefusal
 
 struct RetargetOutcome
 {
-    std::optional<vrmRetarget::RetargetedPose> pose;
+    std::optional<openstrata::motion::RetargetedPose> pose;
     RetargetRefusal refusal = RetargetRefusal::RigUnanswered;
 
     RootMotionRefusal rootMotionRefusal = RootMotionRefusal::UnknownMode;
@@ -627,7 +625,7 @@ struct RetargetOutcome
 /// One sample of the clip, expanded into the target rig's joint order, or a
 /// refusal.
 ///
-/// **The node is one library call**: `vrmRetarget::PoseRetargeter` over the
+/// **The node is one library call**: `openstrata::motion::PoseRetargeter` over the
 /// target rig, the map, the clip's rest and the root-motion options, asked
 /// for the one pose the clip's skeleton is bound to -- what `motion_retarget`
 /// does per sample, with the same four arguments. A joint the clip does not
@@ -650,21 +648,21 @@ struct RetargetOutcome
 /// per-pose report, `PoseRetargeter::Retarget(pose, diagnostics)`, under its
 /// own once-per-code-and-subject rule. A refusal appends nothing.
 RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs,
-                                    vrmRetarget::RetargetDiagnostics* diagnostics = nullptr);
+                                    openstrata::motion::RetargetDiagnostics* diagnostics = nullptr);
 
 /// What `vrm.computeRigDiagnostics` reads, as plain values: the retarget's
 /// inputs with everything about a clip taken away -- the map, the rig across
 /// `vrm:skeleton`, and the humanoid's four root-motion statements.
 struct RigDiagnosticsInputs
 {
-    const vrmRetarget::HumanoidMap* map = nullptr;
-    std::vector<vrmRetarget::TargetSkeleton> targets;
+    const openstrata::motion::RetargetMap* map = nullptr;
+    std::vector<openstrata::motion::SkeletonDescriptor> targets;
     RootMotionStatements rootMotion;
 };
 
 struct RigDiagnosticsOutcome
 {
-    std::optional<vrmRetarget::RetargetDiagnostics> diagnostics;
+    std::optional<openstrata::motion::RetargetDiagnostics> diagnostics;
 
     /// `RigUnanswered` or `RootMotion` -- the retarget's first two refusals,
     /// for the retarget's reasons, because they are judged on these inputs.
@@ -674,7 +672,7 @@ struct RigDiagnosticsOutcome
 
 /// What the rig and its map say about every retarget onto them, or a refusal.
 ///
-/// **The node is one library call**: `vrmRetarget::DiagnoseRig` over the rig,
+/// **The node is one library call**: `openstrata::motion::DiagnoseRig` over the rig,
 /// the map and the options the statements state -- each required bone the map
 /// leaves unbound, each joint two bones share, the first joint out of
 /// parent-before-child order, and a root joint the rig does not have.
@@ -696,7 +694,7 @@ RigDiagnosticsOutcome RigDiagnosticsFor(const RigDiagnosticsInputs& inputs);
 
 struct RetargetDiagnosticsOutcome
 {
-    std::optional<vrmRetarget::RetargetDiagnostics> diagnostics;
+    std::optional<openstrata::motion::RetargetDiagnostics> diagnostics;
 
     /// When the retarget refused: its outcome, whose `pose` is empty and whose
     /// refusal fields say why. The node reports them as the retarget does.
@@ -726,8 +724,9 @@ struct RetargetDiagnosticsOutcome
 /// `DiagnoseRig` would be the call this node wraps.
 ///
 /// `rig` is `vrm.computeRigDiagnostics`' value, null when it answered none.
-RetargetDiagnosticsOutcome RetargetDiagnosticsFor(const RetargetInputs& inputs,
-                                                  const vrmRetarget::RetargetDiagnostics* rig);
+RetargetDiagnosticsOutcome
+RetargetDiagnosticsFor(const RetargetInputs& inputs,
+                       const openstrata::motion::RetargetDiagnostics* rig);
 
 /// What `vrm.computeJointLocalTransforms` reads, as plain values: the
 /// humanoid's own `vrm.humanoidRetarget`, and the rig across `vrm:skeleton`
@@ -736,13 +735,13 @@ struct JointTransformsInputs
 {
     /// Null when `vrm.humanoidRetarget` answered nothing -- it refused, or a
     /// driver's override of it was dropped.
-    const vrmRetarget::RetargetedPose* pose = nullptr;
+    const openstrata::motion::RetargetedPose* pose = nullptr;
 
     /// What came back across `vrm:skeleton`. Not counted a second time: the
     /// map already refuses unless exactly one skeleton comes back, and a
     /// retarget that answered read that map. A driver's override of the
     /// retarget skips the map, which is how this can be other than one.
-    std::vector<vrmRetarget::TargetSkeleton> targets;
+    std::vector<openstrata::motion::SkeletonDescriptor> targets;
 };
 
 /// Why an animation sample was refused.
@@ -767,7 +766,7 @@ enum class JointTransformsRefusal
 
 struct JointTransformsOutcome
 {
-    std::optional<vrmRetarget::JointLocalTransforms> sample;
+    std::optional<openstrata::motion::JointLocalTransforms> sample;
     JointTransformsRefusal refusal = JointTransformsRefusal::PoseUnanswered;
 
     /// For `JointCount`: the rig's joints, and the pose's two array sizes.
@@ -785,7 +784,7 @@ struct JointTransformsOutcome
 /// the timestamp with them. What this adds is what a bake adds: the tokens the
 /// arrays are ordered by, which a `RetargetedPose` does not carry, and the
 /// scales, which UsdSkel needs beside the other two before it resolves any
-/// joint at all (`vrmRetarget::JointLocalTransforms`).
+/// joint at all (`openstrata::motion::JointLocalTransforms`).
 ///
 /// **Every scale is (1, 1, 1)**, which is `motion_retarget`'s rule and the
 /// plan's P1-2: a retargeted clip never animates scale. That includes a joint
@@ -800,7 +799,7 @@ struct JointTransformsOutcome
 /// **The ninth boundary finding, and the smallest.** The bake's shape -- the
 /// rig's tokens beside the arrays, identity scales -- is stated in one place
 /// offline, `tools/motionRetarget`'s `WriteAnimation`, as two lines of a tool,
-/// and `vrmRetarget` had no type for it. The library gained the type, for the
+/// and the retarget library had no type for it. It gained the type, for the
 /// registry; the rule stays two lines here and two lines in the tool, and the
 /// ask is that the tool author from the library's value, so P1-2's "OpenExec
 /// and offline behave identically" is one statement.

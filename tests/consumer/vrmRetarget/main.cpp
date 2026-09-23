@@ -1,76 +1,65 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// Includes one public header of the installed `vrmRetarget` package and calls
-// into it. The include proves the package installed its header root; the calls
-// prove it installed something to link -- and here that second half is the
-// point rather than a formality.
+// Includes the public headers of the installed `vrmRetarget` package and calls
+// into them. The include proves the package installed its header root; the
+// calls prove it installed something to link.
 //
-// `PoseRetargeter.h` is the header that reaches every other public header this
-// package installs, and the only one whose implementation reaches the layer
-// between this package and the value contract. That layer appears in no
-// include list, so a consumer meets it for the first time at the link. Calling
-// `Retarget` is what pulls the archive member carrying it, and a fixture that
-// only constructed a skeleton would have compiled, linked, and never asked.
+// What the package holds now is what a VRM rig adds to a retarget -- the
+// expression resolve, the look-at and VRM 1.0's required bones -- and the
+// retarget itself is usd-motion-plugins' `motionRetarget`. So this reaches the
+// two halves a consumer actually calls: `ExpressionResolver.h`, whose values
+// are the value contract's channel set, and `RequiredBones.h`, the list a
+// caller hands the retarget. `Resolve` is the call whose archive member reaches
+// the value contract at the link, so a fixture that only built a rig would
+// have compiled, linked, and never asked.
 //
-// This is deliberately not a test of retargeting. `libs/vrmRetarget/tests/`
-// owns the rest-pose correction, the root-motion policy and the diagnostics;
-// duplicating any of it here would make a packaging failure look like a
-// retarget failure the first time this fixture went red. What this asks is
-// only: does a one-joint rig expand a one-bone pose, and does the rotation that
-// goes in come back out in the rig's own order.
-#include <vrmRetarget/PoseRetargeter.h>
+// This is deliberately not a test of either. `libs/vrmRetarget/tests/` owns the
+// overrides, the clamps and the look-at geometry; duplicating any of it here
+// would make a packaging failure look like a resolve failure the first time
+// this fixture went red. What this asks is only: does one expression expand
+// onto its one bind, and is the required set the one a VRM 1.0 avatar states.
+#include <vrmRetarget/ExpressionResolver.h>
+#include <vrmRetarget/RequiredBones.h>
 
 #include <cstdio>
 
 int
 main()
 {
-    // The smallest rig there is: one root joint, at rest, with the joint-path
-    // token a UsdSkelSkeleton would carry.
-    vrmRetarget::TargetJoint root;
-    root.token = "Root";
-    root.parent = vrmRetarget::TargetSkeleton::kNoParent;
-    vrmRetarget::TargetSkeleton skeleton;
-    skeleton.AddJoint(root);
-
-    vrmRetarget::HumanoidMap map;
-    if (!map.SetJointToken(openstrata::motion::HumanJoint::Hips, "Root", skeleton))
+    // The smallest rig there is: one expression driving one morph target.
+    vrmRetarget::ExpressionRig rig;
+    vrmRetarget::ExpressionDefinition happy;
+    happy.name = "happy";
+    happy.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
+    if (!rig.Add(happy))
     {
-        std::fprintf(stderr, "consumer: the installed package would not bind "
-                             "hips to the rig's only joint\n");
+        std::fprintf(stderr, "consumer: the installed package would not declare "
+                             "the rig's only expression\n");
         return 1;
     }
 
-    // A quarter turn about Y on the one bone the rig drives.
-    const pxr::GfQuatf quarter(0.70710678f, pxr::GfVec3f(0.0f, 0.70710678f, 0.0f));
-    openstrata::motion::MotionPose pose;
-    pose.timestamp = 0.25;
-    pose.localRotations[static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips)] = quarter;
-    pose.validRotations.set(static_cast<std::size_t>(openstrata::motion::HumanJoint::Hips));
-
-    const vrmRetarget::PoseRetargeter retargeter(skeleton, map);
-    const vrmRetarget::RetargetedPose expanded = retargeter.Retarget(pose);
-
-    if (expanded.rotations.size() != skeleton.GetSize() ||
-        expanded.translations.size() != skeleton.GetSize())
+    openstrata::motion::MotionChannelSet weights;
+    weights.Set("happy", 0.25f);
+    const vrmRetarget::ExpressionResolver resolver(rig);
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(weights);
+    if (resolved.morphTargets.size() != 1 || resolved.morphTargets[0].weight != 0.25f)
     {
-        std::fprintf(stderr,
-                     "consumer: expanded %zu rotations for a %zu-joint "
-                     "rig\n",
-                     expanded.rotations.size(), skeleton.GetSize());
+        std::fprintf(stderr, "consumer: expanded onto %zu morph target(s)\n",
+                     resolved.morphTargets.size());
         return 1;
     }
-    if (expanded.timestamp != pose.timestamp ||
-        expanded.rotations[0].GetReal() != quarter.GetReal())
+
+    const std::vector<openstrata::motion::HumanJoint>& required = vrmRetarget::GetRequiredBones();
+    if (required.size() != 17 || required.front() != openstrata::motion::HumanJoint::Hips)
     {
-        std::fprintf(stderr, "consumer: expanded to real part %f at t=%f\n",
-                     expanded.rotations[0].GetReal(), expanded.timestamp);
+        std::fprintf(stderr, "consumer: the installed package requires %zu bone(s)\n",
+                     required.size());
         return 1;
     }
 
     std::fprintf(stdout,
-                 "consumer: expanded a pose onto %zu joint(s) through "
-                 "the installed package\n",
-                 expanded.rotations.size());
+                 "consumer: resolved an expression onto %zu bind(s), and %zu "
+                 "required bones, through the installed package\n",
+                 resolved.morphTargets.size(), required.size());
     return 0;
 }

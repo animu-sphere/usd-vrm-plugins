@@ -296,7 +296,7 @@ def recorded_real_avatar(arguments, work, failures) -> None:
         f"{data['stated']}")
     # The bone the parity report found the two sides disagreeing about: Seed-san
     # binds no upperChest and the export drives one. Both name it now.
-    unbound = "[VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable " \
+    unbound = "[MOTION_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable " \
               "subject=upperChest"
     check_reports(failures, "recorded_real_avatar", data, [unbound])
     check_sees_a_missing_report(arguments, work, failures,
@@ -321,7 +321,7 @@ def vrma_walk(arguments, work, failures) -> None:
     tool = data["diagnostics"]["tool"]
     failures.check(
         len(tool) == 14 and all(line.startswith(
-            "[VRM_RETARGET_MISSING_REQUIRED_BONE]") for line in tool),
+            "[MOTION_RETARGET_MISSING_REQUIRED_BONE]") for line in tool),
         f"vrma_walk: expected the design rig's fourteen missing required "
         f"bones, got {tool}")
 

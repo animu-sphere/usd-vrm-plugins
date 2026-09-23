@@ -81,7 +81,7 @@
 //
 // # What it links
 //
-// OpenUSD and exec, the driver, `vrmRetarget` for the result type, and
+// OpenUSD and exec, the driver, `motionRetarget` for the result type, and
 // `motionCore` for the bone vocabulary and `AngleBetween`. Neither plugin:
 // both are found through `PXR_PLUGINPATH_NAME`, the path a packaged bundle
 // takes.
@@ -130,8 +130,8 @@
 
 #include <motionCore/Compare.h>
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/Diagnostics.h>
-#include <vrmRetarget/PoseRetargeter.h>
+#include <motionRetarget/Diagnostics.h>
+#include <motionRetarget/PoseRetargeter.h>
 
 #include <algorithm>
 #include <chrono>
@@ -432,15 +432,15 @@ ReadToolLog(const std::string& path, ToolDiagnostics* out, std::string* error)
         {
             continue;
         }
-        const std::optional<vrmRetarget::RetargetDiagnosticCode> code =
-            vrmRetarget::FindRetargetDiagnosticCode(
+        const std::optional<openstrata::motion::RetargetDiagnosticCode> code =
+            openstrata::motion::FindRetargetDiagnosticCode(
                 line.substr(prefix.size(), close - prefix.size()));
         if (!code)
         {
             continue;
         }
         std::string formatted = line.substr(prefix.size() - 1);
-        (vrmRetarget::RetargetDiagnosticIsLibraryRaised(*code) ? out->library : out->caller)
+        (openstrata::motion::RetargetDiagnosticIsLibraryRaised(*code) ? out->library : out->caller)
             .push_back(std::move(formatted));
     }
     return true;
@@ -1148,11 +1148,12 @@ main(int argc, char** argv)
     execdriver::Frame armedValues;
     execdriver::Frame armedDiagnostics;
     const execdriver::Driver::RequestId request = driver.Add(
-        {execdriver::Key::Of<vrmRetarget::JointLocalTransforms>(humanoid, kJointTransforms)},
+        {execdriver::Key::Of<openstrata::motion::JointLocalTransforms>(humanoid, kJointTransforms)},
         &armedValues);
-    const execdriver::Driver::RequestId diagnosticsRequest = driver.Add(
-        {execdriver::Key::Of<vrmRetarget::RetargetDiagnostics>(humanoid, kRetargetDiagnostics)},
-        &armedDiagnostics);
+    const execdriver::Driver::RequestId diagnosticsRequest =
+        driver.Add({execdriver::Key::Of<openstrata::motion::RetargetDiagnostics>(
+                       humanoid, kRetargetDiagnostics)},
+                   &armedDiagnostics);
     std::vector<std::string> armingErrors;
     for (const execdriver::Frame* armed : {&armedValues, &armedDiagnostics})
     {
@@ -1160,7 +1161,7 @@ main(int argc, char** argv)
         armingErrors.insert(armingErrors.end(), armed->errors.begin(), armed->errors.end());
     }
 
-    std::vector<vrmRetarget::JointLocalTransforms> answers;
+    std::vector<openstrata::motion::JointLocalTransforms> answers;
     answers.reserve(keys.size());
     // Which samples refused, kept beside the answers rather than read back off
     // them: an answer with no joints is a legitimate value (the animation of a
@@ -1171,7 +1172,7 @@ main(int argc, char** argv)
     std::size_t refusals = 0;
     std::vector<std::string> refusalReasons;
     // Merged over the keys in order: the clip overload's list.
-    vrmRetarget::RetargetDiagnostics execDiagnostics;
+    openstrata::motion::RetargetDiagnostics execDiagnostics;
     std::size_t diagnosticsRefusals = 0;
     double execSeconds = 0.0;
     double diagnosticsSeconds = 0.0;
@@ -1185,7 +1186,7 @@ main(int argc, char** argv)
         execSeconds += std::chrono::duration<double>(between - started).count();
         diagnosticsSeconds += std::chrono::duration<double>(finished - between).count();
 
-        if (const auto* reported = diagnosed.Get<vrmRetarget::RetargetDiagnostics>(0))
+        if (const auto* reported = diagnosed.Get<openstrata::motion::RetargetDiagnostics>(0))
         {
             execDiagnostics.Merge(*reported);
         }
@@ -1194,7 +1195,7 @@ main(int argc, char** argv)
             ++diagnosticsRefusals;
         }
 
-        const auto* answer = valued.Get<vrmRetarget::JointLocalTransforms>(0);
+        const auto* answer = valued.Get<openstrata::motion::JointLocalTransforms>(0);
         refused.push_back(answer == nullptr);
         if (!answer)
         {
@@ -1223,9 +1224,9 @@ main(int argc, char** argv)
     }
 
     std::vector<std::string> execLines;
-    for (const vrmRetarget::RetargetDiagnostic& d : execDiagnostics.reported)
+    for (const openstrata::motion::RetargetDiagnostic& d : execDiagnostics.reported)
     {
-        execLines.push_back(vrmRetarget::FormatRetargetDiagnostic(d));
+        execLines.push_back(openstrata::motion::FormatRetargetDiagnostic(d));
     }
     const bool diagnosticsCompared = !args.toolLog.empty();
     const bool diagnosticsAgree = diagnosticsRefusals == 0 && execLines == tool.library;
@@ -1254,7 +1255,7 @@ main(int argc, char** argv)
 
     for (std::size_t i = 0; i < keys.size(); ++i)
     {
-        const vrmRetarget::JointLocalTransforms& answer = answers[i];
+        const openstrata::motion::JointLocalTransforms& answer = answers[i];
         if (refused[i])
         {
             continue; // counted above

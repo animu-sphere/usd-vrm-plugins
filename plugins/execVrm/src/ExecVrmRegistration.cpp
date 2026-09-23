@@ -39,7 +39,7 @@
 //
 // execMotion's way, for execMotion's reason: a `TF_RUNTIME_ERROR` naming the
 // computation, and **no value at all** (`VdfContext::SetEmptyOutput`). An empty
-// `TargetSkeleton` and an empty `HumanoidMap` are both legitimate answers -- a
+// `SkeletonDescriptor` and an empty `RetargetMap` are both legitimate answers -- a
 // skeleton with no joints, a humanoid stating no bone -- so neither can stand
 // for a refusal (docs/reports/openusd/26.08-openexec-root-motion.md §6).
 
@@ -120,22 +120,23 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
-    // `vrmRetarget`'s own values, crossing unchanged -- the only shape under
+    // `motionRetarget`'s own values, crossing unchanged -- the only shape under
     // which a node stays a wrapper. None is a `VtArray`, and all six are
     // equality comparable since this bundle asked for it: the exact
     // `operator==` motionCore's aggregates answered in v0.6.0 and
     // motionRuntime's `PoseSampleResult` for `motion.interpolatePose`, asked of
-    // `vrmRetarget` for the first time. `JointLocalTransforms` is the one type
+    // the retarget library for the first time, when it was still this
+    // repository's `vrmRetarget`. `JointLocalTransforms` is the one type
     // the library gained whole for this bundle rather than an equality on a
     // type it already had. The last, `RetargetDiagnostics`, is P1-1's frozen
     // codes as a value, which P0-6's parity asked for so that a node could
     // answer them rather than log them.
-    ExecTypeRegistry::RegisterType(vrmRetarget::TargetSkeleton{});
-    ExecTypeRegistry::RegisterType(vrmRetarget::HumanoidMap{});
-    ExecTypeRegistry::RegisterType(vrmRetarget::RestPoseCorrection{});
-    ExecTypeRegistry::RegisterType(vrmRetarget::RetargetedPose{});
-    ExecTypeRegistry::RegisterType(vrmRetarget::JointLocalTransforms{});
-    ExecTypeRegistry::RegisterType(vrmRetarget::RetargetDiagnostics{});
+    ExecTypeRegistry::RegisterType(openstrata::motion::SkeletonDescriptor{});
+    ExecTypeRegistry::RegisterType(openstrata::motion::RetargetMap{});
+    ExecTypeRegistry::RegisterType(openstrata::motion::RestPoseCorrection{});
+    ExecTypeRegistry::RegisterType(openstrata::motion::RetargetedPose{});
+    ExecTypeRegistry::RegisterType(openstrata::motion::JointLocalTransforms{});
+    ExecTypeRegistry::RegisterType(openstrata::motion::RetargetDiagnostics{});
 
     // execMotion's pose, registered here as well. `TargetedObjects<T>` checks
     // that `T` is registered when THIS bundle's computations are registered,
@@ -287,9 +288,9 @@ execvrm::RetargetInputs
 _ReadRetargetInputs(const VdfContext& ctx, std::vector<SdfPath>* sources)
 {
     execvrm::RetargetInputs inputs;
-    inputs.map = ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap);
+    inputs.map = ctx.GetInputValuePtr<openstrata::motion::RetargetMap>(_tokens->computeHumanoidMap);
 
-    for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(ctx, _tokens->skeletons);
+    for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(ctx, _tokens->skeletons);
          !skeleton.IsAtEnd(); ++skeleton)
     {
         inputs.targets.push_back(*skeleton);
@@ -300,7 +301,8 @@ _ReadRetargetInputs(const VdfContext& ctx, std::vector<SdfPath>* sources)
         sources->push_back(*path);
     }
     inputs.sourceTargetCount = sources->size();
-    for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(ctx, _tokens->sourceSkeletons);
+    for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(ctx,
+                                                                          _tokens->sourceSkeletons);
          !skeleton.IsAtEnd(); ++skeleton)
     {
         inputs.sources.push_back(*skeleton);
@@ -410,7 +412,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // vrm.computeTargetSkeleton -- the rig, as the retargeter reads it
 // ---------------------------------------------------------------------------
 //
-// `vrmRetarget::TargetSkeleton` from the skeleton's `joints` and
+// `openstrata::motion::SkeletonDescriptor` from the skeleton's `joints` and
 // `restTransforms`. Both are `uniform`, and the node declares no `computeTime`,
 // so it is reported to no time change -- which `execVrm_humanoid` asserts,
 // because a rig that acquired a time dependency would be recomputed, with
@@ -421,7 +423,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
 {
     self.PrimComputation(_tokens->computeTargetSkeleton)
-        .Callback<vrmRetarget::TargetSkeleton>(
+        .Callback<openstrata::motion::SkeletonDescriptor>(
             +[](const VdfContext& ctx)
             {
                 execvrm::SkeletonRest rest;
@@ -560,7 +562,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelBindingAPI)
 // vrm.computeHumanoidMap -- which joint each human bone drives
 // ---------------------------------------------------------------------------
 //
-// `vrmRetarget::HumanoidMap` from the `vrm:humanBones:<bone>` tokens the
+// `openstrata::motion::RetargetMap` from the `vrm:humanBones:<bone>` tokens the
 // humanoid states, resolved against the skeleton `vrm:skeleton` targets. One
 // library call per binding, and the refusals the seam documents.
 //
@@ -582,7 +584,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelBindingAPI)
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
 {
     auto humanoidMap = self.PrimComputation(_tokens->computeHumanoidMap);
-    humanoidMap.Callback<vrmRetarget::HumanoidMap>(
+    humanoidMap.Callback<openstrata::motion::RetargetMap>(
         +[](const VdfContext& ctx)
         {
             execvrm::HumanoidInputs inputs;
@@ -595,7 +597,8 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
             }
             inputs.skeletonTargetCount = targets.size();
 
-            for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(ctx, _tokens->skeletons);
+            for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(
+                     ctx, _tokens->skeletons);
                  !skeleton.IsAtEnd(); ++skeleton)
             {
                 inputs.skeletons.push_back(*skeleton);
@@ -689,7 +692,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
             .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
             .InputName(_tokens->skeletonPaths),
         Relationship(_tokens->skeleton)
-            .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+            .TargetedObjects<openstrata::motion::SkeletonDescriptor>(_tokens->computeTargetSkeleton)
             .InputName(_tokens->skeletons));
     for (const TfToken& name : execvrm::HumanBoneAttributeNames())
     {
@@ -700,7 +703,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     // vrm.computeRestPoseCorrection -- from the clip's rest onto this rig's
     // -----------------------------------------------------------------------
     //
-    // `vrmRetarget::ComputeRestPoseCorrection` over three things, and the
+    // `openstrata::motion::ComputeRestPoseCorrection` over three things, and the
     // first node here that reads a computation of its own prim, one across
     // `vrm:skeleton` and one across a second relationship -- the SAME
     // computation, `vrm.computeTargetSkeleton`, on two skeletons:
@@ -722,14 +725,15 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     // correction is computed once per rig edit and reported to no frame change
     // -- the reason it is a node of its own and not a step of the retarget.
     self.PrimComputation(_tokens->computeRestPoseCorrection)
-        .Callback<vrmRetarget::RestPoseCorrection>(
+        .Callback<openstrata::motion::RestPoseCorrection>(
             +[](const VdfContext& ctx)
             {
                 execvrm::CorrectionInputs inputs;
-                inputs.map =
-                    ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap);
+                inputs.map = ctx.GetInputValuePtr<openstrata::motion::RetargetMap>(
+                    _tokens->computeHumanoidMap);
 
-                for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(ctx, _tokens->skeletons);
+                for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(
+                         ctx, _tokens->skeletons);
                      !skeleton.IsAtEnd(); ++skeleton)
                 {
                     inputs.targets.push_back(*skeleton);
@@ -742,7 +746,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                     sources.push_back(*path);
                 }
                 inputs.sourceTargetCount = sources.size();
-                for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(
                          ctx, _tokens->sourceSkeletons);
                      !skeleton.IsAtEnd(); ++skeleton)
                 {
@@ -804,22 +808,24 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 }
                 ctx.SetEmptyOutput();
             })
-        .Inputs(Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+        .Inputs(Computation<openstrata::motion::RetargetMap>(_tokens->computeHumanoidMap),
                 Relationship(_tokens->skeleton)
-                    .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+                    .TargetedObjects<openstrata::motion::SkeletonDescriptor>(
+                        _tokens->computeTargetSkeleton)
                     .InputName(_tokens->skeletons),
                 Relationship(_tokens->sourceSkeleton)
                     .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
                     .InputName(_tokens->sourceSkeletonPaths),
                 Relationship(_tokens->sourceSkeleton)
-                    .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+                    .TargetedObjects<openstrata::motion::SkeletonDescriptor>(
+                        _tokens->computeTargetSkeleton)
                     .InputName(_tokens->sourceSkeletons));
 
     // -----------------------------------------------------------------------
     // vrm.humanoidRetarget -- one sample of the clip, on this rig
     // -----------------------------------------------------------------------
     //
-    // `vrmRetarget::PoseRetargeter` over the rig, the map, the clip's rest and
+    // `openstrata::motion::PoseRetargeter` over the rig, the map, the clip's rest and
     // the root-motion options, asked for the one pose the clip's skeleton is
     // bound to -- `motion_retarget`'s call, per sample. It reads:
     //
@@ -855,15 +861,17 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     auto declareRetargetInputs = [](auto& computation)
     {
         computation.Inputs(
-            Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+            Computation<openstrata::motion::RetargetMap>(_tokens->computeHumanoidMap),
             Relationship(_tokens->skeleton)
-                .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+                .TargetedObjects<openstrata::motion::SkeletonDescriptor>(
+                    _tokens->computeTargetSkeleton)
                 .InputName(_tokens->skeletons),
             Relationship(_tokens->sourceSkeleton)
                 .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
                 .InputName(_tokens->sourceSkeletonPaths),
             Relationship(_tokens->sourceSkeleton)
-                .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+                .TargetedObjects<openstrata::motion::SkeletonDescriptor>(
+                    _tokens->computeTargetSkeleton)
                 .InputName(_tokens->sourceSkeletons),
             Relationship(_tokens->sourceSkeleton)
                 .TargetedObjects<openstrata::motion::MotionPose>(_tokens->computeBoundPose)
@@ -876,7 +884,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     };
 
     auto retarget = self.PrimComputation(_tokens->humanoidRetarget);
-    retarget.Callback<vrmRetarget::RetargetedPose>(
+    retarget.Callback<openstrata::motion::RetargetedPose>(
         +[](const VdfContext& ctx)
         {
             std::vector<SdfPath> sources;
@@ -915,13 +923,14 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     // driver's override of the retarget reaches this node past the map, and
     // then a skeleton that did not come back is refused like any other.
     self.PrimComputation(_tokens->computeJointLocalTransforms)
-        .Callback<vrmRetarget::JointLocalTransforms>(
+        .Callback<openstrata::motion::JointLocalTransforms>(
             +[](const VdfContext& ctx)
             {
                 execvrm::JointTransformsInputs inputs;
-                inputs.pose =
-                    ctx.GetInputValuePtr<vrmRetarget::RetargetedPose>(_tokens->humanoidRetarget);
-                for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(ctx, _tokens->skeletons);
+                inputs.pose = ctx.GetInputValuePtr<openstrata::motion::RetargetedPose>(
+                    _tokens->humanoidRetarget);
+                for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(
+                         ctx, _tokens->skeletons);
                      !skeleton.IsAtEnd(); ++skeleton)
                 {
                     inputs.targets.push_back(*skeleton);
@@ -958,18 +967,19 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 }
                 ctx.SetEmptyOutput();
             })
-        .Inputs(Computation<vrmRetarget::RetargetedPose>(_tokens->humanoidRetarget),
+        .Inputs(Computation<openstrata::motion::RetargetedPose>(_tokens->humanoidRetarget),
                 Relationship(_tokens->skeleton)
-                    .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+                    .TargetedObjects<openstrata::motion::SkeletonDescriptor>(
+                        _tokens->computeTargetSkeleton)
                     .InputName(_tokens->skeletons));
 
     // -----------------------------------------------------------------------
     // vrm.computeRigDiagnostics -- what this rig says about any retarget onto it
     // -----------------------------------------------------------------------
     //
-    // `vrmRetarget::DiagnoseRig` over the map, the rig across `vrm:skeleton`
+    // `openstrata::motion::DiagnoseRig` over the map, the rig across `vrm:skeleton`
     // and the options the root-motion statements state: P1-1's frozen
-    // `VRM_RETARGET_*` codes, answered as a value rather than posted as a
+    // `MOTION_RETARGET_*` codes, answered as a value rather than posted as a
     // warning a caller of `Compute` never sees.
     //
     // No clip is read, so a humanoid with no source and a system at the
@@ -977,13 +987,14 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     // time, so this is computed once per rig edit and reported to no frame
     // change (ExecVrmRig.h, RigDiagnosticsFor).
     self.PrimComputation(_tokens->computeRigDiagnostics)
-        .Callback<vrmRetarget::RetargetDiagnostics>(
+        .Callback<openstrata::motion::RetargetDiagnostics>(
             +[](const VdfContext& ctx)
             {
                 execvrm::RigDiagnosticsInputs inputs;
-                inputs.map =
-                    ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap);
-                for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(ctx, _tokens->skeletons);
+                inputs.map = ctx.GetInputValuePtr<openstrata::motion::RetargetMap>(
+                    _tokens->computeHumanoidMap);
+                for (VdfReadIterator<openstrata::motion::SkeletonDescriptor> skeleton(
+                         ctx, _tokens->skeletons);
                      !skeleton.IsAtEnd(); ++skeleton)
                 {
                     inputs.targets.push_back(*skeleton);
@@ -1004,9 +1015,10 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                                        refused, inputs.rootMotion, {});
                 ctx.SetEmptyOutput();
             })
-        .Inputs(Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+        .Inputs(Computation<openstrata::motion::RetargetMap>(_tokens->computeHumanoidMap),
                 Relationship(_tokens->skeleton)
-                    .TargetedObjects<vrmRetarget::TargetSkeleton>(_tokens->computeTargetSkeleton)
+                    .TargetedObjects<openstrata::motion::SkeletonDescriptor>(
+                        _tokens->computeTargetSkeleton)
                     .InputName(_tokens->skeletons),
                 AttributeValue<TfToken>(_tokens->rootMotion),
                 AttributeValue<TfToken>(_tokens->rootJoint),
@@ -1031,13 +1043,13 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     // retarget's reason, because a list from a retarget that did not happen
     // would be a report about nothing.
     auto retargetDiagnostics = self.PrimComputation(_tokens->computeRetargetDiagnostics);
-    retargetDiagnostics.Callback<vrmRetarget::RetargetDiagnostics>(
+    retargetDiagnostics.Callback<openstrata::motion::RetargetDiagnostics>(
         +[](const VdfContext& ctx)
         {
             std::vector<SdfPath> sources;
             const execvrm::RetargetInputs inputs = _ReadRetargetInputs(ctx, &sources);
-            const vrmRetarget::RetargetDiagnostics* const rig =
-                ctx.GetInputValuePtr<vrmRetarget::RetargetDiagnostics>(
+            const openstrata::motion::RetargetDiagnostics* const rig =
+                ctx.GetInputValuePtr<openstrata::motion::RetargetDiagnostics>(
                     _tokens->computeRigDiagnostics);
 
             execvrm::RetargetDiagnosticsOutcome outcome =
@@ -1064,5 +1076,5 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
         });
     declareRetargetInputs(retargetDiagnostics);
     retargetDiagnostics.Inputs(
-        Computation<vrmRetarget::RetargetDiagnostics>(_tokens->computeRigDiagnostics));
+        Computation<openstrata::motion::RetargetDiagnostics>(_tokens->computeRigDiagnostics));
 }

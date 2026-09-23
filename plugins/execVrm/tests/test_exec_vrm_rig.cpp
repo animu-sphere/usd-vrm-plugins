@@ -11,9 +11,10 @@
 #include "ExecVrmRig.h"
 
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/HumanoidMap.h>
-#include <vrmRetarget/RestPose.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/RetargetMap.h>
+#include <motionRetarget/RestPose.h>
+#include <motionRetarget/SkeletonDescriptor.h>
+#include <vrmRetarget/RequiredBones.h>
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
@@ -35,6 +36,17 @@ namespace
 {
 
 using openstrata::motion::HumanJoint;
+
+// The options every retarget here is made with: VRM 1.0's required bones,
+// which the nodes hand `motionRetarget` because it holds no set of its own. A
+// wrapper claim compares against the library called the way the node calls it.
+openstrata::motion::RetargetOptions
+VrmRetargetOptions()
+{
+    openstrata::motion::RetargetOptions options;
+    options.requiredBones = vrmRetarget::GetRequiredBones();
+    return options;
+}
 
 bool
 NearlyEqual(float a, float b, float tolerance = 1e-6f)
@@ -88,7 +100,7 @@ FixtureRest()
     return rest;
 }
 
-vrmRetarget::TargetSkeleton
+openstrata::motion::SkeletonDescriptor
 FixtureSkeleton()
 {
     execvrm::SkeletonOutcome outcome = execvrm::TargetSkeletonFromRest(FixtureRest());
@@ -145,8 +157,8 @@ TestTheAttributeNamesAreTheVocabularysOwn()
 void
 TestTheSkeletonIsTheRestPoseDecomposed()
 {
-    const vrmRetarget::TargetSkeleton skeleton = FixtureSkeleton();
-    const std::vector<vrmRetarget::TargetJoint>& joints = skeleton.GetJoints();
+    const openstrata::motion::SkeletonDescriptor skeleton = FixtureSkeleton();
+    const std::vector<openstrata::motion::SkeletonJoint>& joints = skeleton.GetJoints();
     assert(joints.size() == 7);
 
     // Tokens verbatim, in the skeleton's own order -- the order a map's indices
@@ -272,12 +284,12 @@ TestTheMapIsTheLibrarysBindings()
 {
     const execvrm::MapOutcome outcome = execvrm::HumanoidMapFor(FixtureInputs());
     assert(outcome.map);
-    const vrmRetarget::HumanoidMap& map = *outcome.map;
+    const openstrata::motion::RetargetMap& map = *outcome.map;
 
     // The wrapper claim: the node's map IS `SetJointToken` over the bindings,
     // against the same skeleton -- so the library's map is the expected value.
-    vrmRetarget::HumanoidMap expected;
-    const vrmRetarget::TargetSkeleton skeleton = FixtureSkeleton();
+    openstrata::motion::RetargetMap expected;
+    const openstrata::motion::SkeletonDescriptor skeleton = FixtureSkeleton();
     for (const auto& [bone, token] : FixtureBindings())
     {
         assert(expected.SetJointToken(bone, token, skeleton));
@@ -293,7 +305,8 @@ TestTheMapIsTheLibrarysBindings()
 
     // Eleven of VRM 1.0's seventeen required bones are unbound, and the value
     // says so rather than the node refusing for it.
-    const std::vector<HumanJoint> missing = map.FindMissingRequiredBones();
+    const std::vector<HumanJoint> missing =
+        map.FindMissingRequiredBones(vrmRetarget::GetRequiredBones());
     assert(missing.size() == 11);
     assert(std::find(missing.begin(), missing.end(), HumanJoint::LeftUpperLeg) != missing.end());
     std::printf("execVrm rig: the map is SetJointToken over the bindings, and "
@@ -406,7 +419,7 @@ Rest(const pxr::GfQuatf& rotation, const pxr::GfVec3d& at)
 // A semantic skeleton, the shape usdVrmaFileFormat authors under a reference
 // joint that is no bone: turned rests on the hips and the arm, and the
 // reference's own rest turned too, which the source rest pose has no slot for.
-vrmRetarget::TargetSkeleton
+openstrata::motion::SkeletonDescriptor
 SemanticSkeleton()
 {
     execvrm::SkeletonRest rest;
@@ -422,10 +435,10 @@ SemanticSkeleton()
 }
 
 // What SemanticSkeleton states, written from its definition.
-vrmRetarget::SourceRestPose
+openstrata::motion::SourceRestPose
 SemanticRest()
 {
-    vrmRetarget::SourceRestPose rest;
+    openstrata::motion::SourceRestPose rest;
     const auto hips = static_cast<std::size_t>(HumanJoint::Hips);
     const auto arm = static_cast<std::size_t>(HumanJoint::LeftUpperArm);
     rest.localRotations[hips] = About(pxr::GfVec3f(0, 1, 0), 30.0f);
@@ -452,7 +465,7 @@ SameOrientation(const pxr::GfQuatf& a, const pxr::GfQuatf& b)
 }
 
 bool
-SameRest(const vrmRetarget::SourceRestPose& a, const vrmRetarget::SourceRestPose& b)
+SameRest(const openstrata::motion::SourceRestPose& a, const openstrata::motion::SourceRestPose& b)
 {
     for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
@@ -479,7 +492,7 @@ TestTheSourceRestIsReadOffTheSemanticSkeleton()
     assert(SameRest(*outcome.rest, SemanticRest()) &&
            "the clip's rest pose is not what its skeleton states");
     assert(outcome.rest->parents[static_cast<std::size_t>(HumanJoint::Hips)] ==
-           vrmRetarget::SourceRestPose::kNoParent);
+           openstrata::motion::SourceRestPose::kNoParent);
     std::printf("execVrm rig: the clip's rest is read off its skeleton by "
                 "leaf, a non-bone joint in no slot\n");
 }
@@ -511,7 +524,7 @@ TestASourceThatIsNotSemanticIsRefused()
     assert(outcome.refusal == execvrm::SourceRestRefusal::NoHumanBone);
 
     // And the empty skeleton, for the same reason.
-    outcome = execvrm::SourceRestFromSkeleton(vrmRetarget::TargetSkeleton());
+    outcome = execvrm::SourceRestFromSkeleton(openstrata::motion::SkeletonDescriptor());
     assert(!outcome.rest && outcome.refusal == execvrm::SourceRestRefusal::NoHumanBone);
     std::printf("execVrm rig: a source naming no bone is refused\n");
 }
@@ -537,7 +550,7 @@ TestASourceNamingOneBoneTwiceIsRefusedAndBothNamed()
 }
 
 execvrm::CorrectionInputs
-CorrectionFixture(const vrmRetarget::HumanoidMap& map)
+CorrectionFixture(const openstrata::motion::RetargetMap& map)
 {
     execvrm::CorrectionInputs inputs;
     inputs.map = &map;
@@ -550,7 +563,7 @@ CorrectionFixture(const vrmRetarget::HumanoidMap& map)
 void
 TestTheCorrectionIsTheLibrarysCall()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
     const execvrm::CorrectionOutcome outcome =
         execvrm::RestPoseCorrectionFor(CorrectionFixture(map));
     assert(outcome.correction);
@@ -558,8 +571,8 @@ TestTheCorrectionIsTheLibrarysCall()
     // The wrapper claim: the library's correction over the rest the source
     // states -- written from its definition, not read back through the seam --
     // the same rig, and the same map.
-    const vrmRetarget::RestPoseCorrection expected =
-        vrmRetarget::ComputeRestPoseCorrection(SemanticRest(), FixtureSkeleton(), map);
+    const openstrata::motion::RestPoseCorrection expected =
+        openstrata::motion::ComputeRestPoseCorrection(SemanticRest(), FixtureSkeleton(), map);
     for (std::size_t slot = 0; slot < openstrata::motion::HumanJointCount; ++slot)
     {
         assert(outcome.correction->identity[slot] == expected.identity[slot]);
@@ -570,7 +583,7 @@ TestTheCorrectionIsTheLibrarysCall()
     // And bit for bit when the seam's own reading is what the library is
     // handed -- the node is that call and nothing more.
     assert(*outcome.correction ==
-           vrmRetarget::ComputeRestPoseCorrection(
+           openstrata::motion::ComputeRestPoseCorrection(
                *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest, FixtureSkeleton(), map));
 
     // A sample at the source's rest lands on the rig's rest -- the arm's -90 Z
@@ -587,7 +600,7 @@ TestTheCorrectionIsTheLibrarysCall()
 void
 TestTheCorrectionRefusesWhatItCannotHonour()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
 
     auto refusal = [](const execvrm::CorrectionInputs& inputs)
     {
@@ -701,14 +714,14 @@ TestTheBoundPoseIsTheOnePoseForwarded()
 void
 TestTheRootMotionOptionsAreTheToolsFlags()
 {
-    const vrmRetarget::TargetSkeleton rig = FixtureSkeleton();
-    using vrmRetarget::RootMotionMode;
+    const openstrata::motion::SkeletonDescriptor rig = FixtureSkeleton();
+    using openstrata::motion::RootMotionMode;
 
     // Nothing stated is the library's default, field for field.
     execvrm::RootMotionOutcome outcome =
         execvrm::RootMotionOptionsFor(execvrm::RootMotionStatements(), rig);
     assert(outcome.options);
-    const vrmRetarget::RootMotionOptions defaults;
+    const openstrata::motion::RootMotionOptions defaults;
     assert(outcome.options->mode == defaults.mode);
     assert(outcome.options->rootJointIndex == defaults.rootJointIndex);
     assert(outcome.options->translationScale == defaults.translationScale);
@@ -725,7 +738,7 @@ TestTheRootMotionOptionsAreTheToolsFlags()
     };
     assert(mode("hips").mode == RootMotionMode::Hips);
     assert(mode("ignore").mode == RootMotionMode::Ignore);
-    const vrmRetarget::RootMotionOptions root = mode("root");
+    const openstrata::motion::RootMotionOptions root = mode("root");
     assert(root.mode == RootMotionMode::RootJoint && root.rootJointIndex == 0);
     // Under any mode but root the joint is not read -- as `--root-joint` is
     // not -- so the index stays the library's "none".
@@ -746,7 +759,7 @@ TestTheRootMotionOptionsAreTheToolsFlags()
 void
 TestTheRootMotionOptionsRefuseWhatTheToolRefuses()
 {
-    const vrmRetarget::TargetSkeleton rig = FixtureSkeleton();
+    const openstrata::motion::SkeletonDescriptor rig = FixtureSkeleton();
     using execvrm::RootMotionRefusal;
 
     auto refusal = [&rig](const execvrm::RootMotionStatements& statements)
@@ -811,7 +824,7 @@ ClipSample()
 }
 
 execvrm::RetargetInputs
-RetargetFixture(const vrmRetarget::HumanoidMap& map)
+RetargetFixture(const openstrata::motion::RetargetMap& map)
 {
     execvrm::RetargetInputs inputs;
     inputs.map = &map;
@@ -825,15 +838,15 @@ RetargetFixture(const vrmRetarget::HumanoidMap& map)
 void
 TestTheRetargetIsThePoseRetargetersCall()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
-    const vrmRetarget::SourceRestPose rest =
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::SourceRestPose rest =
         *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest;
 
     // The wrapper claim, with the library's default options: bit for bit.
     execvrm::RetargetOutcome outcome = execvrm::HumanoidRetargetFor(RetargetFixture(map));
     assert(outcome.pose);
-    assert(*outcome.pose ==
-               vrmRetarget::PoseRetargeter(FixtureSkeleton(), map, rest).Retarget(ClipSample()) &&
+    assert(*outcome.pose == openstrata::motion::PoseRetargeter(FixtureSkeleton(), map, rest)
+                                .Retarget(ClipSample()) &&
            "the retarget is not PoseRetargeter over the same values");
     assert(outcome.pose->timestamp == 0.75);
 
@@ -844,20 +857,20 @@ TestTheRetargetIsThePoseRetargetersCall()
     stated.rootMotion.rootJoint = kRoot;
     stated.rootMotion.translationScale = 2.0f;
     stated.rootMotion.preserveTargetHeight = true;
-    vrmRetarget::RetargetOptions options;
-    options.rootMotion.mode = vrmRetarget::RootMotionMode::RootJoint;
+    openstrata::motion::RetargetOptions options = VrmRetargetOptions();
+    options.rootMotion.mode = openstrata::motion::RootMotionMode::RootJoint;
     options.rootMotion.rootJointIndex = 0;
     options.rootMotion.translationScale = 2.0f;
     options.rootMotion.preserveTargetHeight = true;
     outcome = execvrm::HumanoidRetargetFor(stated);
-    assert(outcome.pose &&
-           *outcome.pose == vrmRetarget::PoseRetargeter(FixtureSkeleton(), map, rest, options)
-                                .Retarget(ClipSample()));
+    assert(outcome.pose && *outcome.pose == openstrata::motion::PoseRetargeter(FixtureSkeleton(),
+                                                                               map, rest, options)
+                                                .Retarget(ClipSample()));
 
     // The cost the node reports: what it applies to each mapped bone is the
     // correction vrm.computeRestPoseCorrection computes from the same inputs,
     // exactly -- computed again, here, because PoseRetargeter takes none.
-    const vrmRetarget::RestPoseCorrection cached =
+    const openstrata::motion::RestPoseCorrection cached =
         *execvrm::RestPoseCorrectionFor(CorrectionFixture(map)).correction;
     outcome = execvrm::HumanoidRetargetFor(RetargetFixture(map));
     const openstrata::motion::MotionPose sample = ClipSample();
@@ -880,7 +893,7 @@ TestTheRetargetIsThePoseRetargetersCall()
 void
 TestTheRetargetRefusesInItsOrder()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
     using execvrm::RetargetRefusal;
 
     auto refusal = [](const execvrm::RetargetInputs& inputs)
@@ -948,7 +961,7 @@ TestTheRetargetRefusesInItsOrder()
 // ---------------------------------------------------------------------------
 
 execvrm::JointTransformsInputs
-JointTransformsFixture(const vrmRetarget::RetargetedPose& pose)
+JointTransformsFixture(const openstrata::motion::RetargetedPose& pose)
 {
     execvrm::JointTransformsInputs inputs;
     inputs.pose = &pose;
@@ -959,14 +972,14 @@ JointTransformsFixture(const vrmRetarget::RetargetedPose& pose)
 void
 TestTheSampleIsTheRetargetWithTheBakesTwoAdditions()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
-    const vrmRetarget::RetargetedPose pose =
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetedPose pose =
         *execvrm::HumanoidRetargetFor(RetargetFixture(map)).pose;
 
     const execvrm::JointTransformsOutcome outcome =
         execvrm::JointLocalTransformsFor(JointTransformsFixture(pose));
     assert(outcome.sample);
-    const vrmRetarget::JointLocalTransforms& sample = *outcome.sample;
+    const openstrata::motion::JointLocalTransforms& sample = *outcome.sample;
 
     // Not a second retarget: the arrays and the timestamp pass through, bit
     // for bit.
@@ -992,8 +1005,8 @@ TestTheSampleIsTheRetargetWithTheBakesTwoAdditions()
 void
 TestTheSampleRefusesWhatCannotBeASample()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
-    const vrmRetarget::RetargetedPose pose =
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetedPose pose =
         *execvrm::HumanoidRetargetFor(RetargetFixture(map)).pose;
     using execvrm::JointTransformsRefusal;
 
@@ -1021,13 +1034,13 @@ TestTheSampleRefusesWhatCannotBeASample()
 
     // A pose that was not retargeted onto this rig: one joint short, and one
     // whose two arrays disagree with each other. Both named with their sizes.
-    vrmRetarget::RetargetedPose shortPose = pose;
+    openstrata::motion::RetargetedPose shortPose = pose;
     shortPose.rotations.pop_back();
     shortPose.translations.pop_back();
     execvrm::JointTransformsOutcome o = refused(JointTransformsFixture(shortPose));
     assert(o.refusal == JointTransformsRefusal::JointCount && o.joints == 7 && o.rotations == 6 &&
            o.translations == 6);
-    vrmRetarget::RetargetedPose uneven = pose;
+    openstrata::motion::RetargetedPose uneven = pose;
     uneven.translations.pop_back();
     o = refused(JointTransformsFixture(uneven));
     assert(o.refusal == JointTransformsRefusal::JointCount && o.joints == 7 && o.rotations == 7 &&
@@ -1035,10 +1048,10 @@ TestTheSampleRefusesWhatCannotBeASample()
 
     // An empty rig and an empty pose pair: an empty sample is an answer, the
     // animation of a skeleton with no joints.
-    const vrmRetarget::RetargetedPose nothing;
+    const openstrata::motion::RetargetedPose nothing;
     execvrm::JointTransformsInputs empty;
     empty.pose = &nothing;
-    empty.targets = {vrmRetarget::TargetSkeleton()};
+    empty.targets = {openstrata::motion::SkeletonDescriptor()};
     const execvrm::JointTransformsOutcome answered = execvrm::JointLocalTransformsFor(empty);
     assert(answered.sample && answered.sample->joints.empty() && answered.sample->scales.empty());
     std::printf("execVrm rig: the joint transforms refuse a retarget that did "
@@ -1051,7 +1064,7 @@ TestTheSampleRefusesWhatCannotBeASample()
 // ---------------------------------------------------------------------------
 
 execvrm::RigDiagnosticsInputs
-RigDiagnosticsFixture(const vrmRetarget::HumanoidMap& map)
+RigDiagnosticsFixture(const openstrata::motion::RetargetMap& map)
 {
     execvrm::RigDiagnosticsInputs inputs;
     inputs.map = &map;
@@ -1061,7 +1074,7 @@ RigDiagnosticsFixture(const vrmRetarget::HumanoidMap& map)
 
 // The fixture's map with one binding left out, as the humanoid would state it
 // with that attribute unauthored.
-vrmRetarget::HumanoidMap
+openstrata::motion::RetargetMap
 MapWithout(HumanJoint dropped)
 {
     execvrm::HumanoidInputs inputs = FixtureInputs();
@@ -1072,11 +1085,11 @@ MapWithout(HumanJoint dropped)
     return *execvrm::HumanoidMapFor(inputs).map;
 }
 
-const vrmRetarget::RetargetDiagnostic*
-Find(const vrmRetarget::RetargetDiagnostics& diagnostics, vrmRetarget::RetargetDiagnosticCode code,
-     const std::string& subject)
+const openstrata::motion::RetargetDiagnostic*
+Find(const openstrata::motion::RetargetDiagnostics& diagnostics,
+     openstrata::motion::RetargetDiagnosticCode code, const std::string& subject)
 {
-    for (const vrmRetarget::RetargetDiagnostic& d : diagnostics.reported)
+    for (const openstrata::motion::RetargetDiagnostic& d : diagnostics.reported)
     {
         if (d.code == code && d.subject == subject)
         {
@@ -1089,20 +1102,22 @@ Find(const vrmRetarget::RetargetDiagnostics& diagnostics, vrmRetarget::RetargetD
 void
 TestTheRigDiagnosticsAreDiagnoseRigsCall()
 {
-    using vrmRetarget::RetargetDiagnosticCode;
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    using openstrata::motion::RetargetDiagnosticCode;
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
 
-    // The wrapper claim, with the library's default options: exactly.
+    // The wrapper claim, with the library's default root motion and VRM 1.0's
+    // required bones: exactly.
     execvrm::RigDiagnosticsOutcome outcome = execvrm::RigDiagnosticsFor(RigDiagnosticsFixture(map));
     assert(outcome.diagnostics);
-    assert(*outcome.diagnostics == vrmRetarget::DiagnoseRig(FixtureSkeleton(), map) &&
+    assert(*outcome.diagnostics ==
+               openstrata::motion::DiagnoseRig(FixtureSkeleton(), map, VrmRetargetOptions()) &&
            "the rig's diagnostics are not DiagnoseRig over the same values");
 
     // And from the definition, so the equality above is not two empty lists:
     // the fixture binds six bones, and every required bone it leaves out is
     // named, in the vocabulary's order, while every one it binds is not.
     std::vector<std::string> missing;
-    for (const HumanJoint bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    for (const HumanJoint bone : vrmRetarget::GetRequiredBones())
     {
         if (!map.IsMapped(bone))
         {
@@ -1116,13 +1131,13 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
 
     // The statements reach the options. A rig with no hips says what that
     // costs under root-motion mode 'hips', and only there.
-    const vrmRetarget::HumanoidMap noHips = MapWithout(HumanJoint::Hips);
+    const openstrata::motion::RetargetMap noHips = MapWithout(HumanJoint::Hips);
     const std::string hips = "hips";
     const auto hipsDetail = [&](const execvrm::RigDiagnosticsInputs& inputs)
     {
         const execvrm::RigDiagnosticsOutcome o = execvrm::RigDiagnosticsFor(inputs);
         assert(o.diagnostics);
-        const vrmRetarget::RetargetDiagnostic* d =
+        const openstrata::motion::RetargetDiagnostic* d =
             Find(*o.diagnostics, RetargetDiagnosticCode::MissingRequiredBone, hips);
         assert(d && "a rig with no hips did not say so");
         return d->detail;
@@ -1139,13 +1154,13 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
     stated.rootMotion.mode = "root";
     stated.rootMotion.rootJoint = kRoot;
     stated.rootMotion.translationScale = 2.0f;
-    vrmRetarget::RetargetOptions options;
-    options.rootMotion.mode = vrmRetarget::RootMotionMode::RootJoint;
+    openstrata::motion::RetargetOptions options = VrmRetargetOptions();
+    options.rootMotion.mode = openstrata::motion::RootMotionMode::RootJoint;
     options.rootMotion.rootJointIndex = 0;
     options.rootMotion.translationScale = 2.0f;
     outcome = execvrm::RigDiagnosticsFor(stated);
-    assert(outcome.diagnostics &&
-           *outcome.diagnostics == vrmRetarget::DiagnoseRig(FixtureSkeleton(), noHips, options));
+    assert(outcome.diagnostics && *outcome.diagnostics == openstrata::motion::DiagnoseRig(
+                                                              FixtureSkeleton(), noHips, options));
 
     // A rig out of parent-before-child order is an answer upstream, and so it
     // reaches this node as a code rather than a refusal.
@@ -1154,7 +1169,8 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
     std::swap(unordered.restTransforms[4], unordered.restTransforms[5]);
     execvrm::HumanoidInputs unorderedHumanoid = FixtureInputs();
     unorderedHumanoid.skeletons = {*execvrm::TargetSkeletonFromRest(unordered).skeleton};
-    const vrmRetarget::HumanoidMap unorderedMap = *execvrm::HumanoidMapFor(unorderedHumanoid).map;
+    const openstrata::motion::RetargetMap unorderedMap =
+        *execvrm::HumanoidMapFor(unorderedHumanoid).map;
     execvrm::RigDiagnosticsInputs hierarchy = RigDiagnosticsFixture(unorderedMap);
     hierarchy.targets = unorderedHumanoid.skeletons;
     outcome = execvrm::RigDiagnosticsFor(hierarchy);
@@ -1170,7 +1186,7 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
 void
 TestTheRigDiagnosticsRefuseAsTheRetargetDoes()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
     using execvrm::RetargetRefusal;
 
     auto refused = [](const execvrm::RigDiagnosticsInputs& inputs)
@@ -1211,26 +1227,28 @@ TestTheRigDiagnosticsRefuseAsTheRetargetDoes()
 void
 TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
 {
-    using vrmRetarget::RetargetDiagnosticCode;
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
-    const vrmRetarget::SourceRestPose rest =
+    using openstrata::motion::RetargetDiagnosticCode;
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::SourceRestPose rest =
         *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest;
-    const vrmRetarget::RetargetDiagnostics rig =
+    const openstrata::motion::RetargetDiagnostics rig =
         *execvrm::RigDiagnosticsFor(RigDiagnosticsFixture(map)).diagnostics;
-    const vrmRetarget::PoseRetargeter retargeter(FixtureSkeleton(), map, rest);
+    const openstrata::motion::PoseRetargeter retargeter(FixtureSkeleton(), map, rest,
+                                                        VrmRetargetOptions());
 
     // The wrapper claim: DiagnoseRig, then what the retarget of this one pose
     // reported -- the clip overload's order, for a clip of this one sample.
     const execvrm::RetargetDiagnosticsOutcome outcome =
         execvrm::RetargetDiagnosticsFor(RetargetFixture(map), &rig);
     assert(outcome.diagnostics && !outcome.rigUnanswered);
-    vrmRetarget::RetargetDiagnostics expected = vrmRetarget::DiagnoseRig(FixtureSkeleton(), map);
+    openstrata::motion::RetargetDiagnostics expected =
+        openstrata::motion::DiagnoseRig(FixtureSkeleton(), map, VrmRetargetOptions());
     retargeter.Retarget(ClipSample(), &expected);
     assert(*outcome.diagnostics == expected);
     {
         openstrata::motion::MotionClip clip;
         clip.samples = {ClipSample()};
-        vrmRetarget::RetargetDiagnostics overload;
+        openstrata::motion::RetargetDiagnostics overload;
         retargeter.Retarget(clip, &overload);
         assert(*outcome.diagnostics == overload &&
                "one sample's diagnostics are not a one-sample clip's");
@@ -1238,7 +1256,8 @@ TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
 
     // From the definition: the rig's list whole, then the one bone the sample
     // drives and the fixture does not bind.
-    const std::vector<vrmRetarget::RetargetDiagnostic>& reported = outcome.diagnostics->reported;
+    const std::vector<openstrata::motion::RetargetDiagnostic>& reported =
+        outcome.diagnostics->reported;
     assert(reported.size() == rig.reported.size() + 1);
     assert(std::equal(rig.reported.begin(), rig.reported.end(), reported.begin()));
     assert(reported.back().code == RetargetDiagnosticCode::UnboundDrivenBone &&
@@ -1246,7 +1265,7 @@ TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
 
     // Diagnosing costs the pose nothing: the retarget answers the same bits
     // with a list to fill as without one.
-    vrmRetarget::RetargetDiagnostics filled;
+    openstrata::motion::RetargetDiagnostics filled;
     assert(*execvrm::HumanoidRetargetFor(RetargetFixture(map), &filled).pose ==
            *execvrm::HumanoidRetargetFor(RetargetFixture(map)).pose);
     assert(filled.Has(RetargetDiagnosticCode::UnboundDrivenBone, "rightUpperArm"));
@@ -1261,12 +1280,12 @@ TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
     later.validRotations.set(static_cast<std::size_t>(HumanJoint::LeftLowerArm));
     execvrm::RetargetInputs second = RetargetFixture(map);
     second.poses = {later};
-    vrmRetarget::RetargetDiagnostics merged;
+    openstrata::motion::RetargetDiagnostics merged;
     merged.Merge(*execvrm::RetargetDiagnosticsFor(RetargetFixture(map), &rig).diagnostics);
     merged.Merge(*execvrm::RetargetDiagnosticsFor(second, &rig).diagnostics);
     openstrata::motion::MotionClip clip;
     clip.samples = {ClipSample(), later};
-    vrmRetarget::RetargetDiagnostics overload;
+    openstrata::motion::RetargetDiagnostics overload;
     retargeter.Retarget(clip, &overload);
     assert(merged == overload && "the samples' diagnostics, merged, are not the clip's");
     assert(merged.Subjects(RetargetDiagnosticCode::UnboundDrivenBone) ==
@@ -1278,8 +1297,8 @@ TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
 void
 TestTheRetargetDiagnosticsRefuseWhenTheRetargetDoes()
 {
-    const vrmRetarget::HumanoidMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
-    const vrmRetarget::RetargetDiagnostics rig =
+    const openstrata::motion::RetargetMap map = *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const openstrata::motion::RetargetDiagnostics rig =
         *execvrm::RigDiagnosticsFor(RigDiagnosticsFixture(map)).diagnostics;
     using execvrm::RetargetRefusal;
 

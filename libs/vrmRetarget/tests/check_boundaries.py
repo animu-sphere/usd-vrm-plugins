@@ -2,12 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce vrmRetarget's dependency boundary.
 
-WORKSPACE.md §2 allows vrmRetarget -> motionCore and vrmRetarget -> motionRuntime
-and nothing else. The load-bearing one is `vrmRetarget -> OpenExec` being
-forbidden: the retarget core must be complete and testable before any exec node
-exists (motion policy §10.1, §18.12). A network protocol is forbidden for the
-same reason live capture must reach this library through motionRuntime's pose
-buffer rather than through a socket of its own.
+WORKSPACE.md §2 allows vrmRetarget -> motionCore and nothing else. The
+load-bearing one is `vrmRetarget -> OpenExec` being forbidden: what a VRM rig
+adds to a retarget must be complete and testable before any exec node exists
+(motion policy §10.1, §18.12). A network protocol is forbidden because live
+input reaches this library as a pose, never through a socket of its own.
+
+The rest of usd-motion-plugins is forbidden too, and that is WORKSPACE.md
+§9.5's line kept after the cut: the VRM half includes nothing from the generic
+half. The retarget is `motionRetarget`'s, and a caller that has both combines
+them; this library taking an edge to it would put the two back into one.
 """
 
 from __future__ import annotations
@@ -99,22 +103,14 @@ def main() -> int:
         re.IGNORECASE)
     # `osc` is matched as a namespace qualification or an include path rather
     # than as a word: three letters that spell a protocol are also three letters
-    # that appear inside other words (motionRuntime's check says the same).
+    # that appear inside other words.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|usdVrm\w*|execMotion|execVrm|cgltf|"
-        r"mocopi|ardy|liveTransport)\b|"
+        r"mocopi|ardy|liveTransport|motionRetarget|motionSampling|"
+        r"motionRecording|motionUsd|motionSource|motionBvh)\b|"
         r"\bosc::|\bosc/|"
         r"\b(?:winsock|sys/socket\.h|asio|curl|websocket)\b",
         re.IGNORECASE)
-    # The retarget code set splits at the layer boundary
-    # (include/vrmRetarget/Diagnostics.h): the last three codes say what a stage
-    # or a file system added, and a library that takes plain values cannot know
-    # any of it. Only the table that defines them may name them.
-    caller_raised = re.compile(
-        r"\b(?:NonUnitScale|TimeRangeDerived|OutputCollidesWithInput)\b|"
-        r"VRM_RETARGET_(?:NON_UNIT_SCALE|TIME_RANGE_DERIVED|"
-        r"OUTPUT_COLLIDES_WITH_INPUT)")
-    code_table = {"Diagnostics.h", "Diagnostics.cpp"}
     for area in (source / "include", source / "src"):
         for path in area.rglob("*"):
             if not path.is_file():
@@ -124,18 +120,14 @@ def main() -> int:
                 errors.append(f"stage/plugin/exec API is forbidden: {path}")
             if forbidden_neighbours.search(code):
                 errors.append(f"forbidden dependency direction: {path}")
-            if path.name not in code_table and caller_raised.search(code):
-                errors.append(
-                    f"a caller-raised retarget code is raised by the library: "
-                    f"{path}")
 
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
     if re.search(r"target_link_libraries\([^)]*(?:\busd\b|\bsdf\b|\bplug\b|"
                  r"\bar\b|\busdSkel\b|exec)", cmake, re.IGNORECASE):
         errors.append(
-            "vrmRetarget CMake must link only motionCore, motionRuntime, and "
-            "the OpenUSD gf value library")
+            "vrmRetarget CMake must link only motionCore and the OpenUSD gf "
+            "and js value libraries")
 
     try:
         dependencies = _binary_dependencies(library)

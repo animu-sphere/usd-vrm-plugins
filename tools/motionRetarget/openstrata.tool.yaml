@@ -33,6 +33,22 @@ requires:
           cy2026-windows-x86_64-py313-usd:
             digest: sha256:f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5
             source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:7e5c67b9ae5defa40887b7dbaccea0bb5258ae3e86b1e2d14e7c82ae13ce0564
+    # The retarget itself, which this tool bakes onto a VRM avatar, and the two
+    # builders it reads a skeleton and a clip's rest through -- the ones `execVrm`
+    # calls, so the two read one rig off one stage.
+    - id: motionRetarget
+      version: ">=0.5,<0.6"
+      artifact:
+        targets:
+          cy2026-linux-x86_64-py313-usd:
+            digest: sha256:16f18e2808e44569b6251faf163bd6f91387058fe1e009608af7d631d776ee67
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:044aef49eb9f6a1b2b44a666e734e14d000978e144b66f1b7445eddb4f8d4459
+          cy2026-macos-arm64-py313-usd:
+            digest: sha256:adc79c4391c8abe9ebb3782fb1e73defdd037cf36957bd1ac17da1c56d525775
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:8dbe77cb246a6250275dc047edd6d31468c96be3c6bb5761b9d981013eb5ed98
+          cy2026-windows-x86_64-py313-usd:
+            digest: sha256:d6f835997a5a31fb26672fb05008e0bae2a936b90e36f7488ae5a8a0f1625c37
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:ed3ead135894767aa04de2232c4e65206d7ad3bb5fd43ad8e60fbc44e4e79d1a
     - id: motionSampling
       version: ">=0.5,<0.6"
       artifact:

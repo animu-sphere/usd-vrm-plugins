@@ -21,7 +21,7 @@
 //     vrmSchema: what the bundle's one runtime requirement on that bundle
 //     looks like when it is not met.
 //
-// It links vrmRetarget for the two result types and reads them through their
+// It links motionRetarget for the two result types and reads them through their
 // accessors only; every expected value is written from the fixture.
 
 #include "pxr/pxr.h"
@@ -56,8 +56,9 @@
 #include "pxr/usd/usd/timeCode.h"
 
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/HumanoidMap.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/RetargetMap.h>
+#include <motionRetarget/SkeletonDescriptor.h>
+#include <vrmRetarget/RequiredBones.h>
 
 #include <algorithm>
 #include <cassert>
@@ -219,25 +220,25 @@ KeysFor(const Rig& rig)
     return keys;
 }
 
-vrmRetarget::TargetSkeleton
+openstrata::motion::SkeletonDescriptor
 SkeletonAt(const ExecUsdCacheView& view)
 {
     const VtValue value = view.Get(kSkeletonKey);
     assert(!value.IsEmpty() && "no skeleton came back -- if the plugInfo is unstaged this is what "
                                "it looks like, not a load error");
-    assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
-           "vrm.computeTargetSkeleton did not return a TargetSkeleton");
-    return value.UncheckedGet<vrmRetarget::TargetSkeleton>();
+    assert(value.IsHolding<openstrata::motion::SkeletonDescriptor>() &&
+           "vrm.computeTargetSkeleton did not return a SkeletonDescriptor");
+    return value.UncheckedGet<openstrata::motion::SkeletonDescriptor>();
 }
 
-vrmRetarget::HumanoidMap
+openstrata::motion::RetargetMap
 MapAt(const ExecUsdCacheView& view)
 {
     const VtValue value = view.Get(kMapKey);
     assert(!value.IsEmpty() && "no humanoid map came back");
-    assert(value.IsHolding<vrmRetarget::HumanoidMap>() &&
-           "vrm.computeHumanoidMap did not return a HumanoidMap");
-    return value.UncheckedGet<vrmRetarget::HumanoidMap>();
+    assert(value.IsHolding<openstrata::motion::RetargetMap>() &&
+           "vrm.computeHumanoidMap did not return a RetargetMap");
+    return value.UncheckedGet<openstrata::motion::RetargetMap>();
 }
 
 // A refusal, which in this bundle is **no value at all**.
@@ -320,8 +321,8 @@ TestTheRigComputes(const std::string& fixture)
         { timeReported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid() && "a request over a typed schema and an applied one did not compile");
 
-    vrmRetarget::TargetSkeleton skeleton;
-    vrmRetarget::HumanoidMap map;
+    openstrata::motion::SkeletonDescriptor skeleton;
+    openstrata::motion::RetargetMap map;
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
@@ -331,7 +332,7 @@ TestTheRigComputes(const std::string& fixture)
     }
 
     // ---- the skeleton --------------------------------------------------------
-    const std::vector<vrmRetarget::TargetJoint>& joints = skeleton.GetJoints();
+    const std::vector<openstrata::motion::SkeletonJoint>& joints = skeleton.GetJoints();
     assert(joints.size() == 7);
     assert(joints[0].token == kRoot && joints[1].token == kHips && joints[6].token == kUpperArm);
     const int parents[] = {-1, 0, 1, 2, 3, 4, 3};
@@ -359,7 +360,7 @@ TestTheRigComputes(const std::string& fixture)
     assert(map.GetJointIndex(HumanJoint::Neck) == 4);
     assert(map.GetJointIndex(HumanJoint::Head) == 5);
     assert(map.GetJointIndex(HumanJoint::LeftUpperArm) == 6);
-    assert(map.FindMissingRequiredBones().size() == 11);
+    assert(map.FindMissingRequiredBones(vrmRetarget::GetRequiredBones()).size() == 11);
 
     // ---- what the forty-nine unauthored bones cost -------------------------
     // Every `vrm:humanBones:*` attribute is defined by the applied schema, so
@@ -424,8 +425,8 @@ TestInvalidationFollowsTheRelationship(const std::string& fixture)
         { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
-    vrmRetarget::TargetSkeleton skeleton;
-    vrmRetarget::HumanoidMap map;
+    openstrata::motion::SkeletonDescriptor skeleton;
+    openstrata::motion::RetargetMap map;
     {
         ExecUsdCacheView view = system.Compute(request);
         skeleton = SkeletonAt(view);
@@ -463,7 +464,7 @@ TestInvalidationFollowsTheRelationship(const std::string& fixture)
     assert(reported.count(kMapKey) && "a skeleton edit did not reach the map across vrm:skeleton");
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::TargetSkeleton moved = SkeletonAt(view);
+        const openstrata::motion::SkeletonDescriptor moved = SkeletonAt(view);
         assert(moved != skeleton);
         assert(NearlyEqual(moved.GetJoints()[1].restTranslation[1], 1.5f));
         assert(MapAt(view) == map && "a rest transform moved a joint index");
@@ -493,7 +494,7 @@ TestInvalidationFollowsTheRelationship(const std::string& fixture)
     assert(reported.count(kMapKey) && "retargeting vrm:skeleton did not reach the map");
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::HumanoidMap reversed = MapAt(view);
+        const openstrata::motion::RetargetMap reversed = MapAt(view);
         // Seven joints reversed: index i becomes 6 - i. Head was rebound to
         // Root above, and Root is last now.
         assert(reversed.GetJointIndex(HumanJoint::Hips) == 5);
@@ -611,8 +612,8 @@ TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
     for (const int index : {1, 2})
     {
         const VtValue value = view.Get(index);
-        assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
-               value.UncheckedGet<vrmRetarget::TargetSkeleton>().IsEmpty() &&
+        assert(value.IsHolding<openstrata::motion::SkeletonDescriptor>() &&
+               value.UncheckedGet<openstrata::motion::SkeletonDescriptor>().IsEmpty() &&
                "a skeleton with no joints did not come back empty");
     }
     assert(warnedFor("/Asset/skel/Empty") == 0 && "authored empty arrays took the fallback path");
@@ -622,11 +623,11 @@ TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
 
     {
         const VtValue value = view.Get(3);
-        assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
+        assert(value.IsHolding<openstrata::motion::SkeletonDescriptor>() &&
                "a one-joint skeleton with no rest pose was refused, which "
                "would mean the fallback is no longer one identity matrix");
-        const vrmRetarget::TargetSkeleton& skeleton =
-            value.UncheckedGet<vrmRetarget::TargetSkeleton>();
+        const openstrata::motion::SkeletonDescriptor& skeleton =
+            value.UncheckedGet<openstrata::motion::SkeletonDescriptor>();
         assert(skeleton.GetSize() == 1);
         assert(skeleton.GetJoints()[0].restRotation == GfQuatf(1.0f, GfVec3f(0.0f)) &&
                skeleton.GetJoints()[0].restTranslation == GfVec3f(0.0f));
@@ -747,7 +748,7 @@ TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
 void
 TestADanglingSecondTargetIsInvisible(const std::string& fixture)
 {
-    const vrmRetarget::HumanoidMap expected = [&fixture]
+    const openstrata::motion::RetargetMap expected = [&fixture]
     {
         const Rig rig = Open(fixture);
         ExecUsdSystem system(rig.stage);
@@ -766,7 +767,7 @@ TestADanglingSecondTargetIsInvisible(const std::string& fixture)
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
-        const vrmRetarget::HumanoidMap map = MapAt(system.Compute(request));
+        const openstrata::motion::RetargetMap map = MapAt(system.Compute(request));
         assert(mark.IsClean() && "a dangling second target was noticed after all -- the "
                                  "limitation this pins is gone, and the node should now refuse");
         assert(map == expected);
@@ -798,7 +799,7 @@ TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
-        const vrmRetarget::HumanoidMap map = MapAt(system.Compute(request));
+        const openstrata::motion::RetargetMap map = MapAt(system.Compute(request));
         assert(mark.IsClean() && "saying nothing about a bone was refused");
         assert(map.GetMappedCount() == 5 && !map.IsMapped(HumanJoint::LeftUpperArm));
     }
@@ -859,7 +860,7 @@ TestWithoutTheSchemaTheHumanoidIsNotFound(const std::string& fixture)
     ExecUsdCacheView view = system.Compute(request);
 
     // The typed half does not need the schema bundle at all.
-    const vrmRetarget::TargetSkeleton skeleton = SkeletonAt(view);
+    const openstrata::motion::SkeletonDescriptor skeleton = SkeletonAt(view);
     assert(skeleton.GetSize() == 7);
 
     // The applied half is not found, and what says why is exec's own coding

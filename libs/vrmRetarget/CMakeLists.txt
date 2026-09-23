@@ -12,7 +12,7 @@ endif()
 
 project(vrmRetarget
     VERSION ${_vrm_retarget_version}
-    DESCRIPTION "Offline humanoid retargeting onto a VRM target rig"
+    DESCRIPTION "What a VRM rig adds to a retarget: expressions, look-at, required bones"
     LANGUAGES CXX)
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -31,10 +31,10 @@ if(NOT DEFINED VRMRETARGET_BUILD_TESTS)
            ${_vrm_retarget_tests_default})
 endif()
 
-# vrmRetarget is a plain library like motionCore and motionRuntime: OpenUSD Gf
-# value types only, no stage, no plugin registration, and — the load-bearing
-# one — no OpenExec (WORKSPACE.md §2). The retarget core is complete and
-# testable before any exec node exists.
+# vrmRetarget is a plain library: OpenUSD Gf value types only, no stage, no
+# plugin registration, and — the load-bearing one — no OpenExec (WORKSPACE.md
+# §2). The retarget itself is usd-motion-plugins' `motionRetarget`; what is
+# left here is what a VRM rig adds to it, and none of it retargets.
 if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
@@ -43,24 +43,11 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 if(NOT TARGET motionCore::motionCore)
     find_package(motionCore REQUIRED CONFIG)
 endif()
-if(NOT TARGET motionSampling::motionSampling)
-    find_package(motionSampling REQUIRED CONFIG)
-endif()
-# The other half of what was one `motionRuntime`: the live-capture intake and
-# the capture trace are `motionRecording`'s.
-if(NOT TARGET motionRecording::motionRecording)
-    find_package(motionRecording REQUIRED CONFIG)
-endif()
 
 add_library(vrmRetarget STATIC
-    src/Diagnostics.cpp
     src/ExpressionResolver.cpp
-    src/HumanoidMap.cpp
     src/LookAtEvaluator.cpp
-    src/PoseRetargeter.cpp
-    src/RestPose.cpp
-    src/RootMotionPolicy.cpp
-    src/TargetSkeleton.cpp)
+    src/RequiredBones.cpp)
 add_library(vrmRetarget::vrmRetarget ALIAS vrmRetarget)
 set_target_properties(vrmRetarget PROPERTIES
     EXPORT_NAME vrmRetarget
@@ -74,9 +61,7 @@ target_include_directories(vrmRetarget
         "$<INSTALL_INTERFACE:include>")
 target_link_libraries(vrmRetarget
     PUBLIC
-        motionCore::motionCore
-        motionSampling::motionSampling
-        motionRecording::motionRecording)
+        motionCore::motionCore)
 
 # `js` is the one OpenUSD library beyond Gf this library links, and it is a
 # value library: JsValue parses a string into numbers and objects, with no
@@ -93,8 +78,8 @@ else()
 endif()
 
 if(MSVC)
-    # PUBLIC for the same reason as motionRuntime: the installed headers are
-    # UTF-8, so consumers need /utf-8 to include them without C4819.
+    # PUBLIC because the installed headers are UTF-8, so consumers need /utf-8
+    # to include them without C4819.
     target_compile_options(vrmRetarget PUBLIC /utf-8)
 endif()
 

@@ -20,7 +20,7 @@
 //     to a pose that does not pair with the rig;
 //   * invalidation, and every refusal.
 //
-// It links vrmRetarget for the result types and OpenUSD's usdSkel for the
+// It links motionRetarget for the result types and OpenUSD's usdSkel for the
 // resolution the node's value is compared against.
 
 #include "pxr/pxr.h"
@@ -62,8 +62,8 @@
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/utils.h"
 
-#include <vrmRetarget/PoseRetargeter.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/PoseRetargeter.h>
+#include <motionRetarget/SkeletonDescriptor.h>
 
 #include <cassert>
 #include <cmath>
@@ -265,16 +265,16 @@ ValueAt(const ExecUsdCacheView& view, int index, const char* what)
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::JointLocalTransforms
+openstrata::motion::JointLocalTransforms
 SampleAt(const ExecUsdCacheView& view)
 {
-    return ValueAt<vrmRetarget::JointLocalTransforms>(view, kSampleKey, "joint transforms");
+    return ValueAt<openstrata::motion::JointLocalTransforms>(view, kSampleKey, "joint transforms");
 }
 
-vrmRetarget::RetargetedPose
+openstrata::motion::RetargetedPose
 RetargetAt(const ExecUsdCacheView& view)
 {
-    return ValueAt<vrmRetarget::RetargetedPose>(view, kRetargetKey, "retargeted pose");
+    return ValueAt<openstrata::motion::RetargetedPose>(view, kRetargetKey, "retargeted pose");
 }
 
 void
@@ -306,7 +306,7 @@ ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 // unauthored, which is the defect the value's shape exists to prevent.
 void
 AuthorAsTheToolDoes(const Rig& rig, const SdfPath& path,
-                    const vrmRetarget::JointLocalTransforms& sample, bool withScales)
+                    const openstrata::motion::JointLocalTransforms& sample, bool withScales)
 {
     const UsdSkelAnimation animation = UsdSkelAnimation::Define(rig.stage, path);
     VtTokenArray joints;
@@ -354,7 +354,7 @@ RestTransforms(const Rig& rig)
 
 // What UsdSkel's own composition makes of a sample's components.
 VtMatrix4dArray
-Composed(const vrmRetarget::JointLocalTransforms& sample)
+Composed(const openstrata::motion::JointLocalTransforms& sample)
 {
     VtMatrix4dArray composed(sample.joints.size());
     assert(UsdSkelMakeTransforms(
@@ -396,8 +396,8 @@ TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
         system.ChangeTime(UsdTimeCode(frame));
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RetargetedPose pose = RetargetAt(view);
-        const vrmRetarget::JointLocalTransforms sample = SampleAt(view);
+        const openstrata::motion::RetargetedPose pose = RetargetAt(view);
+        const openstrata::motion::JointLocalTransforms sample = SampleAt(view);
         assert(mark.IsClean() && "the fixture's joint transforms posted an error");
 
         // Not a second retarget: the arrays and the timestamp, bit for bit.
@@ -428,7 +428,7 @@ void
 TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    vrmRetarget::JointLocalTransforms sample;
+    openstrata::motion::JointLocalTransforms sample;
     {
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -472,7 +472,7 @@ TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
     // refuse it: seven joints and scales, six rotations and translations.
     // UsdSkel maps no joint of it either, so the refusal is not strictness --
     // answered, the pose would bake to the rig standing still.
-    vrmRetarget::JointLocalTransforms shortSample = sample;
+    openstrata::motion::JointLocalTransforms shortSample = sample;
     shortSample.rotations.pop_back();
     shortSample.translations.pop_back();
     AuthorAsTheToolDoes(rig, kShortPath, shortSample, /* withScales = */ true);
@@ -495,7 +495,7 @@ TestARigsRestScaleIsKept(const std::string& fixture)
     // be the rig's rest. Before the scale policy it was, but for the arm, whose
     // rest scale of 2 a bake of identity scales replaced with 1.
     const Rig rig = Open(fixture);
-    vrmRetarget::JointLocalTransforms sample;
+    openstrata::motion::JointLocalTransforms sample;
     {
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -540,10 +540,10 @@ TestADriversRetargetReachesTheSample(const std::string& fixture)
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     ArmAt(system, request, 24.0);
-    const vrmRetarget::JointLocalTransforms unchanged = SampleAt(system.Compute(request));
+    const openstrata::motion::JointLocalTransforms unchanged = SampleAt(system.Compute(request));
 
     const ExecUsdValueKey retargetKey(rig.humanoid, kRetarget);
-    auto computeWith = [&](const vrmRetarget::RetargetedPose& pose)
+    auto computeWith = [&](const openstrata::motion::RetargetedPose& pose)
     {
         std::vector<ExecUsdValueOverride> overrides;
         overrides.push_back(ExecUsdValueOverride{retargetKey, VtValue(pose)});
@@ -552,7 +552,7 @@ TestADriversRetargetReachesTheSample(const std::string& fixture)
 
     // A pose a driver retargeted itself -- filtered, blended, held -- reaches
     // the node as its own answer would.
-    vrmRetarget::RetargetedPose held;
+    openstrata::motion::RetargetedPose held;
     held.timestamp = 0.5;
     held.rotations.assign(kJointCount, GfQuatf(1.0f));
     held.translations.assign(kJointCount, GfVec3f(0.0f));
@@ -561,7 +561,7 @@ TestADriversRetargetReachesTheSample(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = computeWith(held);
         assert(mark.IsClean());
-        const vrmRetarget::JointLocalTransforms sample = SampleAt(view);
+        const openstrata::motion::JointLocalTransforms sample = SampleAt(view);
         assert(sample.timestamp == 0.5);
         assert(sample.rotations == held.rotations && sample.translations == held.translations);
         assert(sample.joints == unchanged.joints && sample.scales == unchanged.scales);
@@ -570,7 +570,7 @@ TestADriversRetargetReachesTheSample(const std::string& fixture)
     // One not retargeted onto this rig is refused: the one route to a pose
     // whose arrays do not pair with the rig's joints.
     {
-        vrmRetarget::RetargetedPose shortPose = held;
+        openstrata::motion::RetargetedPose shortPose = held;
         shortPose.rotations.pop_back();
         shortPose.translations.pop_back();
         TfErrorMark mark;
@@ -659,7 +659,7 @@ TestInvalidationReachesTheSample(const std::string& fixture)
         { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
     ArmAt(system, request, 24.0);
-    vrmRetarget::JointLocalTransforms sample = SampleAt(system.Compute(request));
+    openstrata::motion::JointLocalTransforms sample = SampleAt(system.Compute(request));
 
     // ---- a root-motion statement: the retarget and this, not the rig --------
     reported.clear();
@@ -669,7 +669,7 @@ TestInvalidationReachesTheSample(const std::string& fixture)
            "a root-motion statement did not reach exactly the retarget and "
            "the joint transforms");
     {
-        const vrmRetarget::JointLocalTransforms ignored = SampleAt(system.Compute(request));
+        const openstrata::motion::JointLocalTransforms ignored = SampleAt(system.Compute(request));
         assert(ignored.translations != sample.translations);
         assert(ignored.rotations == sample.rotations);
         sample = ignored;
@@ -687,7 +687,7 @@ TestInvalidationReachesTheSample(const std::string& fixture)
     assert(reported.count(kRetargetKey) && reported.count(kSampleKey) &&
            !reported.count(kTargetKey));
     {
-        const vrmRetarget::JointLocalTransforms turned = SampleAt(system.Compute(request));
+        const openstrata::motion::JointLocalTransforms turned = SampleAt(system.Compute(request));
         assert(turned.rotations[kHeadJoint] != sample.rotations[kHeadJoint]);
         sample = turned;
     }
@@ -707,7 +707,7 @@ TestInvalidationReachesTheSample(const std::string& fixture)
            reported.count(kSampleKey) &&
            "a rest edit of the rig did not reach the joint transforms");
     {
-        const vrmRetarget::JointLocalTransforms moved = SampleAt(system.Compute(request));
+        const openstrata::motion::JointLocalTransforms moved = SampleAt(system.Compute(request));
         assert(moved.translations[kRootJointSlot] == GfVec3f(0, 0, 0.5f));
         assert(moved.joints == sample.joints);
     }

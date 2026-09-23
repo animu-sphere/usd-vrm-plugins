@@ -23,7 +23,7 @@
 //   * a driver's pose diagnosed like the clip's, and a driver's retarget not
 //     diagnosed at all.
 //
-// It links vrmRetarget for the result types and to build the expected values.
+// It links motionRetarget for the result types and to build the expected values.
 
 #include "pxr/pxr.h"
 
@@ -55,10 +55,11 @@
 #include "pxr/usd/usd/timeCode.h"
 
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/Diagnostics.h>
-#include <vrmRetarget/HumanoidMap.h>
-#include <vrmRetarget/PoseRetargeter.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/Diagnostics.h>
+#include <motionRetarget/RetargetMap.h>
+#include <motionRetarget/PoseRetargeter.h>
+#include <motionRetarget/SkeletonDescriptor.h>
+#include <vrmRetarget/RequiredBones.h>
 
 #include <cassert>
 #include <cmath>
@@ -76,7 +77,18 @@ namespace
 {
 
 using openstrata::motion::HumanJoint;
-using vrmRetarget::RetargetDiagnosticCode;
+using openstrata::motion::RetargetDiagnosticCode;
+
+// The options every retarget here is made with: VRM 1.0's required bones,
+// which the nodes hand `motionRetarget` because it holds no set of its own. A
+// wrapper claim compares against the library called the way the node calls it.
+openstrata::motion::RetargetOptions
+VrmRetargetOptions()
+{
+    openstrata::motion::RetargetOptions options;
+    options.requiredBones = vrmRetarget::GetRequiredBones();
+    return options;
+}
 
 const TfToken kTargetSkeleton("vrm.computeTargetSkeleton");
 const TfToken kHumanoidMap("vrm.computeHumanoidMap");
@@ -252,16 +264,17 @@ ValueAt(const ExecUsdCacheView& view, int index, const char* what)
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::RetargetDiagnostics
+openstrata::motion::RetargetDiagnostics
 RigAt(const ExecUsdCacheView& view)
 {
-    return ValueAt<vrmRetarget::RetargetDiagnostics>(view, kRigKey, "rig diagnostics");
+    return ValueAt<openstrata::motion::RetargetDiagnostics>(view, kRigKey, "rig diagnostics");
 }
 
-vrmRetarget::RetargetDiagnostics
+openstrata::motion::RetargetDiagnostics
 SampleAt(const ExecUsdCacheView& view)
 {
-    return ValueAt<vrmRetarget::RetargetDiagnostics>(view, kSampleKey, "retarget diagnostics");
+    return ValueAt<openstrata::motion::RetargetDiagnostics>(view, kSampleKey,
+                                                            "retarget diagnostics");
 }
 
 void
@@ -289,10 +302,10 @@ ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 // The required bones the fixture's humanoid leaves unbound, in the
 // vocabulary's order: what the rig says about every retarget onto it.
 std::vector<std::string>
-MissingRequired(const vrmRetarget::HumanoidMap& map)
+MissingRequired(const openstrata::motion::RetargetMap& map)
 {
     std::vector<std::string> missing;
-    for (const HumanJoint bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    for (const HumanJoint bone : vrmRetarget::GetRequiredBones())
     {
         if (!map.IsMapped(bone))
         {
@@ -331,20 +344,22 @@ TestTheNodesAreTheLibrarysReports(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
         const auto target =
-            ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
-        const auto map = ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
+            ValueAt<openstrata::motion::SkeletonDescriptor>(view, kTargetKey, "target skeleton");
+        const auto map = ValueAt<openstrata::motion::RetargetMap>(view, kMapKey, "humanoid map");
         const auto pose = ValueAt<openstrata::motion::MotionPose>(view, kBoundKey, "bound pose");
-        const vrmRetarget::RetargetDiagnostics rigReport = RigAt(view);
-        const vrmRetarget::RetargetDiagnostics sampleReport = SampleAt(view);
+        const openstrata::motion::RetargetDiagnostics rigReport = RigAt(view);
+        const openstrata::motion::RetargetDiagnostics sampleReport = SampleAt(view);
         assert(mark.IsClean() && "the fixture's diagnostics posted an error");
 
         // The wrapper claim, over exec's own values. The clip's rest is left
         // at the library's default on purpose: no code depends on it, which
         // is why the correction is the one input this comparison can skip.
-        assert(rigReport == vrmRetarget::DiagnoseRig(target, map) &&
+        assert(rigReport == openstrata::motion::DiagnoseRig(target, map, VrmRetargetOptions()) &&
                "the rig's diagnostics are not DiagnoseRig over exec's values");
-        vrmRetarget::RetargetDiagnostics expected = rigReport;
-        vrmRetarget::PoseRetargeter(target, map).Retarget(pose, &expected);
+        openstrata::motion::RetargetDiagnostics expected = rigReport;
+        openstrata::motion::PoseRetargeter(target, map, openstrata::motion::SourceRestPose(),
+                                           VrmRetargetOptions())
+            .Retarget(pose, &expected);
         assert(sampleReport == expected &&
                "the sample's diagnostics are not the rig's then the pose's");
 
@@ -355,15 +370,15 @@ TestTheNodesAreTheLibrarysReports(const std::string& fixture)
         assert(rigReport.Subjects(RetargetDiagnosticCode::MissingRequiredBone) == missing);
         assert(rigReport.reported.size() == missing.size());
         assert(sampleReport.reported.size() == missing.size() + 1);
-        const vrmRetarget::RetargetDiagnostic& unbound = sampleReport.reported.back();
+        const openstrata::motion::RetargetDiagnostic& unbound = sampleReport.reported.back();
         assert(unbound.code == RetargetDiagnosticCode::UnboundDrivenBone &&
                unbound.subject == "rightUpperArm");
 
         // What P0-6's harness compares, byte for byte: the offline tool prints
         // each diagnostic through this same formatter, so the line exec's
         // value formats into is the line the tool would print for it.
-        assert(vrmRetarget::FormatRetargetDiagnostic(unbound) ==
-               "[VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable "
+        assert(openstrata::motion::FormatRetargetDiagnostic(unbound) ==
+               "[MOTION_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable "
                "subject=rightUpperArm: the clip drives it and the target rig "
                "binds no joint for it");
     }
@@ -380,14 +395,14 @@ TestTheRigIsDiagnosedWithNoClipToRetarget(const std::string& fixture)
 {
     // At the default time code -- where every request is armed, and where the
     // retarget refuses rather than answer the rig's whole rest at 0 seconds.
-    vrmRetarget::RetargetDiagnostics atAFrame;
+    openstrata::motion::RetargetDiagnostics atAFrame;
     {
         const Rig rig = Open(fixture);
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RetargetDiagnostics armed = RigAt(view);
+        const openstrata::motion::RetargetDiagnostics armed = RigAt(view);
         AssertRefused(view, kSampleKey);
         assert(MarkNames(mark, "vrm.computeRetargetDiagnostics: the system is "
                                "at the default time code"));
@@ -483,7 +498,7 @@ TestWhatTheRetargetCannotHonourRefusesBoth(const std::string& fixture)
         mark.Clear();
     }
     // Two bones on one joint. The offline tool reports that as
-    // VRM_RETARGET_DUPLICATE_TARGET and bakes it, the later bone winning; the
+    // MOTION_RETARGET_DUPLICATE_TARGET and bakes it, the later bone winning; the
     // humanoid map refuses it here (MapRefusal::DuplicateJoint), so the code
     // never comes back through this bundle -- the parity table's third row,
     // now as a code rather than a sentence.
@@ -537,7 +552,7 @@ TestInvalidationReachesTheReports(const std::string& fixture)
         { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
     ArmAt(system, request, 24.0);
-    const vrmRetarget::RetargetDiagnostics before = SampleAt(system.Compute(request));
+    const openstrata::motion::RetargetDiagnostics before = SampleAt(system.Compute(request));
 
     // ---- a key of the clip: the sample's report, never the rig's ------------
     reported.clear();
@@ -560,8 +575,8 @@ TestInvalidationReachesTheReports(const std::string& fixture)
     assert(reported.count(kMapKey) && reported.count(kRigKey) && reported.count(kSampleKey));
     {
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RetargetDiagnostics rigReport = RigAt(view);
-        const vrmRetarget::RetargetDiagnostics sampleReport = SampleAt(view);
+        const openstrata::motion::RetargetDiagnostics rigReport = RigAt(view);
+        const openstrata::motion::RetargetDiagnostics sampleReport = SampleAt(view);
         assert(rigReport.Has(RetargetDiagnosticCode::MissingRequiredBone, "head"));
         assert(sampleReport.Has(RetargetDiagnosticCode::MissingRequiredBone, "head"));
         assert(sampleReport.Subjects(RetargetDiagnosticCode::UnboundDrivenBone) ==
@@ -572,7 +587,7 @@ TestInvalidationReachesTheReports(const std::string& fixture)
     // Recomputed after, and not only for the value: exec reports a value that
     // is cached, so an edit landing on a report nobody recomputed since the
     // last one would be reported to nothing.
-    const vrmRetarget::RetargetDiagnostics rigBefore = RigAt(system.Compute(request));
+    const openstrata::motion::RetargetDiagnostics rigBefore = RigAt(system.Compute(request));
     reported.clear();
     assert(
         rig.humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token).Set(TfToken("ignore")));
@@ -597,7 +612,7 @@ TestInvalidationReachesTheReports(const std::string& fixture)
     }
     assert(reported.count(kTargetKey) && reported.count(kRigKey) && reported.count(kSampleKey));
     {
-        const vrmRetarget::RetargetDiagnostics rigReport = RigAt(system.Compute(request));
+        const openstrata::motion::RetargetDiagnostics rigReport = RigAt(system.Compute(request));
         assert(rigReport.Subjects(RetargetDiagnosticCode::InvalidHierarchy) ==
                std::vector<std::string>({kHeadToken}));
     }
@@ -617,7 +632,7 @@ TestADriversPoseIsDiagnosedAndItsRetargetIsNot(const std::string& fixture)
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     ArmAt(system, request, 24.0);
     ExecUsdCacheView view = system.Compute(request);
-    const vrmRetarget::RetargetDiagnostics unchanged = SampleAt(view);
+    const openstrata::motion::RetargetDiagnostics unchanged = SampleAt(view);
     const openstrata::motion::MotionPose clipPose =
         ValueAt<openstrata::motion::MotionPose>(view, kBoundKey, "bound pose");
 
@@ -634,7 +649,7 @@ TestADriversPoseIsDiagnosedAndItsRetargetIsNot(const std::string& fixture)
         overrides.push_back(
             ExecUsdValueOverride{ExecUsdValueKey(rig.clip, kBoundPose), VtValue(live)});
         TfErrorMark mark;
-        const vrmRetarget::RetargetDiagnostics driven =
+        const openstrata::motion::RetargetDiagnostics driven =
             SampleAt(system.ComputeWithOverrides(request, std::move(overrides)));
         assert(mark.IsClean());
         // One pose reports its bones in the vocabulary's order, where the left
@@ -648,8 +663,8 @@ TestADriversPoseIsDiagnosedAndItsRetargetIsNot(const std::string& fixture)
     // override of the retarget reaches the joint transforms and not this. The
     // cost of the eleventh boundary finding, stated rather than hidden.
     {
-        vrmRetarget::RetargetedPose held =
-            ValueAt<vrmRetarget::RetargetedPose>(view, kRetargetKey, "retargeted pose");
+        openstrata::motion::RetargetedPose held =
+            ValueAt<openstrata::motion::RetargetedPose>(view, kRetargetKey, "retargeted pose");
         held.timestamp = 0.5;
         std::vector<ExecUsdValueOverride> overrides;
         overrides.push_back(
@@ -657,8 +672,9 @@ TestADriversPoseIsDiagnosedAndItsRetargetIsNot(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView overridden = system.ComputeWithOverrides(request, std::move(overrides));
         assert(mark.IsClean());
-        assert(ValueAt<vrmRetarget::RetargetedPose>(overridden, kRetargetKey, "retargeted pose")
-                   .timestamp == 0.5);
+        assert(
+            ValueAt<openstrata::motion::RetargetedPose>(overridden, kRetargetKey, "retargeted pose")
+                .timestamp == 0.5);
         assert(SampleAt(overridden) == unchanged &&
                "a driver's retarget reached the diagnostics of the stage's");
     }

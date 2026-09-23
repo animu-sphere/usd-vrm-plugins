@@ -11,7 +11,7 @@
 //     reaching a computation of another (`vrm.computeBoundPose`), across
 //     UsdSkel's own `skel:animationSource`, and from there a third computation
 //     two relationships away from the clip;
-//   * that the retarget is `vrmRetarget::PoseRetargeter` over the rig, the map,
+//   * that the retarget is `openstrata::motion::PoseRetargeter` over the rig, the map,
 //     the clip's rest and the root-motion options, and nothing more -- and that
 //     the correction it computes for itself is, bit for bit, the one
 //     `vrm.computeRestPoseCorrection` has already cached beside it;
@@ -25,7 +25,7 @@
 //     and a session with no execMotion at all (`--without-exec-motion`, its own
 //     CTest entry).
 //
-// It links vrmRetarget for the result types and to build the expected values;
+// It links motionRetarget for the result types and to build the expected values;
 // the claim about the library is exactly that the node is one call of it.
 
 #include "pxr/pxr.h"
@@ -61,11 +61,11 @@
 #include "pxr/usd/usdSkel/bindingAPI.h"
 
 #include <motionCore/MotionPose.h>
-#include <vrmRetarget/HumanoidMap.h>
-#include <vrmRetarget/PoseRetargeter.h>
-#include <vrmRetarget/RestPose.h>
-#include <vrmRetarget/RootMotionPolicy.h>
-#include <vrmRetarget/TargetSkeleton.h>
+#include <motionRetarget/RetargetMap.h>
+#include <motionRetarget/PoseRetargeter.h>
+#include <motionRetarget/RestPose.h>
+#include <motionRetarget/RootMotionPolicy.h>
+#include <motionRetarget/SkeletonDescriptor.h>
 
 #include <cassert>
 #include <cmath>
@@ -302,10 +302,10 @@ ValueAt(const ExecUsdCacheView& view, int index, const char* what)
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::RetargetedPose
+openstrata::motion::RetargetedPose
 RetargetAt(const ExecUsdCacheView& view, int index = kRetargetKey)
 {
-    return ValueAt<vrmRetarget::RetargetedPose>(view, index, "retargeted pose");
+    return ValueAt<openstrata::motion::RetargetedPose>(view, index, "retargeted pose");
 }
 
 openstrata::motion::MotionPose
@@ -342,10 +342,10 @@ ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 // ---------------------------------------------------------------------------
 
 // /Clip/HumanoidSkeleton: identity rests, the semantic chain its paths state.
-vrmRetarget::SourceRestPose
+openstrata::motion::SourceRestPose
 ClipRest()
 {
-    vrmRetarget::SourceRestPose rest;
+    openstrata::motion::SourceRestPose rest;
     rest.localTranslations[Slot(HumanJoint::Hips)] = GfVec3f(0, 1, 0);
     rest.localTranslations[Slot(HumanJoint::Spine)] = GfVec3f(0, 0.1f, 0);
     rest.localTranslations[Slot(HumanJoint::Chest)] = GfVec3f(0, 0.15f, 0);
@@ -459,18 +459,19 @@ TestTheRetargetComputes(const std::string& fixture)
            !timeReported.count(kCorrectionKey) &&
            "a frame change reported a rig statement, which reads no time");
 
-    vrmRetarget::TargetSkeleton target;
-    vrmRetarget::HumanoidMap map;
-    vrmRetarget::RestPoseCorrection correction;
+    openstrata::motion::SkeletonDescriptor target;
+    openstrata::motion::RetargetMap map;
+    openstrata::motion::RestPoseCorrection correction;
     openstrata::motion::MotionPose sampled;
-    vrmRetarget::RetargetedPose retargeted;
+    openstrata::motion::RetargetedPose retargeted;
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        target = ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
-        map = ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
-        correction =
-            ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey, "rest-pose correction");
+        target =
+            ValueAt<openstrata::motion::SkeletonDescriptor>(view, kTargetKey, "target skeleton");
+        map = ValueAt<openstrata::motion::RetargetMap>(view, kMapKey, "humanoid map");
+        correction = ValueAt<openstrata::motion::RestPoseCorrection>(view, kCorrectionKey,
+                                                                     "rest-pose correction");
         sampled = PoseAt(view, kSampledKey);
         // The pose crossed from one bundle to the other unchanged.
         assert(PoseAt(view, kBoundKey) == sampled && "the bound pose is not the sampler's pose");
@@ -481,7 +482,8 @@ TestTheRetargetComputes(const std::string& fixture)
     // ---- the wrapper claim --------------------------------------------------
     // The node IS PoseRetargeter over the rig, the map, the clip's rest and the
     // library's default options, asked for the sampler's pose: bit for bit.
-    assert(retargeted == vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(sampled) &&
+    assert(retargeted ==
+               openstrata::motion::PoseRetargeter(target, map, ClipRest()).Retarget(sampled) &&
            "the node's pose is not the library's over the same values");
 
     // ---- and the cost: the correction it recomputes is the cached one -------
@@ -553,7 +555,7 @@ TestTheRetargetComputes(const std::string& fixture)
         const openstrata::motion::MotionPose between = PoseAt(view, kSampledKey);
         assert(between.timestamp == 0.5);
         assert(RetargetAt(view) ==
-               vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(between));
+               openstrata::motion::PoseRetargeter(target, map, ClipRest()).Retarget(between));
     }
     std::printf("execVrm retarget: the node is PoseRetargeter over the sampler's "
                 "pose, its correction is the cached one, and a frame change "
@@ -620,7 +622,7 @@ TestTheRootMotionStatementsAreTheToolsFlags(const std::string& fixture)
         ArmAt(system, request, 24.0);
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        const vrmRetarget::RetargetedPose pose = RetargetAt(view);
+        const openstrata::motion::RetargetedPose pose = RetargetAt(view);
         assert(mark.IsClean());
         if (!Near(pose.translations[kHipsJoint], c.hips) ||
             !Near(pose.translations[kRootJointSlot], c.root))
@@ -652,7 +654,7 @@ TestInvalidationReachesTheRetarget(const std::string& fixture)
         { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
     ArmAt(system, request, 24.0);
-    vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
+    openstrata::motion::RetargetedPose pose = RetargetAt(system.Compute(request));
 
     // ---- a root-motion statement: the retarget and nothing else ------------
     reported.clear();
@@ -664,7 +666,7 @@ TestInvalidationReachesTheRetarget(const std::string& fixture)
     assert(reported == std::set<int>({kRetargetKey}) &&
            "a root-motion statement reported more than the retarget");
     {
-        const vrmRetarget::RetargetedPose ignored = RetargetAt(system.Compute(request));
+        const openstrata::motion::RetargetedPose ignored = RetargetAt(system.Compute(request));
         assert(ignored.translations[kHipsJoint] == kHipsRest);
         assert(ignored.rotations == pose.rotations);
         pose = ignored;
@@ -684,7 +686,7 @@ TestInvalidationReachesTheRetarget(const std::string& fixture)
     assert(!reported.count(kCorrectionKey) && !reported.count(kMapKey) &&
            "a key of the clip reported a rig statement");
     {
-        const vrmRetarget::RetargetedPose turned = RetargetAt(system.Compute(request));
+        const openstrata::motion::RetargetedPose turned = RetargetAt(system.Compute(request));
         const GfQuatf parent = About(kY, 90.0f);
         assert(SameOrientation((parent * turned.rotations[kHeadJoint]) * parent.GetInverse(),
                                About(kY, 45.0f)));
@@ -719,7 +721,7 @@ TestInvalidationReachesTheRetarget(const std::string& fixture)
            "retarget");
     assert(!reported.count(kMapKey));
     {
-        const vrmRetarget::RetargetedPose posed = RetargetAt(system.Compute(request));
+        const openstrata::motion::RetargetedPose posed = RetargetAt(system.Compute(request));
         for (const Binding& b : kBindings)
         {
             assert(SameOrientation(posed.rotations[b.joint], TargetRestRotation(b.joint)) &&
@@ -743,11 +745,11 @@ TestADriversPoseReachesTheRetarget(const std::string& fixture)
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     ArmAt(system, request, 24.0);
     ExecUsdCacheView plain = system.Compute(request);
-    const vrmRetarget::TargetSkeleton target =
-        ValueAt<vrmRetarget::TargetSkeleton>(plain, kTargetKey, "target skeleton");
-    const vrmRetarget::HumanoidMap map =
-        ValueAt<vrmRetarget::HumanoidMap>(plain, kMapKey, "humanoid map");
-    const vrmRetarget::RetargetedPose unchanged = RetargetAt(plain);
+    const openstrata::motion::SkeletonDescriptor target =
+        ValueAt<openstrata::motion::SkeletonDescriptor>(plain, kTargetKey, "target skeleton");
+    const openstrata::motion::RetargetMap map =
+        ValueAt<openstrata::motion::RetargetMap>(plain, kMapKey, "humanoid map");
+    const openstrata::motion::RetargetedPose unchanged = RetargetAt(plain);
 
     // A pose a live source would hand in: the head turned, the hips moved.
     openstrata::motion::MotionPose held;
@@ -767,7 +769,7 @@ TestADriversPoseReachesTheRetarget(const std::string& fixture)
         assert(mark.IsClean());
         assert(PoseAt(view, kBoundKey) == held);
         assert(RetargetAt(view) ==
-                   vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(held) &&
+                   openstrata::motion::PoseRetargeter(target, map, ClipRest()).Retarget(held) &&
                "an overridden pose did not reach the retarget");
     }
 
@@ -831,7 +833,8 @@ TestTheRootMotionStatementsAreRefusedWhenUnhonourable(const std::string& fixture
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kRetargetKey);
         // The correction reads none of it, and answers.
-        ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey, "rest-pose correction");
+        ValueAt<openstrata::motion::RestPoseCorrection>(view, kCorrectionKey,
+                                                        "rest-pose correction");
         if (!MarkNames(mark, c.message))
         {
             std::fprintf(stderr, "%s: expected an error naming \"%s\"\n", c.what, c.message);
@@ -893,7 +896,8 @@ TestAClipTheSkeletonCannotReachIsRefused(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kBoundKey);
         AssertRefused(view, kRetargetKey);
-        ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey, "rest-pose correction");
+        ValueAt<openstrata::motion::RestPoseCorrection>(view, kCorrectionKey,
+                                                        "rest-pose correction");
         if (!MarkNames(mark, c.message) ||
             !MarkNames(mark, "vrm.humanoidRetarget: the source skeleton "
                              "</Clip/HumanoidSkeleton> answered no "
@@ -1064,14 +1068,14 @@ TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
 // follows that walk through `vrm.computeBindingPose` and NamespaceAncestor.
 
 // The retarget at frame 24, over whatever the rig's stage now states.
-vrmRetarget::RetargetedPose
+openstrata::motion::RetargetedPose
 RetargetAt24(const Rig& rig)
 {
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     ArmAt(system, request, 24.0);
     TfErrorMark mark;
-    const vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
+    const openstrata::motion::RetargetedPose pose = RetargetAt(system.Compute(request));
     if (!mark.IsClean())
     {
         MarkNames(mark, "(nothing: this case expected no error)");
@@ -1083,8 +1087,8 @@ RetargetAt24(const Rig& rig)
 void
 TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
 {
-    const vrmRetarget::RetargetedPose clip = RetargetAt24(Open(fixture));
-    const vrmRetarget::RetargetedPose posed = [&fixture]
+    const openstrata::motion::RetargetedPose clip = RetargetAt24(Open(fixture));
+    const openstrata::motion::RetargetedPose posed = [&fixture]
     {
         const Rig rig = Open(fixture);
         assert(rig.clip.GetRelationship(kAnimationSourceRel).SetTargets({kPosedAnimationPath}));
@@ -1251,7 +1255,7 @@ TestAStatementDeclaredWithNoValueIsTheFallback(const std::string& fixture)
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         ArmAt(system, request, 24.0);
         TfErrorMark mark;
-        const vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
+        const openstrata::motion::RetargetedPose pose = RetargetAt(system.Compute(request));
         assert(mark.IsClean());
         assert(pose.translations[kHipsJoint] == kHipsRest &&
                "a valueless scale is no longer the fallback 0 -- the pin is "
@@ -1296,7 +1300,7 @@ TestWithoutExecMotionThePoseIsNotFound(const std::string& fixture)
     TfErrorMark mark;
     ExecUsdCacheView view = system.Compute(request);
     // The rig half needs nothing of execMotion.
-    ValueAt<vrmRetarget::RestPoseCorrection>(view, 0, "rest-pose correction");
+    ValueAt<openstrata::motion::RestPoseCorrection>(view, 0, "rest-pose correction");
     AssertRefused(view, 1);
     AssertRefused(view, 2);
     for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)

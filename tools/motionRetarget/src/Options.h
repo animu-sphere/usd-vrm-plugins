@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "vrmRetarget/RootMotionPolicy.h"
+#include "motionRetarget/RootMotionPolicy.h"
 
 #include <string>
 #include <vector>
@@ -26,7 +26,7 @@ struct Options
     // Prim name for the authored UsdSkelAnimation.
     std::string animationName = "RetargetedAnimation";
 
-    vrmRetarget::RootMotionOptions rootMotion;
+    openstrata::motion::RootMotionOptions rootMotion;
     // Joint token that receives root motion under --root-motion root.
     std::string rootJointToken;
 
