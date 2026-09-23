@@ -58,7 +58,7 @@
 #include <motionCore/MotionPose.h>
 #include <motionRetarget/RetargetMap.h>
 #include <motionRetarget/SkeletonDescriptor.h>
-#include <vrmRetarget/RequiredBones.h>
+#include <vrmRig/RequiredBones.h>
 
 #include <algorithm>
 #include <cassert>
@@ -360,7 +360,7 @@ TestTheRigComputes(const std::string& fixture)
     assert(map.GetJointIndex(HumanJoint::Neck) == 4);
     assert(map.GetJointIndex(HumanJoint::Head) == 5);
     assert(map.GetJointIndex(HumanJoint::LeftUpperArm) == 6);
-    assert(map.FindMissingRequiredBones(vrmRetarget::GetRequiredBones()).size() == 11);
+    assert(map.FindMissingRequiredBones(vrmRig::GetRequiredBones()).size() == 11);
 
     // ---- what the forty-nine unauthored bones cost -------------------------
     // Every `vrm:humanBones:*` attribute is defined by the applied schema, so

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-#include "vrmRetarget/ExpressionResolver.h"
-#include "vrmRetarget/LookAtEvaluator.h"
-#include "vrmRetarget/RequiredBones.h"
+#include "vrmRig/ExpressionResolver.h"
+#include "vrmRig/LookAtEvaluator.h"
+#include "vrmRig/RequiredBones.h"
 
 #include "pxr/base/gf/quatd.h"
 
@@ -73,12 +73,12 @@ const pxr::GfVec3f kAxisZ(0.0f, 0.0f, 1.0f);
 // An avatar with two expressions. `happy` drives two morph targets across two
 // meshes plus a material colour -- the N-across-M shape the resolve exists for
 // -- and `blink` drives one target of one mesh and is binary.
-vrmRetarget::ExpressionRig
+vrmRig::ExpressionRig
 DesignExpressionRig()
 {
-    vrmRetarget::ExpressionRig rig;
+    vrmRig::ExpressionRig rig;
 
-    vrmRetarget::ExpressionDefinition happy;
+    vrmRig::ExpressionDefinition happy;
     happy.name = "happy";
     happy.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
     happy.morphTargets.push_back({"/Asset/Meshes/Brows/Raise", 0.5f});
@@ -86,7 +86,7 @@ DesignExpressionRig()
         {"/Asset/Materials/Face", "color", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
     rig.Add(happy);
 
-    vrmRetarget::ExpressionDefinition blink;
+    vrmRig::ExpressionDefinition blink;
     blink.name = "blink";
     blink.isBinary = true;
     blink.morphTargets.push_back({"/Asset/Meshes/Face/EyeClose", 1.0f});
@@ -109,12 +109,12 @@ Weights(std::initializer_list<std::pair<const char*, float>> entries)
 void
 TestExpressionRigDeclaresANameOnce()
 {
-    vrmRetarget::ExpressionRig rig = DesignExpressionRig();
+    vrmRig::ExpressionRig rig = DesignExpressionRig();
     assert(rig.GetSize() == 2);
 
     // A second declaration of a declared name is refused rather than shadowing
     // the first -- the join key has to be unique or it is not a key.
-    vrmRetarget::ExpressionDefinition duplicate;
+    vrmRig::ExpressionDefinition duplicate;
     duplicate.name = "happy";
     duplicate.morphTargets.push_back({"/Asset/Meshes/Face/Other", 1.0f});
     assert(!rig.Add(duplicate));
@@ -122,7 +122,7 @@ TestExpressionRigDeclaresANameOnce()
     assert(rig.Find("happy")->morphTargets[0].target == "/Asset/Meshes/Face/Smile");
 
     // A nameless expression cannot be joined on, so it is not a definition.
-    vrmRetarget::ExpressionDefinition nameless;
+    vrmRig::ExpressionDefinition nameless;
     assert(!rig.Add(nameless));
 
     // Sorted by name, whatever order they arrived in.
@@ -133,10 +133,10 @@ TestExpressionRigDeclaresANameOnce()
 void
 TestOneWeightExpandsOntoEveryBind()
 {
-    const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
+    const vrmRig::ExpressionResolver resolver(DesignExpressionRig());
 
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", 0.5f}}), &diagnostics);
 
     assert(diagnostics.IsClean());
@@ -151,7 +151,7 @@ TestOneWeightExpandsOntoEveryBind()
     // The colour is carried as (total weight, weighted target) so the material's
     // own base value never has to reach this library: Apply is the lerp.
     assert(resolved.materialColors.size() == 1);
-    const vrmRetarget::ResolvedMaterialColor& color = resolved.materialColors[0];
+    const vrmRig::ResolvedMaterialColor& color = resolved.materialColors[0];
     assert(color.material == "/Asset/Materials/Face");
     assert(color.colorType == "color");
     assert(NearlyEqual(color.totalWeight, 0.5f));
@@ -162,12 +162,12 @@ TestOneWeightExpandsOntoEveryBind()
 void
 TestReportedZeroIsAuthoredAndUnreportedIsAbsent()
 {
-    const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
+    const vrmRig::ExpressionResolver resolver(DesignExpressionRig());
 
     // A reported zero is a statement -- "this expression is off now" -- so its
     // targets are authored at zero. Dropping them would leave the previous
     // sample's weight standing on the rig.
-    const vrmRetarget::ResolvedExpressions off = resolver.Resolve(Weights({{"happy", 0.0f}}));
+    const vrmRig::ResolvedExpressions off = resolver.Resolve(Weights({{"happy", 0.0f}}));
     assert(off.morphTargets.size() == 2);
     assert(NearlyEqual(off.morphTargets[0].weight, 0.0f));
     assert(off.materialColors.size() == 1);
@@ -179,7 +179,7 @@ TestReportedZeroIsAuthoredAndUnreportedIsAbsent()
     // `blink` was not reported, so its target is absent rather than zero: an
     // unreported name is not a zero weight, and this layer does not invent one
     // for the binds behind it either.
-    for (const vrmRetarget::ResolvedMorphTarget& target : off.morphTargets)
+    for (const vrmRig::ResolvedMorphTarget& target : off.morphTargets)
     {
         assert(target.target != "/Asset/Meshes/Face/EyeClose");
     }
@@ -191,7 +191,7 @@ TestReportedZeroIsAuthoredAndUnreportedIsAbsent()
 void
 TestBinaryRoundsAndOutOfRangeIsClamped()
 {
-    const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
+    const vrmRig::ExpressionResolver resolver(DesignExpressionRig());
 
     float weight = -1.0f;
     assert(resolver.ResolveWeight("blink", 0.4f, &weight));
@@ -208,8 +208,8 @@ TestBinaryRoundsAndOutOfRangeIsClamped()
     // The clip reader carries a weight outside [0, 1] verbatim and leaves the
     // clamp to whoever applies it to a rig, which is here -- and the operator
     // is told which name it was.
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", 1.5f}, {"blink", -0.2f}}), &diagnostics);
     assert(NearlyEqual(resolved.morphTargets[2].weight, 1.0f));
     assert(diagnostics.clampedNames.size() == 2);
@@ -224,16 +224,16 @@ TestBinaryRoundsAndOutOfRangeIsClamped()
     // ResolveWeight: a partly-open eyelid is exactly what `isBinary` says this
     // rig cannot show, so 0.4 reaches the target as 0 and 0.6 as 1. Written
     // because the suite passed once with this line deleted from Resolve.
-    const vrmRetarget::ResolvedExpressions ajar = resolver.Resolve(Weights({{"blink", 0.4f}}));
+    const vrmRig::ResolvedExpressions ajar = resolver.Resolve(Weights({{"blink", 0.4f}}));
     assert(ajar.morphTargets.size() == 1);
     assert(ajar.morphTargets[0].target == "/Asset/Meshes/Face/EyeClose");
     assert(NearlyEqual(ajar.morphTargets[0].weight, 0.0f));
     assert(NearlyEqual(resolver.Resolve(Weights({{"blink", 0.6f}})).morphTargets[0].weight, 1.0f));
 
     // Turning the clamp off resolves what the producer actually said.
-    vrmRetarget::ExpressionResolveOptions verbatim;
+    vrmRig::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
+    const vrmRig::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
     assert(NearlyEqual(unclamped.Resolve(Weights({{"happy", 1.5f}})).morphTargets[1].weight, 1.5f));
 }
 
@@ -242,23 +242,23 @@ TestExpressionsAccumulateOnOneTarget()
 {
     // Two expressions of the same rig driving one target is a rig that can sum
     // past 1, and the sum is carried through rather than corrected.
-    vrmRetarget::ExpressionRig rig;
-    vrmRetarget::ExpressionDefinition happy;
+    vrmRig::ExpressionRig rig;
+    vrmRig::ExpressionDefinition happy;
     happy.name = "happy";
     happy.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 0.8f});
     happy.materialColors.push_back(
         {"/Asset/Materials/Face", "color", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
     rig.Add(happy);
-    vrmRetarget::ExpressionDefinition aa;
+    vrmRig::ExpressionDefinition aa;
     aa.name = "aa";
     aa.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 0.8f});
     aa.materialColors.push_back(
         {"/Asset/Materials/Face", "color", pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
     rig.Add(aa);
 
-    const vrmRetarget::ExpressionResolver resolver(rig);
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    const vrmRig::ExpressionResolver resolver(rig);
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", 1.0f}, {"aa", 1.0f}}), &diagnostics);
 
     assert(resolved.morphTargets.size() == 1);
@@ -270,8 +270,8 @@ TestExpressionsAccumulateOnOneTarget()
     assert(diagnostics.warnings.size() == 2);
 
     // Half of each stays inside 1 and says nothing.
-    vrmRetarget::ExpressionDiagnostics quiet;
-    const vrmRetarget::ResolvedExpressions half =
+    vrmRig::ExpressionDiagnostics quiet;
+    const vrmRig::ResolvedExpressions half =
         resolver.Resolve(Weights({{"happy", 0.5f}, {"aa", 0.5f}}), &quiet);
     assert(quiet.IsClean());
     assert(NearlyEqual(half.morphTargets[0].weight, 0.8f));
@@ -284,7 +284,7 @@ TestExpressionsAccumulateOnOneTarget()
 void
 TestAnUnresolvedNameIsNamedOnceForAWholeClip()
 {
-    const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
+    const vrmRig::ExpressionResolver resolver(DesignExpressionRig());
 
     openstrata::motion::MotionPose pose;
     pose.timestamp = 0.5;
@@ -293,10 +293,10 @@ TestAnUnresolvedNameIsNamedOnceForAWholeClip()
     // was authored against no avatar in particular -- but the loss is named.
     pose.channels.Set("照れ", 1.0f);
 
-    vrmRetarget::ExpressionDiagnostics diagnostics;
+    vrmRig::ExpressionDiagnostics diagnostics;
     for (int sample = 0; sample < 3; ++sample)
     {
-        const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(pose, &diagnostics);
+        const vrmRig::ResolvedExpressions resolved = resolver.Resolve(pose, &diagnostics);
         // The pose overload carries the sample's own time through.
         assert(NearlyEqual(static_cast<float>(resolved.timestamp), 0.5f));
         assert(resolved.morphTargets.size() == 2);
@@ -311,7 +311,7 @@ TestAnUnresolvedNameIsNamedOnceForAWholeClip()
 void
 TestANonNumberIsNotAWeight()
 {
-    const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
+    const vrmRig::ExpressionResolver resolver(DesignExpressionRig());
     const float notANumber = std::nanf("");
 
     // Every comparison against NaN is false, so a range test written as
@@ -319,8 +319,8 @@ TestANonNumberIsNotAWeight()
     // through to the binds, the totals and Apply() with nothing reported. It
     // clamps to 0 -- the only value that leaves the rig where it was -- and is
     // named beside the ordinary out-of-range weights.
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", notANumber}}), &diagnostics);
     assert(resolved.morphTargets.size() == 2);
     assert(NearlyEqual(resolved.morphTargets[0].weight, 0.0f));
@@ -336,7 +336,7 @@ TestANonNumberIsNotAWeight()
 
     // An infinity is the same question with an answer the comparisons already
     // gave; it is here so the two cannot drift apart.
-    vrmRetarget::ExpressionDiagnostics infinite;
+    vrmRig::ExpressionDiagnostics infinite;
     assert(NearlyEqual(
         resolver.Resolve(Weights({{"happy", HUGE_VALF}}), &infinite).morphTargets[1].weight, 1.0f));
     assert(infinite.clampedNames.size() == 1);
@@ -344,11 +344,11 @@ TestANonNumberIsNotAWeight()
     // With clamping off the value reaches the binds, because that mode
     // resolves what the producer said -- but a resolve that carried a NaN into
     // an avatar must not read as a clean one.
-    vrmRetarget::ExpressionResolveOptions verbatim;
+    vrmRig::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
-    vrmRetarget::ExpressionDiagnostics carried;
-    const vrmRetarget::ResolvedExpressions raw =
+    const vrmRig::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
+    vrmRig::ExpressionDiagnostics carried;
+    const vrmRig::ResolvedExpressions raw =
         unclamped.Resolve(Weights({{"happy", notANumber}}), &carried);
     assert(std::isnan(raw.morphTargets[0].weight));
     // One warning for the expression, and one for each of the three channels
@@ -365,8 +365,8 @@ TestABindWithNoIdentifierIsSkippedAndNamed()
     // the slot is half the accumulator's key, so an empty one would merge two
     // binds of one material and hand back a colour nothing can map to a shader
     // input.
-    vrmRetarget::ExpressionRig rig;
-    vrmRetarget::ExpressionDefinition broken;
+    vrmRig::ExpressionRig rig;
+    vrmRig::ExpressionDefinition broken;
     broken.name = "happy";
     broken.morphTargets.push_back({"", 1.0f});
     broken.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
@@ -379,9 +379,9 @@ TestABindWithNoIdentifierIsSkippedAndNamed()
         {"/Asset/Materials/Face", "emissionColor", pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
     rig.Add(broken);
 
-    const vrmRetarget::ExpressionResolver resolver(rig);
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    const vrmRig::ExpressionResolver resolver(rig);
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", 1.0f}}), &diagnostics);
 
     // The bind that could be resolved was, and only it.
@@ -401,15 +401,15 @@ TestATargetDrivenBelowZeroIsReportedToo()
     // fully-on expression can drive a target below 0. It extrapolates, exactly
     // as driving one past 1 does, and a report that named only the upper side
     // would leave this looking clean.
-    vrmRetarget::ExpressionRig rig;
-    vrmRetarget::ExpressionDefinition frown;
+    vrmRig::ExpressionRig rig;
+    vrmRig::ExpressionDefinition frown;
     frown.name = "sad";
     frown.morphTargets.push_back({"/Asset/Meshes/Face/Smile", -1.0f});
     rig.Add(frown);
 
-    const vrmRetarget::ExpressionResolver resolver(rig);
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    const vrmRig::ExpressionResolver resolver(rig);
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"sad", 1.0f}}), &diagnostics);
     assert(NearlyEqual(resolved.morphTargets[0].weight, -1.0f));
     assert(diagnostics.warnings.size() == 1);
@@ -417,11 +417,11 @@ TestATargetDrivenBelowZeroIsReportedToo()
 
     // The same in the other mode: a negative report with clamping off drives
     // every bind of the expression negative.
-    vrmRetarget::ExpressionResolveOptions verbatim;
+    vrmRig::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
-    vrmRetarget::ExpressionDiagnostics carried;
-    const vrmRetarget::ResolvedExpressions raw =
+    const vrmRig::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
+    vrmRig::ExpressionDiagnostics carried;
+    const vrmRig::ResolvedExpressions raw =
         unclamped.Resolve(Weights({{"happy", -0.5f}}), &carried);
     assert(NearlyEqual(raw.morphTargets[1].weight, -0.5f));
     assert(NearlyEqual(raw.materialColors[0].totalWeight, -0.5f));
@@ -446,13 +446,13 @@ TestATargetDrivenBelowZeroIsReportedToo()
 // A rig with one expression in each of the three categories plus a custom one,
 // so a rule that reached the wrong set has somewhere to show it. `happy` is the
 // one that arbitrates; every other expression declares nothing.
-vrmRetarget::ExpressionRig
-DesignOverrideRig(vrmRetarget::ExpressionOverride blink, vrmRetarget::ExpressionOverride lookAt,
-                  vrmRetarget::ExpressionOverride mouth, bool binaryBlink = false)
+vrmRig::ExpressionRig
+DesignOverrideRig(vrmRig::ExpressionOverride blink, vrmRig::ExpressionOverride lookAt,
+                  vrmRig::ExpressionOverride mouth, bool binaryBlink = false)
 {
-    vrmRetarget::ExpressionRig rig;
+    vrmRig::ExpressionRig rig;
 
-    vrmRetarget::ExpressionDefinition happy;
+    vrmRig::ExpressionDefinition happy;
     happy.name = "happy";
     happy.overrideBlink = blink;
     happy.overrideLookAt = lookAt;
@@ -460,7 +460,7 @@ DesignOverrideRig(vrmRetarget::ExpressionOverride blink, vrmRetarget::Expression
     happy.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
     rig.Add(happy);
 
-    vrmRetarget::ExpressionDefinition eyes;
+    vrmRig::ExpressionDefinition eyes;
     eyes.name = "blink";
     eyes.isBinary = binaryBlink;
     eyes.morphTargets.push_back({"/Asset/Meshes/Face/EyeClose", 1.0f});
@@ -468,19 +468,19 @@ DesignOverrideRig(vrmRetarget::ExpressionOverride blink, vrmRetarget::Expression
         {"/Asset/Materials/Face", "color", pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
     rig.Add(eyes);
 
-    vrmRetarget::ExpressionDefinition vowel;
+    vrmRig::ExpressionDefinition vowel;
     vowel.name = "aa";
     vowel.morphTargets.push_back({"/Asset/Meshes/Face/MouthOpen", 1.0f});
     rig.Add(vowel);
 
-    vrmRetarget::ExpressionDefinition gaze;
+    vrmRig::ExpressionDefinition gaze;
     gaze.name = "lookLeft";
     gaze.morphTargets.push_back({"/Asset/Meshes/Face/EyeLeft", 1.0f});
     rig.Add(gaze);
 
     // Custom, and named to look like a blink on purpose: the categories are
     // sets of preset names, and a rig's own vocabulary is not one of them.
-    vrmRetarget::ExpressionDefinition custom;
+    vrmRig::ExpressionDefinition custom;
     custom.name = "wink";
     custom.morphTargets.push_back({"/Asset/Meshes/Face/Wink", 1.0f});
     rig.Add(custom);
@@ -491,9 +491,9 @@ DesignOverrideRig(vrmRetarget::ExpressionOverride blink, vrmRetarget::Expression
 // The resolved weight of one target of the sample, by path. -1 means the target
 // is absent, which is a different answer from a weight of zero.
 float
-WeightOf(const vrmRetarget::ResolvedExpressions& resolved, const std::string& target)
+WeightOf(const vrmRig::ResolvedExpressions& resolved, const std::string& target)
 {
-    for (const vrmRetarget::ResolvedMorphTarget& entry : resolved.morphTargets)
+    for (const vrmRig::ResolvedMorphTarget& entry : resolved.morphTargets)
     {
         if (entry.target == target)
         {
@@ -507,12 +507,12 @@ void
 TestABlockingOverrideTakesTheWholeCategory()
 {
     // `happy` blocks the mouth and arbitrates nothing else.
-    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::None, vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::Block));
+    const vrmRig::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRig::ExpressionOverride::None, vrmRig::ExpressionOverride::None,
+        vrmRig::ExpressionOverride::Block));
 
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved = resolver.Resolve(
         Weights(
             {{"happy", 0.2f}, {"blink", 1.0f}, {"aa", 1.0f}, {"lookLeft", 1.0f}, {"wink", 1.0f}}),
         &diagnostics);
@@ -538,12 +538,12 @@ TestABlockingOverrideTakesTheWholeCategory()
 void
 TestABlendingOverrideLeavesTheRestOfTheCategory()
 {
-    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Blend, vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None));
+    const vrmRig::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRig::ExpressionOverride::Blend, vrmRig::ExpressionOverride::None,
+        vrmRig::ExpressionOverride::None));
 
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}}), &diagnostics);
 
     // 40% of the way to a full override leaves 60% of the blink standing --
@@ -557,7 +557,7 @@ TestABlendingOverrideLeavesTheRestOfTheCategory()
     assert(diagnostics.suppressedNames[0] == "blink (by happy)");
 
     // At zero weight it arbitrates nothing, and says nothing either.
-    vrmRetarget::ExpressionDiagnostics quiet;
+    vrmRig::ExpressionDiagnostics quiet;
     assert(
         NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}}), &quiet),
                              "/Asset/Meshes/Face/EyeClose"),
@@ -572,18 +572,18 @@ TestTheStrongestOverrideWinsAndTheyDoNotStack()
     // rate is the largest any of them asked for. Multiplying them would leave
     // 0.5 * 0.2 = 0.1 of the blink, which is a face neither expression asked
     // for and the number this test exists to refuse.
-    vrmRetarget::ExpressionRig rig = DesignOverrideRig(vrmRetarget::ExpressionOverride::Blend,
-                                                       vrmRetarget::ExpressionOverride::None,
-                                                       vrmRetarget::ExpressionOverride::None);
-    vrmRetarget::ExpressionDefinition relaxed;
+    vrmRig::ExpressionRig rig = DesignOverrideRig(vrmRig::ExpressionOverride::Blend,
+                                                       vrmRig::ExpressionOverride::None,
+                                                       vrmRig::ExpressionOverride::None);
+    vrmRig::ExpressionDefinition relaxed;
     relaxed.name = "relaxed";
-    relaxed.overrideBlink = vrmRetarget::ExpressionOverride::Blend;
+    relaxed.overrideBlink = vrmRig::ExpressionOverride::Blend;
     relaxed.morphTargets.push_back({"/Asset/Meshes/Face/Relax", 1.0f});
     rig.Add(relaxed);
 
-    const vrmRetarget::ExpressionResolver resolver(std::move(rig));
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+    const vrmRig::ExpressionResolver resolver(std::move(rig));
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved = resolver.Resolve(
         Weights({{"happy", 0.5f}, {"relaxed", 0.8f}, {"blink", 1.0f}}), &diagnostics);
 
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.2f));
@@ -600,28 +600,28 @@ TestAnExpressionThatIsOffOverridesNothing()
     // which is off however the file spelled the number. Reading the raw report
     // instead would let an expression contributing nothing to the face take the
     // whole blink with it.
-    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Block, vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None));
+    const vrmRig::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRig::ExpressionOverride::Block, vrmRig::ExpressionOverride::None,
+        vrmRig::ExpressionOverride::None));
     assert(NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}})),
                                 "/Asset/Meshes/Face/EyeClose"),
                        1.0f));
 
     // The same rig with a binary `happy`.
-    vrmRetarget::ExpressionRig source = DesignOverrideRig(vrmRetarget::ExpressionOverride::Block,
-                                                          vrmRetarget::ExpressionOverride::None,
-                                                          vrmRetarget::ExpressionOverride::None);
-    vrmRetarget::ExpressionRig rebuilt;
-    for (const vrmRetarget::ExpressionDefinition& definition : source.GetExpressions())
+    vrmRig::ExpressionRig source = DesignOverrideRig(vrmRig::ExpressionOverride::Block,
+                                                          vrmRig::ExpressionOverride::None,
+                                                          vrmRig::ExpressionOverride::None);
+    vrmRig::ExpressionRig rebuilt;
+    for (const vrmRig::ExpressionDefinition& definition : source.GetExpressions())
     {
-        vrmRetarget::ExpressionDefinition copy = definition;
+        vrmRig::ExpressionDefinition copy = definition;
         if (copy.name == "happy")
         {
             copy.isBinary = true;
         }
         rebuilt.Add(std::move(copy));
     }
-    const vrmRetarget::ExpressionResolver binary(std::move(rebuilt));
+    const vrmRig::ExpressionResolver binary(std::move(rebuilt));
     // 0.4 rounds to off, so the block it declares is not in force here.
     assert(NearlyEqual(WeightOf(binary.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
                                 "/Asset/Meshes/Face/EyeClose"),
@@ -640,9 +640,9 @@ TestABinaryEyelidIsShutOrOpenUnderABlend()
     // rounding is re-applied after the attenuation and not only before it,
     // which is the line this test measures: without it the eyelid would land on
     // 0.6 and 0.3, values the flag says the rig cannot show.
-    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Blend, vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None,
+    const vrmRig::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRig::ExpressionOverride::Blend, vrmRig::ExpressionOverride::None,
+        vrmRig::ExpressionOverride::None,
         /*binaryBlink=*/true));
 
     assert(NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
@@ -661,16 +661,16 @@ TestAnOverrideOfItsOwnCategoryIsReported()
     // thing for `happy` and another for `blink` without becoming a rule an
     // operator can no longer predict from the file -- and it is reported,
     // because it is far more likely to be a slip than an intent.
-    vrmRetarget::ExpressionRig rig;
-    vrmRetarget::ExpressionDefinition eyes;
+    vrmRig::ExpressionRig rig;
+    vrmRig::ExpressionDefinition eyes;
     eyes.name = "blink";
-    eyes.overrideBlink = vrmRetarget::ExpressionOverride::Block;
+    eyes.overrideBlink = vrmRig::ExpressionOverride::Block;
     eyes.morphTargets.push_back({"/Asset/Meshes/Face/EyeClose", 1.0f});
     rig.Add(eyes);
 
-    const vrmRetarget::ExpressionResolver resolver(std::move(rig));
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    const vrmRig::ExpressionResolver resolver(std::move(rig));
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"blink", 1.0f}}), &diagnostics);
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.0f));
     assert(diagnostics.warnings.size() == 1);
@@ -681,39 +681,39 @@ void
 TestTheOverrideVocabularyIsThreeTokensAndThreeSets()
 {
     bool recognized = false;
-    assert(vrmRetarget::ParseExpressionOverride("block", &recognized) ==
-           vrmRetarget::ExpressionOverride::Block);
+    assert(vrmRig::ParseExpressionOverride("block", &recognized) ==
+           vrmRig::ExpressionOverride::Block);
     assert(recognized);
-    assert(vrmRetarget::ParseExpressionOverride("blend", &recognized) ==
-           vrmRetarget::ExpressionOverride::Blend);
+    assert(vrmRig::ParseExpressionOverride("blend", &recognized) ==
+           vrmRig::ExpressionOverride::Blend);
     assert(recognized);
     // An absent value and an explicit "none" are the same statement.
-    assert(vrmRetarget::ParseExpressionOverride("none", &recognized) ==
-           vrmRetarget::ExpressionOverride::None);
+    assert(vrmRig::ParseExpressionOverride("none", &recognized) ==
+           vrmRig::ExpressionOverride::None);
     assert(recognized);
-    assert(vrmRetarget::ParseExpressionOverride("", &recognized) ==
-           vrmRetarget::ExpressionOverride::None);
+    assert(vrmRig::ParseExpressionOverride("", &recognized) ==
+           vrmRig::ExpressionOverride::None);
     assert(recognized);
     // A token this layer does not know is not an arbitration it can perform,
     // and guessing which one was meant would suppress a face on a spelling.
-    assert(vrmRetarget::ParseExpressionOverride("Block", &recognized) ==
-           vrmRetarget::ExpressionOverride::None);
+    assert(vrmRig::ParseExpressionOverride("Block", &recognized) ==
+           vrmRig::ExpressionOverride::None);
     assert(!recognized);
-    assert(std::string(vrmRetarget::ExpressionOverrideToken(
-               vrmRetarget::ExpressionOverride::Blend)) == "blend");
+    assert(std::string(vrmRig::ExpressionOverrideToken(
+               vrmRig::ExpressionOverride::Blend)) == "blend");
 
     // The categories are the preset sets, in the VRM 1.0 spelling a VRM 0.x rig
     // also arrives in -- the importer migrates `blink_l` to `blinkLeft` and `a`
     // to `aa` on the way through.
-    using vrmRetarget::ExpressionCategory;
-    assert(vrmRetarget::ExpressionCategoryOf("blinkLeft") == ExpressionCategory::Blink);
-    assert(vrmRetarget::ExpressionCategoryOf("lookDown") == ExpressionCategory::LookAt);
-    assert(vrmRetarget::ExpressionCategoryOf("oh") == ExpressionCategory::Mouth);
+    using vrmRig::ExpressionCategory;
+    assert(vrmRig::ExpressionCategoryOf("blinkLeft") == ExpressionCategory::Blink);
+    assert(vrmRig::ExpressionCategoryOf("lookDown") == ExpressionCategory::LookAt);
+    assert(vrmRig::ExpressionCategoryOf("oh") == ExpressionCategory::Mouth);
     // `happy` arbitrates the categories and is in none of them; a custom name
     // is in none either, whatever it is called.
-    assert(vrmRetarget::ExpressionCategoryOf("happy") == ExpressionCategory::None);
-    assert(vrmRetarget::ExpressionCategoryOf("wink") == ExpressionCategory::None);
-    assert(vrmRetarget::ExpressionCategoryOf("Blink") == ExpressionCategory::None);
+    assert(vrmRig::ExpressionCategoryOf("happy") == ExpressionCategory::None);
+    assert(vrmRig::ExpressionCategoryOf("wink") == ExpressionCategory::None);
+    assert(vrmRig::ExpressionCategoryOf("Blink") == ExpressionCategory::None);
 }
 
 void
@@ -725,23 +725,23 @@ TestASuppressedExpressionStillOverrides()
     // the answer depend on the order the three categories are settled in, and
     // the rig below -- where `aa` blocks the blink and `happy` blocks the mouth
     // -- would then have two defensible answers and no reason to prefer either.
-    vrmRetarget::ExpressionRig rig = DesignOverrideRig(vrmRetarget::ExpressionOverride::None,
-                                                       vrmRetarget::ExpressionOverride::None,
-                                                       vrmRetarget::ExpressionOverride::Block);
-    vrmRetarget::ExpressionRig rebuilt;
-    for (const vrmRetarget::ExpressionDefinition& definition : rig.GetExpressions())
+    vrmRig::ExpressionRig rig = DesignOverrideRig(vrmRig::ExpressionOverride::None,
+                                                       vrmRig::ExpressionOverride::None,
+                                                       vrmRig::ExpressionOverride::Block);
+    vrmRig::ExpressionRig rebuilt;
+    for (const vrmRig::ExpressionDefinition& definition : rig.GetExpressions())
     {
-        vrmRetarget::ExpressionDefinition copy = definition;
+        vrmRig::ExpressionDefinition copy = definition;
         if (copy.name == "aa")
         {
-            copy.overrideBlink = vrmRetarget::ExpressionOverride::Block;
+            copy.overrideBlink = vrmRig::ExpressionOverride::Block;
         }
         rebuilt.Add(std::move(copy));
     }
 
-    const vrmRetarget::ExpressionResolver resolver(std::move(rebuilt));
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved =
+    const vrmRig::ExpressionResolver resolver(std::move(rebuilt));
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved =
         resolver.Resolve(Weights({{"happy", 1.0f}, {"aa", 1.0f}, {"blink", 1.0f}}), &diagnostics);
 
     // `happy` blocks the mouth, so `aa` resolves to nothing --
@@ -762,16 +762,16 @@ TestAnOverrideRateNeverInvertsAWeight()
     // -0.5, which is not a suppression but an inversion, and it would surface
     // only as the generic "driven outside [0, 1]" warning about a target
     // nothing asked to move.
-    vrmRetarget::ExpressionResolveOptions verbatim;
+    vrmRig::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver resolver(
-        DesignOverrideRig(vrmRetarget::ExpressionOverride::Blend,
-                          vrmRetarget::ExpressionOverride::None,
-                          vrmRetarget::ExpressionOverride::None),
+    const vrmRig::ExpressionResolver resolver(
+        DesignOverrideRig(vrmRig::ExpressionOverride::Blend,
+                          vrmRig::ExpressionOverride::None,
+                          vrmRig::ExpressionOverride::None),
         verbatim);
 
     // Past 1 the rate saturates: fully suppressed, never inverted.
-    const vrmRetarget::ResolvedExpressions past =
+    const vrmRig::ResolvedExpressions past =
         resolver.Resolve(Weights({{"happy", 1.5f}, {"blink", 1.0f}}));
     assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/EyeClose"), 0.0f));
     // `happy` itself still reaches its own binds verbatim, which is what that
@@ -779,14 +779,14 @@ TestAnOverrideRateNeverInvertsAWeight()
     assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/Smile"), 1.5f));
 
     // Below 0 it suppresses nothing rather than amplifying.
-    const vrmRetarget::ResolvedExpressions below =
+    const vrmRig::ResolvedExpressions below =
         resolver.Resolve(Weights({{"happy", -0.5f}, {"blink", 1.0f}}));
     assert(NearlyEqual(WeightOf(below, "/Asset/Meshes/Face/EyeClose"), 1.0f));
 
     // And a weight that is not a number arbitrates nothing, for the same
     // reason it is a weight of zero: every comparison against it is false, so
     // an unguarded `1 - rate` would carry the NaN into the blink's binds.
-    const vrmRetarget::ResolvedExpressions notANumber =
+    const vrmRig::ResolvedExpressions notANumber =
         resolver.Resolve(Weights({{"happy", std::nanf("")}, {"blink", 1.0f}}));
     assert(NearlyEqual(WeightOf(notANumber, "/Asset/Meshes/Face/EyeClose"), 1.0f));
 }
@@ -798,12 +798,12 @@ TestAGazeExpressionIsSuppressedLikeAnyOther()
     // other three, folded into the sample's own weights -- so `overrideLookAt`
     // arbitrates a rig's gaze through exactly the path it arbitrates its face,
     // and needs no second mechanism.
-    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::None, vrmRetarget::ExpressionOverride::Blend,
-        vrmRetarget::ExpressionOverride::None));
+    const vrmRig::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRig::ExpressionOverride::None, vrmRig::ExpressionOverride::Blend,
+        vrmRig::ExpressionOverride::None));
 
-    vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+    vrmRig::ExpressionDiagnostics diagnostics;
+    const vrmRig::ResolvedExpressions resolved = resolver.Resolve(
         Weights({{"happy", 0.25f}, {"lookLeft", 0.8f}, {"blink", 1.0f}}), &diagnostics);
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeLeft"), 0.6f));
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 1.0f));
@@ -819,20 +819,20 @@ TestAGazeExpressionIsSuppressedLikeAnyOther()
 // A range map that is the identity over [0, 90] degrees, so a resolved eye
 // rotation is the aim itself and the test measures the geometry rather than a
 // curve on top of it.
-vrmRetarget::LookAtRangeMap
+vrmRig::LookAtRangeMap
 IdentityMap()
 {
-    vrmRetarget::LookAtRangeMap map;
+    vrmRig::LookAtRangeMap map;
     map.inputMaxValue = 90.0f;
     map.outputScale = 90.0f;
     return map;
 }
 
-vrmRetarget::LookAtRig
+vrmRig::LookAtRig
 IdentityBoneRig()
 {
-    vrmRetarget::LookAtRig rig;
-    rig.type = vrmRetarget::LookAtType::Bone;
+    vrmRig::LookAtRig rig;
+    rig.type = vrmRig::LookAtType::Bone;
     rig.leftEyeJoint = "Root/Hips/Spine/Head/LeftEye";
     rig.rightEyeJoint = "Root/Hips/Spine/Head/RightEye";
     rig.horizontalInner = IdentityMap();
@@ -848,11 +848,11 @@ IdentityBoneRig()
 
 // The same rig driven through the face instead. Every map is the identity onto
 // a unit weight, so a gaze at the limit of a range is a weight of exactly 1.
-vrmRetarget::LookAtRig
+vrmRig::LookAtRig
 IdentityExpressionRig()
 {
-    vrmRetarget::LookAtRig rig = IdentityBoneRig();
-    rig.type = vrmRetarget::LookAtType::Expression;
+    vrmRig::LookAtRig rig = IdentityBoneRig();
+    rig.type = vrmRig::LookAtType::Expression;
     rig.horizontalInner.outputScale = 1.0f;
     rig.horizontalOuter.outputScale = 1.0f;
     rig.verticalDown.outputScale = 1.0f;
@@ -860,10 +860,10 @@ IdentityExpressionRig()
     return rig;
 }
 
-vrmRetarget::LookAtInput
+vrmRig::LookAtInput
 GazeAt(const pxr::GfVec3f& target)
 {
-    vrmRetarget::LookAtInput input;
+    vrmRig::LookAtInput input;
     input.target = target;
     return input;
 }
@@ -877,16 +877,16 @@ TestAnIdentityRangeMapReproducesTheAim()
     // 90 degrees of input onto 90 degrees of output -- still fails to point at
     // the thing it is aiming at. So this measures the round trip rather than
     // asserting the two angles.
-    const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
-    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRig::LookAtEvaluator evaluator(IdentityBoneRig());
+    vrmRig::LookAtDiagnostics diagnostics;
     const pxr::GfVec3f target(1.0f, 1.0f, 1.0f);
-    const vrmRetarget::ResolvedLookAt resolved = evaluator.Evaluate(GazeAt(target), &diagnostics);
+    const vrmRig::ResolvedLookAt resolved = evaluator.Evaluate(GazeAt(target), &diagnostics);
 
     assert(resolved.hasGaze);
     assert(NearlyEqual(resolved.yawDegrees, 45.0f));
     assert(NearlyEqual(resolved.pitchDegrees, 35.26439f));
     assert(resolved.eyeRotations.size() == 2);
-    for (const vrmRetarget::LookAtEyeRotation& eye : resolved.eyeRotations)
+    for (const vrmRig::LookAtEyeRotation& eye : resolved.eyeRotations)
     {
         assert(NearlyEqual(eye.rotation.Transform(kAxisZ), target.GetNormalized()));
     }
@@ -899,7 +899,7 @@ TestAnIdentityRangeMapReproducesTheAim()
     // target on that side is a positive yaw. The mirror image is the same
     // magnitude with the other sign, which is what makes the inner/outer choice
     // below a choice about a side rather than about a formula.
-    const vrmRetarget::ResolvedLookAt mirrored =
+    const vrmRig::ResolvedLookAt mirrored =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(-1.0f, 1.0f, 1.0f)));
     assert(NearlyEqual(mirrored.yawDegrees, -45.0f));
     assert(NearlyEqual(mirrored.pitchDegrees, 35.26439f));
@@ -914,19 +914,19 @@ TestTheOffsetPlacesTheGazeOrigin()
     // space would agree with this test at an identity head orientation and
     // disagree the moment the character turned, which is why the second half
     // turns the head.
-    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    vrmRig::LookAtRig rig = IdentityBoneRig();
     rig.offsetFromHeadBone = pxr::GfVec3f(0.0f, 0.06f, 0.0f);
-    const vrmRetarget::LookAtEvaluator evaluator(rig);
+    const vrmRig::LookAtEvaluator evaluator(rig);
 
     // Straight ahead of the eyes is a level gaze...
-    const vrmRetarget::ResolvedLookAt level =
+    const vrmRig::ResolvedLookAt level =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 1.0f)));
     assert(level.hasGaze);
     assert(NearlyEqual(level.yawDegrees, 0.0f));
     assert(NearlyEqual(level.pitchDegrees, 0.0f));
 
     // ...and straight ahead of the *joint* is 6 cm below them.
-    const vrmRetarget::ResolvedLookAt below =
+    const vrmRig::ResolvedLookAt below =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
     assert(NearlyEqual(below.pitchDegrees, -3.43363f));
 
@@ -934,16 +934,16 @@ TestTheOffsetPlacesTheGazeOrigin()
     // move with it: the target that was level ahead is now off to the right by
     // exactly that quarter turn, and the offset -- which is along the head's
     // own up axis, unchanged by a yaw -- still puts the origin at the eyes.
-    vrmRetarget::LookAtInput turned = GazeAt(pxr::GfVec3f(0.0f, 0.06f, 1.0f));
+    vrmRig::LookAtInput turned = GazeAt(pxr::GfVec3f(0.0f, 0.06f, 1.0f));
     turned.head.orientation = Rotation(kAxisY, 90.0f);
-    const vrmRetarget::ResolvedLookAt aside = evaluator.Evaluate(turned);
+    const vrmRig::ResolvedLookAt aside = evaluator.Evaluate(turned);
     assert(NearlyEqual(aside.yawDegrees, -90.0f));
     assert(NearlyEqual(aside.pitchDegrees, 0.0f));
 
     // A head that has moved carries its eyes with it too.
-    vrmRetarget::LookAtInput walked = GazeAt(pxr::GfVec3f(0.0f, 1.56f, 1.0f));
+    vrmRig::LookAtInput walked = GazeAt(pxr::GfVec3f(0.0f, 1.56f, 1.0f));
     walked.head.position = pxr::GfVec3f(0.0f, 1.5f, 0.0f);
-    const vrmRetarget::ResolvedLookAt ahead = evaluator.Evaluate(walked);
+    const vrmRig::ResolvedLookAt ahead = evaluator.Evaluate(walked);
     assert(NearlyEqual(ahead.pitchDegrees, 0.0f));
 }
 
@@ -954,21 +954,21 @@ TestInnerAndOuterAreChosenBySide()
     // away from the nose, and the other turns inward. The two maps are given
     // different scales so a resolve that read one map for both eyes -- or read
     // them the other way round -- cannot pass.
-    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    vrmRig::LookAtRig rig = IdentityBoneRig();
     rig.horizontalInner.outputScale = 5.0f;
     rig.horizontalOuter.outputScale = 10.0f;
     rig.verticalUp.outputScale = 0.0f;
     rig.verticalDown.outputScale = 0.0f;
-    const vrmRetarget::LookAtEvaluator evaluator(rig);
+    const vrmRig::LookAtEvaluator evaluator(rig);
 
-    const vrmRetarget::ResolvedLookAt left =
+    const vrmRig::ResolvedLookAt left =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)));
     assert(NearlyEqual(left.yawDegrees, 90.0f));
     assert(left.eyeRotations[0].joint == rig.leftEyeJoint);
     assert(SameOrientation(left.eyeRotations[0].rotation, Rotation(kAxisY, 10.0f)));
     assert(SameOrientation(left.eyeRotations[1].rotation, Rotation(kAxisY, 5.0f)));
 
-    const vrmRetarget::ResolvedLookAt right =
+    const vrmRig::ResolvedLookAt right =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(-1.0f, 0.0f, 0.0f)));
     assert(NearlyEqual(right.yawDegrees, -90.0f));
     assert(SameOrientation(right.eyeRotations[0].rotation, Rotation(kAxisY, -5.0f)));
@@ -977,7 +977,7 @@ TestInnerAndOuterAreChosenBySide()
     // Past the map's input range the eye stops rather than extrapolating: a
     // target behind the character's shoulder is 135 degrees of aim and still
     // ten degrees of eye.
-    const vrmRetarget::ResolvedLookAt behind =
+    const vrmRig::ResolvedLookAt behind =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, -1.0f)));
     assert(NearlyEqual(behind.yawDegrees, 135.0f));
     assert(SameOrientation(behind.eyeRotations[0].rotation, Rotation(kAxisY, 10.0f)));
@@ -989,20 +989,20 @@ TestVerticalIsSharedAndSignedByDirection()
     // Up and down are two maps because a face is not symmetric about the
     // horizon -- an eye rolls further up than down -- but both eyes share them,
     // so this is the one place the two rotations agree.
-    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    vrmRig::LookAtRig rig = IdentityBoneRig();
     rig.horizontalInner.outputScale = 0.0f;
     rig.horizontalOuter.outputScale = 0.0f;
     rig.verticalUp.outputScale = 12.0f;
     rig.verticalDown.outputScale = 6.0f;
-    const vrmRetarget::LookAtEvaluator evaluator(rig);
+    const vrmRig::LookAtEvaluator evaluator(rig);
 
-    const vrmRetarget::ResolvedLookAt up =
+    const vrmRig::ResolvedLookAt up =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
     assert(NearlyEqual(up.pitchDegrees, 90.0f));
     assert(SameOrientation(up.eyeRotations[0].rotation, Rotation(kAxisX, -12.0f)));
     assert(SameOrientation(up.eyeRotations[1].rotation, Rotation(kAxisX, -12.0f)));
 
-    const vrmRetarget::ResolvedLookAt down =
+    const vrmRig::ResolvedLookAt down =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)));
     assert(NearlyEqual(down.pitchDegrees, -90.0f));
     assert(SameOrientation(down.eyeRotations[0].rotation, Rotation(kAxisX, 6.0f)));
@@ -1015,10 +1015,10 @@ TestAGazeNobodyNamedIsNotAGazeForward()
     // that said nothing about where the character is looking did not say the
     // character is looking straight ahead. Nothing resolves, and it is not a
     // warning -- a clip with no look-at track is an ordinary clip.
-    const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
-    vrmRetarget::LookAtDiagnostics diagnostics;
-    const vrmRetarget::ResolvedLookAt resolved =
-        evaluator.Evaluate(vrmRetarget::LookAtInput(), &diagnostics);
+    const vrmRig::LookAtEvaluator evaluator(IdentityBoneRig());
+    vrmRig::LookAtDiagnostics diagnostics;
+    const vrmRig::ResolvedLookAt resolved =
+        evaluator.Evaluate(vrmRig::LookAtInput(), &diagnostics);
 
     assert(!resolved.hasGaze);
     assert(resolved.eyeRotations.empty());
@@ -1030,7 +1030,7 @@ TestAGazeNobodyNamedIsNotAGazeForward()
 
     float yaw = 7.0f;
     float pitch = 7.0f;
-    assert(!evaluator.Aim(vrmRetarget::LookAtInput(), &yaw, &pitch));
+    assert(!evaluator.Aim(vrmRig::LookAtInput(), &yaw, &pitch));
     // Untouched, so a caller cannot mistake a refusal for a level gaze.
     assert(NearlyEqual(yaw, 7.0f) && NearlyEqual(pitch, 7.0f));
 }
@@ -1043,12 +1043,12 @@ TestATargetOnTheEyesNamesNoDirection()
     // same defect and both answer "no gaze" rather than inventing forward --
     // but unlike an absent target, this one is a rig or a clip going wrong, so
     // it is reported.
-    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    vrmRig::LookAtRig rig = IdentityBoneRig();
     rig.offsetFromHeadBone = pxr::GfVec3f(0.0f, 0.06f, 0.0f);
-    const vrmRetarget::LookAtEvaluator evaluator(rig);
-    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRig::LookAtEvaluator evaluator(rig);
+    vrmRig::LookAtDiagnostics diagnostics;
 
-    const vrmRetarget::ResolvedLookAt resolved =
+    const vrmRig::ResolvedLookAt resolved =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 0.0f)), &diagnostics);
     assert(!resolved.hasGaze);
     assert(diagnostics.samplesWithoutTarget == 1);
@@ -1068,33 +1068,33 @@ TestTheClipsOffsetIsTheFallbackAndIsReported()
     // measurement left, and using it assumes the two rigs' eyes sit at the same
     // height -- an assumption an operator should see, so it is a warning rather
     // than a default.
-    vrmRetarget::LookAtRig unmeasuredRig = IdentityBoneRig();
+    vrmRig::LookAtRig unmeasuredRig = IdentityBoneRig();
     unmeasuredRig.offsetFromHeadBone.reset();
 
-    vrmRetarget::LookAtEvaluateOptions options;
+    vrmRig::LookAtEvaluateOptions options;
     options.clipOffsetFromHeadBone = pxr::GfVec3f(0.0f, 0.06f, 0.0f);
-    const vrmRetarget::LookAtEvaluator borrowed(unmeasuredRig, options);
-    vrmRetarget::LookAtDiagnostics diagnostics;
-    const vrmRetarget::ResolvedLookAt resolved =
+    const vrmRig::LookAtEvaluator borrowed(unmeasuredRig, options);
+    vrmRig::LookAtDiagnostics diagnostics;
+    const vrmRig::ResolvedLookAt resolved =
         borrowed.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)), &diagnostics);
     assert(NearlyEqual(resolved.pitchDegrees, -3.43363f));
     assert(diagnostics.warnings.size() == 1);
 
     // The avatar's own offset wins when it has one, and then there is nothing
     // to report.
-    vrmRetarget::LookAtRig own = IdentityBoneRig();
+    vrmRig::LookAtRig own = IdentityBoneRig();
     own.offsetFromHeadBone = pxr::GfVec3f(0.0f, 0.12f, 0.0f);
-    const vrmRetarget::LookAtEvaluator preferred(own, options);
-    vrmRetarget::LookAtDiagnostics clean;
-    const vrmRetarget::ResolvedLookAt higher =
+    const vrmRig::LookAtEvaluator preferred(own, options);
+    vrmRig::LookAtDiagnostics clean;
+    const vrmRig::ResolvedLookAt higher =
         preferred.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)), &clean);
     assert(NearlyEqual(higher.pitchDegrees, -6.84277f));
     assert(clean.IsClean());
 
     // Neither side stating one is a third case, and it is not silent either:
     // the gaze then starts at the head joint, which is inside the skull.
-    const vrmRetarget::LookAtEvaluator bare(unmeasuredRig);
-    vrmRetarget::LookAtDiagnostics unmeasured;
+    const vrmRig::LookAtEvaluator bare(unmeasuredRig);
+    vrmRig::LookAtDiagnostics unmeasured;
     bare.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)), &unmeasured);
     assert(unmeasured.warnings.size() == 1);
 }
@@ -1108,10 +1108,10 @@ TestAnExpressionRigReportsAllFourNames()
     // that looked right has to say `lookRight` is now 0, or the earlier weight
     // stands on the rig -- the same rule ExpressionResolver states for a
     // reported zero.
-    const vrmRetarget::LookAtEvaluator evaluator(IdentityExpressionRig());
+    const vrmRig::LookAtEvaluator evaluator(IdentityExpressionRig());
 
-    vrmRetarget::LookAtDiagnostics diagnostics;
-    const vrmRetarget::ResolvedLookAt left =
+    vrmRig::LookAtDiagnostics diagnostics;
+    const vrmRig::ResolvedLookAt left =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)), &diagnostics);
     assert(left.hasGaze);
     // No eye is rotated: an expression rig drives its gaze through the face.
@@ -1122,7 +1122,7 @@ TestAnExpressionRigReportsAllFourNames()
     assert(NearlyEqual(*left.expressions.Find("lookUp"), 0.0f));
     assert(NearlyEqual(*left.expressions.Find("lookDown"), 0.0f));
 
-    const vrmRetarget::ResolvedLookAt down =
+    const vrmRig::ResolvedLookAt down =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)), &diagnostics);
     assert(NearlyEqual(*down.expressions.Find("lookDown"), 1.0f));
     assert(NearlyEqual(*down.expressions.Find("lookUp"), 0.0f));
@@ -1135,13 +1135,13 @@ TestAnExpressionRigReportsAllFourNames()
     // The value the expression half hands back is exactly what
     // ExpressionResolver consumes, so a gaze reaches the avatar's binds through
     // the path the face already uses rather than through a second one.
-    vrmRetarget::ExpressionRig binds;
-    vrmRetarget::ExpressionDefinition lookDown;
+    vrmRig::ExpressionRig binds;
+    vrmRig::ExpressionDefinition lookDown;
     lookDown.name = "lookDown";
     lookDown.morphTargets.push_back({"/Asset/Meshes/Face/EyesDown", 1.0f});
     binds.Add(lookDown);
-    const vrmRetarget::ExpressionResolver resolver(binds);
-    const vrmRetarget::ResolvedExpressions applied = resolver.Resolve(down.expressions);
+    const vrmRig::ExpressionResolver resolver(binds);
+    const vrmRig::ResolvedExpressions applied = resolver.Resolve(down.expressions);
     assert(applied.morphTargets.size() == 1);
     assert(NearlyEqual(applied.morphTargets[0].weight, 1.0f));
 }
@@ -1153,25 +1153,25 @@ TestAnExpressionWeightOutsideTheRangeIsClampedAndNamed()
     // rig states degrees in, and nothing in the block distinguishes them. So a
     // weight of 10 is clamped rather than being rescaled by a factor guessed
     // from the rig's type, and the operator is told which name it happened to.
-    vrmRetarget::LookAtRig rig = IdentityExpressionRig();
+    vrmRig::LookAtRig rig = IdentityExpressionRig();
     // Both horizontal maps, so the only thing this sample can be told about is
     // the weight -- an expression rig that states a *different* inner map is a
     // separate report, and it is the case below.
     rig.horizontalInner.outputScale = 10.0f;
     rig.horizontalOuter.outputScale = 10.0f;
-    const vrmRetarget::LookAtEvaluator evaluator(rig);
+    const vrmRig::LookAtEvaluator evaluator(rig);
 
-    vrmRetarget::LookAtDiagnostics diagnostics;
-    const vrmRetarget::ResolvedLookAt clamped =
+    vrmRig::LookAtDiagnostics diagnostics;
+    const vrmRig::ResolvedLookAt clamped =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)), &diagnostics);
     assert(NearlyEqual(*clamped.expressions.Find("lookLeft"), 1.0f));
     assert(diagnostics.warnings.size() == 1);
 
-    vrmRetarget::LookAtEvaluateOptions verbatim;
+    vrmRig::LookAtEvaluateOptions verbatim;
     verbatim.clampExpressionWeights = false;
-    const vrmRetarget::LookAtEvaluator unclamped(rig, verbatim);
-    vrmRetarget::LookAtDiagnostics carried;
-    const vrmRetarget::ResolvedLookAt raw =
+    const vrmRig::LookAtEvaluator unclamped(rig, verbatim);
+    vrmRig::LookAtDiagnostics carried;
+    const vrmRig::ResolvedLookAt raw =
         unclamped.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)), &carried);
     assert(NearlyEqual(*raw.expressions.Find("lookLeft"), 10.0f));
     assert(carried.warnings.size() == 1);
@@ -1181,11 +1181,11 @@ TestAnExpressionWeightOutsideTheRangeIsClampedAndNamed()
 void
 TestABoneRigWithHalfItsEyesDrivesTheOneItNamed()
 {
-    vrmRetarget::LookAtRig half = IdentityBoneRig();
+    vrmRig::LookAtRig half = IdentityBoneRig();
     half.rightEyeJoint.clear();
-    const vrmRetarget::LookAtEvaluator one(half);
-    vrmRetarget::LookAtDiagnostics diagnostics;
-    const vrmRetarget::ResolvedLookAt resolved =
+    const vrmRig::LookAtEvaluator one(half);
+    vrmRig::LookAtDiagnostics diagnostics;
+    const vrmRig::ResolvedLookAt resolved =
         one.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 1.0f)), &diagnostics);
     assert(resolved.hasGaze);
     assert(resolved.eyeRotations.size() == 1);
@@ -1195,12 +1195,12 @@ TestABoneRigWithHalfItsEyesDrivesTheOneItNamed()
     // A bone rig naming neither eye resolves to nothing at all, and the aim is
     // still measured -- which is what lets a caller report the gaze it could
     // not apply.
-    vrmRetarget::LookAtRig blind = IdentityBoneRig();
+    vrmRig::LookAtRig blind = IdentityBoneRig();
     blind.leftEyeJoint.clear();
     blind.rightEyeJoint.clear();
-    const vrmRetarget::LookAtEvaluator none(blind);
-    vrmRetarget::LookAtDiagnostics blindReport;
-    const vrmRetarget::ResolvedLookAt aimed =
+    const vrmRig::LookAtEvaluator none(blind);
+    vrmRig::LookAtDiagnostics blindReport;
+    const vrmRig::ResolvedLookAt aimed =
         none.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 1.0f)), &blindReport);
     assert(aimed.hasGaze);
     assert(NearlyEqual(aimed.yawDegrees, 45.0f));
@@ -1211,19 +1211,19 @@ TestABoneRigWithHalfItsEyesDrivesTheOneItNamed()
 void
 TestThePoseOverloadCarriesTheSampleThrough()
 {
-    const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
+    const vrmRig::LookAtEvaluator evaluator(IdentityBoneRig());
     openstrata::motion::MotionPose pose;
     pose.timestamp = 1.25;
     assert(!pose.lookAtTarget);
 
-    vrmRetarget::LookAtHead head;
+    vrmRig::LookAtHead head;
     head.position = pxr::GfVec3f(0.0f, 1.5f, 0.0f);
-    const vrmRetarget::ResolvedLookAt silent = evaluator.Evaluate(pose, head);
+    const vrmRig::ResolvedLookAt silent = evaluator.Evaluate(pose, head);
     assert(!silent.hasGaze);
     assert(silent.timestamp == 1.25);
 
     pose.lookAtTarget = pxr::GfVec3f(0.0f, 2.5f, 1.0f);
-    const vrmRetarget::ResolvedLookAt gazing = evaluator.Evaluate(pose, head);
+    const vrmRig::ResolvedLookAt gazing = evaluator.Evaluate(pose, head);
     assert(gazing.hasGaze);
     assert(gazing.timestamp == 1.25);
     // One metre up and one metre ahead of a head that is itself 1.5 m up.
@@ -1238,15 +1238,15 @@ TestBothVrmSpellingsParseToOneValue()
     // from. The linear default is where the two have to agree exactly rather
     // than within a tolerance: 0.x's `[0,0,0,1, 1,1,1,0]` is the Hermite basis
     // over one unit segment with both tangents 1, which reduces to `t`.
-    vrmRetarget::LookAtRig one;
+    vrmRig::LookAtRig one;
     std::vector<std::string> warnings;
-    assert(vrmRetarget::ParseLookAtRangeMaps(
+    assert(vrmRig::ParseLookAtRangeMaps(
         R"({"type":"bone","offsetFromHeadBone":[0.0,0.06,0.0],)"
         R"("rangeMapHorizontalInner":{"inputMaxValue":90,"outputScale":5.0},)"
         R"("rangeMapHorizontalOuter":{"inputMaxValue":90,"outputScale":10.0}})",
         &one, &warnings));
     assert(warnings.empty());
-    assert(one.type == vrmRetarget::LookAtType::Bone);
+    assert(one.type == vrmRig::LookAtType::Bone);
     assert(one.offsetFromHeadBone &&
            NearlyEqual(*one.offsetFromHeadBone, pxr::GfVec3f(0.0f, 0.06f, 0.0f)));
     assert(NearlyEqual(one.horizontalInner.outputScale, 5.0f));
@@ -1256,20 +1256,20 @@ TestBothVrmSpellingsParseToOneValue()
     // to zero: an incomplete block is not four broken curves.
     assert(NearlyEqual(one.verticalUp.inputMaxValue, 90.0f));
 
-    vrmRetarget::LookAtRig zero;
+    vrmRig::LookAtRig zero;
     assert(
-        vrmRetarget::ParseLookAtRangeMaps(R"({"lookAtTypeName":"BlendShape",)"
+        vrmRig::ParseLookAtRangeMaps(R"({"lookAtTypeName":"BlendShape",)"
                                           R"("lookAtHorizontalOuter":{"curve":[0,0,0,1,1,1,1,0],)"
                                           R"("xRange":90,"yRange":1.0}})",
                                           &zero, &warnings));
     assert(warnings.empty());
     // "BlendShape" is the name 0.x gives the rig 1.0 calls `expression`, and
     // the rest of this library speaks the newer one.
-    assert(zero.type == vrmRetarget::LookAtType::Expression);
+    assert(zero.type == vrmRig::LookAtType::Expression);
     assert(zero.horizontalOuter.curve.size() == 2);
     assert(NearlyEqual(zero.horizontalOuter.Map(45.0f), 0.5f));
 
-    vrmRetarget::LookAtRangeMap implicitlyLinear = zero.horizontalOuter;
+    vrmRig::LookAtRangeMap implicitlyLinear = zero.horizontalOuter;
     implicitlyLinear.curve.clear();
     for (const float degrees : {0.0f, 12.5f, 45.0f, 71.25f, 90.0f, 180.0f})
     {
@@ -1277,8 +1277,8 @@ TestBothVrmSpellingsParseToOneValue()
     }
 
     // A curve that is not the linear default is read as the curve it is.
-    vrmRetarget::LookAtRig curved;
-    assert(vrmRetarget::ParseLookAtRangeMaps(R"({"lookAtVerticalUp":{"curve":[0,0,0,0,1,1,0,0],)"
+    vrmRig::LookAtRig curved;
+    assert(vrmRig::ParseLookAtRangeMaps(R"({"lookAtVerticalUp":{"curve":[0,0,0,0,1,1,0,0],)"
                                              R"("xRange":90,"yRange":10}})",
                                              &curved, &warnings));
     // Flat tangents at both ends: the smoothstep, which is 0.5 at the middle
@@ -1290,23 +1290,23 @@ TestBothVrmSpellingsParseToOneValue()
 void
 TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding()
 {
-    vrmRetarget::LookAtRig rig;
+    vrmRig::LookAtRig rig;
     std::vector<std::string> warnings;
     // The empty string is what a rig with no preserved curves carries, and it
     // is not a defect -- there is nothing to warn about in a file that said
     // nothing.
-    assert(!vrmRetarget::ParseLookAtRangeMaps("", &rig, &warnings));
+    assert(!vrmRig::ParseLookAtRangeMaps("", &rig, &warnings));
     assert(warnings.empty());
 
     // A block that is not an object is a defect, and the defaults stand.
-    assert(!vrmRetarget::ParseLookAtRangeMaps("[90, 10]", &rig, &warnings));
+    assert(!vrmRig::ParseLookAtRangeMaps("[90, 10]", &rig, &warnings));
     assert(warnings.size() == 1);
     assert(NearlyEqual(rig.horizontalOuter.inputMaxValue, 90.0f));
 
     // An input range of zero would be a division by it. It maps everything to
     // nothing instead, and says so.
     warnings.clear();
-    assert(vrmRetarget::ParseLookAtRangeMaps(
+    assert(vrmRig::ParseLookAtRangeMaps(
         R"({"rangeMapVerticalUp":{"inputMaxValue":0,"outputScale":10}})", &rig, &warnings));
     assert(warnings.size() == 1);
     assert(rig.verticalUp.Map(45.0f) == 0.0f);
@@ -1315,8 +1315,8 @@ TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding()
     // Reading the keys it does hold would silently rescale the rest of it, so
     // it falls back to linear and is named.
     warnings.clear();
-    vrmRetarget::LookAtRig ragged;
-    assert(vrmRetarget::ParseLookAtRangeMaps(
+    vrmRig::LookAtRig ragged;
+    assert(vrmRig::ParseLookAtRangeMaps(
         R"({"lookAtVerticalDown":{"curve":[0,0,0,1,1],"xRange":90,)"
         R"("yRange":10}})",
         &ragged, &warnings));
@@ -1334,7 +1334,7 @@ void
 TestTheRequiredBonesAreVrm10sSeventeenHipsFirst()
 {
     using openstrata::motion::HumanJoint;
-    const std::vector<HumanJoint>& required = vrmRetarget::GetRequiredBones();
+    const std::vector<HumanJoint>& required = vrmRig::GetRequiredBones();
 
     // Seventeen, each once. A duplicate would report a missing bone twice.
     assert(required.size() == 17);
@@ -1358,7 +1358,7 @@ TestTheRequiredBonesAreVrm10sSeventeenHipsFirst()
     }
 
     // The same object every call, so a caller holding a reference holds the set.
-    assert(&vrmRetarget::GetRequiredBones() == &required);
+    assert(&vrmRig::GetRequiredBones() == &required);
 }
 
 } // namespace
@@ -1399,6 +1399,6 @@ main()
     TestBothVrmSpellingsParseToOneValue();
     TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding();
     TestTheRequiredBonesAreVrm10sSeventeenHipsFirst();
-    std::puts("vrmRetarget unit tests passed");
+    std::puts("vrmRig unit tests passed");
     return 0;
 }

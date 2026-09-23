@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Enforce vrmRetarget's dependency boundary.
+"""Enforce vrmRig's dependency boundary.
 
-WORKSPACE.md §2 allows vrmRetarget -> motionCore and nothing else. The
-load-bearing one is `vrmRetarget -> OpenExec` being forbidden: what a VRM rig
+WORKSPACE.md §2 allows vrmRig -> motionCore and nothing else. The
+load-bearing one is `vrmRig -> OpenExec` being forbidden: what a VRM rig
 adds to a retarget must be complete and testable before any exec node exists
 (motion policy §10.1, §18.12). A network protocol is forbidden because live
 input reaches this library as a pose, never through a socket of its own.
@@ -94,7 +94,7 @@ def main() -> int:
             errors.append(f"plugin registration file is forbidden: {path}")
 
     # Gf value types are allowed; stage/composition/registration/exec APIs are
-    # not. Reading a stage is the caller's job -- vrmRetarget takes values.
+    # not. Reading a stage is the caller's job -- vrmRig takes values.
     forbidden_source = re.compile(
         r"pxr/(?:usd|base/(?:tf|plug)|imaging|exec)/|PXR_NAMESPACE|"
         r"TF_REGISTRY_FUNCTION|SDF_DEFINE_FILE_FORMAT|"
@@ -126,13 +126,13 @@ def main() -> int:
     if re.search(r"target_link_libraries\([^)]*(?:\busd\b|\bsdf\b|\bplug\b|"
                  r"\bar\b|\busdSkel\b|exec)", cmake, re.IGNORECASE):
         errors.append(
-            "vrmRetarget CMake must link only motionCore and the OpenUSD gf "
+            "vrmRig CMake must link only motionCore and the OpenUSD gf "
             "and js value libraries")
 
     try:
         dependencies = _binary_dependencies(library)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
-        errors.append(f"could not inspect vrmRetarget dependencies: {exc}")
+        errors.append(f"could not inspect vrmRig dependencies: {exc}")
         dependencies = ""
     forbidden_binary = re.compile(
         r"(?:usd_ms|lib(?:usd|sdf|plug|ar)(?:[._-]|\.(?:dll|dylib|so))|"
@@ -140,13 +140,13 @@ def main() -> int:
         re.IGNORECASE)
     if forbidden_binary.search(dependencies):
         errors.append(
-            "vrmRetarget binary imports an OpenUSD stage/plugin/exec library or "
+            "vrmRig binary imports an OpenUSD stage/plugin/exec library or "
             "a sibling bundle")
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print("vrmRetarget boundary check passed")
+    print("vrmRig boundary check passed")
     return 0
 
 

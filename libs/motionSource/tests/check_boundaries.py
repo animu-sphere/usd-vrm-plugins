@@ -36,7 +36,7 @@ makes that possible rather than merely intended:
   library that opened a stage would have stopped being one.
 * **No live-input and no target rig.** Live capture and recorded files meet at
   `motionCore` and nowhere earlier, and turning source motion onto a target rig
-  is `vrmRetarget`'s job, once.
+  is `motionRetarget`'s job, once.
 
 There is deliberately **no binary import check** here, unlike the reader's. This
 library links `motionCore`, whose Gf value types make "imports no OpenUSD" false
@@ -147,11 +147,11 @@ def main() -> int:
     # OpenUSD's stage, schema and plugin APIs, the schema and retarget layers,
     # and the live half of the input layer. None of these is permitted anywhere
     # here, in any file, converter included: authoring a stage belongs to a
-    # caller, a target rig is `vrmRetarget`'s, and live input meets recorded
+    # caller, a target rig is `motionRetarget`'s, and live input meets recorded
     # input at `motionCore` and nowhere earlier.
     forbidden_api = re.compile(
         r"\bUsd[A-Z]|\bSdf[A-Z]|TF_REGISTRY_FUNCTION|"
-        r"vrmRetarget|vrmSchema|vrmContainer|motionRuntime|vrmAdapter|liveTransport|"
+        r"vrmRig|motionRetarget|vrmSchema|vrmContainer|motionRuntime|vrmAdapter|liveTransport|"
         # A namespace qualification or an include path, never the bare word:
         # `osc` is short enough to appear inside one.
         r"\bosc::|\bosc/|"

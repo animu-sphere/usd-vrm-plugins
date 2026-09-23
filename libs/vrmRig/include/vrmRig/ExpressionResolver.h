@@ -9,14 +9,14 @@
 // and this is where the two meet -- the consumer step the motion contract
 // names, because it is the first layer that has the rig.
 //
-// Like the rest of vrmRetarget this takes plain values: the caller reads the
+// Like the rest of vrmRig this takes plain values: the caller reads the
 // avatar's /Asset/rig/Expressions prims off the stage and hands the binds in.
 // A target is identified by whatever string the caller uses for it -- in
 // practice the blend-shape or material prim path the expression's relationship
 // pointed at -- and this library never resolves, opens or composes one.
 #pragma once
 
-#include "vrmRetarget/api.h"
+#include "vrmRig/api.h"
 
 #include "motionCore/MotionPose.h"
 
@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace vrmRetarget
+namespace vrmRig
 {
 
 // One morph-target bind of an expression: the target this expression drives,
@@ -106,18 +106,18 @@ enum class ExpressionCategory
 // `blinkLeft`, `a` -> `aa`), so a 0.x rig lands in these sets too -- which
 // matters for a 0.x avatar animated by a clip whose *other* expressions carry
 // an override, since 0.x has no override fields of its own.
-VRMRETARGET_API ExpressionCategory ExpressionCategoryOf(const std::string& name);
+VRMRIG_API ExpressionCategory ExpressionCategoryOf(const std::string& name);
 
 // Parses the `none` / `block` / `blend` token a stage or a file carries. An
 // unrecognized token resolves to `None` and sets `*recognized` to false when
 // given -- a value this layer does not know is not an arbitration it can
 // perform, and guessing which one was meant would suppress a face on a
 // spelling.
-VRMRETARGET_API ExpressionOverride ParseExpressionOverride(const std::string& token,
+VRMRIG_API ExpressionOverride ParseExpressionOverride(const std::string& token,
                                                            bool* recognized = nullptr);
 
 // The token for an override, for a diagnostic that has to name one.
-VRMRETARGET_API const char* ExpressionOverrideToken(ExpressionOverride mode);
+VRMRIG_API const char* ExpressionOverrideToken(ExpressionOverride mode);
 
 // One expression of the target rig, as the avatar declared it.
 struct ExpressionDefinition
@@ -153,7 +153,7 @@ struct ExpressionDefinition
 // layer can resolve against -- it would bind whichever it reached first, which
 // is a silent loss -- and it is the defect the importer's VRM152 diagnostic
 // already refuses on the way in. `Add` reports it rather than deciding.
-class VRMRETARGET_API ExpressionRig
+class VRMRIG_API ExpressionRig
 {
   public:
     ExpressionRig() = default;
@@ -225,7 +225,7 @@ struct ResolvedMaterialColor
     // -- past it, or below it through a negative bind weight -- extrapolates
     // here and is reported as a warning, rather than being quietly corrected
     // into a value no bind asked for.
-    VRMRETARGET_API pxr::GfVec4f Apply(const pxr::GfVec4f& base) const;
+    VRMRIG_API pxr::GfVec4f Apply(const pxr::GfVec4f& base) const;
 };
 
 // What one sample's expression weights become on this rig.
@@ -310,7 +310,7 @@ struct ExpressionResolveOptions
 };
 
 // Joins a producer's named weights to a target rig's binds.
-class VRMRETARGET_API ExpressionResolver
+class VRMRIG_API ExpressionResolver
 {
   public:
     explicit ExpressionResolver(ExpressionRig rig,
@@ -367,4 +367,4 @@ class VRMRETARGET_API ExpressionResolver
     ExpressionResolveOptions _options;
 };
 
-} // namespace vrmRetarget
+} // namespace vrmRig

@@ -4,7 +4,7 @@
 # semantics applied to a target rig, driven by the schema contract only. The
 # boundary, six registered value types and seven computations. On
 # `UsdSkelSkeleton`: `vrm.computeTargetSkeleton`, which is the rig as
-# `vrmRetarget` reads it, and `vrm.computeBoundPose`, which forwards the pose
+# `motionRetarget` reads it, and `vrm.computeBoundPose`, which forwards the pose
 # of the animation the skeleton is bound to. On the applied
 # `UsdSkelBindingAPI`: `vrm.computeBindingPose`, which is that binding
 # inherited from an ancestor, as UsdSkel inherits it. On the applied
@@ -59,7 +59,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 # The retarget, usd-motion-plugins' `motionRetarget`, and what it is built on:
 # every node here is a thin wrapper over a `motionRetarget` call, and the
 # values that cross the boundary are its own (WORKSPACE.md §2, motion policy
-# §11.4). `vrmRetarget` is what a VRM rig adds -- here, the required bones.
+# §11.4). `vrmRig` is what a VRM rig adds -- here, the required bones.
 if(NOT TARGET motionCore::motionCore)
     find_package(motionCore CONFIG REQUIRED)
 endif()
@@ -74,8 +74,8 @@ endif()
 if(NOT TARGET motionRecording::motionRecording)
     find_package(motionRecording CONFIG REQUIRED)
 endif()
-if(NOT TARGET vrmRetarget::vrmRetarget)
-    find_package(vrmRetarget CONFIG REQUIRED)
+if(NOT TARGET vrmRig::vrmRig)
+    find_package(vrmRig CONFIG REQUIRED)
 endif()
 
 # vrmSchema is NOT linked. The one thing this bundle needs of it is the
@@ -100,7 +100,7 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
     motionRetarget::motionRetarget
     motionSampling::motionSampling
     motionRecording::motionRecording
-    vrmRetarget::vrmRetarget)
+    vrmRig::vrmRig)
 
 if(MSVC)
     target_compile_definitions(${PLUGIN_NAME} PRIVATE NOMINMAX _USE_MATH_DEFINES)

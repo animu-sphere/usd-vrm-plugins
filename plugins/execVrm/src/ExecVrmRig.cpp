@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ExecVrmRig.h"
 
-#include <vrmRetarget/RequiredBones.h>
+#include <vrmRig/RequiredBones.h>
 
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
@@ -387,7 +387,7 @@ HumanoidRetargetFor(const RetargetInputs& inputs,
     // computed, which is the cost this node reports rather than hides.
     openstrata::motion::RetargetOptions options;
     options.rootMotion = *rootMotion.options;
-    options.requiredBones = vrmRetarget::GetRequiredBones();
+    options.requiredBones = vrmRig::GetRequiredBones();
     const openstrata::motion::PoseRetargeter retargeter(target, *inputs.map, *source.rest.rest,
                                                         options);
     outcome.pose = retargeter.Retarget(inputs.poses.front(), diagnostics);
@@ -417,7 +417,7 @@ RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
     // the retarget holds no set of its own, and this rig is a VRM avatar's.
     openstrata::motion::RetargetOptions options;
     options.rootMotion = *rootMotion.options;
-    options.requiredBones = vrmRetarget::GetRequiredBones();
+    options.requiredBones = vrmRig::GetRequiredBones();
     outcome.diagnostics = openstrata::motion::DiagnoseRig(target, *inputs.map, options);
     return outcome;
 }

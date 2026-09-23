@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-#include "vrmRetarget/ExpressionResolver.h"
+#include "vrmRig/ExpressionResolver.h"
 
 #include <algorithm>
 #include <cmath>
 #include <map>
 #include <utility>
 
-namespace vrmRetarget
+namespace vrmRig
 {
 
 namespace
@@ -529,4 +529,4 @@ ExpressionResolver::Resolve(const openstrata::motion::MotionPose& pose,
     return result;
 }
 
-} // namespace vrmRetarget
+} // namespace vrmRig

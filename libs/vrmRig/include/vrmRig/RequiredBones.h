@@ -11,13 +11,13 @@
 // these bones reported exactly as it was before the retarget left.
 #pragma once
 
-#include "vrmRetarget/api.h"
+#include "vrmRig/api.h"
 
 #include "motionCore/MotionPose.h"
 
 #include <vector>
 
-namespace vrmRetarget
+namespace vrmRig
 {
 
 // VRM 1.0's required humanoid bones, hips first. Eyes, jaw, toes, shoulders,
@@ -27,6 +27,6 @@ namespace vrmRetarget
 // motion whether or not the caller lists them, and reports them first when it
 // adds them: a set that already starts with them reports every missing bone in
 // the order this list states.
-VRMRETARGET_API const std::vector<openstrata::motion::HumanJoint>& GetRequiredBones();
+VRMRIG_API const std::vector<openstrata::motion::HumanJoint>& GetRequiredBones();
 
-} // namespace vrmRetarget
+} // namespace vrmRig

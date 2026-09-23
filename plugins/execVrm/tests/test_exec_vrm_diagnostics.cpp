@@ -59,7 +59,7 @@
 #include <motionRetarget/RetargetMap.h>
 #include <motionRetarget/PoseRetargeter.h>
 #include <motionRetarget/SkeletonDescriptor.h>
-#include <vrmRetarget/RequiredBones.h>
+#include <vrmRig/RequiredBones.h>
 
 #include <cassert>
 #include <cmath>
@@ -86,7 +86,7 @@ openstrata::motion::RetargetOptions
 VrmRetargetOptions()
 {
     openstrata::motion::RetargetOptions options;
-    options.requiredBones = vrmRetarget::GetRequiredBones();
+    options.requiredBones = vrmRig::GetRequiredBones();
     return options;
 }
 
@@ -305,7 +305,7 @@ std::vector<std::string>
 MissingRequired(const openstrata::motion::RetargetMap& map)
 {
     std::vector<std::string> missing;
-    for (const HumanJoint bone : vrmRetarget::GetRequiredBones())
+    for (const HumanJoint bone : vrmRig::GetRequiredBones())
     {
         if (!map.IsMapped(bone))
         {

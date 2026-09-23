@@ -33,7 +33,7 @@ endif()
 
 # This is the one place in the motion layer that opens a stage. The libraries
 # below it stay value-only (WORKSPACE.md §2); the tool reads the rig and the
-# clip off stages, hands plain values to motionRetarget and vrmRetarget, and
+# clip off stages, hands plain values to motionRetarget and vrmRig, and
 # authors the result.
 # It reads the humanoid mapping as `vrm:humanBones:*` attributes rather than
 # through VrmHumanoidAPI, so it needs no link against the vrmSchema bundle.
@@ -45,8 +45,8 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
 if(NOT TARGET motionRetarget::motionRetarget)
     find_package(motionRetarget REQUIRED CONFIG)
 endif()
-if(NOT TARGET vrmRetarget::vrmRetarget)
-    find_package(vrmRetarget REQUIRED CONFIG)
+if(NOT TARGET vrmRig::vrmRig)
+    find_package(vrmRig REQUIRED CONFIG)
 endif()
 # By name rather than through a PUBLIC re-export, for the reason `motion_bvh`
 # states about `motionSource`: the tool resamples the clip itself, before
@@ -100,7 +100,7 @@ target_compile_features(motion_retarget PRIVATE cxx_std_17)
 target_link_libraries(motion_retarget
     PRIVATE
         motionRetarget::motionRetarget
-        vrmRetarget::vrmRetarget
+        vrmRig::vrmRig
         motionSampling::motionSampling
         motionRecording::motionRecording)
 

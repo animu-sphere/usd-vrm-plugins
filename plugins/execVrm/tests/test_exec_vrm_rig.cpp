@@ -14,7 +14,7 @@
 #include <motionRetarget/RetargetMap.h>
 #include <motionRetarget/RestPose.h>
 #include <motionRetarget/SkeletonDescriptor.h>
-#include <vrmRetarget/RequiredBones.h>
+#include <vrmRig/RequiredBones.h>
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
@@ -44,7 +44,7 @@ openstrata::motion::RetargetOptions
 VrmRetargetOptions()
 {
     openstrata::motion::RetargetOptions options;
-    options.requiredBones = vrmRetarget::GetRequiredBones();
+    options.requiredBones = vrmRig::GetRequiredBones();
     return options;
 }
 
@@ -306,7 +306,7 @@ TestTheMapIsTheLibrarysBindings()
     // Eleven of VRM 1.0's seventeen required bones are unbound, and the value
     // says so rather than the node refusing for it.
     const std::vector<HumanJoint> missing =
-        map.FindMissingRequiredBones(vrmRetarget::GetRequiredBones());
+        map.FindMissingRequiredBones(vrmRig::GetRequiredBones());
     assert(missing.size() == 11);
     assert(std::find(missing.begin(), missing.end(), HumanJoint::LeftUpperLeg) != missing.end());
     std::printf("execVrm rig: the map is SetJointToken over the bindings, and "
@@ -1117,7 +1117,7 @@ TestTheRigDiagnosticsAreDiagnoseRigsCall()
     // the fixture binds six bones, and every required bone it leaves out is
     // named, in the vocabulary's order, while every one it binds is not.
     std::vector<std::string> missing;
-    for (const HumanJoint bone : vrmRetarget::GetRequiredBones())
+    for (const HumanJoint bone : vrmRig::GetRequiredBones())
     {
         if (!map.IsMapped(bone))
         {

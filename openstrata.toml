@@ -51,7 +51,7 @@ members = [
   "libs/motionBvh",
   "libs/motionSource",
   "libs/vrmContainer",
-  "libs/vrmRetarget",
+  "libs/vrmRig",
   "tools/motionBvh",
   "tools/motionCapture",
   "tools/motionRetarget",

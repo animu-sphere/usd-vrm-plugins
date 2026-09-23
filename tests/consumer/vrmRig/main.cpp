@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// Includes the public headers of the installed `vrmRetarget` package and calls
+// Includes the public headers of the installed `vrmRig` package and calls
 // into them. The include proves the package installed its header root; the
 // calls prove it installed something to link.
 //
@@ -13,13 +13,13 @@
 // the value contract at the link, so a fixture that only built a rig would
 // have compiled, linked, and never asked.
 //
-// This is deliberately not a test of either. `libs/vrmRetarget/tests/` owns the
+// This is deliberately not a test of either. `libs/vrmRig/tests/` owns the
 // overrides, the clamps and the look-at geometry; duplicating any of it here
 // would make a packaging failure look like a resolve failure the first time
 // this fixture went red. What this asks is only: does one expression expand
 // onto its one bind, and is the required set the one a VRM 1.0 avatar states.
-#include <vrmRetarget/ExpressionResolver.h>
-#include <vrmRetarget/RequiredBones.h>
+#include <vrmRig/ExpressionResolver.h>
+#include <vrmRig/RequiredBones.h>
 
 #include <cstdio>
 
@@ -27,8 +27,8 @@ int
 main()
 {
     // The smallest rig there is: one expression driving one morph target.
-    vrmRetarget::ExpressionRig rig;
-    vrmRetarget::ExpressionDefinition happy;
+    vrmRig::ExpressionRig rig;
+    vrmRig::ExpressionDefinition happy;
     happy.name = "happy";
     happy.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
     if (!rig.Add(happy))
@@ -40,8 +40,8 @@ main()
 
     openstrata::motion::MotionChannelSet weights;
     weights.Set("happy", 0.25f);
-    const vrmRetarget::ExpressionResolver resolver(rig);
-    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(weights);
+    const vrmRig::ExpressionResolver resolver(rig);
+    const vrmRig::ResolvedExpressions resolved = resolver.Resolve(weights);
     if (resolved.morphTargets.size() != 1 || resolved.morphTargets[0].weight != 0.25f)
     {
         std::fprintf(stderr, "consumer: expanded onto %zu morph target(s)\n",
@@ -49,7 +49,7 @@ main()
         return 1;
     }
 
-    const std::vector<openstrata::motion::HumanJoint>& required = vrmRetarget::GetRequiredBones();
+    const std::vector<openstrata::motion::HumanJoint>& required = vrmRig::GetRequiredBones();
     if (required.size() != 17 || required.front() != openstrata::motion::HumanJoint::Hips)
     {
         std::fprintf(stderr, "consumer: the installed package requires %zu bone(s)\n",

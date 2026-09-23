@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-#include "vrmRetarget/LookAtEvaluator.h"
+#include "vrmRig/LookAtEvaluator.h"
 
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
@@ -8,7 +8,7 @@
 #include <cmath>
 #include <utility>
 
-namespace vrmRetarget
+namespace vrmRig
 {
 
 namespace
@@ -608,4 +608,4 @@ LookAtEvaluator::Evaluate(const openstrata::motion::MotionPose& pose, const Look
     return Evaluate(input, diagnostics);
 }
 
-} // namespace vrmRetarget
+} // namespace vrmRig

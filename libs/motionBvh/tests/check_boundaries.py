@@ -96,14 +96,14 @@ EXTRACTION_CODES = {"InvalidRotationOrder"}
 # What a `--crossing` target may not name, which is the whole of what the grant
 # costs. A converter authors a stage and speaks the humanoid vocabulary -- that
 # is what it is for -- so the strict rule above cannot apply to it. What stays
-# forbidden is the target avatar: `vrmRetarget` is the source-rest-to-target-rest
+# forbidden is the target avatar: `motionRetarget` is the source-rest-to-target-rest
 # correction and `vrmSchema` is the VRM humanoid mapping, and a converter
 # reaching either would be a second retargeter whose fork nobody notices until
 # two sources disagree about one avatar (roadmap §4). This is the strongest
 # claim that survives the grant, and it is checkable, which the previous
 # formulation ("no OpenUSD anywhere in this directory") no longer is once one
 # executable in it authors a clip.
-CROSSING_FORBIDDEN = r"vrmRetarget|vrmSchema|UsdVrm|VrmHumanoid"
+CROSSING_FORBIDDEN = r"vrmRig|motionRetarget|vrmSchema|UsdVrm|VrmHumanoid"
 
 
 def strip_comments(text: str) -> str:
@@ -235,7 +235,7 @@ def main() -> int:
     forbidden_api = re.compile(
         r"pxr/|PXR_NAMESPACE|\bGf(?:Vec|Quat|Matrix)|\bUsd[A-Z]|\bSdf[A-Z]|"
         r"TF_REGISTRY_FUNCTION|\bHumanBone\b|\bmotion::|motionCore|"
-        r"vrmRetarget|vrmSchema|liveTransport|\bosc::|\bosc/")
+        r"vrmRig|motionRetarget|vrmSchema|liveTransport|\bosc::|\bosc/")
     semantic = re.compile(r"DiagnosticCode::(?:" + "|".join(SEMANTIC_CODES) + r")\b")
     extraction_only = re.compile(
         r"DiagnosticCode::(?:"

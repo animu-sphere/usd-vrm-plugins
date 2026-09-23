@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-#include "vrmRetarget/RequiredBones.h"
+#include "vrmRig/RequiredBones.h"
 
-namespace vrmRetarget
+namespace vrmRig
 {
 
 const std::vector<openstrata::motion::HumanJoint>&
@@ -19,4 +19,4 @@ GetRequiredBones()
     return required;
 }
 
-} // namespace vrmRetarget
+} // namespace vrmRig

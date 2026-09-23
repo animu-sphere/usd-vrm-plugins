@@ -157,7 +157,7 @@ endforeach()
 
 # What is still built here from this layer: what a VRM rig adds to the
 # consumed retarget (WORKSPACE.md §2, §9.5), and the recorded-file pair.
-add_subdirectory("libs/vrmRetarget")
+add_subdirectory("libs/vrmRig")
 
 # The recorded-file half stays for now, and the reason is a toolchain fact
 # rather than a design one: `ost` 0.23.2 materializes an external library

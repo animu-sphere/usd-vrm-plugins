@@ -50,7 +50,7 @@ from pathlib import Path
 # vacuously -- what replaced it as evidence is the consumer-side suites below,
 # which exercise the same values through the packages.
 LABEL_SOURCES = {
-    "motion.retarget": ["libs/vrmRetarget/tests"],
+    "motion.retarget": ["libs/vrmRig/tests"],
     "motion.cli": [
         "tools/motionRetarget/tests",
         "tools/motionCapture/tests",
@@ -72,7 +72,7 @@ LABEL_SOURCES = {
 
 # Where a label means every test the directory registers.
 EVERY_TEST = {
-    "motion.retarget": ["libs/vrmRetarget/tests"],
+    "motion.retarget": ["libs/vrmRig/tests"],
     "motion.cli": LABEL_SOURCES["motion.cli"],
     "motion.openexec": ["plugins/execMotion/tests", "plugins/execVrm/tests"],
 }

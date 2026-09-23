@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# A consumer of the installed `vrmRetarget` package, and nothing else.
+# A consumer of the installed `vrmRig` package, and nothing else.
 #
 # What a VRM rig adds to a retarget: the expression resolve, the look-at and
 # VRM 1.0's required bones. Its one edge beyond OpenUSD is the value contract,
@@ -18,8 +18,8 @@
 # (PACKAGE_CONTRACT.md §5 criterion 5).
 cmake_minimum_required(VERSION 3.24)
 
-project(vrmRetargetConsumer LANGUAGES CXX)
+project(vrmRigConsumer LANGUAGES CXX)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../ConsumerCriteria.cmake")
 
-consumer_criteria(PACKAGE vrmRetarget TARGET vrmRetarget::vrmRetarget)
+consumer_criteria(PACKAGE vrmRig TARGET vrmRig::vrmRig)

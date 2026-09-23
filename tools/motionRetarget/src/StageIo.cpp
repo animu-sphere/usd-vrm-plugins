@@ -266,13 +266,13 @@ ReadExpressionName(const UsdPrim& prim)
 }
 
 // Reads one `/Asset/rig/Expressions/<name>` prim into the value form
-// `vrmRetarget` resolves against: what the avatar says this expression does to
+// `vrmRig` resolves against: what the avatar says this expression does to
 // its own meshes and materials, with nothing evaluated.
-vrmRetarget::ExpressionDefinition
+vrmRig::ExpressionDefinition
 ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
                          std::vector<std::string>* warnings)
 {
-    vrmRetarget::ExpressionDefinition definition;
+    vrmRig::ExpressionDefinition definition;
     definition.name = name;
 
     const UsdAttribute binaryAttr = prim.GetAttribute(kIsBinary);
@@ -287,17 +287,17 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
     // vocabulary is a statement this layer cannot act on, so it is refused
     // loudly rather than read as `none` -- an override silently downgraded to
     // "no arbitration" is a face that renders wrong with nothing in the log.
-    const auto readOverride = [&](const TfToken& attributeName) -> vrmRetarget::ExpressionOverride
+    const auto readOverride = [&](const TfToken& attributeName) -> vrmRig::ExpressionOverride
     {
         const UsdAttribute attribute = prim.GetAttribute(attributeName);
         TfToken token;
         if (!attribute || !attribute.Get(&token))
         {
-            return vrmRetarget::ExpressionOverride::None;
+            return vrmRig::ExpressionOverride::None;
         }
         bool recognized = false;
-        const vrmRetarget::ExpressionOverride mode =
-            vrmRetarget::ParseExpressionOverride(token.GetString(), &recognized);
+        const vrmRig::ExpressionOverride mode =
+            vrmRig::ParseExpressionOverride(token.GetString(), &recognized);
         if (!recognized)
         {
             warnings->push_back("expression <" + prim.GetPath().GetString() + "> declares " +
@@ -334,7 +334,7 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
     }
     for (std::size_t i = 0; i < morphTargets.size(); ++i)
     {
-        vrmRetarget::MorphTargetBind bind;
+        vrmRig::MorphTargetBind bind;
         bind.target = morphTargets[i].GetString();
         bind.weight = i < morphWeights.size() ? morphWeights[i] : 1.0f;
         definition.morphTargets.push_back(std::move(bind));
@@ -375,7 +375,7 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
         {
             continue;
         }
-        vrmRetarget::MaterialColorBind bind;
+        vrmRig::MaterialColorBind bind;
         bind.material = colorTargets[i].GetString();
         bind.colorType = colorTypes[i].GetString();
         bind.targetValue = colorValues[i];
@@ -701,7 +701,7 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
         const VtValue raw = prim.GetCustomDataByKey(kLookAtRaw);
         if (raw.IsHolding<std::string>())
         {
-            vrmRetarget::ParseLookAtRangeMaps(raw.UncheckedGet<std::string>(), &avatar->lookAtRig,
+            vrmRig::ParseLookAtRangeMaps(raw.UncheckedGet<std::string>(), &avatar->lookAtRig,
                                               &avatar->warnings);
         }
         TfToken type;
@@ -709,11 +709,11 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
         {
             if (type == TfToken("bone"))
             {
-                avatar->lookAtRig.type = vrmRetarget::LookAtType::Bone;
+                avatar->lookAtRig.type = vrmRig::LookAtType::Bone;
             }
             else if (type == TfToken("expression"))
             {
-                avatar->lookAtRig.type = vrmRetarget::LookAtType::Expression;
+                avatar->lookAtRig.type = vrmRig::LookAtType::Expression;
             }
             else if (!type.IsEmpty())
             {
@@ -1127,15 +1127,15 @@ RelativeAssetPath(const std::string& target, const std::string& fromLayer)
 void
 AuthorBlendShapeWeights(const UsdSkelAnimation& authored, const Avatar& avatar,
                         double timeCodesPerSecond,
-                        const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
+                        const std::vector<vrmRig::ResolvedExpressions>& expressions,
                         WriteResult* result)
 {
     // One slot per blend shape any sample drives, in blend-shape path order so
     // that re-baking the same clip authors the same array.
     std::set<std::string> driven;
-    for (const vrmRetarget::ResolvedExpressions& sample : expressions)
+    for (const vrmRig::ResolvedExpressions& sample : expressions)
     {
-        for (const vrmRetarget::ResolvedMorphTarget& morph : sample.morphTargets)
+        for (const vrmRig::ResolvedMorphTarget& morph : sample.morphTargets)
         {
             driven.insert(morph.target);
         }
@@ -1183,9 +1183,9 @@ AuthorBlendShapeWeights(const UsdSkelAnimation& authored, const Avatar& avatar,
     // reported zero is a statement and is authored, while an unreported name is
     // the producer saying nothing, which leaves the weight where it was.
     VtFloatArray values(tokens.size(), 0.0f);
-    for (const vrmRetarget::ResolvedExpressions& sample : expressions)
+    for (const vrmRig::ResolvedExpressions& sample : expressions)
     {
-        for (const vrmRetarget::ResolvedMorphTarget& morph : sample.morphTargets)
+        for (const vrmRig::ResolvedMorphTarget& morph : sample.morphTargets)
         {
             const auto slot = slotByTarget.find(morph.target);
             if (slot != slotByTarget.end())
@@ -1203,7 +1203,7 @@ AuthorBlendShapeWeights(const UsdSkelAnimation& authored, const Avatar& avatar,
 bool
 WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, const Clip& clip,
                          const openstrata::motion::RetargetedAnimation& animation,
-                         const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
+                         const std::vector<vrmRig::ResolvedExpressions>& expressions,
                          const std::string& animationName, WriteResult* result, Failure* failure)
 {
     if (!TfIsValidIdentifier(animationName))

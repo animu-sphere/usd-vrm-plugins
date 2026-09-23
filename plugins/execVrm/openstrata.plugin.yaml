@@ -33,7 +33,7 @@ requires:
     # What a VRM rig adds to the retarget: VRM 1.0's required bones, which the
     # retarget and the rig's diagnostics are handed because `motionRetarget`
     # holds no required set of its own. The retarget itself is declared below.
-    - id: vrmRetarget
+    - id: vrmRig
       version: ">=0.9,<0.10"
     # And what the retarget is built on, named rather than left to the closure:
     # the vocabulary a humanoid binds (`openstrata::motion::HumanJoint`) is

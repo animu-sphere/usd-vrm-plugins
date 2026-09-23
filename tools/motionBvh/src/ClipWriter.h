@@ -22,7 +22,7 @@
 //     itself. Its one seeded value is the hips translation.
 //   * this writer authors a **real** rest pose, because a recorded file states
 //     one and the profile says how to read it. `CanonicalRestPose` is what §4
-//     calls the source rest, and `vrmRetarget` is what corrects it onto a
+//     calls the source rest, and `motionRetarget` is what corrects it onto a
 //     target's — a converter that skipped it would hand the retargeter an
 //     identity source rest and silently claim the rig stands the way the avatar
 //     does.

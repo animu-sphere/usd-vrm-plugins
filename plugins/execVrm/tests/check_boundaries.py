@@ -11,7 +11,7 @@ between the bundles (execVrm -> execMotion, runtime only), never the reverse.
 What is execVrm's own:
 
   links    motionCore, motionSampling, motionRecording, motionRetarget and
-           vrmRetarget, and nothing of vrmSchema:
+           vrmRig, and nothing of vrmSchema:
            the schema is a bundle edge exec resolves by type name, and linking
            it would add a runtime dependency on a library the bundle needs
            nothing from
@@ -64,7 +64,7 @@ def main() -> int:
         "execVrm", sys.argv[3],
         {"motionCore::motionCore", "motionSampling::motionSampling",
          "motionRecording::motionRecording", "motionRetarget::motionRetarget",
-         "vrmRetarget::vrmRetarget"})
+         "vrmRig::vrmRig"})
 
     declared, schema_errors = rules.schema_errors("execVrm", source)
     errors += schema_errors

@@ -7,7 +7,7 @@
 // names as the writer spelled them, the parent relation, and each joint's rest
 // offset from its parent. It carries no unit, no up axis, no handedness, no
 // humanoid bone, and no target rig — the first four are a *writer's* answers and
-// live in a profile, and the last is `vrmRetarget`'s and lives one pipeline
+// live in a profile, and the last is `motionRetarget`'s and lives one pipeline
 // stage further on.
 //
 // Four decisions, each a choice rather than a detail.

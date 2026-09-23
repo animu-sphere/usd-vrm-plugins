@@ -844,7 +844,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& 
 
         // The body's placement, composed down the root path. Both translation
         // policies land on the same canonical thing -- an absolute position in
-        // the clip's own space, which is what `vrmRetarget` subtracts each
+        // the clip's own space, which is what `motionRetarget` subtracts each
         // rig's own hips rest from -- and `localTranslation` is the only place
         // they differ. A path of one joint, which is every rig whose root is
         // its hips, reduces to reading that joint's sample.

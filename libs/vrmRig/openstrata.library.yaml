@@ -1,9 +1,9 @@
-# OpenStrata plain-library descriptor. vrmRetarget is what a VRM rig adds to a
+# OpenStrata plain-library descriptor. vrmRig is what a VRM rig adds to a
 # retarget -- expressions, look-at, the required bones -- as plain values, with
 # no OpenExec node (motion policy §18.12). The retarget is `motionRetarget`'s.
 schema: openstrata.library/v1alpha1
 library:
-  id: vrmRetarget
+  id: vrmRig
   # Mirrors VERSION; release preparation updates this in lockstep.
   version: 0.9.0
 requires:
@@ -22,5 +22,5 @@ requires:
             digest: sha256:f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5
             source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:7e5c67b9ae5defa40887b7dbaccea0bb5258ae3e86b1e2d14e7c82ae13ce0564
 cmake:
-  package: vrmRetarget
-  target: vrmRetarget::vrmRetarget
+  package: vrmRig
+  target: vrmRig::vrmRig

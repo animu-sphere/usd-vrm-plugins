@@ -781,7 +781,7 @@ TestRestFromFirstFrameTakesTranslationsToo()
             ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), profile);
         assert(result.Converted());
         // Frame 0's translations. The four metres are gone, and they would
-        // otherwise have reached `vrmRetarget` as a rest for it to subtract
+        // otherwise have reached `motionRetarget` as a rest for it to subtract
         // from every frame of the clip.
         assert(NearVector(result.rest.localTranslations[hips], pxr::GfVec3f(0.10f, 0.92f, 0.0f)));
     }

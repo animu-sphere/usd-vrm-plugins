@@ -11,9 +11,9 @@ executables: [motion_retarget]
 directories: [bin]
 requires:
   libraries:
-    - id: vrmRetarget
+    - id: vrmRig
       version: ">=0.9,<0.10"
-    # By name rather than only through `vrmRetarget`, the way `motion_bvh`
+    # By name rather than only through another library, the way `motion_bvh`
     # declares `motionSource`: the tool resamples the clip itself so that the
     # body and the face expand one sample list, which is an edge of its own and
     # not one to be inferred from a dependency that could stop being transitive.

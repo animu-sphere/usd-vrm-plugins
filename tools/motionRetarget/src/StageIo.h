@@ -3,15 +3,15 @@
 // The stage half of the retarget tool.
 //
 // Everything that knows about UsdStage lives here; `motionRetarget` and
-// `vrmRetarget` take and return plain values (WORKSPACE.md §2). This file reads the target rig
-// and the source clip off stages and writes the result back to one.
+// `vrmRig` take and return plain values (WORKSPACE.md §2). This file reads the
+// target rig and the source clip off stages and writes the result back to one.
 #pragma once
 
 #include "ExitCode.h"
 
-#include "vrmRetarget/ExpressionResolver.h"
+#include "vrmRig/ExpressionResolver.h"
 #include "motionRetarget/RetargetMap.h"
-#include "vrmRetarget/LookAtEvaluator.h"
+#include "vrmRig/LookAtEvaluator.h"
 #include "motionRetarget/PoseRetargeter.h"
 #include "motionRetarget/RestPose.h"
 #include "motionRetarget/SkeletonDescriptor.h"
@@ -42,7 +42,7 @@ struct Avatar
 
     // What this rig declares about its face: the expressions keyed by
     // `vrm:expressionName`, with the binds each one drives.
-    vrmRetarget::ExpressionRig expressionRig;
+    vrmRig::ExpressionRig expressionRig;
 
     // Blend-shape prim path -> the token the mesh binding it names it by.
     // A UsdSkelAnimation names blend shapes by token and UsdSkel joins those
@@ -57,7 +57,7 @@ struct Avatar
     // rig that declares a look-at and states nothing useful in it is a rig with
     // a defect, while one that declares none is an ordinary `.usda` skeleton.
     bool hasLookAt = false;
-    vrmRetarget::LookAtRig lookAtRig;
+    vrmRig::LookAtRig lookAtRig;
 
     std::vector<std::string> warnings;
 };
@@ -133,7 +133,7 @@ struct WriteResult
 // `OutputAuthoringFailure`.
 bool WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, const Clip& clip,
                               const openstrata::motion::RetargetedAnimation& animation,
-                              const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
+                              const std::vector<vrmRig::ResolvedExpressions>& expressions,
                               const std::string& animationName, WriteResult* result,
                               Failure* failure);
 

@@ -9,7 +9,7 @@
 // either a pair of eye rotations or a set of named expression weights, which is
 // exactly the division `ExpressionResolver` is under.
 //
-// Like the rest of vrmRetarget this takes plain values: the caller reads the
+// Like the rest of vrmRig this takes plain values: the caller reads the
 // avatar's `/Asset/rig/LookAt` prim off the stage -- its `vrm:type`, its eye
 // joint tokens and the range-map curves the importer preserved verbatim under
 // `vrm:lookAt:raw` -- and hands them in. `ParseLookAtRangeMaps` below is the
@@ -23,7 +23,7 @@
 // with no second path into a rig.
 #pragma once
 
-#include "vrmRetarget/api.h"
+#include "vrmRig/api.h"
 
 #include "motionCore/MotionPose.h"
 
@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-namespace vrmRetarget
+namespace vrmRig
 {
 
 // One key of a VRM 0.x look-at curve, in the normalized space the file states
@@ -78,7 +78,7 @@ struct LookAtRangeMap
     // already chosen which of the four maps the sign of the angle selects.
     // A map whose `inputMaxValue` is not positive maps everything to 0 and is
     // reported by the evaluator rather than dividing by it here.
-    VRMRETARGET_API float Map(float inputDegrees) const;
+    VRMRIG_API float Map(float inputDegrees) const;
 };
 
 enum class LookAtType
@@ -141,7 +141,7 @@ struct LookAtRig
 // which includes the empty string a rig with no preserved curves carries. A map
 // the JSON does not mention keeps the value it already had, so an incomplete
 // block leaves the defaults standing rather than zeroing a curve to nothing.
-VRMRETARGET_API bool ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
+VRMRIG_API bool ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
                                           std::vector<std::string>* warnings = nullptr);
 
 // Where the target avatar's head is for one sample, in the same space as the
@@ -264,7 +264,7 @@ struct LookAtEvaluateOptions
 };
 
 // Evaluates a clip's gaze against one avatar's look-at configuration.
-class VRMRETARGET_API LookAtEvaluator
+class VRMRIG_API LookAtEvaluator
 {
   public:
     explicit LookAtEvaluator(LookAtRig rig,
@@ -306,4 +306,4 @@ class VRMRETARGET_API LookAtEvaluator
     LookAtEvaluateOptions _options;
 };
 
-} // namespace vrmRetarget
+} // namespace vrmRig
