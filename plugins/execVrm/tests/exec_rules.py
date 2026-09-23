@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Enforce execMotion's dependency boundary and the snapshot rule.
+"""The snapshot rule and the dependency-boundary helpers both exec bundles hold.
 
 Motion policy §11.4 and WORKSPACE.md §2 forbid, inside an OpenExec
 computation callback: socket or device I/O, file I/O and file watching, a wall
 clock, a private thread pool, and mutable global state. A callback is a pure
 function of the inputs exec resolves for it, and one that read a socket or a
 clock would make cache reuse and invalidation unverifiable -- the one reason to
-be on OpenExec at all. Until this check, both bundles obeyed that rule and
-nothing would have noticed the first node that did not
-(docs/roadmap/openexec-foundation.md §9).
+be on OpenExec at all.
 
 Four halves, because each sees something the others cannot:
 
@@ -27,14 +25,16 @@ Four halves, because each sees something the others cannot:
            WORKSPACE.md §2 states -- a schema has exactly one declarer per
            session, and a second declarer loses its computations silently
 
-execVrm's check imports the source and import rules from this file rather than
-restating them: the rule is one rule for both bundles, and execVrm may reach
-this bundle's tree (it requires execMotion; the reverse edge is forbidden).
+These were execMotion's check until MIG-2 deleted that bundle here: execVrm's
+check imported them from its tree, so the rule was one rule for both. The
+bundle is now usd-motion-plugins' and ships no tests, so the tables moved here
+unchanged. That repository's copy holds execMotion to the same rule, and has
+already dropped the half of the schema partition that names execVrm, which is
+this repository's to state. A change to the snapshot rule belongs in both.
 
-Usage: check_boundaries.py <bundle-source-dir> <built-library> <link-libraries>
-
-<link-libraries> is the target's LINK_LIBRARIES property joined with "|".
+This module has no entry point; `check_boundaries.py` beside it is execVrm's.
 """
+
 
 from __future__ import annotations
 
@@ -549,58 +549,3 @@ def schema_errors(bundle: str, source: pathlib.Path) -> tuple[set[str], list[str
                 f"{owner}: the second declarer loses every computation it "
                 f"registered there")
     return declared, errors
-
-
-# ---------------------------------------------------------------------------
-# This bundle
-# ---------------------------------------------------------------------------
-
-def main() -> int:
-    if len(sys.argv) != 4:
-        print(__doc__, file=sys.stderr)
-        return 2
-    source = pathlib.Path(sys.argv[1]).resolve()
-    library = pathlib.Path(sys.argv[2]).resolve()
-    errors: list[str] = []
-
-    errors += purity_source_errors(source)
-    errors += purity_import_errors(library)
-    errors += link_errors(
-        "execMotion", sys.argv[3],
-        {"motionCore::motionCore", "motionSampling::motionSampling",
-         "motionRecording::motionRecording"})
-    errors += schema_errors("execMotion", source)[1]
-
-    # Vendor-neutral by specification: nothing VRM-shaped, no live leaf, and
-    # never execVrm, whose edge to this bundle is the one direction allowed.
-    forbidden_neighbours = re.compile(
-        r"\b(?:vrmSchema|vrmContainer|vrmRig|motionRetarget|usdVrm\w*|UsdVrm\w*|execVrm|"
-        r"ExecVrm\w*|cgltf|mocopi|vrchat|ardy|liveTransport|motionTracking|"
-        r"vrmAdapter\w*)\b|\bosc::|\bosc/",
-        re.IGNORECASE)
-    for path in source_files(source):
-        if forbidden_neighbours.search(code_only(path.read_text(encoding="utf-8"))):
-            errors.append(f"forbidden dependency direction: {path}")
-
-    try:
-        dependencies = binary_dependencies(library)
-    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
-        errors.append(f"could not inspect execMotion dependencies: {exc}")
-        dependencies = ""
-    if re.search(r"vrmSchema|vrmContainer|UsdVrm|ExecVrm|liveTransport|"
-                 r"motionTracking|vrmAdapter|(?:^|[\s/\\])(?:lib)?osc[._]",
-                 dependencies, re.IGNORECASE | re.MULTILINE):
-        errors.append(
-            "execMotion binary imports a VRM, live or sibling-bundle library")
-
-    if errors:
-        if hasattr(sys.stderr, "reconfigure"):
-            sys.stderr.reconfigure(errors="replace")
-        print("\n".join(errors), file=sys.stderr)
-        return 1
-    print("execMotion boundary check passed")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

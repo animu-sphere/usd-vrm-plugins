@@ -18,11 +18,10 @@ BVH converter left with MIG-3.
     tests/parity/test_exec_parity.py --case ...
         --retarget <prefix>/tools/motion_retarget/bin/motion_retarget
         --parity   <build tree>/tests/parity/exec_parity
-    <build tree>/plugins/execMotion/tests/execMotion_display_tests
 
-Two executables come from the build tree, and they are the harness rather than
+One executable comes from the build tree, and it is the harness rather than
 the artifact: OpenExec has no Python binding, and the product ships no program
-that evaluates a computation. Both link only static workspace libraries and
+that evaluates a computation. It links only static workspace libraries and
 OpenUSD, so what they load at run time is the runtime's and the product's --
 which is not an assumption here but the check:
 
@@ -97,7 +96,9 @@ REAL_AVATAR = ("plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/"
                "seed-san/Seed-san.vrm")
 VRMA_WALK = "plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
 DESIGN_MAP = "tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json"
-DISPLAY_FIXTURE = "plugins/execMotion/tests/fixtures/displayed_clip.usda"
+# P0-7's display row left with execMotion in MIG-2: the display suite is that
+# bundle's own, and it runs in usd-motion-plugins. What the product still owes
+# here is that the bundle it embeds answers the parity cases, below.
 
 
 def suffix() -> str:
@@ -115,7 +116,7 @@ def inside(path: str | pathlib.Path, root: str | pathlib.Path) -> bool:
 
 
 def find_build_dir(given: str | None) -> pathlib.Path:
-    """The root build tree that holds the two harnesses.
+    """The root build tree that holds the harness.
 
     `ost build` names it after the target, so it is found by what it contains
     rather than by a name this script would have to keep in step with `ost`.
@@ -130,16 +131,14 @@ def find_build_dir(given: str | None) -> pathlib.Path:
                        f"exec_parity under {REPO_ROOT / 'build'}, found "
                        f"{len(matches)}; pass --build-dir")
         build = matches[0].parents[2]
-    for harness in harness_paths(build):
-        if not harness.is_file():
-            fail_setup(f"the build tree has no {harness}; run `ost build`")
+    if not harness_path(build).is_file():
+        fail_setup(f"the build tree has no {harness_path(build)}; "
+                   f"run `ost build`")
     return build
 
 
-def harness_paths(build: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
-    return (build / "tests" / "parity" / f"exec_parity{suffix()}",
-            build / "plugins" / "execMotion" / "tests"
-            / f"execMotion_display_tests{suffix()}")
+def harness_path(build: pathlib.Path) -> pathlib.Path:
+    return build / "tests" / "parity" / f"exec_parity{suffix()}"
 
 
 def product_environment(ost: str, platform: str, profile: str,
@@ -472,8 +471,8 @@ def main() -> int:
 
     platform, profile = workspace_target()
     build = find_build_dir(args.build_dir)
-    parity, display = harness_paths(build)
-    for required in (REAL_AVATAR, VRMA_WALK, DESIGN_MAP, DISPLAY_FIXTURE):
+    parity = harness_path(build)
+    for required in (REAL_AVATAR, VRMA_WALK, DESIGN_MAP):
         if not (REPO_ROOT / required).is_file():
             fail_setup(f"no input at {REPO_ROOT / required}")
 
@@ -521,17 +520,6 @@ def main() -> int:
         # P0-3's rows: the tool's own process, and textures from a Python host.
         check_textured_bake(failures, prefix, env, runtime_roots, ours,
                             scratch / "work" / "textured")
-
-        # P0-7's packaged row: the display suite, under the same environment.
-        print(f"$ {display.name} {DISPLAY_FIXTURE}", flush=True)
-        shown = subprocess.run([str(display), str(REPO_ROOT / DISPLAY_FIXTURE)],
-                               env=env, text=True, encoding="utf-8",
-                               errors="replace", capture_output=True)
-        if failures.check(shown.returncode == 0,
-                          f"the display suite failed from the product "
-                          f"(exit {shown.returncode}):\n"
-                          f"{shown.stdout}{shown.stderr}"):
-            print("  display: passed from the product")
 
         # And the negative: with execMotion's registration gone from the
         # product, nothing may answer in its place.

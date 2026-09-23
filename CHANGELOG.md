@@ -15,6 +15,24 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **Every `usd-motion-plugins` pin is v0.5.1**, the release that pushed
+  `execMotion` and the CLIs to its registry as well as the libraries. The five
+  library pins in `vrmRig`, `execVrm`, `usdVrmaFileFormat` and
+  `motion_retarget` move to that release's pin table. v0.5.1 changes no
+  library, so neither does this move.
+- **The `ost` pin is 0.23.5**, which materializes a member's external bundles
+  and tools for the root build and exports their roots to its CMake tree
+  (`OPENSTRATA_EXTERNAL_BUNDLE_<id>_ROOT`), answering
+  [ost report 46](docs/reports/ost/46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md)'s
+  P1. It is what the `execMotion` removal below stands on.
+  **0.23.5 also breaks the product package, and no pull-request lane
+  packages it:** `ost plugin package --workspace --product` fails
+  `PLUGIN_PACKAGE_OUTPUT_MISMATCH` on `vrmSchema`, the one bundle other members
+  link. Its managed build records `lib/vrmSchema.exp`, and the per-target stage
+  0.23.5 packages from does not carry that file. This reproduces from a clean
+  tree and does not happen under 0.23.4. Until `ost` fixes it, `release.yml`
+  cannot package.
+
 - **`motion_retarget` reads the clip through `motionUsd`** (MIG-2,
   2026-09-23). `StageIo`'s clip reading is a call to `usd-motion-plugins`'
   published [`motionUsd`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionUsd)
@@ -136,6 +154,31 @@ Current schema contract version: **1**.
     empties when that half leaves, and did (below).
 
 ### Removed
+
+- **`execMotion` is consumed, and this repository's copy is gone** (MIG-2,
+  2026-09-24). `plugins/execMotion` was the last generic motion code built
+  here. `execVrm` now pins `usd-motion-plugins`' published bundle, per target,
+  in `requires.bundles`, and its package embeds that bundle under
+  `runtime/bundles/execMotion/`, so the product still carries it.
+  - **The parity rows were re-run against the consumed bundle first.** The
+    bundle was pulled from the registry by digest. `execVrm`'s four exec
+    suites, the driver contract and all five `workspace_exec_parity_*` cases
+    pass against it, with divergence 0 in every case, and
+    `artifact_only_exec_smoke.py` passes from a product that embeds it.
+  - **The suites find it through `cmake/UsdVrmExecMotion.cmake`**, which reads
+    the root `ost` exports. A build `ost` does not configure can name an
+    extracted bundle with `USDVRM_EXEC_MOTION_ROOT`. A standalone
+    `ost plugin build plugins/execVrm` builds the composing suites and does not
+    register them, and says so.
+  - **What left with the bundle:** its ten suites, which run in
+    `usd-motion-plugins`, and the artifact-only smoke's display row, which is
+    that bundle's own claim. The root suite is 38 tests where it was 48.
+  - **What stayed:** the snapshot rule's tables, as
+    `plugins/execVrm/tests/exec_rules.py`. `execVrm_boundaries` had imported
+    them from the bundle's source tree, and the published bundle ships none.
+    The schema partition is now checked against the consumed bundle's
+    `plugInfo.json`, and a mutation that declares `UsdSkelSkeleton` there
+    fails it.
 
 - **The recorded-file path left for `usd-motion-plugins`** (MIG-3,
   2026-09-23). `libs/motionSource`, `libs/motionBvh`, `tools/motionBvh`

@@ -45,8 +45,9 @@ add_executable(exec_parity exec_parity.cpp)
 # way a packaged bundle is.
 target_link_libraries(exec_parity PRIVATE
     exec_driver motionRetarget::motionRetarget motionCore::motionCore)
-# Not linked, and still what the harness runs: building it builds them.
-add_dependencies(exec_parity ExecMotion ExecVrm)
+# Not linked, and still what the harness runs: building it builds execVrm.
+# execMotion is the consumed bundle, already materialized when this configures.
+add_dependencies(exec_parity ExecVrm)
 target_compile_options(exec_parity PRIVATE ${_parity_assertions})
 if(MSVC)
     target_compile_options(exec_parity PRIVATE /bigobj /utf-8)
@@ -58,7 +59,6 @@ endif()
 add_executable(exec_driver_contract test_exec_driver.cpp)
 target_link_libraries(exec_driver_contract PRIVATE
     exec_driver motionCore::motionCore motionSampling::motionSampling)
-add_dependencies(exec_driver_contract ExecMotion)
 target_compile_options(exec_driver_contract PRIVATE ${_parity_assertions})
 if(MSVC)
     target_compile_options(exec_driver_contract PRIVATE /bigobj /utf-8)
@@ -77,26 +77,27 @@ endif()
 get_filename_component(_repo_root "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 set(_plugins "${_repo_root}/plugins")
 
-# Both exec bundles and the schema bundle from their source directories, the
-# path their own suites take; usdVrmFileFormat through the plugInfo.json its
-# tests configure with an absolute LibraryPath, the path the real-avatar bake
-# takes. The environment reaches the tools as well as the harness, because the
+# execVrm and the schema bundle from their source directories, the path their
+# own suites take, and execMotion from the consumed bundle `ost` materialized;
+# usdVrmFileFormat through the plugInfo.json its tests configure with an
+# absolute LibraryPath, the path the real-avatar bake takes. The environment reaches the tools as well as the harness, because the
 # driver runs them as its subprocesses and a `.vrm` avatar has to open in all
 # three.
 set(_parity_env
     "PATH=path_list_prepend:${_usd_root}/bin"
     "PATH=path_list_prepend:${_usd_root}/lib"
-    "PATH=path_list_prepend:${_plugins}/execMotion/lib"
+    "PATH=path_list_prepend:${USDVRM_EXEC_MOTION_BUNDLE}/lib"
     "PATH=path_list_prepend:${_plugins}/execVrm/lib"
     "PATH=path_list_prepend:${_plugins}/vrmSchema/lib"
-    "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/execMotion/plugin/resources/execMotion"
+    "PXR_PLUGINPATH_NAME=path_list_prepend:${USDVRM_EXEC_MOTION_RESOURCES}"
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/execVrm/plugin/resources/execVrm"
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/vrmSchema/plugin/resources/vrmSchema")
 
-# C++ alone, so it is registered whether or not a Python interpreter is.
+# C++ alone, so it is registered whether or not a Python interpreter is. The
+# fixture is the one the consumed bundle ships with its own suite.
 add_test(NAME workspace_exec_driver
     COMMAND exec_driver_contract
-            "${_plugins}/execMotion/tests/fixtures/filtered_clip.usda")
+            "${USDVRM_EXEC_MOTION_BUNDLE}/tests/fixtures/filtered_clip.usda")
 set_tests_properties(workspace_exec_driver PROPERTIES
     ENVIRONMENT_MODIFICATION "${_parity_env}"
     LABELS "motion.openexec")

@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce execVrm's dependency boundary and the snapshot rule.
 
-The snapshot rule (motion policy §11.4) is one rule for both exec bundles, so
-its tables live in execMotion's check and are imported from there rather than
-restated: two copies of a list of forbidden clocks are two lists that drift.
-Reaching into execMotion's tree follows the one edge WORKSPACE.md §2 allows
-between the bundles (execVrm -> execMotion, runtime only), never the reverse.
+The snapshot rule (motion policy §11.4) is one rule for both exec bundles. Its
+tables are in `exec_rules.py` beside this file: they were execMotion's check
+until MIG-2 deleted that bundle here, and the published bundle ships no tests
+to import them from.
 
 What is execVrm's own:
 
@@ -20,9 +19,11 @@ What is execVrm's own:
   binary   neither vrmSchema nor vrmContainer nor any importer, and not
            execMotion either, whose computation is read by name
   schemas  the Vrm*API applied schemas, UsdSkelSkeleton and UsdSkelBindingAPI,
-           and none that execMotion declares
+           and none that execMotion declares -- read from the consumed
+           bundle's installed plugInfo.json, which is what a session loads
 
 Usage: check_boundaries.py <bundle-source-dir> <built-library> <link-libraries>
+                           <execMotion-plugInfo.json>
 """
 
 from __future__ import annotations
@@ -33,30 +34,18 @@ import subprocess
 import sys
 
 
-def _exec_motion_rules(source: pathlib.Path):
-    tests = source.parent / "execMotion" / "tests"
-    if not (tests / "check_boundaries.py").is_file():
-        raise RuntimeError(
-            f"execMotion's check is not at {tests}: the snapshot rule's tables "
-            f"live there, and this check will not pass without them")
-    sys.path.insert(0, str(tests))
-    import check_boundaries as rules  # noqa: E402 -- execMotion's, by path
-    return rules
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import exec_rules as rules  # noqa: E402 -- beside this file
 
 
 def main() -> int:
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print(__doc__, file=sys.stderr)
         return 2
     source = pathlib.Path(sys.argv[1]).resolve()
     library = pathlib.Path(sys.argv[2]).resolve()
+    motion_plug_info = pathlib.Path(sys.argv[4]).resolve()
     errors: list[str] = []
-
-    try:
-        rules = _exec_motion_rules(source)
-    except RuntimeError as exc:
-        print(exc, file=sys.stderr)
-        return 1
 
     errors += rules.purity_source_errors(source)
     errors += rules.purity_import_errors(library)
@@ -68,15 +57,17 @@ def main() -> int:
 
     declared, schema_errors = rules.schema_errors("execVrm", source)
     errors += schema_errors
-    # The partition, read from the other side as well: whatever execMotion's
-    # plugInfo.json declares today, this one may not.
-    motion_source = source.parent / "execMotion"
+    # The partition, read from the other side as well: whatever the consumed
+    # execMotion's plugInfo.json declares, this one may not.
     try:
-        motion_declared = rules.declared_schemas(
-            motion_source / "plugin" / "resources" / "execMotion" / "plugInfo.json.in")
+        motion_declared = rules.declared_schemas(motion_plug_info)
     except (OSError, ValueError) as exc:
-        errors.append(f"could not read execMotion's plugInfo.json.in: {exc}")
+        errors.append(f"could not read execMotion's {motion_plug_info}: {exc}")
         motion_declared = set()
+    if not motion_declared:
+        errors.append(
+            f"execMotion's {motion_plug_info} declares no schema: the partition "
+            f"was checked against nothing")
     for schema in sorted(declared & motion_declared):
         errors.append(
             f"execVrm and execMotion both declare {schema}: one of them loses "

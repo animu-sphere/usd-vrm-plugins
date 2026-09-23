@@ -571,7 +571,7 @@ reviewer can check them without opening the policy:
   and `execVrm_boundaries` check it, along with each bundle's links and its
   half of the schema partition above, on the source, the built library's
   imports, the target's link libraries and `plugInfo.json`
-  ([execMotion's README](../../plugins/execMotion/README.md#how-the-rules-are-checked)).
+  ([execMotion's README](https://github.com/animu-sphere/usd-motion-plugins/blob/main/plugins/execMotion/README.md#how-the-rules-are-checked)).
 - **`ExecIr` is optional and never a prerequisite.** It is confined to an
   adapter layer inside `execVrm`; the canonical motion contract is not derived
   from its representation, the importer never has to author its prims, and the

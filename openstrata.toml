@@ -42,7 +42,6 @@ profile = "usd"
 # makes and the reason both are kept.
 [workspace]
 members = [
-  "plugins/execMotion",
   "plugins/execVrm",
   "plugins/usdVrmFileFormat",
   "plugins/usdVrmaFileFormat",
@@ -54,7 +53,6 @@ members = [
 ]
 release_members = [
   "vrmSchema",
-  "execMotion",
   "execVrm",
   "usdVrmFileFormat",
   "usdVrmaFileFormat",
