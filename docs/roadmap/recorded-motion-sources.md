@@ -155,9 +155,9 @@ ignoredJoints: [Reference]
 ```
 
 Every **value** above is one the contract defines by name
-([`SourceProfile.h`](../../libs/motionSource/include/motionSource/SourceProfile.h),
+([`SourceProfile.h`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionSource/include/motionSource/SourceProfile.h),
 2026-08-05) and every **key** is one a reader now reads
-([`SourceProfileFile.h`](../../libs/motionSource/include/motionSource/SourceProfileFile.h),
+([`SourceProfileFile.h`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionSource/include/motionSource/SourceProfileFile.h),
 2026-08-05) — this is the file, not a sketch of one. Four names changed on the
 way here, each because the sketch was stating an intention where a converter
 needs a fact. An axis carries its sign, because "+Z forward" and "-Z forward"
@@ -522,7 +522,7 @@ release condition's word "documented" is satisfied by the dataset being
 published, versioned and hash-pinnable, not by the format declaring anything.
 
 **The first profile is written from it** (2026-08-05,
-[`profiles/motion/mocopi-mobile-bvh-default-v1.yaml`](../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml)),
+[`profiles/motion/mocopi-mobile-bvh-default-v1.yaml`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/profiles/motion/mocopi-mobile-bvh-default-v1.yaml)),
 and the split between what the file settles and what the profile decides is the
 point of writing it here rather than in the corpus:
 
@@ -691,7 +691,7 @@ One PR never introduces a boundary and a large feature together:
    and a second profile written from a file nobody has read would be the failure
    this plan is shaped around, wearing the shape of progress
 7. ✅ the second producer's profile
-   ([`bandai-namco-research-bvh-motiondataset-v1.yaml`](../../profiles/motion/bandai-namco-research-bvh-motiondataset-v1.yaml),
+   ([`bandai-namco-research-bvh-motiondataset-v1.yaml`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/profiles/motion/bandai-namco-research-bvh-motiondataset-v1.yaml),
    2026-08-05) — written from two exports, one per half of the dataset, whose
    bytes this repository does not carry. It arrived third of three rather than
    first, and deliberately: its corpus rows landed with item 12, the two

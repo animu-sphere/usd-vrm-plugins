@@ -48,11 +48,8 @@ members = [
   "plugins/usdVrmaFileFormat",
   "plugins/usdVrmPackageResolver",
   "plugins/vrmSchema",
-  "libs/motionBvh",
-  "libs/motionSource",
   "libs/vrmContainer",
   "libs/vrmRig",
-  "tools/motionBvh",
   "tools/motionRetarget",
 ]
 release_members = [
@@ -62,7 +59,6 @@ release_members = [
   "usdVrmFileFormat",
   "usdVrmaFileFormat",
   "usdVrmPackageResolver",
-  "motion_bvh",
   "motion_retarget",
 ]
 # Empty since MIG-4: the three adapter CLIs it named left for
@@ -71,18 +67,6 @@ release_members = [
 # the release lane's packaging from 2026-09-21 until this was measured.
 release_exclude = []
 
-# The motion profiles, installed once into the product's shared tree.
-#
-# `share/usd-vrm-plugins/profiles/motion` is a contract, not a packaging
-# preference: the root CMakeLists installs there, tools/motionBvh's standalone
-# rule installs there, and ProfileLocator names it as the first directory it
-# searches. A packaged `motion_bvh_convert` that finds no profile refuses every
-# BVH file it is given, which is what made v0.7.0's artifact-only run of the BVH
-# path impossible to pass: no member archive carried data, and no member could,
-# because `directories:` names subdirectories of the MEMBER root and the profiles
-# are owned by the workspace. 0.22.3's project-owned data mapping is the shape
-# that ask needed -- one copy, owned by the product, digest-verified before
-# install, and still the same file scripts/check_motion_profiles.py validates.
-[[workspace.install_data]]
-source = "profiles/motion"
-destination = "share/usd-vrm-plugins/profiles/motion"
+# No project-owned data is installed any more. The motion profiles were the one
+# `[[workspace.install_data]]` mapping, and they left with MIG-3: they are
+# `usd-motion-plugins`' installed data now, beside the converter that reads them.

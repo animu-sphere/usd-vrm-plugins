@@ -24,15 +24,15 @@ External `.vrm` avatars used for manual verification (e.g. under a local
 `vrm_test_data` directory) are **not** part of this repository and are not
 redistributed here. Respect each avatar's own VRM `meta` license terms.
 
-### Recorded motion referenced but not redistributed
+### Recorded motion
 
-Some producer exports the BVH pipeline is measured against are **not carried
-here at all**. Their manifest row stays — what was measured from them, and the
-SHA-256 that pins the bytes it was measured from — and
-`scripts/fetch_corpus.py` downloads the file itself, license-gated, into a
-git-ignored directory. Nothing below is redistributed by this repository, and
-none of it is required to build or test anything.
+The BVH pipeline and its recorded corpus left this repository with MIG-3
+(2026-09-23) and are `usd-motion-plugins`' now, including the producer exports
+it referenced without redistributing — the Bandai Namco Research Motiondataset
+files under CC BY-NC 4.0 — whose notice is that repository's.
 
-| Recording | How it is obtained | License |
-| --- | --- | --- |
-| [Bandai Namco Research Motiondataset](https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset) 1 and 2 — © 2022 Bandai Namco Research Inc. | two files named in [`libs/motionBvh/tests/corpus/recorded/manifest.json`](libs/motionBvh/tests/corpus/recorded/manifest.json), fetched with `scripts/fetch_corpus.py --corpus motion --accept-license bandai-namco-motiondataset` | [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). Attribution required; **non-commercial use only**, which is why these bytes are not committed to an Apache-2.0 repository. |
+One recording derived from that corpus is committed here:
+`tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda`, the published
+converter's output from a mocopi export its capture's owner cleared for
+publication in this repository on 2026-08-04. It carries the same clearance
+([tests/motion/fixtures/README.md](tests/motion/fixtures/README.md)).

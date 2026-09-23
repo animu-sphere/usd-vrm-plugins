@@ -59,8 +59,9 @@ def is_history(rel: str) -> bool:
 # authored, so nothing here is checked: a copy's relative links resolve against
 # its original's directory and are broken by construction wherever it was
 # staged. `.strata/` began carrying one when openstrata.toml grew
-# `[[workspace.install_data]]` -- packaging stages `profiles/motion/` whole, and
-# its README.md links five files by repository-relative path.
+# `[[workspace.install_data]]` -- packaging staged `profiles/motion/` whole, and
+# its README.md linked five files by repository-relative path. The profiles left
+# with MIG-3; `.strata/` stays generated either way.
 GENERATED = ("build/", "scratch/", ".strata/", "dist/", ".ost-ci/")
 
 
@@ -160,86 +161,13 @@ def check_schema_contract(failures: list[str]) -> None:
 
 
 # --- one rig, described in three places --------------------------------------
-
-# The one capture-product rig this repository reads over two transports. The
-# live adapter maps its joints by id; the recorded profile maps the same joints
-# by name; and the committed export is where the correspondence between the two
-# was measured, because a BVH hierarchy is a depth-first list and `bnid` is a
-# position in one.
-MOCOPI_BVH = ("libs/motionBvh/tests/corpus/recorded/redistributable/"
-              "mocopi-mobile-arm-raise-turn.bvh")
-MOCOPI_PROFILE = "profiles/motion/mocopi-mobile-bvh-default-v1.yaml"
-# The adapter's own table is `motion-connectors`' since MIG-4, so the third
-# leg of the agreement below is checked there. What is checkable here is the
-# pair this repository still holds.
-
-
-def bvh_hierarchy() -> tuple[list[str], list[int]]:
-    """The export's joints depth-first: names, and each one's parent index."""
-    names: list[str] = []
-    parents: list[int] = []
-    stack: list[int] = []
-    pending: str | None = None
-    for line in read(MOCOPI_BVH).splitlines():
-        token = line.strip().split()
-        if not token:
-            continue
-        if token[0] in ("ROOT", "JOINT") and len(token) > 1:
-            pending = token[1]
-        elif token[0] == "End":
-            pending = None          # an End Site is geometry, not a joint
-        elif token[0] == "{":
-            if pending is None:
-                stack.append(-2)    # an End Site's braces, closed and ignored
-                continue
-            names.append(pending)
-            parents.append(stack[-1] if stack else -1)
-            stack.append(len(names) - 1)
-            pending = None
-        elif token[0] == "}":
-            if stack:
-                stack.pop()
-        elif token[0] == "MOTION":
-            break
-    return names, parents
-
-
-def profile_joint_bones() -> dict[str, str | None]:
-    """Each joint the profile names, and the canonical bone it carries."""
-    text = read(MOCOPI_PROFILE)
-    bones: dict[str, str | None] = {}
-    for name, bone in re.findall(
-            r"^\s{2}(\w+):\s*\{\s*bone:\s*(\w+)", text, re.M):
-        bones[name] = bone
-    ignored = re.search(r"^ignoredJoints:\s*\[([^\]]*)\]", text, re.M)
-    if ignored:
-        for name in ignored.group(1).split(","):
-            bones[name.strip()] = None
-    return bones
-
-
-def check_mocopi_rig_agreement(failures: list[str]) -> None:
-    """The recorded profile describes the rig the committed export carries.
-
-    This used to be a three-way agreement: the live adapter's joint table, the
-    recorded profile, and the committed BVH export. The adapter left with MIG-4
-    and is `motion-connectors`' `motionConnectorMocopi` now, so the leg that
-    compared a socket's table against a file's is checked there, against the
-    same measurement — the handedness run of 2026-08-12, which matched all 27
-    rest offsets sign for sign.
-
-    What stays checkable here is the pair this repository still holds, and it
-    is the one that would silently rot: a BVH hierarchy is depth-first and the
-    profile maps by joint name, so a renamed or reordered joint in the export
-    has to fail rather than map to nothing.
-    """
-    names, _ = bvh_hierarchy()
-    profile = profile_joint_bones()
-    for index, name in enumerate(names):
-        if name not in profile:
-            failures.append(
-                f"{MOCOPI_PROFILE}: joint {name!r} (bone {index} natively) is "
-                f"neither mapped nor listed as ignored")
+#
+# The mocopi rig agreement -- the live adapter's joint table, the recorded
+# profile, the committed BVH export -- has no leg left here. The adapter left
+# with MIG-4 for `motion-connectors`, and the profile and the export with MIG-3
+# for `usd-motion-plugins`, whose `workspace_motion_profiles` holds every
+# shipped profile against the export it describes (a joint neither mapped nor
+# ignored fails it), which is what this check did.
 
 
 def check_openusd_pin(failures: list[str]) -> None:
@@ -596,7 +524,7 @@ def main() -> int:
 
     failures: list[str] = []
     for check in (check_inventory, check_no_stale_paths,
-                  check_schema_contract, check_mocopi_rig_agreement,
+                  check_schema_contract,
                   check_openusd_pin, check_release_lane_ost_pin,
                   check_release_records, check_roadmap_status,
                   check_retired_doc_names, check_component_status,

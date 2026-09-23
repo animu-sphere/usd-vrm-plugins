@@ -146,8 +146,8 @@ paths of three ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.
 and why the VMC half of the root/hips decision is still open.
 
 The one exception is not in that table because it produces no motion: `motionBvh`
-reads a **real** producer export, committed at
-[`tests/corpus/recorded/`](../../libs/motionBvh/tests/corpus/recorded/) since
+— `usd-motion-plugins`' since MIG-3 — reads a **real** producer export, committed at
+[`tests/corpus/recorded/`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/libs/motionBvh/tests/corpus/recorded/) since
 2026-08-04. It is a file rather than a session — a parser meeting real bytes,
 which is a different claim from a runtime meeting a real device, and it is the
 only one of the two this repository can currently make.
@@ -182,14 +182,15 @@ one is what a decoder reading that path segment as an integer would have dropped
 silently ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)).
 
 **One recorded motion file format other than `.vrma` becomes motion, as of
-v0.7.0.** BVH — the format most capture applications export — is a generic
+v0.7.0** — through `usd-motion-plugins`' converter since MIG-3 (2026-09-23),
+which this product no longer ships; a converted clip bakes here unchanged. BVH — the format most capture applications export — is a generic
 pipeline (`motionBvh` + `motionSource`) whose producer semantics live in
 declarative profiles rather than in the parser
 ([plan](../roadmap/recorded-motion-sources.md)). A joint's name, unit and axes
 stay uninterpreted until a profile says what they mean, so
 `motion_bvh_convert` **refuses every file until one is named** and there is no
 default profile anywhere. Two producers' profiles ship in
-[`profiles/motion/`](../../profiles/motion/); a profile the repository does not
+[`profiles/motion/`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/profiles/motion/); a profile the repository does not
 ship works the same way, by path. FBX is not planned; the layering exists so
 that a second reader can be added without changing anything above it.
 

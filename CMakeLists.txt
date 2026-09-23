@@ -65,55 +65,10 @@ if(USDVRM_BUILD_TESTS)
                 "-DPROBE_GENERATOR=${CMAKE_GENERATOR}"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/openusd_contract_test.cmake")
 
-    # Each shipped producer profile against the recorded file it claims to
-    # describe. Registered here rather than in either library because it is the
-    # one check that holds a reader's file and a profile at once, which neither
-    # of them may: motionSource is forbidden to know a reader exists, motionBvh
-    # to know a producer does (WORKSPACE.md §2). A caller is what may hold both.
-    # `motion_bvh_convert` is now such a caller and this script stays anyway:
-    # the tool checks that a profile and a file *convert*, and this checks that
-    # a shipped profile still describes the file it claims to, which is a
-    # question about the data and is answerable with no build at all.
+    # The producer-profile checks (`workspace_motion_profiles` and its two
+    # invented-rig runs) left with the profiles in MIG-3; they are
+    # `usd-motion-plugins`' now, beside the data they check.
     find_package(Python3 COMPONENTS Interpreter QUIET)
-    if(Python3_Interpreter_FOUND
-       AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
-        add_test(NAME workspace_motion_profiles
-            COMMAND "${Python3_EXECUTABLE}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py")
-        # Held against a producer's recorded export, which the OpenExec plan's
-        # P0-2 label names. The two runs below read an invented rig instead.
-        set_property(TEST workspace_motion_profiles
-            APPEND PROPERTY LABELS "motion.real-corpus")
-
-        # The same script over an invented rig with no bytes anywhere. A
-        # recording this repository may not redistribute leaves a manifest row
-        # and its measured hierarchy, and the profile that names it is held
-        # against that instead of against a file -- a path the real corpus does
-        # not exercise while every row it can check has its bytes committed.
-        #
-        # The pair is the test. Passing alone would be satisfied by a check that
-        # had quietly stopped looking, so the second run is a profile that gets
-        # exactly one thing wrong -- a bone mapped outside the chain it belongs
-        # to, every name and count still agreeing -- and it must fail. That is
-        # the near-miss the check exists for, arriving through the path with no
-        # file behind it.
-        set(_motion_profile_fixture
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/profile-check")
-        if(EXISTS "${_motion_profile_fixture}")
-            add_test(NAME workspace_motion_profiles_absent
-                COMMAND "${Python3_EXECUTABLE}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py"
-                    --profiles "${_motion_profile_fixture}/profiles"
-                    --corpus "${_motion_profile_fixture}/corpus")
-            add_test(NAME workspace_motion_profiles_absent_misplaced
-                COMMAND "${Python3_EXECUTABLE}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py"
-                    --profiles "${_motion_profile_fixture}/profiles-misplaced"
-                    --corpus "${_motion_profile_fixture}/corpus")
-            set_tests_properties(workspace_motion_profiles_absent_misplaced
-                PROPERTIES WILL_FAIL TRUE)
-        endif()
-    endif()
 
     # Kept under a name of our own, because `Python3_Interpreter_FOUND` does not
     # survive this file. `find_package(pxr)` below runs pxrConfig.cmake in *this*
@@ -156,20 +111,14 @@ foreach(_consumed IN ITEMS motionCore motionSampling motionRecording motionRetar
 endforeach()
 
 # What is still built here from this layer: what a VRM rig adds to the
-# consumed retarget (WORKSPACE.md §2, §9.5), and the recorded-file pair.
+# consumed retarget (WORKSPACE.md §2, §9.5).
 add_subdirectory("libs/vrmRig")
 
-# The recorded-file half stays for now. It waited on a toolchain fact rather
-# than a design one -- `ost` 0.23.2 did not materialize an external library
-# artifact declared only by a tool, and `motion_bvh` is the only consumer these
-# two have left here -- and 0.23.3 answered it (ost report 44). They leave with
-# that tool (MIG-3's consuming half), not before.
-#
-# motionSource -> motionCore and nothing else (WORKSPACE.md §2); motionBvh ->
-# motionSource, which is the edge that decides this order. Neither names
-# OpenUSD of its own.
-add_subdirectory("libs/motionSource")
-add_subdirectory("libs/motionBvh")
+# The recorded-file half left with MIG-3: `motionSource`, `motionBvh`, the BVH
+# tools and the producer profiles are `usd-motion-plugins`' now, and nothing
+# here reads a BVH file. What a converted recording does to a VRM rig is still
+# this repository's claim, over the converter's committed output
+# (tests/motion/fixtures/README.md).
 
 # Discover every plugin bundle under plugins/ rather than naming them one by one:
 # an immediate plugins/<name>/ that carries both an openstrata.plugin.yaml (the
@@ -214,27 +163,20 @@ endforeach()
 # avatar here, as a committed clip that motionRetarget's suite bakes.
 add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarget
 
-# The BVH path's CLIs. `motion_bvh_inspect` is the exception to the paragraph
-# above: it opens no stage and links no OpenUSD, because the syntax layer under
-# it has no value type to borrow from Gf. It could have been added beside
-# libs/motionBvh for that reason, and is not — a tool is a tool, and
-# `motion_bvh_convert` sits in the same directory with a stage in its hands.
-add_subdirectory("tools/motionBvh")         # BVH-1/3 — syntax, and conversion
-
 # BVH-3's evaluation point: a recorded file onto a target rig, through
-# `motion_bvh_convert` and then an **unchanged** `motion_retarget`.
+# `motion_convert` and then an **unchanged** `motion_retarget`. The converter is
+# `usd-motion-plugins`' since MIG-3, so the first arrow is its committed output
+# (tests/motion/fixtures/README.md) and this build runs the second.
 #
-# Registered here rather than in either tool's own tests for the reason the
-# profile check above is: it is the composition that is being tested, and it
-# needs two executables that only the composed build guarantees. It is also the
-# one test that would catch the recorded path needing a special case in the
-# retargeter — which is the claim that makes stopping at the avatar-independent
-# clip worth anything (roadmap/recorded-motion-sources.md §5, §7).
+# Registered here rather than in the tool's own tests because it needs the
+# fixture rig and, for the real avatar below, a plugin bundle in the same
+# build. It is the one test that would catch the recorded path needing a special
+# case in the retargeter — which is the claim that makes stopping at the
+# avatar-independent clip worth anything (roadmap/recorded-motion-sources.md §5,
+# §7).
 if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
-   AND TARGET motion_bvh_convert AND TARGET motion_retarget
-   AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures"
-   AND EXISTS
-       "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus/recorded/redistributable")
+   AND TARGET motion_retarget
+   AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures")
     set(_e2e_usd_root "")
     if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
         set(_e2e_usd_root "${pxr_DIR}")
@@ -244,16 +186,13 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
     add_test(NAME workspace_bvh_end_to_end
         COMMAND "${USDVRM_TEST_PYTHON}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/test_bvh_end_to_end.py"
-            --convert "$<TARGET_FILE:motion_bvh_convert>"
             --retarget "$<TARGET_FILE:motion_retarget>"
-            --corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
-            --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion"
             --fixtures "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures")
     set_tests_properties(workspace_bvh_end_to_end PROPERTIES
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages"
         # The OpenExec plan's P0-2 labels: a composition of two tools, over a
-        # producer's recorded export.
+        # producer's recorded export, converted.
         LABELS "motion.integration;motion.real-corpus")
 
     # The same chain onto a real VRM, which is v0.7.0's release condition's own
@@ -286,11 +225,9 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
         add_test(NAME workspace_real_avatar_bake
             COMMAND "${USDVRM_TEST_PYTHON}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/test_real_avatar.py"
-                --convert "$<TARGET_FILE:motion_bvh_convert>"
                 --retarget "$<TARGET_FILE:motion_retarget>"
                 --avatar "${_real_avatar}"
-                --corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
-                --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
+                --clip "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda")
         set_tests_properties(workspace_real_avatar_bake PROPERTIES
             ENVIRONMENT_MODIFICATION
                 "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_bundle}/plugin/resources/vrmSchema"
@@ -304,11 +241,11 @@ endif()
 
 # The OpenExec plan's P0-6: a `motion_retarget` bake against `execMotion` +
 # `execVrm` evaluating the same avatar and clip. Here for the same reason as the
-# two tests above -- it is a composition of both exec bundles, the retarget
-# tool, and the BVH converter that turns the recorded file into the clip -- and
-# after them, because it needs every one of those targets.
+# two tests above -- it is a composition of both exec bundles and the retarget
+# tool over the converted recording -- and after them, because it needs every
+# one of those targets.
 if(USDVRM_BUILD_TESTS AND TARGET ExecMotion AND TARGET ExecVrm
-   AND TARGET motion_retarget AND TARGET motion_bvh_convert)
+   AND TARGET motion_retarget)
     add_subdirectory("tests/parity")
 endif()
 
@@ -326,15 +263,17 @@ endif()
 # the OpenExec plan's P0-2 "Windows Unicode paths" row and Product P3's Unicode
 # item.
 #
-# **Three executables, where there were seven.** The three adapter recorders
-# left with MIG-4, and with them the three recorded captures this test opened
-# from a non-ASCII directory; `motion_capture` followed, as `usd-motion-plugins`'
-# `motion_record`, whose own suite now makes the claim (usd-motion-plugins #23).
-# What that costs is stated rather than absorbed: the claim "every executable
-# this workspace ships opens a non-ASCII path" is now over three, and the rest
-# of it is made where the executables went.
+# **One executable, where there were seven.** The three adapter recorders left
+# with MIG-4, and with them the three recorded captures this test opened from a
+# non-ASCII directory; `motion_capture` followed, as `usd-motion-plugins`'
+# `motion_record`, whose own suite now makes the claim (usd-motion-plugins #23);
+# and the two BVH tools left with MIG-3, their claims made by
+# `motion_convert_clip` and `motion_bvh_inspect_report` there
+# (usd-motion-plugins #25). What that costs is stated rather than absorbed: the
+# claim "every executable this workspace ships opens a non-ASCII path" is now
+# over `motion_retarget` alone, which is every executable it ships, and the
+# rest of it is made where the executables went.
 if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
-   AND TARGET motion_bvh_inspect AND TARGET motion_bvh_convert
    AND TARGET motion_retarget
    AND TARGET UsdVrmFileFormat AND TARGET UsdVrmaFileFormat
    AND TARGET UsdVrmPackageResolver AND EXISTS "${_real_avatar}")
@@ -345,20 +284,17 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
     add_test(NAME workspace_unicode_paths
         COMMAND "${USDVRM_TEST_PYTHON}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/paths/test_unicode_paths.py"
-            --bvh-inspect "$<TARGET_FILE:motion_bvh_inspect>"
-            --bvh-convert "$<TARGET_FILE:motion_bvh_convert>"
             --retarget "$<TARGET_FILE:motion_retarget>"
             --avatar "${_real_avatar}"
             --vrma "${_unicode_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
-            --bvh-corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
-            --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
+            --clip "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda")
     # The three file-format bundles as their own suites load them, and the
     # Python runtime the remaining tools load through Gf.
     set_tests_properties(workspace_unicode_paths PROPERTIES
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:${_unicode_python_dir};PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmaFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmPackageResolver>;PATH=path_list_prepend:${_unicode_plugins}/vrmSchema/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmaFileFormat/tests/resources/usdVrmaFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmPackageResolver/tests/resources/usdVrmPackageResolver;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_plugins}/vrmSchema/plugin/resources/vrmSchema"
         # A composition of every product tool and both importers, over the
-        # recorded mocopi export.
+        # recorded mocopi export, converted.
         LABELS "motion.integration;motion.real-corpus")
 else()
     message(STATUS
@@ -393,22 +329,3 @@ install(FILES
     README.md
     DESTINATION "share/doc/usd-vrm-plugins"
     OPTIONAL)
-
-# The producer profiles, at the destination WORKSPACE.md §5 names. This is the
-# plain-CMake half of "profiles are data that has to reach an artifact" and only
-# that half: `ost` 0.21.0 has no notion of a data-only member.
-#
-# That half is now **measured rather than unverified** (2026-08-05, with
-# `motion_bvh_convert`): `ost plugin package --workspace --product` produces a
-# 7-member product whose `motion_bvh` archive carries `bin/motion_bvh_inspect.exe`,
-# `bin/motion_bvh_convert.exe` and `openstrata.tool.yaml` — and no profile at
-# all, because `directories:` is what a tool member packages and a data
-# directory outside the member has no way in. So the converter in a packaged
-# product finds no profile on its executable-relative search path and refuses
-# every file it is given, which is exactly the outcome WORKSPACE.md §5 put the
-# profiles beside the tools to prevent. It blocks BVH-3's artifact-only smoke
-# and is a v0.7.0 carry-over; a plain `cmake --install` is unaffected and is
-# what this rule serves.
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion/"
-    DESTINATION "share/usd-vrm-plugins/profiles/motion"
-    FILES_MATCHING PATTERN "*.yaml")

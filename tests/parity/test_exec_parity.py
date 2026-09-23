@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """The OpenExec plan's P0-6: one bake, two implementations, the same input.
 
-    .bvh -> motion_bvh_convert -> clip --+--> motion_retarget ------> bake
+    .bvh -> motion_convert -> clip ------+--> motion_retarget ------> bake
                                          |                             |
                                          +--> execMotion + execVrm     |
                                               (exec_parity) <----------+
@@ -15,7 +15,9 @@ what a case is *for*, over the harness's JSON report.
 
 The representative input is recorded, not generated (the plan's P0-6): the
 mocopi export this repository may redistribute, converted by the shipped
-profile, onto two rigs -- the fixture shaped so a broken rest-pose correction
+profile -- by `usd-motion-plugins`' `motion_convert` since MIG-3, so the clip
+is that converter's committed output (`tests/motion/fixtures/`) -- onto two
+rigs -- the fixture shaped so a broken rest-pose correction
 cannot pass, and `Seed-san.vrm`, a released avatar with twist joints between
 bound bones and no `upperChest` for a bone the clip drives. Two generated clips
 are the other half, kept for their shape rather than their motion: the design
@@ -28,12 +30,12 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
 
-RECORDED = "mocopi-mobile-arm-raise-turn.bvh"
-PROFILE_ID = "mocopi-mobile-bvh-default-v1"
+RECORDED_CLIP = "mocopi-mobile-arm-raise-turn.usda"
 
 # The three root-motion statements a humanoid can make besides the default,
 # each as the tool's flags. A case per flag set would be three near-identical
@@ -70,14 +72,14 @@ def run(*command: str) -> subprocess.CompletedProcess:
 
 def convert(arguments: argparse.Namespace, work: pathlib.Path,
             failures: Failures) -> pathlib.Path | None:
-    bvh = arguments.corpus / "recorded" / "redistributable" / RECORDED
-    clip = work / "recorded.usda"
-    done = run(arguments.convert, str(bvh), "--profile", PROFILE_ID,
-               "--profile-dir", str(arguments.profiles), "--output", str(clip),
-               "--quiet")
-    if not failures.check(done.returncode == 0,
-                          f"motion_bvh_convert failed: {done.stderr}"):
+    """The converted recording, copied beside the bakes as the conversion
+    used to write it, so every case reads a file in its own work directory."""
+    source = arguments.fixtures / RECORDED_CLIP
+    if not failures.check(source.exists(),
+                          f"the converted recording is not at {source}"):
         return None
+    clip = work / "recorded.usda"
+    shutil.copyfile(source, clip)
     return clip
 
 
@@ -366,10 +368,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", required=True, choices=sorted(CASES))
     parser.add_argument("--parity", required=True, help="exec_parity")
-    parser.add_argument("--convert", required=True, help="motion_bvh_convert")
     parser.add_argument("--retarget", required=True, help="motion_retarget")
-    parser.add_argument("--corpus", type=pathlib.Path, required=True)
-    parser.add_argument("--profiles", type=pathlib.Path, required=True)
     parser.add_argument("--fixtures", type=pathlib.Path, required=True)
     parser.add_argument("--design-fixtures", type=pathlib.Path, required=True)
     parser.add_argument("--design-map", type=pathlib.Path, required=True)

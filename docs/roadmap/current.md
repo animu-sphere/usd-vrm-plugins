@@ -199,12 +199,14 @@ reads the clip through the consumed `ReadMotionStage` and keeps only the
 `vrm:` tracks, the first edge here that only a tool declares — what `ost`
 0.23.3 made materializable
 ([report 44](../reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md)).
-What is left of the consuming side is two things. `motionSource` /
-`motionBvh` with the BVH tools are a deletion (MIG-3), which needs the
-non-ASCII path case `workspace_unicode_paths` gives `motion_bvh_convert` to
-have a home in `usd-motion-plugins` first. `execMotion` waits on that repository publishing
-a bundle artifact, without which the parity rows cannot be re-run against the
-consumed package before the copy here is deleted.
+**MIG-3 is done too (2026-09-23)**: `motionSource`, `motionBvh`, the BVH tools
+and the profiles are deleted here, their non-ASCII path cases having moved
+first, and the suites that baked a real capture read a clip the published
+converter wrote. What is left of the consuming side is one thing: `execMotion`,
+which that repository published in v0.5.0 and which no descriptor here can
+name — `requires.bundles` takes no artifact pin in `ost` 0.23.3 (report 45) —
+so the parity rows cannot yet be re-run against the consumed package before
+the copy here is deleted.
 
 **MIG-4 is done on both sides (2026-09-21).** All six connector-bound
 identities arrived in `motion-connectors` — the two leaves, the tracker layer

@@ -2,7 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 """A recorded file onto a target rig, through two tools and nothing else.
 
-    .bvh  ->  motion_bvh_convert  ->  semantic clip  ->  motion_retarget  ->  avatar
+    .bvh  ->  motion_convert  ->  semantic clip  ->  motion_retarget  ->  avatar
+
+The first arrow is `usd-motion-plugins`' since MIG-3: this repository no longer
+builds a BVH converter, and `ost` has no way for it to consume another
+repository's tool, so the clip is that converter's committed output
+(`fixtures/mocopi-mobile-arm-raise-turn.usda`, whose README records the archive
+and the command). The conversion's own determinism is that repository's
+`motion_convert_clip` now. Everything from the clip on is this file's, as it
+was.
 
 This is BVH-3's evaluation point (roadmap/recorded-motion-sources.md §7), and
 the load-bearing word in it is **unchanged**: `motion_retarget` shipped in
@@ -62,8 +70,7 @@ from pxr import Gf, Usd, UsdSkel
 from rigcheck import (DISTANCE_TOLERANCE, ROTATION_TOLERANCE, Failures, Rig,
                       quat_distance, run_tool)
 
-RECORDED = "mocopi-mobile-arm-raise-turn.bvh"
-PROFILE_ID = "mocopi-mobile-bvh-default-v1"
+RECORDED_CLIP = "mocopi-mobile-arm-raise-turn.usda"
 
 
 def check_pipeline(failures: Failures, clip_path: pathlib.Path,
@@ -186,18 +193,14 @@ def check_pipeline(failures: Failures, clip_path: pathlib.Path,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--convert", required=True,
-                        help="motion_bvh_convert")
     parser.add_argument("--retarget", required=True, help="motion_retarget")
-    parser.add_argument("--corpus", type=pathlib.Path, required=True)
-    parser.add_argument("--profiles", type=pathlib.Path, required=True)
     parser.add_argument("--fixtures", type=pathlib.Path, required=True)
     arguments = parser.parse_args()
 
-    bvh = arguments.corpus / "recorded" / "redistributable" / RECORDED
+    clip = arguments.fixtures / RECORDED_CLIP
     avatar = arguments.fixtures / "humanoid_avatar.usda"
     map_path = arguments.fixtures / "humanoid_avatar_map.json"
-    for path in (bvh, avatar, map_path):
+    for path in (clip, avatar, map_path):
         if not path.exists():
             print(f"missing input: {path}", file=sys.stderr)
             return 1
@@ -207,16 +210,7 @@ def main() -> int:
     failures = Failures()
     with tempfile.TemporaryDirectory() as directory:
         work = pathlib.Path(directory)
-        clip = work / "canonical.usda"
         result = work / "baked.usda"
-
-        converted = run_tool(arguments.convert, str(bvh), "--profile",
-                             PROFILE_ID, "--profile-dir",
-                             str(arguments.profiles), "--output", str(clip),
-                             "--quiet")
-        if not failures.check(converted.returncode == 0,
-                              f"motion_bvh_convert failed: {converted.stderr}"):
-            return failures.report()
 
         # The same flags a `.vrma` bake uses. Nothing here says "bvh".
         baked = run_tool(arguments.retarget, "--avatar", str(avatar),
@@ -230,17 +224,11 @@ def main() -> int:
 
         check_pipeline(failures, clip, result, humanoid_map)
 
-        # The same input twice, through both tools.
-        clip_again = work / "canonical-again.usda"
+        # The same input twice.
         result_again = work / "baked-again.usda"
-        run_tool(arguments.convert, str(bvh), "--profile", PROFILE_ID,
-                 "--profile-dir", str(arguments.profiles), "--output",
-                 str(clip_again), "--quiet")
         run_tool(arguments.retarget, "--avatar", str(avatar), "--animation",
-                 str(clip_again), "--humanoid-map", str(map_path), "--output",
+                 str(clip), "--humanoid-map", str(map_path), "--output",
                  str(result_again), "--quiet")
-        failures.check(clip.read_bytes() == clip_again.read_bytes(),
-                       "two conversions of one recording differ")
         failures.check(
             result.read_bytes() == result_again.read_bytes(),
             "two bakes of one recording onto one avatar differ")

@@ -263,12 +263,13 @@ def workspace_closure(package: str, rows: dict) -> list:
     in an order that installs each after its own dependencies.
 
     A depth-first post-order rather than the table's own order. `motionBvh`
-    requires `motionSource`, which requires `motionCore`, and `motionCore` is
+    required `motionSource`, which required `motionCore`, and `motionCore` was
     nowhere in `motionBvh`'s row -- PACKAGE_CONTRACT.md section 3 rule 3 forbids
     a config from reaching past its own declared edges, so the transitive set is
     something a consumer's installer has to compute rather than read. Taking the
-    row's list literally worked only for the packages the table happens to list
-    in topological order, and `motionBvh` is the one it does not."""
+    row's list literally worked only for the packages the table happened to list
+    in topological order, and `motionBvh` was the one it did not. Both left
+    with MIG-3; the rule is the contract's and stays for the next chain."""
     order: list = []
     seen: set = set()
 
@@ -363,10 +364,10 @@ def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
                                f"`{other}`, which is not the package under test")
 
     # `main.cpp` cannot create an edge, and applying the CMake rule to it was
-    # too coarse for the first package whose public API hands back a lower
-    # layer's type. `ExtractBvhSource` takes a `motionSource::SourceSkeleton*`,
-    # so every consumer of `motionBvh` writes that namespace whether or not it
-    # has ever heard of the package: the type arrives through *this* package's
+    # too coarse for the first package whose public API handed back a lower
+    # layer's type (`motionBvh`, until MIG-3). `ExtractBvhSource` took a
+    # `motionSource::SourceSkeleton*`, so every consumer of `motionBvh` wrote
+    # that namespace whether or not it had ever heard of the package: the type arrives through *this* package's
     # own public header, which is what a `find_dependency` is for. Refusing the
     # spelling would mean no fixture could exercise such a package at all,
     # leaving the row with the most interesting closure in the table measured by

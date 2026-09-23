@@ -70,11 +70,11 @@ true.
    same guard for a stronger reason: `pxrConfig.cmake` unconditionally
    re-creates imported targets such as `TBB::tbb`, so a second inclusion is an
    error rather than a no-op.
-3. **A config never reaches past its own declared edges.** `motionBvh` depends
-   on `motionSource` and therefore does not `find_dependency(pxr)`, although
-   OpenUSD's value types arrive through that chain — asserting an edge the
+3. **A config never reaches past its own declared edges.** `motionBvh` depended
+   on `motionSource` and therefore did not `find_dependency(pxr)`, although
+   OpenUSD's value types arrived through that chain — asserting an edge the
    descriptor does not declare would put WORKSPACE.md §2 and this file in
-   disagreement, and §2 wins.
+   disagreement, and §2 wins. Both left with MIG-3; the rule did not.
 4. **A platform dependency belongs to the library that uses it, not to its
    consumers.** `liveTransport` links `ws2_32` (Windows) or `Threads::Threads`
    (elsewhere) `PUBLIC` and its config resolves `Threads` itself; the three
@@ -212,8 +212,14 @@ this document of what `find_dependency(pxr)` is carrying.
 | --- | --- | --- | --- | --- | --- | --- |
 | `vrmContainer` | `vrmContainer::vrmContainer` | `include/vrmContainer/` | — | — | yes | **measured** |
 | `vrmRig` | `vrmRig::vrmRig` | `include/vrmRig/` | `pxr`, `motionCore` | — | yes | **measured** |
-| `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
-| `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
+
+**Two more left with MIG-3**, on 2026-09-23: `motionSource` and `motionBvh` are
+`usd-motion-plugins`'
+[`motionSource`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionSource) and
+[`motionBvh`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionBvh), with the
+BVH tools and the producer profiles. Nothing here consumes them — no member
+reads a BVH file any more — so no descriptor names them, and their rows and
+consumer fixtures went with them rather than becoming consumed rows.
 
 **Two more rows left with MIG-1 and MIG-2**, on 2026-09-21: `motionCore` and
 `motionRuntime` are `usd-motion-plugins`'
@@ -305,11 +311,12 @@ fixture that included a self-contained header would meet all five criteria a
 host can check against a package no clean consumer could build.
 
 *A config may not reach past its own edges, so the closure is the installer's to
-compute.* `motionBvh` declares `motionSource` and nothing further (§3 rule 3),
-and installing that cell literally leaves `motionSource`'s own configure with
-nothing to resolve. It is the one row where the difference shows, because the
-rest of the table happens to be listed in topological order — and it is now the
-one row measured through a three-package closure the consumer never names.
+compute.* `motionBvh` declared `motionSource` and nothing further (§3 rule 3),
+and installing that cell literally left `motionSource`'s own configure with
+nothing to resolve. It was the one row where the difference showed, because the
+rest of the table happened to be listed in topological order, and the one row
+measured through a three-package closure the consumer never names. It left with
+MIG-3; the driver still computes the closure.
 
 *Two of the five hold their C++ namespace in common, and the package name is not
 it.* `motionCore` and `motionRuntime` are both `namespace motion`: the identity
@@ -441,12 +448,14 @@ create an edge at all. What it can do is `#include` a sibling's header root,
 which makes the fixture depend on whatever else the prefix happens to hold
 rather than on this package's contract, so that is what is refused there.
 
-The distinction is not a loosening for its own sake: `motionBvh` hands back
-`motionSource::SourceSkeleton`, so *every* consumer of it writes that namespace
-whether or not it has ever heard of the package — the type arrives through
+The distinction is not a loosening for its own sake: `motionBvh` handed back
+`motionSource::SourceSkeleton`, so *every* consumer of it wrote that namespace
+whether or not it had ever heard of the package — the type arrived through
 `motionBvh`'s own public header, which is exactly what its `find_dependency` is
 for. Refusing the spelling would have left the row with the most interesting
-closure in this document measured by the weakest fixture in it.
+closure in this document measured by the weakest fixture in it. The row left
+with MIG-3; the rule is kept for the next package that hands back a lower
+layer's type.
 
 **Each of the six is verified by having been seen to fail.** A criterion that
 has only ever printed *met* is indistinguishable from one that is not checked,

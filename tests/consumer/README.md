@@ -2,14 +2,16 @@
 
 One CMake project per package, each one an *external consumer*: it calls
 `find_package`, links the exported target, includes a public header, and knows
-nothing else about this workspace. Seven of them, which is every package this
-workspace installs.
+nothing else about this workspace. Three of them, which is every package this
+workspace installs: `vrmSchema`, `vrmContainer` and `vrmRig`.
 
 **There were twelve until 2026-09-21.** `osc`, `liveTransport`,
-`motionTracking` and the three adapters left with MIG-4, and their fixtures went
-with them — a fixture is part of the package's contract, not of this directory.
-The sentences below that count twelve are kept where they record a measurement
-taken while all twelve were here.
+`motionTracking` and the three adapters left with MIG-4; `motionCore` and
+`motionRuntime` with MIG-1 and MIG-2; `motionSource` and `motionBvh` with MIG-3
+(2026-09-23). Their fixtures went with them — a fixture is part of the
+package's contract, not of this directory. The sentences below that count
+twelve are kept where they record a measurement taken while all twelve were
+here.
 
 Nothing here is built by the workspace. No `add_subdirectory` reaches this
 directory, no ctest registers it, and `scripts/check_package_consumer.py` copies
@@ -39,8 +41,8 @@ These fixtures are the consumer that is not us.
 python scripts/check_package_consumer.py vrmContainer
 ```
 
-One of the seven needs no OpenUSD and runs exactly like that: `vrmContainer`.
-The other six take a `--extra-prefix`. Three packages that needed none left with
+One of the three needs no OpenUSD and runs exactly like that: `vrmContainer`.
+The other two take a `--extra-prefix`. Three packages that needed none left with
 MIG-4, so the shape "a package with no external edge at all" has no fixture
 here any more.
 
@@ -182,11 +184,12 @@ and all of them verified by mutating a fixture until each was caught:
   which are the only two files that can create an edge.
 - **Include no sibling's header root, in C++.** `main.cpp` creates no edge, so
   the rule there is about includes rather than names. A *name* is often
-  unavoidable and always fine: `motionBvh` hands back a
-  `motionSource::SourceSkeleton`, so every consumer of it writes that namespace,
-  and the type arrives through `motionBvh`'s own public header — which is what
-  its `find_dependency` exists for. Reaching `<motionSource/…>` directly is the
-  violation, because that is the fixture depending on what else the prefix holds.
+  unavoidable and always fine: `motionBvh` handed back a
+  `motionSource::SourceSkeleton` until MIG-3, so every consumer of it wrote that
+  namespace, and the type arrived through `motionBvh`'s own public header —
+  which is what its `find_dependency` exists for. Reaching `<motionSource/…>`
+  directly was the violation, because that is the fixture depending on what
+  else the prefix holds.
 - **Reach no path out of this directory.** `add_subdirectory`, `../../`, and
   `CMAKE_SOURCE_DIR` are all refused in every file; each of them can find the
   source tree.

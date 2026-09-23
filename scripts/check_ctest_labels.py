@@ -51,22 +51,17 @@ from pathlib import Path
 # which exercise the same values through the packages.
 LABEL_SOURCES = {
     "motion.retarget": ["libs/vrmRig/tests"],
-    "motion.cli": [
-        "tools/motionRetarget/tests",
-        "tools/motionBvh/tests",
-    ],
+    # The BVH tools and their libraries left with MIG-3, and their suites with
+    # them; `motion.real-corpus` is carried here by the compositions over the
+    # converted recording alone.
+    "motion.cli": ["tools/motionRetarget/tests"],
     "motion.integration": [".", "tests/parity"],
     "motion.openexec": [
         "plugins/execMotion/tests",
         "plugins/execVrm/tests",
         "tests/parity",
     ],
-    "motion.real-corpus": [
-        ".",
-        "libs/motionBvh/tests",
-        "tools/motionBvh/tests",
-        "tests/parity",
-    ],
+    "motion.real-corpus": [".", "tests/parity"],
 }
 
 # Where a label means every test the directory registers.
@@ -270,13 +265,18 @@ def selftest():
 
     # A misspelled label: reported as unknown, and the directory it was meant
     # for reported as contributing none.
-    misspelled = [(n, w, {"motion.realcorpus"} if n.startswith(
-        "motion.real-corpus@libs/motionBvh") else l) for n, w, l in tests]
+    # Every directory left contributes one label to all of its tests or shares
+    # its labels, so the misspelling lands on a directory-wide label and the
+    # test is also reported as not carrying it -- three lines, each its own.
+    misspelled = [(n, w, {"motion.retarge"} if n.startswith(
+        "motion.retarget@libs/vrmRig") else l) for n, w, l in tests]
     expect("a misspelled label", misspelled, members,
-           ["motion.real-corpus@libs/motionBvh/tests: 'motion.realcorpus' is "
+           ["motion.retarget@libs/vrmRig/tests: 'motion.retarge' is "
             "not one of the plan's labels",
-            "motion.real-corpus: libs/motionBvh/tests contributes no test "
-            "carrying it"])
+            "motion.retarget: libs/vrmRig/tests contributes no test "
+            "carrying it",
+            "motion.retarget: motion.retarget@libs/vrmRig/tests "
+            "(libs/vrmRig/tests) does not carry it"])
 
     # A label outside motion.* is not this check's business.
     other = tests + [("osc_boundaries", "libs/osc/tests", {"boundaries"})]

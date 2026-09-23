@@ -48,9 +48,8 @@ endif()
 if(NOT TARGET vrmRig::vrmRig)
     find_package(vrmRig REQUIRED CONFIG)
 endif()
-# By name rather than through a PUBLIC re-export, for the reason `motion_bvh`
-# states about `motionSource`: the tool resamples the clip itself, before
-# either half of the bake expands it, so it has a real edge on
+# By name rather than through a PUBLIC re-export: the tool resamples the clip
+# itself, before either half of the bake expands it, so it has a real edge on
 # `motionSampling` and declaring it leaves nothing to be inferred from a
 # transitive dependency that could stop being transitive.
 if(NOT TARGET motionSampling::motionSampling)

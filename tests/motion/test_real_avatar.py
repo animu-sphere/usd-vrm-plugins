@@ -3,8 +3,12 @@
 """A recorded file onto an avatar somebody actually made.
 
     mocopi-mobile-arm-raise-turn.bvh
-        -> motion_bvh_convert  ->  semantic clip
+        -> motion_convert      ->  semantic clip
         -> motion_retarget     ->  Seed-san.vrm
+
+The first arrow is `usd-motion-plugins`' since MIG-3, so the clip is its
+converter's committed output (`tests/motion/fixtures/`, whose README records
+the archive and the command).
 
 The rig is the thing under test here, not the tools. `workspace_bvh_end_to_end`
 already drives this exact chain onto a fixture built so a broken rest-pose
@@ -67,8 +71,6 @@ from pxr import Gf, Usd, UsdSkel
 from rigcheck import (DISTANCE_TOLERANCE, ROTATION_TOLERANCE, Failures, Rig,
                       as_quatf, quat_distance, run_tool)
 
-RECORDED = "mocopi-mobile-arm-raise-turn.bvh"
-PROFILE_ID = "mocopi-mobile-bvh-default-v1"
 
 # The bone this clip drives and this avatar has no joint for. Spelled out rather
 # than derived so that a model change or a profile change is a failure with a
@@ -340,16 +342,15 @@ def check_bake(failures: Failures, clip_path: pathlib.Path,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--convert", required=True, help="motion_bvh_convert")
     parser.add_argument("--retarget", required=True, help="motion_retarget")
     parser.add_argument("--avatar", type=pathlib.Path, required=True,
                         help="a real .vrm; needs usdVrmFileFormat registered")
-    parser.add_argument("--corpus", type=pathlib.Path, required=True)
-    parser.add_argument("--profiles", type=pathlib.Path, required=True)
+    parser.add_argument("--clip", type=pathlib.Path, required=True,
+                        help="the converted recording")
     arguments = parser.parse_args()
 
-    bvh = arguments.corpus / "recorded" / "redistributable" / RECORDED
-    for path in (arguments.avatar, bvh, arguments.profiles):
+    clip = arguments.clip
+    for path in (arguments.avatar, clip):
         if not path.exists():
             print(f"missing input: {path}", file=sys.stderr)
             return 1
@@ -371,16 +372,7 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory(prefix="real-avatar-") as directory:
         work = pathlib.Path(directory)
-        clip = work / "recorded.usda"
         baked = work / "baked.usda"
-
-        converted = run_tool(
-            arguments.convert, str(bvh), "--profile", PROFILE_ID,
-            "--profile-dir", str(arguments.profiles), "--output", str(clip),
-            "--quiet")
-        if not failures.check(converted.returncode == 0,
-                              f"motion_bvh_convert failed: {converted.stderr}"):
-            return failures.report()
 
         # No --quiet: the report is what names the bone that went nowhere. The
         # flags are otherwise the ones a `.vrma` bake onto a fixture uses --

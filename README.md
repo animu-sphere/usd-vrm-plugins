@@ -44,10 +44,6 @@ project's central design decision, and it is described below.
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
 | [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at | v0.4.0 (as `vrmRetarget`) |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
-| [`motionSource`](libs/motionSource) | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | v0.7.0 |
-| [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | v0.7.0 |
-| [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
-| [`motion_bvh_convert`](tools/motionBvh) | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | v0.7.0 |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend | v0.9.0 |
 | [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | v0.9.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
@@ -75,13 +71,20 @@ that predate that rename use it in the old sense.
 > A recorded session still reaches an avatar here: `motion_retarget`'s suite
 > bakes a clip that the published recorder wrote.
 >
+> **And the recorded-file path (2026-09-23).** `motionSource`, `motionBvh`,
+> `motion_bvh_inspect`, `motion_bvh_convert` and the producer profiles are
+> `usd-motion-plugins`' — the converter as `motion_convert` — and this product
+> no longer reads a BVH file. A converted recording still reaches an avatar
+> here: the end-to-end, real-avatar and parity suites bake a clip the published
+> converter wrote. `motion_retarget` reads every clip through the consumed
+> `motionUsd`.
+>
 > **The live inputs have moved (2026-09-21).** `liveTransport`, `osc`,
 > `motionTracking`, the three adapters and their record tools are
 > [`motion-connectors`](https://github.com/animu-sphere/motion-connectors)'
 > now, under `motionConnector*` names, and this repository no longer builds,
 > ships or tests any of them. What is left of the generic half of this layer
-> — `motionSource`, `motionBvh` and `execMotion` — moves to
-> `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
+> — `execMotion` — moves to `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
 > resolution and `execVrm`, and consumes the rest as installed packages
 > ([WORKSPACE.md §9](docs/architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration plan](docs/roadmap/motion-foundation-split.md)). The table
@@ -125,8 +128,6 @@ bit. They shipped in v0.9.0. What comes next:
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |
 | [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `motionRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
-| `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
-| `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a
@@ -158,10 +159,6 @@ osc ────────────────────> nothing — th
 motionTracking ─────────> nothing — the same again, and for a third reason: it
                           maps one vocabulary it owns onto another
 
-motionSource ───────────> motionCore
-motionBvh ──────────────> motionSource
-motion_bvh_convert ─────> motionBvh, motionSource, OpenUSD stage
-
                           (planned)
 execMotion ─────────────> motionCore, motionSampling, motionRecording
 execVrm ────────────────> vrmSchema, motionRetarget, vrmRig
@@ -179,9 +176,6 @@ Five rules keep those edges honest:
   the nodes are thin wrappers.
 - Adapters depend on the core. The core never depends on an adapter, and
   `motionCore` never sees a vendor SDK, a network protocol, or a product name.
-- A file reader knows a format and no semantics; `motionSource` knows semantics
-  and no format. `motionBvh → motionSource` never reverses, so a second reader
-  can be added without changing anything above it.
 - **Live input and recorded files meet at `motionCore` and nowhere earlier.** An
   adapter never reaches for a reader, and a reader never reaches for an adapter.
 
@@ -351,8 +345,7 @@ macOS arm64 / Linux:
   root CMake tree and run its CTest suite. This is the behavioral lane: the root
   tree is the only configuration in which the plain libraries and the CLI tools
   exist, and its suite also contains every bundle's own tests, so it is the
-  coverage `vrmRig`, `vrmContainer`, `motionSource`, `motionBvh`,
-  `motion_retarget`, all four plugin bundles and the
+  coverage `vrmRig`, `vrmContainer`, `motion_retarget`, all four plugin bundles and the
   whole-workspace `usdvrm_baseline` gate get.
 - **Three bundle cells** — `usdVrmFileFormat` on each OS — which build that
   bundle *standalone* (`ost plugin build`, no root tree in scope), run its

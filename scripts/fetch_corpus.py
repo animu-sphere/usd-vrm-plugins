@@ -2,19 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Fetch opt-in / non-vendored corpus assets declared in a corpus manifest.
 
-Two corpora declare them, and one fetcher serves both. They hold different
-things - avatars for the VRM reader, recordings for the BVH one - and exactly
-the same policy, so a second script would be a second license gate to keep in
-step with this one:
+One corpus declares them:
 
   vrm     plugins/usdVrmFileFormat/tests/corpus/manifest.json
           every `storage == "fetch"` model plus every `candidates[]` entry:
           the VRoid samples (Vita, Victoria_Rubin, Sendagaya_Shino,
           AvatarSample_A/B) and Alicia
-  motion  libs/motionBvh/tests/corpus/recorded/manifest.json
-          every `storage == "fetch"` recording: a producer export under a
-          licence this repository may not carry, whose manifest row stays
-          behind with the measurements taken from it
+
+There were two. The recorded BVH corpus left with `motionBvh` in MIG-3 and is
+`usd-motion-plugins`' now, fetch rows included. The table below keeps its
+shape, and `fetchDir` its meaning, so a second corpus is one entry again.
 
 It is deliberately conservative, per the corpus policy:
 
@@ -36,19 +33,13 @@ It is deliberately conservative, per the corpus policy:
 Nothing here is committed to the repo; downloaded files land under each
 corpus's own git-ignored directory.
 
-What to do afterwards is the same in both corpora and is not this script's job:
-re-measure. `libs/motionBvh/tools/check_corpus.py --check --recorded` reads a
-fetched recording with the scanner that wrote its manifest row and says so if
-the two disagree, and `scripts/check_motion_profiles.py` then holds the profile
-against the file rather than against the row.
+What to do afterwards is not this script's job: re-measure.
 
 Usage:
   python scripts/fetch_corpus.py                       # every corpus
-  python scripts/fetch_corpus.py --corpus motion       # one of them
+  python scripts/fetch_corpus.py --corpus vrm          # one of them
   python scripts/fetch_corpus.py --list
   python scripts/fetch_corpus.py --accept-license alicia-solid-vrm0
-  python scripts/fetch_corpus.py --corpus motion \
-      --accept-license bandai-namco-motiondataset
 """
 from __future__ import annotations
 
@@ -69,11 +60,6 @@ def vrm_entries(manifest: dict) -> list[dict]:
     return out
 
 
-def motion_entries(manifest: dict) -> list[dict]:
-    return [row for row in manifest.get("fixtures", [])
-            if row.get("storage") == "fetch"]
-
-
 # `root` is what `targetPath` is relative to, and it is the corpus directory
 # rather than the manifest's own, because the VRM manifest sits at its corpus
 # root and the recorded one sits a level down inside it.
@@ -84,17 +70,6 @@ CORPORA = {
         "entries": vrm_entries,
         "identity": lambda entry: entry["id"],
         "label": lambda entry: entry.get("vrmVersion", "?"),
-    },
-    "motion": {
-        "corpus": REPO_ROOT / "libs" / "motionBvh" / "tests" / "corpus",
-        "manifest": "libs/motionBvh/tests/corpus/recorded/manifest.json",
-        "entries": motion_entries,
-        "identity": lambda entry: entry["file"],
-        "label": lambda entry: entry.get("producer", "?"),
-        # The one git-ignored place a fetched recording may land. Declared here
-        # rather than left to each row, so that a row which forgets `targetPath`
-        # still cannot put licence-encumbered bytes in a tracked directory.
-        "fetchDir": "recorded/fetched",
     },
 }
 
