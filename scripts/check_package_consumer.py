@@ -97,6 +97,11 @@ def consumed_packages() -> set:
     Read from the descriptors, so a library that starts or stops being consumed
     needs no edit here. The block is `requires.libraries[].artifact`, which is
     what `ost` 0.23.x materializes by digest before a build.
+
+    Only the `libraries:` list counts. Since `ost` 0.23.4 a `bundles:` or
+    `tools:` entry can carry the same block -- `execVrm` pins the consumed
+    `execMotion` that way -- and a bundle is not a CMake package a consumer
+    resolves.
     """
     consumed: set = set()
     for pattern in ("libs/*/openstrata.library.yaml",
@@ -105,11 +110,17 @@ def consumed_packages() -> set:
         for path in REPO_ROOT.glob(pattern):
             text = path.read_text(encoding="utf-8")
             current = None
+            section = None
             for line in text.splitlines():
                 stripped = line.strip()
-                if stripped.startswith("- id:"):
+                if stripped in ("libraries:", "bundles:", "tools:",
+                                "capabilities:"):
+                    section = stripped[:-1]
+                    current = None
+                elif stripped.startswith("- id:"):
                     current = stripped.split(":", 1)[1].strip()
-                elif stripped.startswith("artifact:") and current:
+                elif (stripped.startswith("artifact:") and current
+                      and section == "libraries"):
                     consumed.add(current)
                     current = None
     return consumed
