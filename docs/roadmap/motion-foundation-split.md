@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; ✅ MIG-3 — `motionSource`, `motionBvh`, the BVH tools and the profiles deleted here on 2026-09-23; 🚧 MIG-1 and MIG-2 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget` and `motionUsd`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left is `execMotion`, which waits on consuming a published bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; ✅ MIG-3 — `motionSource`, `motionBvh`, the BVH tools and the profiles deleted here on 2026-09-23; 🚧 MIG-1 and MIG-2 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget` and `motionUsd`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left is `execMotion`, which waits on usd-motion-plugins v0.5.1 pushing the bundle to a registry and on `ost` composing an external bundle into the root build (ost report 46); **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -346,11 +346,20 @@ repository's, and needs nothing from this one.
     [§3](#3-mig-1--the-core-)'s last item still holds. USD-O4 does answer half
     of §8's open question about the `vrm:` expression weights — see there.
   - ⛔ This repository deletes `plugins/execMotion` in a consuming change of
-    its own: the parity rows are re-run against the consumed bundle before the
-    copy here goes. `usd-motion-plugins` published the bundle in its v0.5.0
-    (2026-09-20), so what it waits on is `ost`: `requires.bundles` takes no
-    artifact pin, so no descriptor here can name a bundle from another
-    repository (ost report 45 §5, #224).
+    its own, and the parity rows are re-run against the consumed bundle before
+    the copy here goes. `ost` 0.23.4 added the pin, and the rows have been
+    re-run once by hand (2026-09-24). On a scratch branch, inside an
+    `ost plugin run` session, `execVrm`'s four exec suites, the driver contract
+    and all five parity cases pass against an external `execMotion`
+    ([ost report 46](../reports/ost/46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md)
+    §3). Two things still block the change:
+    - **A published bundle to pin.** v0.5.0 attached the bundle to its
+      release without pushing it to a registry, so a pin had no `source`.
+      [usd-motion-plugins #26](https://github.com/animu-sphere/usd-motion-plugins/pull/26)
+      prepares v0.5.1, which pushes it and the CLIs.
+    - **`ost`:** the root build materializes a member's external libraries
+      only. Every suite here that composes the bundle is a root CTest suite, so
+      after the deletion none of them could load it (report 46 §5, P1).
 - 🚧 What stays is re-read as a consumer: the VRM humanoid map,
   `ExpressionResolver`, `LookAtEvaluator`, `motion_retarget` as a VRM CLI,
   `execVrm`. The OpenExec parity values are re-run against the consumed
