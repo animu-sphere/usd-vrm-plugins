@@ -1192,6 +1192,85 @@ def check_a_gaze_expression_collision_is_reported_once(
         f"the clip's own lookLeft weight survived the gaze: {left}")
 
 
+def check_a_generic_channel_drives_the_face(
+        tool: str, fixtures: pathlib.Path, humanoid_map: str,
+        workspace: pathlib.Path, failures: Failures) -> None:
+    """A `motion:channelName` channel reaches this rig's expressions by name.
+
+    The clip is read through `motionUsd`, whose channels are the generic
+    stage's (its USD_MAPPING.md §4.3), so a clip `motion_record` or
+    `motion_convert` wrote drives the face the way a `.vrma` does through
+    `vrm:expressionName`. And when one clip states a name both ways, the
+    `vrm:` expression -- this rig's own vocabulary -- wins, and the operator
+    is told once rather than per sample.
+    """
+    clip = workspace / "channel_clip.usda"
+    shutil.copy(fixtures / "expressive_clip.usda", clip)
+    clip_stage = Usd.Stage.Open(str(clip))
+    clip_stage.RemovePrim("/Animation/Expressions")
+    channel = clip_stage.DefinePrim("/Animation/Channels/happy", "Scope")
+    channel.CreateAttribute("motion:channelName", Sdf.ValueTypeNames.String,
+                            True).Set("happy")
+    value = channel.CreateAttribute("motion:channelValue",
+                                    Sdf.ValueTypeNames.Float, True)
+    value.Set(0.0, 0.0)
+    value.Set(1.0, 30.0)
+    clip_stage.GetRootLayer().Save()
+
+    avatar = fixtures / "expressive_avatar.usda"
+    output = workspace / "channel_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--humanoid-map", humanoid_map)
+    if not failures.check(
+            result.returncode == 0,
+            f"bake of a generic channel failed: {result.stderr.strip()}"):
+        return
+    baked = Usd.Stage.Open(str(output))
+    animation = find_animation(baked)
+    blend_shapes = list(animation.GetBlendShapesAttr().Get() or [])
+    failures.check(
+        blend_shapes == ["Face_Brow", "Face_Smile"],
+        f"a 'happy' channel authored blendShapes {blend_shapes}, expected "
+        f"happy's two binds")
+    if blend_shapes == ["Face_Brow", "Face_Smile"]:
+        values = list(animation.GetBlendShapeWeightsAttr().Get(30.0))
+        failures.check(
+            vectors_match(values, [0.5, 1.0]),
+            f"a 'happy' channel at 1 resolved to {values}, expected "
+            f"[0.5, 1.0]")
+
+    # The same name as a `vrm:` expression too, at another weight.
+    named = clip_stage.DefinePrim("/Animation/Expressions/happy", "Scope")
+    named.CreateAttribute("vrm:expressionName", Sdf.ValueTypeNames.Token,
+                          True).Set("happy")
+    weight = named.CreateAttribute("vrm:expressionWeight",
+                                   Sdf.ValueTypeNames.Float)
+    weight.Set(0.0, 0.0)
+    weight.Set(0.5, 30.0)
+    clip_stage.GetRootLayer().Save()
+    output = workspace / "channel_collision_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--humanoid-map", humanoid_map)
+    if not failures.check(
+            result.returncode == 0,
+            f"bake of a colliding channel failed: {result.stderr.strip()}"):
+        return
+    occurrences = result.stderr.count(
+        "clip states 'happy' as both a vrm: expression and a motion channel")
+    failures.check(
+        occurrences == 1,
+        f"the channel/expression collision was reported {occurrences} "
+        f"times, expected exactly one line")
+    baked = Usd.Stage.Open(str(output))
+    animation = find_animation(baked)
+    values = list(animation.GetBlendShapeWeightsAttr().Get(30.0))
+    failures.check(
+        vectors_match(values, [0.25, 0.5]),
+        f"the vrm: expression did not win over the channel: {values}")
+
+
 def check_a_recorded_session_bakes(tool: str, tool_fixtures: pathlib.Path,
                                    avatar: pathlib.Path, humanoid_map: str,
                                    workspace: pathlib.Path,
@@ -1393,15 +1472,19 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
          bake("--animation-name", "not a name"),
          EXIT_INVALID_USER_INPUT, "is not a valid prim name"),
         # --- 2: the clip is not one this tool reads --------------------------
+        # The two refusals below are motionUsd's since the clip is read
+        # through it; the tool prefixes them and keeps the exit code.
         ("a clip naming no human bone", bake(clip_path=unsemantic),
-         EXIT_UNSUPPORTED_SOURCE_FEATURE, "names a VRM human bone"),
+         EXIT_UNSUPPORTED_SOURCE_FEATURE,
+         "cannot be read as a semantic clip: no joint of animation"),
         ("a clip skeleton naming one bone twice", bake(clip_path=twice_named),
          EXIT_UNSUPPORTED_SOURCE_FEATURE,
          "names a human bone on more than one joint ('spine' by 'hips/spine', "
          "'spine' by 'hips/spine/spine')"),
         ("a clip skeleton with no joints", bake(clip_path=jointless),
          EXIT_UNSUPPORTED_SOURCE_FEATURE,
-         "has no joints, so its rest pose cannot be read"),
+         "cannot be read as a semantic clip: skeleton </Animation/HumanoidSkeleton> "
+         "authors no joints"),
         ("a clip with no skeleton", bake(clip_path=empty),
          EXIT_UNSUPPORTED_SOURCE_FEATURE,
          "the animation stage has no UsdSkelSkeleton"),
@@ -1682,6 +1765,9 @@ def main() -> int:
         check_provenance_flags(options.tool, avatar, clip,
                                options.humanoid_map, workspace, failures)
 
+        check_a_generic_channel_drives_the_face(
+            options.tool, tool_fixtures, options.humanoid_map, workspace,
+            failures)
         check_a_recorded_session_bakes(options.tool, tool_fixtures, avatar,
                                        options.humanoid_map, workspace,
                                        failures)

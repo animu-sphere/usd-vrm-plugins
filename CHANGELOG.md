@@ -15,6 +15,41 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **`motion_retarget` reads the clip through `motionUsd`** (MIG-2,
+  2026-09-23). `StageIo`'s clip reading is a call to `usd-motion-plugins`'
+  published [`motionUsd`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionUsd)
+  `ReadMotionStage`, pinned by archive digest per target from its v0.5.0 pin
+  table, plus this repository's own `vrm:` reading — the expression tracks,
+  the gaze track and the look-at offset, which the library refuses on
+  purpose. A `vrm:` key the body does not share gets its pose from the
+  library's `PoseFromStageSample`, so the tool and the reader cannot disagree
+  about the body at that instant. The tool is the only consumer `motionUsd`
+  has here, so this is the first edge in the workspace that only a tool
+  declares — what `ost` 0.23.3 made materializable.
+  - **A generic channel drives the face.** A clip's `motion:channelName`
+    channels — what `motion_record` and `motion_convert` author — now reach
+    the expression resolve by name, as `vrm:expressionName` tracks do. When a
+    clip states one name both ways, the `vrm:` expression wins and the tool
+    says so once.
+  - **The hips' rotation is also the root's orientation on every read pose**,
+    and a clip's `customData.motion.nominalFrameRate` is its rate. Neither
+    changes a bake: the retarget reads no root orientation and the resample
+    takes its rate from `--resample-rate`. Every `workspace_exec_parity_*`
+    case passes unchanged.
+  - **Two refusals are worded by the library.** A clip naming no human bone
+    and a clip skeleton with no joints still exit 2, and their message is
+    `motionUsd`'s, after `cannot be read as a semantic clip:`.
+- **The `ost` pin is 0.23.3** — `openstrata.ci.yaml`, the workflow re-rendered
+  from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
+  It is taken for the two P1s of
+  [ost report 44](docs/reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md):
+  `ost library pull` and the root build now include an external artifact only
+  a tool declares, and the graph validates a tool's library edges (a missing
+  one is `WORKSPACE_LIBRARY_DEPENDENCY_MISSING`, exit 5, measured); and a
+  build tree whose cache was configured against another runtime is discarded
+  and reconfigured rather than reused. The re-render changes nothing but the
+  version.
+
 - **The retarget is a consumed package, and what stayed is `vrmRig`** (MIG-2,
   2026-09-23). The generic half of `libs/vrmRetarget` is gone; `execVrm`,
   `motion_retarget` and the parity harness resolve `usd-motion-plugins`'

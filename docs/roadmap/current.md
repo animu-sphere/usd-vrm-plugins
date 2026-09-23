@@ -194,11 +194,15 @@ in five descriptors, with the whole suite green against them.
 consumed `motionRetarget`, both builder copies are calls to it, every parity
 row came out identical, and what stayed is `vrmRig`
 ([the track §4](motion-foundation-split.md#4-mig-2--sampling-retarget-usd-bridge-)).
-What is left of the consuming side waits on two specific things.
-`motionSource` / `motionBvh` with the BVH tools, and `motionUsd` in place of
-`StageIo`'s reading half, wait on `ost` materializing an external artifact
-that only a **tool** declares: `motion_bvh` and `motion_retarget` are the one
-consumer each has left here. `execMotion` waits on that repository publishing
+**And so is `motionUsd`'s reading half (2026-09-23)**: `motion_retarget`
+reads the clip through the consumed `ReadMotionStage` and keeps only the
+`vrm:` tracks, the first edge here that only a tool declares — what `ost`
+0.23.3 made materializable
+([report 44](../reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md)).
+What is left of the consuming side is two things. `motionSource` /
+`motionBvh` with the BVH tools are a deletion (MIG-3), which needs the
+non-ASCII path case `workspace_unicode_paths` gives `motion_bvh_convert` to
+have a home in `usd-motion-plugins` first. `execMotion` waits on that repository publishing
 a bundle artifact, without which the parity rows cannot be re-run against the
 consumed package before the copy here is deleted.
 

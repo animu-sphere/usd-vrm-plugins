@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left waits on `ost` materializing an artifact only a tool declares (`motionUsd`, `motionSource`, `motionBvh`) or on a published `execMotion` bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget` and `motionUsd`**, with what stayed of `vrmRetarget` renamed `vrmRig`; what is left is MIG-3's deletion of `motionSource`, `motionBvh` and the BVH tools, and `execMotion`, which waits on consuming a published bundle; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -297,14 +297,26 @@ repository's, and needs nothing from this one.
     stage half was already answered on 2026-09-20 and its pose half is still
     open. What §8 gains is one rule the implementation produced — see there.
     The `.vrma` stage here still does not change.
-  - ⛔ This repository deletes `StageIo`'s reading half in a consuming change
-    of its own. It no longer waits on report 41 but on the next thing down:
-    `ost` 0.23.2 materializes an external artifact declared by a library or a
-    plugin descriptor and not one declared only by a tool, and `motion_retarget` is the only consumer
-    `motionUsd` would have here.
-    `ReadClip` becomes a call to `ReadMotionStage` plus this repository's own
-    `vrm:` reading — the expression tracks, the gaze track and the clip's
-    look-at offset — which the destination refused on purpose.
+  - ✅ **Consumed here (2026-09-23).** `StageIo`'s reading half is deleted:
+    `ReadClip` is a call to `motionUsd`'s `ReadMotionStage`, pinned by digest
+    in `motion_retarget`'s descriptor, plus this repository's own `vrm:`
+    reading — the expression tracks, the gaze track and the clip's look-at
+    offset — which the destination refused on purpose. It waited on `ost`
+    0.23.2 materializing no artifact only a tool declares
+    ([report 44](../reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md));
+    0.23.3 does, and graphs and validates the tool's edge as well.
+    - A `vrm:` key the body does not share gets its pose from
+      `PoseFromStageSample`, the rule the reader applies, so the tool holds no
+      copy of the clip → pose rule either.
+    - Three behaviours came with the package. The hips' rotation is the
+      root's orientation too, which §4 above predicted would not move the
+      parity rows: it did not, since the retarget reads no root orientation.
+      A clip's `nominalFrameRate` is the producer's rate, which the tool does
+      not read. And a generic `motion:channelName` channel now drives the
+      face by name, as a `vrm:expressionName` track does; a name stated both
+      ways takes the `vrm:` value and is reported once.
+    - `LeafToken`, one of the three copies of the leaf-segment rule, went
+      with it.
 - ✅ `execMotion` arrived as `usd-motion-plugins`' optional
   `plugins/execMotion` (2026-09-20,
   [usd-motion-plugins #11](https://github.com/animu-sphere/usd-motion-plugins/pull/11)),
