@@ -9,9 +9,13 @@ runs on every lane and in a few seconds:
 * **The repository boundary.** usd-motion-plugins is reached as an installed
   package and never as a source tree: no `add_subdirectory()` out of this
   repository, no `FetchContent` or `ExternalProject`, no `include()` of another
-  repository's file. No member here builds a library under one of that
-  repository's identities either -- a second `motionRetarget` in this tree is
-  the copy MIG-1..MIG-4 deleted, coming back.
+  repository's file.
+* **Nothing left behind** (MIG-5). No identity WORKSPACE.md §9.1 sent to
+  usd-motion-plugins or motion-connectors comes back, under the name it had
+  here or the one it has there: no member directory, no target or target
+  prefix (`motionCore_tests`), no file under `adapters/` or `profiles/motion/`,
+  and no source that opens one of their namespaces. A second `motionRetarget`
+  in this tree is the copy MIG-1..MIG-4 deleted, coming back.
 * **The root orchestrates.** The root CMakeLists.txt resolves no consumed
   package: each member resolves what it links (cmake/UsdVrmConsumedPackage.cmake),
   so the root does not make every member's configure require every package.
@@ -59,7 +63,50 @@ CONSUMED = frozenset({
     "motionCore", "motionSampling", "motionRecording", "motionRetarget",
     "motionUsd", "motionSource", "motionBvh",
 })
-FOREIGN_IDENTITIES = CONSUMED | {"execMotion"}
+
+MOTION_PLUGINS = "usd-motion-plugins"
+CONNECTORS = "motion-connectors"
+
+# Every identity WORKSPACE.md §9.1 sends to another repository, under every
+# name it has had -- the one it had here and the one it has there -- with the
+# repository that owns it now (MIG-5: nothing left behind). None may be a
+# member, a target or a target's prefix here: `motionCore_tests` is a copy of
+# motionCore's suite as surely as `add_library(motionCore)` is a copy of it.
+DEPARTED: dict[str, str] = {
+    **{name: MOTION_PLUGINS for name in CONSUMED},
+    **{name: MOTION_PLUGINS for name in (
+        # The bundle, the library `motionRuntime` became two of, the tools,
+        # and the two identities reserved there that never existed here.
+        "execMotion", "motionRuntime", "motionCapture", "motion_capture",
+        "motion_record", "motion_bvh_inspect", "motion_bvh_convert",
+        "motion_convert", "motionFbx", "usdBvhFileFormat",
+        # What stayed of it is `vrmRig`, so the old name back is the generic
+        # half back.
+        "vrmRetarget")},
+    **{name: CONNECTORS for name in (
+        "liveTransport", "osc", "motionTracking",
+        "vrmAdapterVmc", "vrmAdapterMocopi", "vrmAdapterVrchatOsc",
+        "vrmAdapterArdy", "vmc_record", "mocopi_record", "vrchat_osc_record",
+        "motionConnectorTransport", "motionConnectorOsc",
+        "motionConnectorTracking", "motionConnectorVmc",
+        "motionConnectorMocopi", "motionConnectorVrchatOsc")},
+}
+# Trees that held nothing but departed code. Any file in one is a copy.
+DEPARTED_TREES: dict[str, str] = {
+    "adapters": CONNECTORS,
+    "profiles/motion": MOTION_PLUGINS,
+}
+
+# The member directory `motion_retarget` lives in shares the library's name.
+DEPARTED_DIR_EXCEPTIONS = {("tools", "motionRetarget")}
+
+# The namespaces departed code was written in, here and there. Code here uses
+# them (`openstrata::motion::MotionPose`) and never opens one: a definition
+# inside one is an implementation of the shared packages, which is theirs.
+_DEPARTED_NAMESPACE = re.compile(
+    r"\bnamespace\s+(openstrata|motion|motionRuntime|motionSource|motionBvh|"
+    r"motionTracking|vrmRetarget|liveTransport|osc|vrmAdapter\w*)\b"
+    r"(?:\s*::\s*\w+)*\s*\{")
 
 # The consumed packages each member may link (WORKSPACE.md §2). A member missing
 # from this table is an error: its row is a decision, not a default.
@@ -278,16 +325,46 @@ def check_repository_boundary(root: Path, report: Report) -> None:
             if args and "usd-motion-plugins" in args[0]:
                 report.error(f"{rel}: include({args[0]}) reads another repository's file")
         for args in call_args(code, "add_library") + call_args(code, "add_executable"):
-            if args and args[0] in FOREIGN_IDENTITIES:
+            if not args:
+                continue
+            name = departed_prefix(args[0])
+            if name:
                 report.error(
-                    f"{rel}: builds '{args[0]}', an identity usd-motion-plugins "
-                    f"publishes -- one library, one repository")
+                    f"{rel}: builds '{args[0]}', under an identity {DEPARTED[name]} "
+                    f"publishes ('{name}') -- one library, one repository")
     for kind in ("libs", "plugins", "tools"):
-        for name in FOREIGN_IDENTITIES:
-            if (root / kind / name / "CMakeLists.txt").exists() and not (
-                    kind == "tools" and name == "motionRetarget"):
+        if not (root / kind).is_dir():
+            continue
+        for child in sorted((root / kind).iterdir()):
+            if (kind, child.name) in DEPARTED_DIR_EXCEPTIONS:
+                continue
+            if child.is_dir() and child.name in DEPARTED and _files(child, lambda p: True):
                 report.error(
-                    f"{kind}/{name}: a member under usd-motion-plugins' identity '{name}'")
+                    f"{kind}/{child.name}: a member under {DEPARTED[child.name]}' "
+                    f"identity '{child.name}'")
+    for tree, owner in DEPARTED_TREES.items():
+        if (root / tree).is_dir() and _files(root / tree, lambda p: True):
+            report.error(f"{tree}/: a tree that left for {owner}, back with files in it")
+    for name in SOURCE_ROOTS:
+        if not (root / name).is_dir():
+            continue
+        for path in source_files(root / name):
+            code = cpp_code(read(path))
+            for m in _DEPARTED_NAMESPACE.finditer(code):
+                n = code.count("\n", 0, m.start()) + 1
+                report.error(
+                    f"{path.relative_to(root).as_posix()}:{n}: opens namespace "
+                    f"'{m.group(1)}' -- code there is the shared packages', "
+                    f"used here and never written")
+
+
+def departed_prefix(target: str) -> str | None:
+    """The departed identity a target is named for: itself, or `<id>_...`."""
+    target = target.strip('"')
+    for name in DEPARTED:
+        if target == name or target.startswith(name + "_"):
+            return name
+    return None
 
 
 def check_root(root: Path, report: Report) -> None:
@@ -462,6 +539,41 @@ CASES: list[tuple[str, dict[str, str], str]] = [
     ("a copied identity",
      {"libs/motionCore/CMakeLists.txt": "add_library(motionCore STATIC a.cpp)\n"},
      "builds 'motionCore'"),
+    ("a connector library back under its old name",
+     {"libs/liveTransport/CMakeLists.txt": "add_library(liveTransport STATIC a.cpp)\n"},
+     "an identity motion-connectors publishes ('liveTransport')"),
+    ("a departed member directory, whatever it builds",
+     {"libs/motionRuntime/README.md": "kept for reference\n"},
+     "libs/motionRuntime: a member under usd-motion-plugins' identity"),
+    ("a departed suite under a member that stays",
+     {"plugins/execVrm/tests/CMakeLists.txt":
+      "add_executable(execMotion_blend_tests t.cpp)\n"},
+     "builds 'execMotion_blend_tests'"),
+    ("a departed tool",
+     {"tools/motionRetarget/tests/CMakeLists.txt":
+      "add_executable(mocopi_record m.cpp)\n"},
+     "an identity motion-connectors publishes ('mocopi_record')"),
+    ("a file under adapters/",
+     {"adapters/vmc/src/Packet.cpp": "int x;\n"},
+     "adapters/: a tree that left for motion-connectors"),
+    ("a producer profile",
+     {"profiles/motion/mocopi.json": "{}\n"},
+     "profiles/motion/: a tree that left for usd-motion-plugins"),
+    ("a source that writes the shared core",
+     {"libs/vrmRig/src/Slerp.cpp": "namespace openstrata::motion\n{\nint f();\n}\n"},
+     "libs/vrmRig/src/Slerp.cpp:1: opens namespace 'openstrata'"),
+    ("a source that writes the old core",
+     {"tests/parity/src/pose.h": "// ok\nnamespace motion {\nstruct P;\n}\n"},
+     "tests/parity/src/pose.h:2: opens namespace 'motion'"),
+    ("using the shared namespaces is not writing them",
+     {"libs/vrmRig/src/Use.cpp":
+      "namespace om = openstrata::motion;\nusing namespace openstrata::motion;\n"
+      "// namespace motion { in a comment\nnamespace vrmRig { int motion_capture; }\n"},
+     ""),
+    ("a name that only begins like a departed one",
+     {"tools/motionRetarget/CMakeLists.txt":
+      "add_executable(motion_retarget m.cpp)\nadd_executable(oscillator o.cpp)\n"},
+     ""),
     ("the VRM importer links a motion package",
      {"plugins/usdVrmFileFormat/CMakeLists.txt":
       _CONSUME.format(pkgs="motionRecording") +

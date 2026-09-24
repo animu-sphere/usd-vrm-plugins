@@ -20,76 +20,23 @@ the aggregate product archive, but its standalone packaging-closure P0 remains
 open. The implementation contract for the shipped motion foundation is
 [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md).
 
-**Every generic motion identity has a destination outside this repository
-since 2026-09-17** (§9). The `usd-motion-plugins` design policy settles the
+**Every generic motion identity has left this repository** (MIG-1..MIG-4,
+2026-09-19..24). The `usd-motion-plugins` design policy settles the
 ecosystem's motion architecture: vendor- and avatar-format-neutral motion,
 retargeting, recording and the `UsdSkelAnimation` bridge live in
 `usd-motion-plugins`, device and protocol input lives in `motion-connectors`,
-and this repository keeps VRM and VRMA. Nothing has moved yet: §1 and §2
-describe the tree as it is, and §9 says where each identity goes, in which
-order, and what may not be added here in the meantime.
+and this repository keeps VRM and VRMA. §1 and §2 describe the reduced tree,
+which builds VRM and VRMA only and consumes the shared packages by digest.
+§9 is the record of where each identity went and under which rules.
 
-The three input-adapter identities (`vrmAdapterMocopi`, `vrmAdapterVmc`,
-`vrmAdapterArdy`) and their dependency directions were added to this contract on
-2026-07-28, ahead of any adapter code, from
-[roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
-On 2026-07-29 §2 gained two more rules from the same direction: an OpenExec
-computation performs no I/O, and `ExecIr` is optional rather than foundational.
-Also on 2026-07-29, and before the first adapter directory existed, §1 and §5
-corrected those three identities from *bundle* to *plain library plus CLI tool* —
-the kind they had to be all along, for the reason stated under §1's identity
-table.
-
-`liveTransport` was added on 2026-08-24, ahead of the code it now holds, from
-[roadmap/osc-and-vrchat-trackers.md](../roadmap/osc-and-vrchat-trackers.md) §3.2
-and §10. It exists to hold code two shipped adapters maintained separately, and
-it is the first library here that is neither a member of the aggregate product
-nor an adapter — so it needed a row in §1, edges in §2, and an exclusion in §5
-before the extraction that filled it could be reviewed. Nothing moved into it in
-the same change that named it: that is §6's second invariant, and the roadmap
-plan restates it as a rule of its own. **The extraction landed on 2026-08-24, in
-its own three changes**, and every claim the contract made about it ahead of time
-held: the edge set is empty in fact as well as in prose, the diagnostic split
-survived contact with two code enums that disagree about their own default, and
-the exclusion's second clause is what kept the library out.
-
-`vrmAdapterVrchatOsc` was added on 2026-08-24, ahead of its first directory, from
-the same plan's §5 and §9. It is the **fourth** input-adapter identity, and it
-needed a row for a reason the other three did not: those were named together in
-2026-07-28's change, so a fourth scaffold landing without one would be the first
-adapter whose identity the tree asserted and this document did not. §2 needed
-nothing — `adapters/*` is already the rule, and this adapter needs no edge that
-rule does not already permit — so what the row adds is the one claim §2 cannot
-make: **it is not a pose source**, and the humanoid solve is deliberately outside
-it.
-
-It declares **one** of the three edges §2 allows, and that is a fact about the
-adapter rather than about the permission. `motionCore` and `motionRuntime` are
-what an adapter takes when it produces canonical values, and its first milestone
-produces none — it is a scaffold and a recorder, with no decoder — so declaring
-them would have claimed a dependency the library does not have. They arrive with
-the code that produces a pose. A permission is not a requirement, and this is the
-first row here where the two are visibly different.
-§5 gains its artifact name on the terms every adapter artifact already has.
-
-`osc` was added on 2026-08-29, ahead of the decoder it now holds, from the same
-plan's §3.1, §4 and §10. It is the second library here that is neither a member
-of the aggregate product nor an adapter, and it arrives on the schedule §2's own
-note below set for it rather than beside `liveTransport`: a shared decoder needed
-a **second consumer** first, because the only evidence that a surface is neutral
-is a caller that never says `VMC`. That caller was measured before this row was
-written — an address inventory of a VRChat session, decoding through
-`vrmAdapterVmc`'s decoder without moving it, needed five VMC tokens and every one
-of them was the *name*: the include path and four namespace qualifications. No
-VMC address literal, no bone, no `VmcMessage`, no `SkeletonMap`. What it did emit
-was `VRM_VMC_PACKET_MALFORMED`, in a report about a session VMC has nothing to do
-with, which is §8's open question arriving as a measurement rather than as a
-prediction.
-
-So this row is narrower than `liveTransport`'s in the one way that matters. That
-library was named before anyone knew what would fit through the seam; this one is
-named after a caller went through it, so §4's ownership list is a description
-rather than an intention.
+Between 2026-07-28 and 2026-08-31 this contract also named the input
+adapters, `liveTransport`, `osc`, `motionTracking` and the recorded-file layer
+(`motionSource`, `motionBvh`, the producer profiles). Each had a row in §1,
+edges in §2 and a side of §5's product split. All of them left, and their
+rules are now their destination's to state. The reasoning as this contract
+held it is in the v0.9.0 copy of this document
+(`git show v0.9.0:docs/architecture/WORKSPACE.md`), the last release that
+built them.
 
 ## 1. Bundles and libraries
 
@@ -104,331 +51,94 @@ Shipped through Workspace Phase 7:
 | `vrmCore` | plain CMake library (deferred) | canonical model, only if a second consumer beyond the importer appears |
 | `usdVrm` | aggregate product name | retired as a bundle id; names the aggregate package composed of the bundles above |
 
-Motion layer (Workspace Phase 6–8; motion policy §2, §14):
+VRMA and the VRM side of motion (Workspace Phase 6–8; motion policy §2, §14):
 
 | Identity | Kind | Role |
 | --- | --- | --- |
 | `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
-| `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary, `motion.identityPose`, `motion.sampleAnimation`, `motion.priorPose`, `motion.filterPose` and `motion.extractRootMotion` exist (2026-09-06), and `motion.poseHistory` and `motion.interpolatePose` (2026-09-12), and `motion.blendPoses` (2026-09-13), which completes the OpenExec plan's P0-4 node set; the rest of this row's list is outside P0-4 and does not exist yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
-| `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). |
+| `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). `execMotion` is `usd-motion-plugins`' published bundle, pinned by digest in `requires.bundles`. |
 | `vrmRig` | plain static CMake library (`libs/vrmRig/`; `vrmRetarget` until 2026-09-23) | What a VRM rig adds to a retarget, and none of it retargets: VRM 1.0's required-bone set, which every caller hands the retarget, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). Links `motionCore` and nothing else of `usd-motion-plugins` (§9.5). |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig off a stage, and the semantic clip through `motionUsd` plus the clip's `vrm:` tracks, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 
-**`motionCore` and `motionRuntime` left with MIG-1 and MIG-2** (2026-09-21),
-and this workspace consumes them: they are `usd-motion-plugins`' `motionCore`,
-`motionSampling` and `motionRecording` — one library became two there — pinned
-by digest per target in every descriptor that names one. What that changes for
-this table is what it is a table *of*: an identity here is something this
-workspace builds, and a consumed package is named in a descriptor rather than
-listed here. `motionUsd`'s reading half followed on 2026-09-23 through
-`motion_retarget`'s own descriptor, the first edge here only a tool declares,
-which `ost` 0.23.3 materializes. `motionSource`, `motionBvh`, the BVH tools and
-the producer profiles left the same day as a deletion (MIG-3), below.
+**What this workspace consumes is not listed here.** An identity in these
+tables is one this workspace builds. The shared motion packages are
+`usd-motion-plugins`': `motionCore`, `motionSampling`, `motionRetarget`,
+`motionUsd` and the `execMotion` bundle. Each member that uses one names it in
+its own descriptor, pinned by digest per target, and §2 says which member may
+use which.
 
-**The generic retarget left with MIG-2** (2026-09-23): the pose retargeter,
-the skeleton and the joint map, rest-pose handling, root-motion policy and the
-body retarget's codes are `usd-motion-plugins`' `motionRetarget`, and
-`execVrm`, `motion_retarget` and the parity harness consume it by digest. What
-stayed of `vrmRetarget` is the row above, renamed `vrmRig` because the old name
-would have outlived every retarget in it.
+Every other identity these tables once held has left, with MIG-1..MIG-4:
 
-**The capture-replay CLI left with MIG-4** (2026-09-23): `motion_capture` is
-`usd-motion-plugins`' `motion_record`, and this workspace no longer builds or
-ships it. Deleting a member consumes nothing, so this waited on no `ost` release.
-What the tool carried here was two claims, and each one moved rather than
-lapsed. The non-ASCII path case is now `motion_record_replay`'s
-(usd-motion-plugins #23). The bake of a recorded session onto an avatar is now
-`motion_retarget`'s suite, over a clip the published recorder wrote
-(`tools/motionRetarget/tests/fixtures/`).
+- the motion libraries (`motionCore`, `motionRuntime`, the generic half of
+  `vrmRetarget`) and the `execMotion` bundle;
+- the recorded-file layer (`motionSource`, `motionBvh`, the BVH tools, the
+  producer profiles) and the capture CLI (`motion_capture`);
+- the live transport, the OSC decoder, the tracker layer and the four input
+  adapters with their recorders.
 
-**Ten identities left this table with MIG-4**, on 2026-09-21, and are
-`motion-connectors`' now: the two shared live leaves (`liveTransport`, `osc`),
-the tracker layer (`motionTracking`), the three input adapters and their three
-record tools, and the reserved generation adapter. [§9.1](#91-destination-of-every-identity)
-is where each one went and under which name; the rule that sent them as one set
-is [§9.2](#92-moving-rules) rule 7. What is left here is VRM: the file formats,
-the schema, the container, the retarget and the exec bundles that read them,
-with generic motion still to follow under MIG-1..MIG-3.
+§9.1 records where each one went and under which name.
+`scripts/check_cmake_boundaries.py` fails if one comes back, under either
+name (MIG-5).
 
-The rule those adapters' CLIs were the first readers of stays, because it is
-about a *kind* of member rather than about them: a library that carries a
-producer's name may also carry one CLI, declared beside it as an
-`openstrata.tool.yaml` workspace tool in the way `motion_retarget` is, and
-that CLI is outside the aggregate product
-([§5](#5-the-aggregate-product)).
+`adapters/` no longer exists. An input adapter is `motion-connectors`', and
+this workspace has none. The `ExecIr` adapter named in
+[the OpenExec plan §3](../roadmap/openexec-foundation.md) is a different
+thing: an internal insulation layer inside `execVrm` that confines a
+possibly-experimental OpenUSD dependency.
 
-**The recorded-file path left with MIG-3** (2026-09-23): `motionSource`,
-`motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert` and the producer
-profiles are `usd-motion-plugins`' — the converter as `motion_convert` — with
-the rules this section used to state about them: a reader knows a format and no
-semantics, a profile is declarative data and the one place a product name may
-appear, there is no default profile, and a profile refuses a rig in terms the
-caller turns into a diagnostic (that repository's design policy §26–§27, §42).
-Nothing here links them, so no descriptor names them and this table no longer
-lists them. This workspace no longer reads a BVH file: what a converted
-recording does to a VRM rig is still its claim, and its suites make it over a
-clip the published converter wrote (`tests/motion/fixtures/README.md`). The
-deferred `motionFbx` and `usdBvhFileFormat` went with the layer they would have
-joined.
-
-> **An adapter is a library, not a plugin bundle.** The three rows above read
-> "optional bundle" until 2026-07-29, which no manifest could have expressed. An
-> `openstrata.plugin.yaml` declares one of OpenUSD's plugin kinds and points at a
-> `plugInfo.json`; an adapter has neither, because §2 keeps it away from
-> `vrmSchema`, from every file-format bundle, and from OpenExec, leaving it
-> nothing to register. Its entire output is `motionCore` values pushed at a
-> `motionRuntime` source. So an adapter is a plain static CMake library carrying
-> an `openstrata.library.yaml`, exactly as `motionRuntime` and `vrmRetarget` are
-> — which is also the only form in which §2's adapter-library / adapter-tool
-> split is expressible in a manifest rather than only in prose.
->
-> §5 is unaffected in substance: the artifact name and the aggregate exclusion
-> are the same rule under either reading, and under *neither* is `ost` 0.21.0
-> able to emit one — `plugin package` takes a bundle directory or `--workspace`
-> over bundles, with no per-library equivalent. That was equally true of the
-> "bundle" wording, which could not have produced a valid manifest to package.
-> What the correction buys is that an adapter's dependencies become *declarable*
-> in the one form the workspace graph reads — `requires.libraries` — rather than
-> living in a manifest `ost` would reject. Whether the graph gate then reaches
-> them is a separate, measured question; §2 has the answer, and today it is
-> "not yet".
-
-`adapters/` is the only place product, SDK, protocol, or research-model names
-are permitted. The three above are **siblings, not a stack**: no adapter may
-depend on another, and there is deliberately no `adapters/common/` until two of
-them are shown to duplicate code that carries no vendor semantics. Their plan,
-including the implementation order and per-adapter acceptance criteria, is
-[roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
-
-> **That condition is met, and `adapters/common/` is still not the answer**
-> (measured 2026-08-23,
-> [the census](../roadmap/osc-and-vrchat-trackers.md#2-the-duplication-census)).
-> With vendor identifiers erased and comments stripped, `vrmAdapterVmc` and
-> `vrmAdapterMocopi` hold one packet-capture implementation twice — 6 changed
-> lines across 800 — one UDP receiver twice, and one live-source bridge twice.
-> The receiver pair is the one that has already cost something: the mocopi
-> header records four defects the sibling has identically because they were
-> copied, fixed all four on 2026-08-11, and noted that they remain in
-> `vrmAdapterVmc` — where they still are. The sibling rule above is what forbids
-> the obvious fix: a shared leaf between two leaves is the adapter → adapter
-> edge wearing a hat.
->
-> **They are new libraries, and each takes a different side of an
-> existing split.** The live-source bridge holds poses and belongs beside
-> `LiveCaptureSource` in `motionRuntime`. The transport ring — socket, capture
-> file format, diagnostic vehicle — **cannot**, and the refusal is already
-> executable rather than a matter of taste:
-> `libs/motionRuntime/tests/check_boundaries.py` rejects `winsock`,
-> `sys/socket.h`, `asio`, `curl` and `websocket` in that library's sources,
-> because `motion_capture` is a member of the aggregate product and links it,
-> and no tool in the product opens a transport. So it needs a leaf of its own that the product does not link, which
-> takes the *adapter* side of §5's aggregate split even though it carries no
-> product name — the exclusion is about what the product may depend on, not only
-> about what a name says. An OSC decoder shared by two protocol adapters is a
-> second such library on the same terms.
->
-> **Both are now above, and they were named eleven weeks apart for a reason
-> worth keeping.** `liveTransport` went in first because its extraction was the
-> next change to be reviewed and a reviewer cannot check a move against a
-> contract that does not name its destination. The OSC decoder waited, because
-> it had one consumer and the evidence that a surface is neutral is a caller
-> that never says `VMC` ([the OSC track](../roadmap/osc-and-vrchat-trackers.md)
-> §3.1). Naming it then would have settled a boundary on the only caller there
-> was, which is the failure the second-consumer rule exists to prevent. `osc`
-> is in the table as of 2026-08-29, after that caller was written and measured,
-> in the order the same document sets: measured first, reconciled second, moved
-> third.
-
-> **A runtime route is not a build edge.** A capture application may act as a
-> VMC sender, so a user's data can travel `mocopi app → VMC packet →
-> vrmAdapterVmc`. That is a path assembled at runtime and creates no dependency:
-> `vrmAdapterMocopi` handles native input and links `motionCore` /
-> `motionRuntime` only, exactly as `vrmAdapterVmc` does. The ordering above
-> (VMC implemented first, the native adapter second so the two paths can be
-> compared on the same motion) is the roadmap's; the identities and the sibling
-> rule are this contract's, and they do not move with it — including when the
-> roadmap re-ordered its releases on 2026-08-03.
-
-> **Two unrelated things are called "adapter" in this repo.** The bundles above
-> are *input* adapters: vendor and protocol leaves under `adapters/`. The
-> `ExecIr` adapter named in
-> [the OpenExec plan §3](../roadmap/openexec-foundation.md) is an internal
-> insulation layer inside `execVrm`, confining a possibly-experimental OpenUSD
-> dependency. Neither is in the other's dependency graph.
-
-Shared code is never a plugin bundle: `vrmContainer` has no plugin
-registration, no `plugInfo.json`, and no OpenUSD types in its public API. The
-same rule binds `motionCore`, `motionRuntime`, `vrmRig`, and every adapter
-library under `adapters/` — and `motionCore` additionally carries no OpenUSD
-*stage* dependency, only value types (`GfVec3f`, `GfQuatf`). `vrmRig` is
-under the same restriction and links one OpenUSD library beyond `gf`: `js`,
-which parses a string into numbers and objects and touches no stage, layer,
-plugin registry or exec. It is there because a VRM 0.x rig and a VRM 1.0 rig
-state the same four look-at curves in two different JSON shapes, and making
-every consumer of `LookAtEvaluator` know both spellings would put the importer's
-job in each of them.
+Shared code is never a plugin bundle: `vrmContainer` and `vrmRig` have no
+plugin registration and no `plugInfo.json`, and `vrmContainer` has no OpenUSD
+types in its public API. `vrmRig` has no OpenUSD *stage* dependency, only value
+types (`GfVec3f`, `GfQuatf`), and links one OpenUSD library beyond `gf`:
+`js`, which parses a string into numbers and objects and touches no stage,
+layer, plugin registry or exec. It is there because a VRM 0.x rig and a VRM
+1.0 rig state the same four look-at curves in two different JSON shapes, and
+making every consumer of `LookAtEvaluator` know both spellings would put the
+importer's job in each of them.
 
 Product names (`Mocopi`, `ARDY`, any SDK or research-model name) are forbidden
-in every identity above except `adapters/`. They may otherwise appear only in
-`tests/integration/`, `examples/`, and provider metadata strings — never as a
-branch condition in core logic (motion policy §8.1, §9).
+in every identity above. A device or protocol input is `motion-connectors`',
+and a producer profile is `usd-motion-plugins'`. Such a name may otherwise
+appear only in test fixtures and their provenance, `examples/`, and provider
+metadata strings, and never as a branch condition in code (motion policy
+§8.1, §9).
 
 ## 2. Dependency directions
 
 Allowed:
 
 ```text
-usdVrmFileFormat      -> vrmSchema
-usdVrmFileFormat      -> vrmContainer
+usdVrmFileFormat      -> vrmSchema, vrmContainer
 usdVrmPackageResolver -> vrmContainer
 
-usdVrmaFileFormat     -> vrmContainer
-usdVrmaFileFormat     -> motionCore
-motionRuntime         -> motionCore
+usdVrmaFileFormat     -> vrmContainer, motionCore, motionUsd
 vrmRig                -> motionCore
-motion_retarget       -> motionRetarget, vrmRig, motionSampling, motionUsd,
-                         motionCore, OpenUSD stage
-execMotion            -> motionCore, motionRuntime
-execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
-execVrm               -> vrmSchema
-execVrm               -> motionCore, motionRetarget, vrmRig
+motion_retarget       -> vrmRig, motionCore, motionRetarget, motionSampling,
+                         motionUsd, OpenUSD stage
+execVrm               -> vrmRig, motionCore, motionRetarget
+execVrm               -> vrmSchema   (runtime only: `requires.bundles`; exec
+                         resolves UsdVrmHumanoidAPI by type name)
 execVrm               -> execMotion  (runtime only: `vrm.computeBoundPose`
-                         reads `motion.sampleAnimation` by name; nothing is
-                         linked, and the reverse edge is not allowed)
+                         reads `motion.sampleAnimation` by name; the published
+                         bundle is pinned by digest, nothing is linked, and
+                         the reverse edge is not allowed)
 execVrm               =: the Vrm*API applied schemas, UsdSkelSkeleton,
                          UsdSkelBindingAPI
-adapters/*            -> motionCore, motionRuntime, liveTransport, osc
-adapters/*/tools/*    -> vrmRetarget, motionTracking, OpenUSD stage authoring
-liveTransport         -> nothing — its allowed edge set is empty, not short
-osc                   -> nothing — the same, and `liveTransport` is in the
-                         prohibitions below rather than absent from here
-
-motionSource          -> motionCore
-motionBvh             -> motionSource
-motion_bvh_inspect    -> motionBvh
-motion_bvh_convert    -> motionBvh, motionSource, motionCore, OpenUSD stage
-
-motionTracking        -> motionCore (the solve only, VRC-5: a canonical pose is
-                         motionCore's type and a tracker observation is not.
-                         The region vocabulary and the assignment take no edge
-                         at all, and the check holds that line per file)
+tests/parity          -> motionCore, motionRetarget, motionSampling
 ```
 
-The last two lines of the adapter block are not the same permission. An
-**adapter library** converts a vendor or protocol input into canonical motion
-values and stops there; an **adapter tool** (its CLI) may go on to retarget and
-author a stage, exactly as `motion_retarget` and `motion_capture` do. The moment
-retarget or USD authoring lives inside an adapter library, that adapter has
-become a second motion pipeline.
+Every `motion*` name above is a package `usd-motion-plugins` publishes, and
+none is built here ([§9.2](#92-moving-rules) rule 1). Neither destination
+depends on anything here (rule 4).
 
-**`motionTracking` is on the tool's side of that same line, and it is there for
-a reason the other two entries do not supply.** `vrmRetarget` is a tool's
-because a library that retargeted would be a second pipeline; assignment is a
-tool's because assignment is *not the adapter's decision to make*. Which tracker
-is on which body region is an operator's statement about a rig, and an adapter
-that resolved it would have invented a calibration and hidden it inside a
-decoder — which is the whole argument for a tracker source stopping at an
-observation ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5.1). So
-the adapter library may not name this package and its CLI may, and the check
-each adapter already carries is what holds the first half.
-
-**No product tool depends on an adapter, and the arrow that would have said so
-is deliberately absent.** `motion_capture` is a member of the aggregate product
-(§5) and every adapter is excluded from it, so an edge from the first to the
-second would have carried a protocol decoder, its network code, and a product
-name into the product artifact — and it would have done so once per adapter,
-since `--source vmc` invites `--source mocopi` behind it. The hand-off is a file
-instead. An adapter's tool writes what its adapter delivered as a
-`motion-capture-trace`, which is that format's stated content — *what an adapter
-delivered, after protocol decode and coordinate conversion, before any intake
-policy* (`motionRecording/CaptureTrace.h`) — and `motion_capture` replays it
-through `LiveCaptureSource` exactly as it replays any other trace, unchanged and
-knowing nothing about where it came from.
-
-That keeps three properties that an in-process live source would each have cost.
-No tool in the product opens a transport or reads a wall clock, which is what
-makes every clip in this repository reproducible by construction. A session
-becomes a clip in exactly one place, so there is no second path from a live
-sender to an avatar for the two to disagree along. And the adapter stays
-separately shippable, because nothing in the product links it.
-
-The cost is stated rather than hidden: a live session is two commands, not one.
-That is the shape this repository already had — `vmc_record` exists because an
-operator keeps a session as a file — and the intermediate is a canonical trace
-carrying no VMC vocabulary at all, so the second command is the same one a
-`.vrma` clip or a generated fixture goes through.
-
-**That rule binds libraries, not only tools, and the difference is about to
-matter.** `motion_capture` links `motionRuntime`, so a transport placed *there*
-puts a socket in the product's link closure — the same property, lost through
-the library rather than through the `--source vmc` flag that was already
-refused. `libs/motionRuntime/tests/check_boundaries.py` already enforces it by
-refusing socket headers in that library. It is worth stating as a *contract*
-rather than leaving it to the check, because the two adapters duplicate a UDP
-receiver and a packet-capture format today (§1), and `motionRuntime` is the
-first place a reader looks for their shared home — a reader who finds only the
-check may read it as an oversight to be amended. The shared transport is
-`liveTransport`, a leaf the product does not link; the shared *pose* bridge,
-which holds no socket, is `motionRuntime`'s and is the one piece of that
-duplication this rule permits to move there.
-
-**`liveTransport`'s prohibitions are the same rule read from the other end, and
-one of them is not about the product at all.** Two say what may not depend on
-it, and they are what keep a socket out of the aggregate's link closure however
-it is reached — through a tool, through `motionRuntime`, or through a reader.
-The rest say what *it* may not depend on, and they exist because a shared leaf
-fails by growing rather than by being misplaced: the first `motionCore` value in
-it makes it a motion library, the first address literal makes it a protocol
-decoder, and the first adapter's code enum makes one adapter's frozen
-diagnostics into every adapter's. Its empty edge set is what makes all three
-checkable at a glance rather than by argument — a library with no permitted edge
-has no ambiguous one, and any edge at all is a contract change.
-
-**`osc`'s prohibitions are `liveTransport`'s with one line that is not a copy,
-and it is the `<->`.** Every other shared-leaf rule here is asymmetric, because
-one side is a layer and the other is what may reach it. These two are the same
-layer twice, and the day one of them acquires the other is the day the pair
-stops being two libraries: a decoder that can open a socket has become a
-receiver, and a receiver that can decode has become an adapter with no adapter
-around it. Neither direction is more plausible than the other, so neither gets
-to be the one nobody wrote down.
-
-**`motionTracking`'s last prohibition is the only one here that forbids a
-`typedef`, and it is the one the library exists to make true.** A region is a
-place a strap goes; a `motion::HumanJoint` is a joint in a skeleton. They read as
-the same list until the rig has a knee tracker — there is no knee bone, and the
-device sits between two — or a chest strap, which observes a torso rather than a
-`Chest`. The day `TrackerRegion` becomes an alias for `HumanJoint`, assignment has
-become a lookup and the solve has nothing left to do, which is exactly the
-collapse [the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5.1 separates
-three decisions to prevent. So the vocabulary is this library's own, and
-the check reads the sources rather than the link line — an enum copied by hand would leave the
-link line empty.
-
-**`motionCore` left that prohibition on 2026-08-31, and the rule above is
-unaffected by its leaving.** VRC-5 puts the *solve* in this library, and a
-solve that may not name a bone cannot produce a pose — so the edge is real and
-it is the solve's alone. What the check does in exchange is scope the bone rule
-to the files that must never carry one, rather than drop it: an alias, in
-either direction and in any file, is still what would turn assignment back
-into a lookup, and it is now the *only* thing the edge cannot be used for.
-
-**And the enforcement runs the wrong way round here, which is worth knowing
-before the green result is read as coverage.** `liveTransport` lives under
-`libs/`, so the workspace graph discovers it and validates its (empty) edges,
-while the adapters that link it are invisible to the same gate for the reason
-below. The shared half of this extraction is gated and the consuming half is
-not — so the binary link check each adapter already carries is what proves the
-edge in the direction that matters, exactly as it does for the two core
-libraries today.
-
-The four `motionSource` / `motionBvh` lines are a chain and are meant to be read
-as one: a **reader** knows a file format and no semantics, `motionSource` knows
-semantics and no file format, and a **profile** supplies what neither can know
-on its own. The arrow `motionBvh -> motionSource` never reverses — the day
-`motionSource` gains a BVH-shaped field is the day a second reader cannot be
-added without changing it, which is the entire reason the layer exists before a
-second reader does.
+**Nothing here depends on `motion-connectors`.** A live session reaches an
+avatar as a file that a connector's tool wrote: a capture trace, which
+`usd-motion-plugins`' `motion_record` turns into a clip, which
+`motion_retarget` bakes. So no member of the aggregate product opens a
+transport or reads a wall clock. That is what makes every clip this
+repository authors reproducible by construction, and it is the property
+§2 held for `motion_capture` while that tool was here. The cost is the one it
+always had: a live session is more than one command.
 
 Forbidden (non-exhaustive; anything not allowed above is forbidden):
 
@@ -437,93 +147,31 @@ vrmSchema             -> any other bundle or library
 usdVrmPackageResolver -> usdVrmFileFormat, vrmSchema
 usdVrmFileFormat      -> usdVrmPackageResolver (link-time; resolver is a
                          runtime bundle dependency only)
-usdVrmFileFormat      -> usdVrmaFileFormat, motion generator, any motion library
+usdVrmFileFormat      -> usdVrmaFileFormat, motion generator, any motion package
+usdVrmFileFormat      -> authoring ExecIr prims as a requirement of import
 execVrm               -> usdVrmFileFormat private API, importer canonical model
 execVrm               -> GLB parser (vrmContainer, cgltf), reparse of the
                          source .vrm / .vrma bytes, joint-name heuristics
-execMotion/execVrm    -> socket or device I/O, file watching, a wall clock, a
+execVrm               -> socket or device I/O, file watching, a wall clock, a
                          private thread pool, or mutable global state inside a
                          computation callback (see below)
-execVrm               -> declaring UsdSkelAnimation, and execMotion -> declaring
-                         any Vrm*API schema, UsdSkelSkeleton or
-                         UsdSkelBindingAPI: an OpenExec
-                         schema has exactly one declarer per session (see below)
-
-motionCore            -> any vendor SDK, any product-named code, any network
-                         protocol, any OpenUSD stage authoring
-motionRuntime         -> vrmSchema, any USD file-format bundle
-vrmRig                -> network protocol, OpenExec
+execVrm               -> declaring UsdSkelAnimation, which the published
+                         execMotion declares: an OpenExec schema has exactly
+                         one declarer per session (see below)
+vrmRig                -> network protocol, OpenExec, ExecIr
 vrmRig                -> motionRetarget, and every other usd-motion-plugins
                          package but motionCore (the VRM half includes nothing
                          from the generic half, §9.5)
 usdVrmaFileFormat     -> live receiver, generator, motionRetarget, vrmRig, a
                          target VRM
-motionCore/motionRuntime/vrmRetarget -> adapters/*  (adapters depend on the
-                         core; the core never depends on an adapter)
-execMotion/execVrm    -> adapters/*  (same rule, one layer up: an OpenExec
-                         node never reaches for a vendor input)
-adapters/<a>          -> adapters/<b>  (adapters are siblings, never a stack)
-adapters/*            -> vrmSchema, any USD file-format bundle, vrmRetarget,
-                         motionTracking (the *library*; its tool may — see
-                         above)
-adapters/*            -> OpenExec, ExecIr, or emitting ExecIr values
-
-liveTransport         -> motionCore, motionRuntime, vrmRetarget, motionSource,
-                         motionBvh, vrmContainer, vrmSchema, any USD
-                         file-format bundle, OpenExec, ExecIr, adapters/*
-liveTransport         -> a protocol grammar, an OSC or vendor address literal,
-                         a product or SDK name, or any adapter's diagnostic code
-motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> liveTransport
-execMotion/execVrm    -> liveTransport
-motion_capture/motion_retarget/motion_bvh_inspect/motion_bvh_convert
-                      -> liveTransport  (no member of the aggregate product
-                         links a transport, §5)
-
-osc                   -> motionCore, motionRuntime, vrmRetarget, motionSource,
-                         motionBvh, vrmContainer, vrmSchema, any USD
-                         file-format bundle, OpenExec, ExecIr, adapters/*
-osc                   -> a VMC, VRChat or vendor address literal, a bone or
-                         tracker name, a coordinate convention, a product or
-                         SDK name, or any adapter's diagnostic code
-osc                   <-> liveTransport  (both directions: a decoder that reads
-                         no socket and a transport that knows no grammar are
-                         siblings, and either edge would make one of them the
-                         place the other's rules stop applying)
-motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> osc
-execMotion/execVrm    -> osc
-
-motionCore            -> ExecIr
-vrmRig                -> ExecIr
-usdVrmFileFormat      -> authoring ExecIr prims as a requirement of import
-
-motionTracking        -> motionRuntime, vrmRetarget, motionSource, motionBvh,
-                         liveTransport, osc, vrmContainer, vrmSchema, any USD
-                         file-format bundle, OpenExec, ExecIr, adapters/*
-                         (motionCore left this list at VRC-5; it is above)
-motionTracking        -> an OSC or vendor address literal, a product or SDK
-                         name, any adapter's diagnostic code, a `HumanJoint` in
-                         the region vocabulary or in the assignment, or a
-                         `motion::HumanJoint` standing in for a region anywhere
-motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> motionTracking
-execMotion/execVrm    -> motionTracking
-
-motionSource          -> motionBvh, motionFbx, or any other reader
-motionCore            -> motionSource, motionBvh
-motionRuntime         -> motionBvh, motionSource
-motionBvh             -> motionFbx, and any future reader -> any other reader
-motionBvh             -> motionRetarget, vrmRig, vrmSchema, any USD
-                         file-format bundle
-motionBvh/motionSource-> adapters/*  (and adapters/* -> motionBvh, motionSource:
-                         live input and file input meet at canonical motion and
-                         nowhere earlier)
-motionBvh             -> a producer name in code, a default profile, or a
-                         joint-name heuristic standing in for one
-motionSource/motionBvh-> a target VRM joint index, a target rest pose, or any
-                         retarget step (that is motionRetarget's, once)
+any member            -> motion-connectors, a live transport, a protocol
+                         decoder, a vendor SDK
+any member            -> a copy of a usd-motion-plugins or motion-connectors
+                         identity, under its name here or there (§9.2 rule 1)
 any cycle, including self-cycles
 ```
 
-Six of these are the motion layer's load-bearing invariants, restated so a
+Six of these are the motion layer's load-bearing invariants here, restated so a
 reviewer can check them without opening the policy:
 
 - **An OpenExec schema has exactly one declarer, so the two bundles partition
@@ -557,19 +205,19 @@ reviewer can check them without opening the policy:
 - **`usdVrmaFileFormat` is avatar-independent.** It authors a canonical semantic
   humanoid skeleton, never a target skeleton's joint order. Retarget is a
   separate, later step (motion policy §4.2, §4.3).
-- **The dependency arrow points at the core, never at an adapter.** Every
-  adapter is a leaf — of the core, of the OpenExec nodes, and of each other.
-  This is what lets a capture product, a sender application, or a generation
-  model be swapped without touching retarget, runtime, OpenExec, or the
-  importer.
+- **No member reaches a live input.** Device and protocol input is
+  `motion-connectors`', and it arrives here as a file (above). This is what
+  lets a capture product, a sender application or a generation model be
+  swapped without touching the retarget, OpenExec or the importers.
 - **An OpenExec computation evaluates an immutable snapshot and performs no
-  I/O.** Receiving is the adapter's job and buffering is `motionRuntime`'s; a
-  callback that opened a socket or read a clock would make cache reuse and
+  I/O.** Receiving is a connector's job and buffering is `motionSampling`'s;
+  a callback that opened a socket or read a clock would make cache reuse and
   invalidation untestable, which is the whole reason to be on OpenExec at all
-  ([OpenExec plan §5](../roadmap/openexec-foundation.md)). `execMotion_boundaries`
-  and `execVrm_boundaries` check it, along with each bundle's links and its
-  half of the schema partition above, on the source, the built library's
-  imports, the target's link libraries and `plugInfo.json`
+  ([OpenExec plan §5](../roadmap/openexec-foundation.md)). `execVrm_boundaries`
+  checks it here, along with the bundle's links and its half of the schema
+  partition above, on the source, the built library's imports, the target's
+  link libraries and `plugInfo.json`. `execMotion_boundaries` checks the other
+  half where the bundle lives
   ([execMotion's README](https://github.com/animu-sphere/usd-motion-plugins/blob/main/plugins/execMotion/README.md#how-the-rules-are-checked)).
 - **`ExecIr` is optional and never a prerequisite.** It is confined to an
   adapter layer inside `execVrm`; the canonical motion contract is not derived
@@ -597,28 +245,14 @@ binary link check (`dumpbin`/`nm`) proving it imports `vrmContainer` and does no
 import the other bundles' libraries (`usdVrmPackageResolver` proves it links
 neither `usdVrmFileFormat` nor `vrmSchema`).
 
-Adapters declare through that same door (§1): an adapter library states
-`adapters/* -> motionCore, motionRuntime` in its `openstrata.library.yaml`, and
-**the graph gate walks those edges**. It did not always: under `ost` 0.21.0,
-plain-library discovery was the project root's immediate subdirectories plus
-`libs/`, so a descriptor at `adapters/<group>/<name>/` was invisible and the
-reported library count did not move when one was added — an adapter's declared
-edges were accurate documentation rather than an enforced gate
-([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
-0.22.x widened discovery, and this repository declares the member set outright:
-`openstrata.toml`'s `[workspace].members` names all twenty descriptors, and a
-descriptor no pattern covers is a hard error rather than a silent omission.
-Measured on 0.22.3 — `4 bundle(s), 1 bundle edge(s), 10 libraries, 16 library
-edge(s), valid`, where the ten are the seven under `libs/` and the three
+`openstrata.toml`'s `[workspace].members` names every descriptor, and a
+descriptor no entry covers is a hard error rather than a silent omission.
+Measured on `ost` 0.23.6 (2026-09-24), after MIG-4 and MIG-2 had emptied
+`adapters/` and taken `execMotion`: `5 bundle(s), 3 bundle edge(s), 2
+libraries, 13 library edge(s), 1 tool(s), valid`. The library edges include
+the digest-pinned consumed packages. The count was `10 libraries, 16 library
+edge(s)` on 0.22.3, when the ten were the seven under `libs/` and the three
 adapters.
-
-Two things carry the enforcement in the meantime, and both are required of every
-adapter. The workspace CMake tree builds it, so a link against something it may
-not have fails the build on all three OS. And it carries the same binary link
-check its neighbours do, proving it imports the two core libraries and imports
-no sibling adapter, no `vrmRetarget`, and no plugin bundle — which is what
-covers the sibling rule and the prohibitions above the line in any case, since
-nothing declares an edge it is forbidden to have.
 
 **The consumed-package edges above are also checked as the build states
 them**, by `scripts/check_cmake_boundaries.py` (`workspace_cmake_boundaries`),
@@ -630,7 +264,11 @@ descriptor, or with the allowed set here. `execVrm` carried a link to
 include of either, and the graph gate could not see that: the descriptor
 declared those same two packages as well. The `ALLOWED` table in that script
 restates this section for consumed packages. A new member gets a row there
-by hand, or the check refuses to run.
+by hand, or the check refuses to run. The same script holds the other half
+of rule 1 ([§9.2](#92-moving-rules)): an identity that left, under the name
+it had here or the one it has there, fails it as a member, a target, a
+file under `adapters/` or `profiles/motion/`, or a source that opens one of
+their namespaces.
 
 ## 3. Schema contract versioning
 
@@ -702,232 +340,42 @@ vrmSchema-<version>-<target>.tar.zst
 usdVrmFileFormat-<version>-<target>.tar.zst
 usdVrmPackageResolver-<version>-<target>.tar.zst
 usdVrmaFileFormat-<version>-<target>.tar.zst
-execMotion-<version>-<target>.tar.zst
 execVrm-<version>-<target>.tar.zst
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
 
-Adapter artifacts are named `vrmAdapter<Name>-<version>-<target>.tar.zst`, carry
-the adapter library together with its CLI tool, and are **never** part of the
-aggregate:
+`execMotion` left this list with MIG-2 (2026-09-24). It is
+`usd-motion-plugins`' artifact, and `ost` embeds the verified bundle in
+`execVrm`'s package under `runtime/bundles/execMotion/`, so the product still
+carries it ([PACKAGE_CONTRACT.md §4.1](PACKAGE_CONTRACT.md)).
 
-```text
-vrmAdapterMocopi-<version>-<target>.tar.zst    (when it exists)
-vrmAdapterVmc-<version>-<target>.tar.zst       (when it exists)
-vrmAdapterVrchatOsc-<version>-<target>.tar.zst (when it exists)
-vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
-```
+**The product is declared, not discovered.** `openstrata.toml`'s
+`release_members` names the aggregate: the five bundles and `motion_retarget`.
+Packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH` when the discovered
+bundle and tool ids minus `release_exclude` are not exactly that list.
+`release_exclude` has been empty since MIG-4 took the three adapter CLIs it
+named. `release.yml`'s staging step keeps its own count beside `ost`'s check,
+because the declaration is the thing a mistaken commit would edit: moving
+`motion_retarget` into `release_exclude` satisfies `ost` and leaves the
+product a CLI short.
 
-Those four were a naming rule for artifacts nothing could emit, and as of
-2026-08-25 the first of them exists. `ost` 0.22.2 grew
-`ost library build|test|package` but composed no `requires.libraries`, so it
-configured a leaf and refused anything with an edge — and every adapter has at
-least one: three for the two that produce canonical values, one for
-`vrmAdapterVrchatOsc` while it has no decoder
-([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
-0.22.3 composes the closure, and
-`ost library package adapters/liveCapture/mocopi` produces
-`vrmAdapterMocopi-0.7.0-<target>.tar.zst`: 15 files, the adapter library and
-`mocopi_record.exe` together, exactly the shape named above. `liveTransport`
-packages too, at 9 files, which is what the prediction later in this section
-asked to have checked.
+**What the product may contain** is the rule this section enforced while the
+adapters were here, and it binds whatever joins next. A library is in the
+product only if it names no product **and opens nothing**:
 
-**No lane publishes them.** `release.yml` builds and stages the aggregate's
-seven members; producing an adapter artifact is a command someone runs, not
-something CI emits, and whether a release should carry them is an open decision
-rather than an omission ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §3).
+- A producer name keeps it out, because the aggregate stays free of product
+  names and of optional SDK, network and model dependencies and their license
+  terms (motion policy §8.1).
+- A transport keeps it out even when its name is neutral. A socket in the
+  product's link closure ends the property that makes every clip
+  reproducible by construction (§2).
 
-**The "never" above is a declaration as of 2026-08-25, and for one release it
-was not.** `ost` 0.21.0 — what the release lane bootstrapped through v0.7.0 —
-does not discover a tool descriptor under
-`adapters/<group>/<name>/tools/<tool>/`, so the product had **7** members: the
-four bundles and the three `tools/` CLIs. `ost` 0.22.x *does* discover them, and
-the same command on such a workstation packaged **9** (§3 of the same report),
-**10** once the third adapter grew a CLI. Nothing in `openstrata.tool.yaml` or
-`openstrata.toml` could decline membership, so for that release the exclusion
-this section states as a rule was in fact a property of a pinned version — one
-that a pin bump would have turned into a published archive.
-
-`ost` 0.22.3 closes it. `openstrata.toml` now carries a `[workspace]` table
-whose `release_members` names the seven and whose `release_exclude` names the
-three adapter CLIs, and packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH`
-when the discovered set minus the exclusions is not exactly that list. Measured
-on 0.22.3: ten member archives, a seven-member product
-([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)
-§3).
-
-**An adapter CLI's own archive exists and is not published.** Packaging emits
-`mocopi_record-<version>-<target>.tar.zst` beside the seven, because every
-discovered member is packaged whether or not it joins the aggregate. That is not
-the adapter artifact named at the top of this section — that one carries the
-adapter library *with* its CLI, and `ost` still cannot produce it — so
-`release.yml` stages only the release members. What ships is unchanged from
-v0.7.0; what changed is that a bare tool archive now exists locally and could be
-mistaken for the artifact this section promises.
-
-`release.yml`'s staging step keeps its own count against the tree beside `ost`'s
-check, because the declaration is the thing a mistaken commit would edit: moving
-`motion_retarget` into `release_exclude` satisfies `ost` and leaves the product a
-CLI short.
-
-`liveTransport` is excluded from the aggregate on the same terms and carries no
-CLI, so its artifact is named for the library alone:
-
-```text
-liveTransport-<version>-<target>.tar.zst
-osc-<version>-<target>.tar.zst
-```
-
-**It is excluded for what the product would link, not for what its name says** —
-the distinction §1 states, made concrete here by the first identity that needs
-it. `motionSource` and `motionBvh` are in the product because a producer-neutral
-library is safe to ship there; `liveTransport` is producer-neutral too and is
-still out, because `motion_capture` linking it would put a socket in the
-aggregate's closure and end the property that makes every clip in this
-repository reproducible by construction (§2). So a new library's side is
-decided by both questions rather than either: *does it name a product* is what
-keeps a reader in, *would the product acquire I/O* is what keeps a transport
-out, and failing one is enough to be excluded.
-
-**`osc` fails neither, and is out anyway — which is the third question this
-section had not needed to ask.** An OSC decoder names no product, and it opens
-nothing: it is handed a byte range and returns messages, so a `motion_capture`
-that linked it would acquire no transport, no clock and no vendor. Both clauses
-above pass. What decides it is the one they take for granted: **no member of the
-aggregate product links it, and none can** — nothing in the product reads a
-datagram, so the only callers an OSC decoder can have are adapters, which are
-excluded by name. That is a weaker reason than `liveTransport`'s and it is
-deliberately written as one. `liveTransport` is out because including it would
-*break* a property; `osc` is out because including it would ship a library no
-member reaches, and the day a product member has a reason to decode OSC this
-paragraph is what has to be re-argued rather than quietly outgrown.
-
-That prediction has been checked. It said `liveTransport` would be the first
-artifact on this excluded side the toolchain could actually emit, because its
-edge set is empty where an adapter's is not — and the premise stopped holding
-before the prediction was tested: `ost` 0.22.3 composes an adapter's closure
-too, so both sides package now. `ost library package libs/liveTransport`
-produces a 9-file archive, and the adapter it was contrasted against produces a
-15-file one. The prediction was right about the outcome and wrong about the
-reason, which is the half worth recording.
-
-`ost library package libs/osc` produces a **7-file** archive, measured
-2026-08-29 — the smallest thing on this side, and smaller than the transport
-leaf's nine for the reason its identity row gives: one source file, two headers,
-and no platform dependency for a config file to re-find.
-
-> **Until MIG-3 (2026-09-23).** `motionSource`, `motionBvh`, both BVH tools
-> and the profiles are `usd-motion-plugins`' now: the product ships no BVH tool
-> and no profile, `openstrata.toml` maps no `[[workspace.install_data]]`, and
-> the artifact-only BVH smoke left with them. The paragraphs below record how
-> this product carried them, and the reasoning is that repository's to keep.
-
-`motionSource` and `motionBvh` are **not** adapters and take the opposite
-decision: they carry no product name in code, so they belong in the aggregate
-product exactly as `motionCore` and `motionRuntime` do, and `motion_bvh_inspect`
-/ `motion_bvh_convert` join `motion_retarget` and `motion_capture` as tool
-members of it. The profile files ship as package data beside them —
-`share/usd-vrm-plugins/profiles/motion/` — because a converter with no profile
-available refuses every file it is given, which would make an artifact-only
-smoke test of the BVH path impossible to pass.
-
-**`motionTracking` takes that same side, and it is the first row where all three
-questions pass and no product member links it anyway.** It names no product — the
-boundary check refuses one — and it opens nothing, so the two clauses above are
-satisfied the way `motionSource`'s are. The third question, the one `osc` turned
-on, gets the opposite answer: a product member *can* link it, and the shape it
-would take is already in this document. `motion_bvh_convert` holds a reader and a
-profile at once and is a product tool; the tracker path's equivalent holds a
-tracker trace and an assignment, and the day it is written it links this library
-exactly as that one links `motionSource`, with nothing in this section to
-re-argue.
-
-So it is neither excluded nor shipped today, and there is no artifact row for it
-above. **Its first consumer arrived on 2026-08-31 and it is an adapter's CLI**:
-`vrchat_osc_record --export-trace` takes the permission §2 grants —
-`adapters/*/tools/* -> motionTracking` — to turn a tracker frame into a canonical
-pose (VRC-6). A library whose only consumer is a tool travels in that tool's own
-artifact rather than in the product, so a library on the product's side of this
-split is at present found on the **excluded** side of it, and the absence of a
-`motionTracking-<version>-<target>.tar.zst` still says which tools exist rather
-than which side this one is on. `motionRuntime` travels with it for the same
-reason and by a different route: this adapter produces no pose, so unlike both
-siblings it does not link that library and its CLI takes the edge itself.
-
-**That last sentence is the requirement, and through v0.7.0 only `cmake
---install` met it.** A packaged product did not: `ost` packaged a tool member
-out of the `directories:` its descriptor declared, had no notion of a data-only
-member, and the measured `motion_bvh` archive was exactly its two executables
-and its descriptor. Unpacked and run — a *member* archive, on its own, so the
-executable sat at `<root>/bin/` — the converter refused a real capture and
-named `<root>/share/usd-vrm-plugins/profiles/motion` as the first directory it
-looked in, which read at the time as the layout being agreed and only the
-staging being missing. The qualification is added in hindsight and the next
-paragraph is why: that is one of two installed layouts, and the tool searched
-the product's first only after 2026-08-30. Declaring
-`directories: [bin, share]` did stage it, and was rejected: `directories:` names
-subdirectories of the *member root*, so it would have put the layer's data inside
-one tool's directory and the copy that shipped would have stopped being the file
-`scripts/check_motion_profiles.py` validates
-([recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md),
-[report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §4).
-
-`ost` 0.22.3 supplies the missing owner. `openstrata.toml` declares
-
-```toml
-[[workspace.install_data]]
-source = "profiles/motion"
-destination = "share/usd-vrm-plugins/profiles/motion"
-```
-
-and the aggregate carries the mapping as product-owned data: measured on
-0.22.3, the product manifest reports `data_files: 3` and the archive stages the
-directory verbatim, with the destination recorded in `openstrata.product.json`
-rather than copied under any member root. The file that ships is the file
-`scripts/check_motion_profiles.py` validates, which is what
-`directories: [bin, share]` could not promise.
-
-**The run happened on 2026-08-30 and it failed, which is why the distinction
-above was worth keeping.** `scripts/artifact_only_bvh_smoke.py` packages the
-product, verifies it, installs it to a prefix outside this repository, and
-drives `motion_bvh_convert` there with no `--profile-dir` and no
-`USDVRM_MOTION_PROFILE_PATH`. The profiles arrived exactly where this section
-says — byte-identical to `profiles/motion/` — and the converter refused the
-capture anyway, because `ost plugin product install` lands a tool member at
-`<prefix>/tools/<member>/bin/` and the locator looked at
-`<exe>/../share/usd-vrm-plugins/profiles/motion`, one directory too shallow
-inside the product's own prefix.
-
-The paragraph this replaces recorded that "the layout was agreed and only the
-staging was missing", and the agreement was real but with a *different* layout:
-it was measured on a member archive unpacked on its own, where the executable
-does sit at `<root>/bin/`. Two installed layouts put the data in the same place
-relative to the prefix and the tool at different depths inside it, so an
-executable-relative rule serves one of them at a time. The locator now carries
-both, the smoke passes — 853 frames at 50 Hz, 22 bound joints, from the artifact
-alone — and it proves the profile it read was the installed one by moving that
-file aside and requiring the refusal to come back.
-
-**None of this changes the destination**, which is the part worth stating: the
-contract in this section was right, `[[workspace.install_data]]` puts the files
-there, and the defect was one reader of it. That is the argument for the smoke
-rather than for more review — the search path was documented, the destination
-was documented, the two were written from each other, and they still disagreed
-([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
-
-That split is the one to check when a future reader arrives: a reader is in the
-product if the *library* is producer-neutral, whatever the data beside it is
-named, **and it opens nothing**. `vrmAdapterMocopi` stays out because the
-library itself decodes one product's packets; `liveTransport` stays out on the
-second clause with the first one satisfied, which is why the sentence now has
-two.
-
-The adapter exclusion keeps the aggregate free of product names (motion policy §8.1),
-but it also keeps optional SDK, network, and model dependencies — and their
-license terms — out of the core distribution, and leaves each adapter free to
-take its own release and support cadence later. Adapter versions may track the
-repository tag at first; the artifact boundary that makes independent
-distribution possible exists from the first adapter, not retrofitted.
+Every identity those two clauses excluded — the four adapters,
+`liveTransport`, `osc` — is `motion-connectors`' now. Every non-VRM identity
+they admitted — `motionSource`, `motionBvh`, their tools, and the profiles
+the product installed through `[[workspace.install_data]]` — is
+`usd-motion-plugins`'. How the product carried and excluded each of them, and
+what `ost` measured at every step, is in the v0.9.0 copy of this section.
 
 Initial release rules: bundle identities and artifacts are separate; the git
 tag is shared; all bundle versions stay synchronized with the repository
@@ -984,10 +432,10 @@ as the gate in every migration PR.
 | 3 | `usdVrmPackageResolver` bundle split | done (`plugins/usdVrmPackageResolver`) |
 | 4 | `usdVrmFileFormat` purification/rename | done (`plugins/usdVrmFileFormat`) |
 | 5 | workspace packaging (per-bundle + aggregate) | aggregate product done; standalone registration P0 remains open upstream |
-| 6a | `motionCore` bootstrap | done (`libs/motionCore`) |
-| 6b | `motionRuntime` + `vrmRetarget` bootstrap | done (`libs/motionRuntime`, `libs/vrmRetarget`) |
+| 6a | `motionCore` bootstrap | done (`libs/motionCore`); left with MIG-1, 2026-09-21 (§9.1) |
+| 6b | `motionRuntime` + `vrmRetarget` bootstrap | done (`libs/motionRuntime`, `libs/vrmRetarget`); left with MIG-2, 2026-09-21 and 2026-09-23, what stayed of `vrmRetarget` as `vrmRig` (§9.1) |
 | 7 | `usdVrmaFileFormat` bundle bootstrap | done (`plugins/usdVrmaFileFormat`) |
-| 8 | `execMotion` + `execVrm` bundle bootstrap | done: `execMotion` (`plugins/execMotion`, 2026-09-06) and `execVrm` (`plugins/execVrm`, 2026-09-13) |
+| 8 | `execMotion` + `execVrm` bundle bootstrap | done: `execMotion` (`plugins/execMotion`, 2026-09-06; left with MIG-2, 2026-09-24) and `execVrm` (`plugins/execVrm`, 2026-09-13) |
 
 > **Phase 6 was renumbered on 2026-07-18.** It previously read "`execVrm`
 > (LookAt first)" — a single phase covering the whole runtime layer. The motion
@@ -1079,28 +527,38 @@ cadence — which asked *whether* a component leaves. That is now decided
 outside this repository, and `usd-mmd-plugins` is a planned second non-VRM
 consumer in any case.
 
+**Every move is done, and this section is a record from here** (MIG-5,
+2026-09-24). Every identity §9.1 gives another destination arrived there with
+its history, and this repository consumes it as an installed package or no
+longer uses it. The table below says where each went. The rules in §9.2 are
+kept because they bind a future move as much as the finished ones, and rule 1
+is checked mechanically (§2).
+
 ### 9.1 Destination of every identity
 
 | Identity | Destination | What arrives there | What stays here |
 | --- | --- | --- | --- |
+| `motionCore` | `usd-motion-plugins` (`motionCore`, renamed types, §9.3) — **done 2026-09-21**, consumed here | the joint vocabulary, the pose and clip values | nothing |
+| `motionRuntime` | `usd-motion-plugins` (`motionSampling` and `motionRecording`) — **done 2026-09-21** | sampling, filtering, blending, root motion; the capture trace and the recorder | nothing; `motionSampling` is consumed here, and `motionRecording` by nothing here since 2026-09-24 |
 | `vrmRetarget` | split, along the line §9.5 draws — **done 2026-09-23** | the generic pose retargeter, the skeleton and the joint map, rest-pose handling, root-motion policy and the body retarget's diagnostics → `motionRetarget`, consumed here | VRM 1.0's required-bone set, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38), as `vrmRig`; building a map from `VrmHumanoidAPI` is already `execVrm`'s and `motion_retarget`'s |
 | `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) — **done 2026-09-23**, deleted here | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
 | `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
-| `motion_capture` | `usd-motion-plugins` (`motion_record`) | trace → avatar-independent clip | nothing |
-| `motion_retarget` | split | the generic half of the stage **reading** (`StageIo`, §9.5) → `motionUsd`, arrived 2026-09-20, consumed 2026-09-23 | a VRM retarget CLI over the shared libraries, and the bake: `WriteRetargetedAnimation` authors onto a VRM avatar |
-| `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) | the vendor-neutral OpenExec nodes | nothing |
+| `motion_capture` | `usd-motion-plugins` (`motion_record`) — **done 2026-09-23**, deleted here | trace → avatar-independent clip | nothing |
+| `motion_retarget` | split — **done 2026-09-23** | the generic half of the stage **reading** (`StageIo`, §9.5) → `motionUsd`, arrived 2026-09-20, consumed 2026-09-23 | a VRM retarget CLI over the shared libraries, and the bake: `WriteRetargetedAnimation` authors onto a VRM avatar |
+| `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) — **done 2026-09-24**, consumed here by digest | the vendor-neutral OpenExec nodes | nothing |
 | `execVrm` | stays | — | VRM semantics as OpenExec nodes, over the shared core |
-| `liveTransport`, `osc` | `motion-connectors` (`motionConnectorTransport`, `motionConnectorOsc`) | UDP receiver, capture file, OSC 1.0 wire format | nothing |
-| `vrmAdapterVmc`, `vrmAdapterMocopi`, `vrmAdapterVrchatOsc`, their record tools | `motion-connectors` (`motionConnectorVmc`, `motionConnectorMocopi`, `motionConnectorVrchatOsc`) | protocol and device decode, frame assembly, recording | nothing |
-| `motionTracking` | `motion-connectors` (`motionConnectorTracking`) | tracker regions, assignment, the tracker solve | nothing |
+| `liveTransport`, `osc` | `motion-connectors` (`motionConnectorTransport`, `motionConnectorOsc`) — **done 2026-09-21** | UDP receiver, capture file, OSC 1.0 wire format | nothing |
+| `vrmAdapterVmc`, `vrmAdapterMocopi`, `vrmAdapterVrchatOsc`, their record tools | `motion-connectors` (`motionConnectorVmc`, `motionConnectorMocopi`, `motionConnectorVrchatOsc`) — **done 2026-09-21** | protocol and device decode, frame assembly, recording | nothing |
+| `motionTracking` | `motion-connectors` (`motionConnectorTracking`) — **done 2026-09-21** | tracker regions, assignment, the tracker solve | nothing |
 | `vrmAdapterArdy` (reserved) | `motion-connectors`, behind the motion-plugins generator interface | — | nothing |
 | `usdVrmaFileFormat` | stays | — | `.vrma` reading and its stage (motion-plugins policy §26), consuming the shared `motionCore` |
 | `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, `vrmContainer`, `vrmCore` | stay | — | the product |
 
-A row whose destination is another repository is **frozen here**: it takes
-fixes, and the work v0.9.0 still owes, but no new generic capability. A new
-generic motion feature is proposed in `usd-motion-plugins`; a new device or
-protocol input in `motion-connectors`.
+No row whose destination is another repository has code here any more. A
+new generic motion feature is proposed in `usd-motion-plugins`, and a new
+device or protocol input in `motion-connectors`. Until 2026-09-24 such a row
+was **frozen here**: it took fixes and the work v0.9.0 still owed, but no new
+generic capability.
 
 The destination names are lower-camel identities, each also its CMake package
 name and its exported target's (`motionCore::motionCore`), exactly as

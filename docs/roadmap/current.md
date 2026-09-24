@@ -182,46 +182,39 @@ steps **Migration Phase A–F**.
 
 It starts after v0.9.0, on purpose: the OpenExec foundation's findings are the
 API defects the move fixes on arrival, and they only exist once its nodes do.
-**MIG-0 is done (2026-09-19)** ([the track §2](motion-foundation-split.md#2-mig-0--preparation-)).
-`motionCore` (MIG-1) and `motionRuntime` (MIG-2's first item, as
-`motionSampling` and `motionRecording`) have arrived in `usd-motion-plugins`
-with their history, and so have `vrmRetarget`'s generic half, `motionUsd`'s
-authoring half and the recorded sources (MIG-3). **MIG-1 and MIG-2's library half is done too (2026-09-21).** `motionCore` and
-`motionRuntime` are consumed packages: `motionCore`, `motionSampling` and
-`motionRecording` from `usd-motion-plugins` v0.5.0, pinned by digest per target
-in five descriptors, with the whole suite green against them.
-**So is the retarget (2026-09-23)**: `vrmRetarget`'s generic half is the
-consumed `motionRetarget`, both builder copies are calls to it, every parity
-row came out identical, and what stayed is `vrmRig`
-([the track §4](motion-foundation-split.md#4-mig-2--sampling-retarget-usd-bridge-)).
-**And so is `motionUsd`'s reading half (2026-09-23)**: `motion_retarget`
-reads the clip through the consumed `ReadMotionStage` and keeps only the
-`vrm:` tracks, the first edge here that only a tool declares — what `ost`
-0.23.3 made materializable
-([report 44](../reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md)).
-**MIG-3 is done too (2026-09-23)**: `motionSource`, `motionBvh`, the BVH tools
-and the profiles are deleted here, their non-ASCII path cases having moved
-first, and the suites that baked a real capture read a clip the published
-converter wrote. What is left of the consuming side is one thing: `execMotion`,
-which that repository published in v0.5.0 and which no descriptor here can
-name — `requires.bundles` takes no artifact pin in `ost` 0.23.3 (report 45) —
-so the parity rows cannot yet be re-run against the consumed package before
-the copy here is deleted.
 
-**MIG-4 is done on both sides (2026-09-21).** All six connector-bound
-identities arrived in `motion-connectors` — the two leaves, the tracker layer
-and the three adapters with their recorders — and this repository deleted its
-copies in one change, under [WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)
-rule 7. `ost` 0.23.2 is what made the cross-repository edge declarable
-([report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)),
-so MIG-1..MIG-3's consuming change — this repository resolving `motionCore` and
-the rest as installed packages — is unblocked and is the next thing the track
-owes. MIG-4's other half, `motion_capture`, followed on 2026-09-23. It is
-`usd-motion-plugins`' `motion_record`, and `motion_retarget`'s suite bakes a
-clip the published recorder wrote
-([the migration track](motion-foundation-split.md#6-mig-4--recording-and-live-input-) §6).
-Until an identity moves, it takes fixes and the work v0.9.0 owes, and **no new
-generic capability** ([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
+**MIG-0..MIG-4 are done (2026-09-19..24), and this repository builds no
+generic motion code.** Every identity
+[WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+sends elsewhere arrived there with its history, and this repository either
+consumes it by digest or no longer uses it:
+
+- `motionCore`, `motionSampling`, `motionRetarget` and `motionUsd`'s reading
+  half are consumed packages. What stayed of `vrmRetarget` is `vrmRig`.
+- The recorded-file layer and `motion_capture` are deleted here. Suites that
+  baked a real capture read a clip the published converter or recorder wrote.
+- The six connector-bound identities left in one change (MIG-4).
+- `execMotion` is the published bundle, pinned in `execVrm`'s
+  `requires.bundles`. The parity rows were re-run against it before the copy
+  was deleted, with divergence 0 (2026-09-24).
+
+Each step's record is in [the track](motion-foundation-split.md).
+
+**What is left is MIG-5, "nothing left behind"** ([the track §7](motion-foundation-split.md#7-mig-5--nothing-left-behind-)):
+
+- ✅ No generic motion source file remains, checked mechanically by
+  `workspace_cmake_boundaries` (2026-09-24).
+- ✅ WORKSPACE.md §1 and §2 describe the reduced tree and §9 is a record;
+  `PACKAGE_CONTRACT.md` lists only what this workspace installs (2026-09-24).
+- ⬜ The aggregate product installs and opens a `.vrm` and a `.vrma` from
+  release artifacts, with the shared core resolved as a dependency. That is
+  the next release's dry run.
+- ⬜ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs by
+  default somewhere, and here until an integration repository exists.
+
+A new generic motion feature is proposed in `usd-motion-plugins`, and a new
+device or protocol input in `motion-connectors`
+([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
 
 What becomes of [boundary consolidation](boundary-consolidation.md):
 
@@ -294,12 +287,10 @@ the workspace layout, the output structure, and the import/runtime boundary.*
 (design policy §15, §17-P0)
 
 - 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`,
-  `usdVrmaFileFormat`, `execMotion` and `execVrm` as separate bundles;
-  `vrmContainer`, `motionCore`, `motionRuntime`, `vrmRetarget`, `motionSource`,
-  `motionBvh`, `motionTracking`, `liveTransport`, `osc` and the three
-  `vrmAdapter*` leaves as plain libraries; `motion_retarget`, `motion_capture`,
-  `motion_bvh_convert` and the `*_record` tools as CLIs; and `usdVrm` as the
-  aggregate product name only.
+  `usdVrmaFileFormat` and `execVrm` as separate bundles; `vrmContainer` and
+  `vrmRig` as plain libraries; `motion_retarget` as a CLI; the
+  `usd-motion-plugins` packages and the `execMotion` bundle as consumed, not
+  built; and `usdVrm` as the aggregate product name only.
 - 🚧 Unify phase notation to **Product P0–P6**, **Workspace Phase 0–8**, and
   **Motion Phase A–H** — three sequences, never a bare "Phase N".
 - 🚧 Align build / test / install examples with what CI actually runs.

@@ -173,15 +173,16 @@ Where things stand, as of 2026-09-19:
   bake agreeing on 414 598 values, every one `==`
   ([release record](../releases/v0.9.0.md)).
 - **Current priority: the [motion migration](motion-foundation-split.md).**
-  MIG-0 started on 2026-09-19. Both destinations are being scaffolded, and
-  MIG-1 moves `motionCore` once `usd-motion-plugins` has a tree that can
-  receive it. Carried beside it: operator evidence for both input halves, the
+  MIG-0..MIG-4 are done on this side (2026-09-19..24): every generic motion
+  identity and every live input left, and this repository consumes what it
+  still uses by digest. What is left is MIG-5's release-artifact proof and
+  its cross-repository test ([current.md](current.md)). Carried beside it: operator evidence for both input halves, the
   Workspace Phase 5 packaging P0, and the build machine's RPATH in packaged
   POSIX binaries ([current.md](current.md#carried-out-of-v090)).
-- **The recorded half's second format family waits behind three tracks**, and
-  its boundary is already built: NPZ / AMASS enters through `motionSource`
-  exactly as BVH does. Whether that is one identity (`motionNpz`) or two
-  (`motionNpz` + `motionAmass`) is a **measurement, not a preference**
+- **The recorded half's second format family left with the layer it extends**:
+  it is no longer this repository's. NPZ / AMASS enters through `motionSource`,
+  which is `usd-motion-plugins`' since MIG-3, and whether it is one identity
+  (`motionNpz`) or two (`motionNpz` + `motionAmass`) is measured there
   ([the recorded track](recorded-motion-sources.md) §13).
 - The display slice is **re-scoped** (2026-07-29). OpenUSD 26.08 resolves exec
   prim adapters from a hard-coded list, so a skinned VRM avatar cannot be
