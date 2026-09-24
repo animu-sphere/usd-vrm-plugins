@@ -13,7 +13,7 @@ them: it bakes the clip into the target rig's joint order and binds it.
 ## What you need
 
 A built workspace and an adopted `cy2026` runtime — see the repo
-[README](../../README.md#build-and-test). `ost build` puts the tool at
+[build guide](BUILDING.md). `ost build` puts the tool at
 `tools/motionRetarget/bin/motion_retarget.exe` (`motion_retarget` elsewhere).
 
 ## 1. Bake the clip onto the rig

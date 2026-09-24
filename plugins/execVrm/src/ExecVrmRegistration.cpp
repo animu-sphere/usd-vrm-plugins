@@ -104,7 +104,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // The skeleton a clip was authored against, which is where the clip's rest
     // pose is. Not a vrmSchema property: a convention of this bundle, the way
     // `motion:timeCodesPerSecond` is execMotion's, and nothing authors it yet
-    // (docs/roadmap/openexec-foundation.md §9).
+    // (docs/archive/motion-split/openexec-foundation.md §9).
     ((sourceSkeleton, "vrm:retarget:sourceSkeleton"))((sourceSkeletonPaths,
                                                        "vrm:retarget:sourceSkeleton:paths"))(
         (sourceSkeletons, "vrm:retarget:sourceSkeleton:skeletons"))(

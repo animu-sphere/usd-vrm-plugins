@@ -11,7 +11,7 @@ capture onto a rig: `workspace_bvh_end_to_end`, `workspace_real_avatar_bake`,
 and both artifact-only release smokes. Until MIG-3 those tests ran
 `motion_bvh_convert` over the BVH export first. The converter, the BVH reader,
 the source layer and the producer profiles have since left this repository
-([motion-foundation-split.md §5](../../../docs/roadmap/motion-foundation-split.md#5-mig-3--recorded-sources-)),
+([motion-foundation-split.md §5](../../../docs/archive/motion-split/motion-foundation-split.md#5-mig-3--recorded-sources-)),
 so what is committed is the converter's output. `ost` has no way for this
 workspace to consume another repository's tool.
 
@@ -39,3 +39,14 @@ stage shape changes, and update this table in the same change.
 `workspace_bvh_end_to_end` and the parity cases bake onto. It is shaped so a
 broken rest-pose correction cannot pass: its arms rest 45 degrees down where
 the recorded rig's rest is straight.
+
+## `design_triplet/`
+
+The hand-authored statement of what a retarget onto a VRM rig must produce
+([VRM_MOTION_POLICY.md §7.3](../../../docs/design/VRM_MOTION_POLICY.md#73-parity-with-the-bake)):
+`canonical_walk.usda` is what the `.vrma` reader authors for a short walk,
+`avatar.usda` a rig with deliberately different joint names and order, and
+`expected_retargeted.usda` the bake of the first onto the second.
+`motion_retarget_design_triplet` bakes it and compares values, and the parity
+cases use its walk and avatar. None of the three is generated; change them
+only with the contract they state.

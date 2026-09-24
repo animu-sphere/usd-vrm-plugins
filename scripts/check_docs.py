@@ -10,10 +10,8 @@ the handful of facts that silently rot when the workspace changes shape:
 2. no current-state document describes `usdVrm` as a bundle id or points at the
    pre-rename `plugins/usdVrm/` path (history is exempt — see HISTORY);
 3. the schema contract version in the docs matches vrmSchema's manifest;
-4. the live mocopi adapter's joint table and the recorded track's producer
-   profile describe the same rig, checked against the committed export the
-   correspondence was measured on — they must not share a table, so their
-   agreement has to cost a check;
+4. *(retired: the mocopi rig agreement left with the adapter and the profile;
+   see the comment where it stood)*;
 5. the OpenUSD pin agrees across the bundle manifests, the configure-time
    contract module, and the supported-configurations reference;
 6. the roadmap and the release records agree about which versions are out:
@@ -24,7 +22,17 @@ the handful of facts that silently rot when the workspace changes shape:
 7. every identity that installs a CMake package has a row in
    PACKAGE_CONTRACT.md, and every row that is not reserved names an identity
    the manifests declare;
-8. every local markdown link resolves.
+8. every local markdown link resolves;
+9. the root README stays an entry point: no release-version prose, no status
+   column, no identity that has left this repository, no retired phase
+   vocabulary, and no link into the archive
+   (docs/contributing/documentation.md, "Root README");
+10. front matter says what a document is: an archived document is
+    `historical` and says so in a banner, a superseded one names a
+    `canonical` replacement that exists and holds no parallel copy of what it
+    replaced, and every `status` is one of the known values;
+11. every roadmap document other than the index still holds incomplete work,
+    and nothing that states current status (reference/) cites the archive.
 
 Check 6 exists because the roadmap said "Next: v0.6.0 - the OpenExec
 foundation" for two weeks after v0.6.0 shipped VMC input instead. Nothing was
@@ -46,6 +54,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 HISTORY = (
     "docs/reports/",     # dated dogfooding evidence + delivery log
     "docs/releases/",    # immutable per-version release records
+    "docs/archive/",     # superseded plans, kept for traceability
     "CHANGELOG.md",      # released sections are history
 )
 
@@ -238,8 +247,8 @@ def check_openusd_pin(failures: list[str]) -> None:
 # rename; anywhere else it is a reader following a path that no longer exists.
 RETIRED_DOC_NAMES = {
     "openexec-v0.6.0-v0.7.0.md": (
-        "docs/roadmap/README.md",
-        "docs/roadmap/openexec-foundation.md",
+        "docs/archive/motion-split/openexec-foundation.md",
+        "docs/archive/motion-split/roadmap-orderings.md",
     ),
 }
 
@@ -516,6 +525,142 @@ def check_links(failures: list[str]) -> None:
                 failures.append(f"{rel}: broken link -> {t}")
 
 
+# --- entry points, lifecycle, and ownership ----------------------------------
+
+# Identities that left this repository. The root README names what this
+# repository owns; one of these there tells a reader the tree still has it.
+# `motionCore` and the other consumed packages are not listed: naming what the
+# product consumes is allowed, describing it is not, and that half is review.
+RETIRED_IDENTITIES = (
+    "vrmRetarget", "motionRuntime", "motionSource", "motionBvh",
+    "motionTracking", "liveTransport", "osc", "vrmAdapterVmc",
+    "vrmAdapterMocopi", "vrmAdapterVrchatOsc", "motion_capture",
+    "motion_bvh_inspect", "motion_bvh_convert", "vmc_record",
+    "mocopi_record", "vrchat_osc_record",
+)
+
+# Sequences whose work finished or left with the code. They survive in the
+# archive, the release records and the reports.
+RETIRED_VOCABULARY = re.compile(r"Motion Phase [A-H]\b|\bMIG-\d\b|\bBND-\d\b")
+
+STATUS_VALUES = {"proposed", "accepted", "binding", "superseded", "rejected",
+                 "historical"}
+FRONT_MATTER = re.compile(r"\A---\n(?P<body>.*?)\n---\n", re.S)
+OPEN_ITEM = re.compile("[⬜\U0001f6a7⛔]")  # ⬜ 🚧 ⛔
+
+# A superseded stub names its replacement and maps its old sections; anything
+# much longer is a second copy of the contract it says it no longer holds.
+SUPERSEDED_MAX_LINES = 60
+
+
+def front_matter(text: str) -> dict[str, str]:
+    m = FRONT_MATTER.match(text.replace("\r\n", "\n"))
+    if not m:
+        return {}
+    fields = {}
+    for line in m.group("body").splitlines():
+        key, sep, value = line.partition(":")
+        if sep:
+            fields[key.strip()] = value.split("#", 1)[0].strip()
+    return fields
+
+
+def check_readme_entry_point(failures: list[str]) -> None:
+    """The root README is an entry point, not a design document."""
+    raw = read("README.md")
+    for i, line in enumerate(prose_only(raw).splitlines(), 1):
+        for ver in VERSION_RE.findall(line):
+            failures.append(
+                f"README.md:{i} states a release version (v{ver}). Version "
+                f"status goes stale; link the capability matrix, the roadmap "
+                f"or the changelog instead")
+        vocab = RETIRED_VOCABULARY.search(line)
+        if vocab:
+            failures.append(
+                f"README.md:{i} uses a retired phase vocabulary "
+                f"({vocab.group(0)}); it belongs in the archive and the "
+                f"release records")
+        for target in LINK.findall(line):
+            if "docs/archive/" in target:
+                failures.append(
+                    f"README.md:{i} links into the archive ({target}); the "
+                    f"entry point names current documents only")
+        if line.startswith("|") and re.search(
+                r"\|\s*(Status|Since|Shipped|Planned)\s*\|", line):
+            failures.append(
+                f"README.md:{i} has a status column; current status belongs "
+                f"in docs/reference/CAPABILITY_MATRIX.md")
+    for name in RETIRED_IDENTITIES:
+        if re.search(rf"`{re.escape(name)}`", raw):
+            failures.append(
+                f"README.md names `{name}`, which left this repository. Say "
+                f"who owns it now in docs/, not in the entry point")
+
+
+def check_lifecycle(failures: list[str]) -> None:
+    """Front matter and banners say what a document is."""
+    for p in sorted(REPO_ROOT.glob("**/*.md")):
+        rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+        if is_generated(rel):
+            continue
+        text = p.read_text(encoding="utf-8", errors="replace")
+        fm = front_matter(text)
+        status = fm.get("status")
+        if status and status not in STATUS_VALUES:
+            failures.append(
+                f"{rel}: front matter status {status!r} is not one of "
+                f"{', '.join(sorted(STATUS_VALUES))}")
+        archived = (rel.startswith("docs/archive/")
+                    and rel != "docs/archive/README.md")
+        if archived:
+            if status != "historical":
+                failures.append(
+                    f"{rel}: an archived document carries `status: historical` "
+                    f"in its front matter")
+            if "Historical only" not in text[:1500]:
+                failures.append(
+                    f"{rel}: an archived document opens with a "
+                    f"\"Historical only\" banner")
+        elif status == "historical":
+            failures.append(
+                f"{rel}: `status: historical` outside docs/archive/ -- move "
+                f"the document there, or give it its real status")
+        if status == "superseded":
+            canonical = fm.get("canonical")
+            if not canonical:
+                failures.append(f"{rel}: a superseded document names its "
+                                f"replacement in `canonical:`")
+            elif not (p.parent / canonical).resolve().exists():
+                failures.append(f"{rel}: `canonical: {canonical}` does not "
+                                f"exist")
+            lines = len(text.splitlines())
+            if lines > SUPERSEDED_MAX_LINES:
+                failures.append(
+                    f"{rel}: a superseded stub of {lines} lines (limit "
+                    f"{SUPERSEDED_MAX_LINES}) must not keep a parallel copy "
+                    f"of what it replaced")
+
+
+def check_roadmap_ownership(failures: list[str]) -> None:
+    """The roadmap holds incomplete work; current status cites no archive."""
+    for p in sorted((REPO_ROOT / "docs" / "roadmap").glob("*.md")):
+        if p.name == "README.md":
+            continue
+        if not OPEN_ITEM.search(p.read_text(encoding="utf-8",
+                                            errors="replace")):
+            failures.append(
+                f"docs/roadmap/{p.name} has no open item. Completed work "
+                f"leaves the roadmap: move the plan to docs/archive/")
+    for p in sorted((REPO_ROOT / "docs" / "reference").glob("*.md")):
+        text = prose_only(p.read_text(encoding="utf-8", errors="replace"))
+        for target in LINK.findall(text):
+            if "archive/" in target and not target.startswith("http"):
+                failures.append(
+                    f"docs/reference/{p.name} cites the archive ({target}); "
+                    f"what is implemented now cannot rest on a superseded "
+                    f"plan")
+
+
 def main() -> int:
     # The findings quote doc prose, which is not ASCII. Don't let a legacy
     # console encoding (e.g. cp932) turn a real failure into a UnicodeEncodeError.
@@ -528,7 +673,9 @@ def main() -> int:
                   check_openusd_pin, check_release_lane_ost_pin,
                   check_release_records, check_roadmap_status,
                   check_retired_doc_names, check_component_status,
-                  check_package_contract, check_links):
+                  check_package_contract, check_links,
+                  check_readme_entry_point, check_lifecycle,
+                  check_roadmap_ownership):
         check(failures)
 
     if failures:

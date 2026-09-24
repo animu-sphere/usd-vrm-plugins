@@ -1,6 +1,6 @@
 # 03 — Which way this sender's numbers point (2026-08-30)
 
-VRC-3 of [the OSC track](../../roadmap/osc-and-vrchat-trackers.md#vrc-3--tracking-space-normalisation):
+VRC-3 of [the OSC track](../../archive/motion-split/osc-and-vrchat-trackers.md#vrc-3--tracking-space-normalisation):
 the tracking space a mocopi `VRChat (OSC)` stream is expressed in, **measured
 from the session rather than read off VRChat's documentation**. The two agree,
 and that agreement is the result.
@@ -11,7 +11,7 @@ documentation once, and the failure that produced is invisible: a mirrored
 conversion is correct in every axis-aligned test pose and wrong the moment
 anything turns, so it survives a unit suite, a corpus and a review, and shows up
 as an avatar whose left hand moves when the operator moves their right
-([the adapter plan §9.6](../../roadmap/adapters-mocopi-vmc-ardy.md#96-cross-source-comparison)).
+([the adapter plan §9.6](../../archive/motion-split/adapters-mocopi-vmc-ardy.md#96-cross-source-comparison)).
 The only thing that catches it is a recording of somebody doing a **labelled**
 thing.
 
@@ -79,7 +79,7 @@ what the address said and nothing else; that the one at 0.89 m is a hips and the
 two at 0.09 m are feet is an inference this adapter does not make and does not
 need — assignment is a separate contract with an operator's statement as its
 first path
-([§5.1](../../roadmap/osc-and-vrchat-trackers.md#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end)).
+([§5.1](../../archive/motion-split/osc-and-vrchat-trackers.md#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end)).
 It is recorded here because a later reader will want to know what this session's
 three numbered trackers were, and because VRC-4a's fixtures can be checked
 against it.

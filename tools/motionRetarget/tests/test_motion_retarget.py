@@ -3,7 +3,7 @@
 """End-to-end check for the Motion Phase C bake tool.
 
 This is the milestone's evaluation point: the hand-authored design triplet in
-docs/design/fixtures/motion/ says what retargeting `canonical_walk.usda` onto
+tests/motion/fixtures/design_triplet/ says what retargeting `canonical_walk.usda` onto
 `avatar.usda` must produce, and `expected_retargeted.usda` is that answer. The
 comparison is value-level and goes through USD composition on both sides, so it
 checks what a consumer actually resolves rather than how the layer is spelled.
@@ -23,8 +23,7 @@ from pxr import Gf, Sdf, Usd, UsdGeom, UsdSkel, Vt
 
 TOLERANCE = 1e-5
 
-# motion_retarget's exit codes (MOTION_CONTRACT.md, "motion_retarget exit
-# codes"). Asserted by number, because the number is what a script branches on;
+# motion_retarget's exit codes (docs/design/VRM_MOTION_POLICY.md §7.1). Asserted by number, because the number is what a script branches on;
 # 6 is reserved for a tool that evaluates through OpenExec and never returned.
 EXIT_SUCCESS = 0
 EXIT_INVALID_USER_INPUT = 1
@@ -242,7 +241,7 @@ def check_scale_policy(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
     UsdSkel takes an animated joint's local transform from the animation
     whole, so the `scales` a bake states *are* the rig's scales: identity
     replaced a scaled rest (the joint-transforms report, section 4). The
-    policy (MOTION_CONTRACT.md, "Scale policy") authors each joint's rest
+    policy (VRM_MOTION_POLICY.md §7.1) authors each joint's rest
     scale, and reports a clip that animates scale as
     `MOTION_RETARGET_NON_UNIT_SCALE` rather than carrying or silently dropping it.
     """
@@ -1549,7 +1548,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True)
     parser.add_argument("--fixtures", required=True,
-                        help="docs/design/fixtures/motion")
+                        help="tests/motion/fixtures/design_triplet")
     parser.add_argument("--tool-fixtures", required=True,
                         help="tools/motionRetarget/tests/fixtures")
     parser.add_argument("--humanoid-map", required=True)

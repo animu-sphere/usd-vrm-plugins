@@ -128,7 +128,7 @@ ost plugin view /opt/usdVrm avatar.vrm            # usdview
 ## From source
 
 This is the supported way to get the **complete** workspace (VRM importer +
-schemas + resolver + VRMA reader). See the repo [README](../../README.md#build-and-test): `ost plugin
+schemas + resolver + VRMA reader). See the repo [build guide](BUILDING.md): `ost plugin
 test --workspace` (OpenStrata) or plain CMake with `CMAKE_PREFIX_PATH` pointing
 at an OpenUSD install. The clean-install smoke
 (`python scripts/clean_install_smoke.py`) proves the packaged bundles work with

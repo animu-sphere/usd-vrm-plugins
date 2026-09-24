@@ -36,6 +36,30 @@ tests/                          python smoke tests + generated fixtures (minimal
                 ranges; no USD)                              across this seam)         UsdSkel)
 ```
 
+## Authored stage
+
+VRM 0.x and 1.0 differences are absorbed into the canonical model before any
+USD is authored, and every importer produces this shape:
+
+```
+/Asset                     SkelRoot (or Xform when there is no skeleton), kind=component
+  customData.vrm.*         sourceFormat / sourceVersion / specVersion / meta / rawExtension
+  geo/                     Scope of UsdGeomMesh (one per glTF primitive)
+    <Mesh>                 points/normals/st, material binding; skel binding when
+                           skinned, else the glTF node transform as xformOp
+  mtl/<Material>           UsdShadeMaterial: identity, binding target, VRM semantics
+    preview/               UsdShadeNodeGraph holding the UsdPreviewSurface network
+  skel/Skeleton            single UsdSkelSkeleton unified across all glTF skins
+                           (bind transforms from the inverse bind matrices)
+  rig/Humanoid             vrm:humanBones:<bone> joint tokens, typed VrmHumanoidAPI
+```
+
+Every `/Asset/rig/*` control prim carries typed schema data from the
+`vrmSchema` bundle (schema contract v1); raw VRM blocks stay in `customData`
+as the lossless fallback. The importer **authors data only**: LookAt, node
+constraints and spring bones are written as typed schema data and never
+executed, and the same bytes always produce the same stage.
+
 * **vrmContainer** validates untrusted GLB headers/chunks and buffer-view ranges,
   exposes immutable non-owning byte views, and owns the stable content-addressed
   embedded-resource naming shared with the package resolver. Its public API has

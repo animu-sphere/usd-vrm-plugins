@@ -1,12 +1,12 @@
 # 02 — What mocopi's `VRChat (OSC)` output actually sends (2026-08-30)
 
-VRC-1 of [the OSC track](../../roadmap/osc-and-vrchat-trackers.md#vrc-1--real-mocopi-capture-and-address-inventory):
+VRC-1 of [the OSC track](../../archive/motion-split/osc-and-vrchat-trackers.md#vrc-1--real-mocopi-capture-and-address-inventory):
 a real `VRChat (OSC)` session, recorded and inventoried **before** a decoder is
 written. Its output is a measurement, and that measurement is the input to
 VRC-2's design.
 
 **The risk this milestone was written to test is real.** The plan's
-[risk A](../../roadmap/osc-and-vrchat-trackers.md#14-risks) said mocopi's
+[risk A](../../archive/motion-split/osc-and-vrchat-trackers.md#14-risks) said mocopi's
 `VRChat (OSC)` output may not be the tracker subset anyone expects. It is not:
 this sender uses **three numbered trackers and a named `head`**, out of a surface
 that admits eight, and a decoder keyed on an integer index would have silently
@@ -16,7 +16,7 @@ Two findings below were not on anyone's list. This wire's only marker of a
 restart is the sender's **source port**, which the capture format does not carry;
 and this application **cannot record a BVH while it is sending OSC**, which makes
 the four-observation comparison of
-[§11](../../roadmap/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
+[§11](../../archive/motion-split/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
 unproducible on this product rather than merely unrecorded.
 
 ## 0. What was recorded
@@ -174,7 +174,7 @@ pausing and a second session beginning — which is precisely the distinction
 
 This is a finding, not a fix. Widening the format touches `liveTransport` and
 three adapters and every committed fixture in two corpora, and it is
-[the OSC track](../../roadmap/osc-and-vrchat-trackers.md)'s to schedule.
+[the OSC track](../../archive/motion-split/osc-and-vrchat-trackers.md)'s to schedule.
 
 ## 5. What this sender cannot be asked
 
@@ -195,7 +195,7 @@ Their consequence is a fact about the product, not a scheduling problem:
 > other observation** — not with the native wire, and not even with a file export
 > that would let two takes be chained through a common recording.
 
-[§11](../../roadmap/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
+[§11](../../archive/motion-split/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
 asks for one physical session observed four ways, and
 [the corpus](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/README.md)
 asks a recorded VRChat OSC session to be *the same physical take* as the native
@@ -214,7 +214,7 @@ the specification:
 2. **A rotation is three floats.** Not a quaternion, and the Euler convention is
    VRC-3's to establish against a recorded rest pose — never from the
    documentation, on
-   [the handedness precedent](../../roadmap/adapters-mocopi-vmc-ardy.md#96-cross-source-comparison).
+   [the handedness precedent](../../archive/motion-split/adapters-mocopi-vmc-ardy.md#96-cross-source-comparison).
 3. **Position and rotation are separate messages**, so a tracker is partial
    between two datagrams by construction, and — per §3 — partial for a whole
    frame about once a second on one specific address.

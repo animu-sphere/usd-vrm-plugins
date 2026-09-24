@@ -1,9 +1,20 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-25.** This was the packaging hardening track (v0.8.0), and it was
+> once authoritative. Do not use it to determine current architecture,
+> capabilities, ownership or roadmap: start from [docs/README.md](../../README.md).
+> Its section numbers are unchanged, so older documents can still cite
+> them. See [the archive index](../README.md).
+
 # Packaging hardening — the installed-package consumer lane
 
 **Status:** **PKG-0 through PKG-5 done** — twelve of twelve packages consumed
 from outside the workspace on all three OS, and the three platforms agree about
 the closure (2026-08-30) · **Target:** v0.8.0 ·
-**Contract:** [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)
+**Contract:** [architecture/PACKAGE_CONTRACT.md](../../architecture/PACKAGE_CONTRACT.md)
 
 The workspace has finished splitting. `vrmSchema`, `usdVrmFileFormat`,
 `usdVrmPackageResolver` and `vrmContainer` are separate; the motion layer is
@@ -82,7 +93,7 @@ weaker version of this one:
 The second row is not a gap this track leaves open — it is a contract that is
 already gated, by a different mechanism, and merging the two would replace a
 working check with a `find_package` that has nothing to find.
-[PACKAGE_CONTRACT.md §4.1](../architecture/PACKAGE_CONTRACT.md) records both
+[PACKAGE_CONTRACT.md §4.1](../../architecture/PACKAGE_CONTRACT.md) records both
 shapes. `usdVrmaFileFormat` was not in the original fourteen-package list and
 belongs in this row for the same reason as the two beside it; `vrmSchema` is the
 one plugin bundle in the *first* row, because `usdVrmFileFormat` links it and so
@@ -94,7 +105,7 @@ So: **twelve `find_package` consumers**, plus the plugin-load gate that exists.
 
 ### PKG-0 — the contract document ✅
 
-[PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md) states, per package,
+[PACKAGE_CONTRACT.md](../../architecture/PACKAGE_CONTRACT.md) states, per package,
 the name a consumer writes, the target it links, the header root, the required
 packages, the platform dependencies, aggregate membership, and whether
 standalone installability has been *measured* or only *reviewed*. Written
@@ -235,7 +246,7 @@ the check had never been exercised by anything but its own unit of proof.
 A script that, for a named package: installs the workspace to a scratch prefix,
 configures the fixture against that prefix alone, builds it, and reports which
 of the six criteria in
-[PACKAGE_CONTRACT.md §5](../architecture/PACKAGE_CONTRACT.md) it met. It runs on
+[PACKAGE_CONTRACT.md §5](../../architecture/PACKAGE_CONTRACT.md) it met. It runs on
 a workstation with no CI involved, because a lane that cannot be reproduced by
 hand is a lane nobody can debug.
 
@@ -391,14 +402,14 @@ One cell, on every pull request, on all three OS. It must be a *separate* build
 from the workspace cells: the point is a prefix that contains no build tree.
 
 The acceptance criteria are
-[PACKAGE_CONTRACT.md §5](../architecture/PACKAGE_CONTRACT.md) 1–6, and criterion
+[PACKAGE_CONTRACT.md §5](../../architecture/PACKAGE_CONTRACT.md) 1–6, and criterion
 6 — that the three platforms agree about the package closure — is the one only a
 lane can check. `liveTransport` is where a difference is expected and permitted:
 `ws2_32` on Windows, `Threads::Threads` elsewhere. A difference anywhere else is
 a defect until documented.
 
 **Green on all three OS, 2026-08-30**, and criterion 6 with them:
-[`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml),
+[`.github/workflows/package-consumer.yml`](../../../.github/workflows/package-consumer.yml),
 three jobs — read the pins, consume on each of the three OS, compare the three
 closures. Twelve packages × three platforms, and **every workspace target in
 every closure is present on all three or on none**. The one difference this
@@ -441,7 +452,7 @@ unimplementable and read loosely it is vacuous, because the three runtimes are
 three separate builds of OpenUSD: an entry-for-entry comparison reports an
 upstream difference as a defect here, and a comparison that tolerates any
 difference catches nothing.
-[PACKAGE_CONTRACT.md §5.1](../architecture/PACKAGE_CONTRACT.md) now states the
+[PACKAGE_CONTRACT.md §5.1](../../architecture/PACKAGE_CONTRACT.md) now states the
 partition — a workspace target agrees or it is a defect; a declared platform
 dependency is present exactly where its cell says and **absent elsewhere**;
 everything else is attributed to the external package that brought it, and the
@@ -462,7 +473,7 @@ verdict: two platforms end in a setup refusal rather than a pass, because a
 question about three is not answered by two.
 
 **The first run found a defect, and it is in the runtime rather than in a
-package** ([report 37](../reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md)).
+package** ([report 37](../../reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md)).
 macOS ran all twelve green. Windows and Linux each configured four and stopped:
 a pulled runtime's CMake package carries the *producing* machine's Python paths,
 in `pxrConfig.cmake`'s guarded variables and again in sixteen imported targets'
@@ -519,7 +530,7 @@ written for it, and both directions were made to fail before it was believed.
   that is the *plugin-load* contract and it stays where it is. This track is the
   `find_package` contract beside it.
 - **Not a rewrite of any config file.** The rules in
-  [PACKAGE_CONTRACT.md §3](../architecture/PACKAGE_CONTRACT.md) are what the
+  [PACKAGE_CONTRACT.md §3](../../architecture/PACKAGE_CONTRACT.md) are what the
   existing configs already follow, one broken instance aside. This track checks
   them; it does not restyle them.
 - **Not a second dependency-direction check.** WORKSPACE.md §2's directions are
@@ -531,7 +542,7 @@ written for it, and both directions were made to fail before it was believed.
 
 - **WORKSPACE.md §5** keeps artifact naming and aggregate membership and defers
   the per-package consumer contract to
-  [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md). No claim in §5
+  [PACKAGE_CONTRACT.md](../../architecture/PACKAGE_CONTRACT.md). No claim in §5
   changes; one paragraph now points elsewhere for what it never stated.
 - **PACKAGE_CONTRACT.md's `Standalone` column** moves from `unmeasured` to
   `measured` package by package, as PKG-3 measures them. That column is the

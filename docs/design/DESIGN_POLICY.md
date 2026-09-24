@@ -7,11 +7,11 @@
 >
 > **Scope:** this document is canonical for the **importer** — the `.vrm` read
 > path, the canonical model, the schema contract, diagnostics, CI, release, and
-> Product P0–P6. Everything **below** the importer — `.vrma` import, the
-> vendor-neutral motion core, retargeting, and the OpenExec runtime — is
-> canonical in
-> [MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md), which extends
-> §10 and restructures §17-P4. Where the two overlap, the motion policy wins.
+> Product P0–P6. How VRM and VRMA use motion — `.vrma` import, the VRM rig
+> binding, expressions, look-at and `execVrm` — is
+> [VRM_MOTION_POLICY.md](VRM_MOTION_POLICY.md), which extends §10 and replaces
+> §17-P4's work list; where the two overlap, that policy wins. Generic motion is
+> `usd-motion-plugins`' and is not defined in this repository.
 
 ## 1. Purpose
 
@@ -903,14 +903,17 @@ Provide, as far as feasible:
 
 ### P4: The motion & runtime layer
 
-> **Restructured 2026-07-18.** P4 is now an umbrella whose detail lives in
-> [MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md) §16 as **Motion
-> Phase A–H**. The work list below is the pre-motion-policy plan, kept for
-> rationale; it is no longer the plan of record. In particular the LookAt-first
-> ordering is retired (the retarget core comes first) and "Mocopi adapter
-> prototype" is no longer a P4 work item — it is an optional leaf adapter.
+> **Restructured 2026-07-18, and closed as a sequence on 2026-09-25.** P4 was
+> an umbrella over the retired Motion Phase A–H; generic motion has since moved
+> to `usd-motion-plugins`, and what remains of P4 here is VRM-specific —
+> [VRM_MOTION_POLICY.md](VRM_MOTION_POLICY.md) and the
+> [`ExecIr` track](../roadmap/execir-track.md). The work list below is the
+> pre-motion-policy plan, kept for rationale; it is not the plan of record.
+> In particular the LookAt-first ordering is retired (the retarget core came
+> first) and "Mocopi adapter prototype" is not a work item here at all — live
+> input is `motion-connectors`'.
 
-**Work** *(superseded — see Motion Phase A–H)*
+**Work** *(superseded)*
 
 - `execVrm` module
 - Schema-discovery node

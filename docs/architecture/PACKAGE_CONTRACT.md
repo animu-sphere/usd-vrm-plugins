@@ -15,7 +15,7 @@ is this artifact called", and a reader kept arriving at it with the question
 Everything here is a promise to a consumer **outside** the repository. A claim
 in this document is met when a clean prefix and a fixture project that names no
 workspace target can configure, build and link against it — see
-[roadmap/packaging-hardening.md](../roadmap/packaging-hardening.md) for the lane
+[roadmap/packaging-hardening.md](../archive/packaging/packaging-hardening.md) for the lane
 that will check every package, `scripts/check_package_consumer.py` for the
 driver that checks one today, and §5 below for why prose is not enough.
 
@@ -404,7 +404,7 @@ That a document is not the deliverable is the whole reason the lane exists.
 Seventeen green lanes did not catch a package naming an unresolvable target, and
 they could not have: no lane opens a config file. So the acceptance criteria
 below belong to a CI lane, and the roadmap track that built it is
-[packaging-hardening.md](../roadmap/packaging-hardening.md). That lane is
+[packaging-hardening.md](../archive/packaging/packaging-hardening.md). That lane is
 [`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml),
 and §5.1 states what it compares — because *which* differences between three
 platforms are this workspace's to answer for is a contract question, and a check
@@ -533,7 +533,7 @@ Windows the socket library is present and `vrmAdapterMocopi`'s Windows run
 proves the imported-target half; what the issue is actually about is a POSIX
 host linking the threading library and *no* socket one, and that is a
 measurement no Windows host can make. It is checked here rather than remembered
-([the track](../roadmap/packaging-hardening.md) PKG-5).
+([the track](../archive/packaging/packaging-hardening.md) PKG-5).
 
 ## 6. Changing this document
 

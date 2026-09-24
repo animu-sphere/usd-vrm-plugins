@@ -12,7 +12,7 @@ and the command). The conversion's own determinism is that repository's
 `motion_convert_clip` now. Everything from the clip on is this file's, as it
 was.
 
-This is BVH-3's evaluation point (roadmap/recorded-motion-sources.md §7), and
+This is BVH-3's evaluation point (archive/motion-split/recorded-motion-sources.md §7), and
 the load-bearing word in it is **unchanged**: `motion_retarget` shipped in
 v0.4.0, it knows nothing about BVH, and it is invoked here with the same flags a
 `.vrma` bake uses. If the recorded path needed a special case in the retargeter,

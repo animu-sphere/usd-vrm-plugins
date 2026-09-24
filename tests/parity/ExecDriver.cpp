@@ -337,7 +337,7 @@ struct Driver::Request
 {
     // What the caller asked for, in its order, then the keys its overrides
     // named that it did not ask for -- requested too, so that exec has
-    // compiled them (docs/design/MOTION_CONTRACT.md, the driver contract).
+    // compiled them (usd-motion-plugins' EXEC_CONTRACT.md §3, rule 7).
     std::vector<Key> keys;
     std::vector<Key> overrideKeys;
 

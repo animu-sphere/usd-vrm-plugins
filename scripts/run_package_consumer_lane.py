@@ -336,7 +336,7 @@ def main() -> int:
     if contract:
         print(f"\nFAIL: {', '.join(contract)} did not meet the contract. Fix "
               f"the config, never the fixture "
-              f"(roadmap/packaging-hardening.md PKG-3).")
+              f"(archive/packaging/packaging-hardening.md PKG-3).")
     if setup:
         print(f"\nSETUP: {', '.join(setup)} could not be run at all, so this "
               f"host measured nothing about them. That is a fact about the "

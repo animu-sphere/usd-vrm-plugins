@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // ExecDriver -- the OpenExec driver contract as code, and the one place the
-// `VRM_OPENEXEC_*` codes are raised (docs/design/MOTION_CONTRACT.md, "OpenExec
-// driver contract"; the OpenExec plan's P0-4 and P1-1).
+// `VRM_OPENEXEC_*` codes are raised (usd-motion-plugins' EXEC_CONTRACT.md
+// §3 and §4; the OpenExec plan's P0-4 and P1-1).
 //
 // # Why a driver needs a contract
 //

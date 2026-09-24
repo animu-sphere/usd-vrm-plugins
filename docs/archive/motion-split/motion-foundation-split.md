@@ -1,9 +1,20 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-25.** This was the motion migration plan (MIG-0 to MIG-5), and it was
+> once authoritative. Do not use it to determine current architecture,
+> capabilities, ownership or roadmap: start from [docs/README.md](../../README.md).
+> Its section numbers are unchanged, so older documents can still cite
+> them. See [the archive index](../README.md).
+
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check, the reduced contract and the cross-repository test are done; the release-artifact proof is the next release's dry run · **Target:** after the OpenExec foundation ·
-**Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
+**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check, the reduced contract and the cross-repository test are done; the release-artifact proof is the next release's dry run · **Target:** after the OpenExec foundation ·
+**Structure:** [architecture/WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
-[design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
+[design/INTEGRATION_SCOPE_POLICY.md](../../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
 **Added:** 2026-09-06 as the conditional split track · **Rewritten:** 2026-09-17
 
 **What changed on 2026-09-17.** This track used to be conditional: it opened
@@ -14,7 +25,7 @@ could end it, and its scope was `motionCore` + `motionRuntime` only. The
 motion architecture is owned: generic motion leaves this repository, and
 device and protocol input goes to `motion-connectors`. So the gate is gone,
 the scope is every identity
-[WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+[WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity)
 gives a destination, and what is left to plan is **order and evidence**. The
 filename is kept so that links to the track keep working.
 
@@ -32,7 +43,7 @@ are exactly the API defects that should be fixed once, in the destination,
 rather than moved and fixed there later without the evidence that found them.
 
 The moves then follow the dependency order
-([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 6),
+([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules), rule 6),
 and each waits for its destination to publish an installable package. The
 motion-plugins policy numbers its migration **Migration Phase A–F**; the
 milestones below say which of them each one serves.
@@ -57,9 +68,9 @@ repository's, and needs nothing from this one.
   removed, and every string literal of their sources. It checks what it finds
   against a ledger, `tests/boundary/motion-vocabulary.json`.
   The first run found 40 names. 16 are renames or identity names
-  ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)), 8 are the
+  ([WORKSPACE.md §9.3](../../architecture/WORKSPACE.md#93-names)), 8 are the
   retarget's diagnostic codes, and 16 belong to the look-at and expression
-  findings of [§9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget).
+  findings of [§9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget).
   Two anchors pin the required-bone finding, whose names no pattern can see.
   A new VRM name in a moving header, a ledger row that no longer matches, and
   an anchor that disappears each fail, and three near-miss ledgers prove it.
@@ -68,7 +79,7 @@ repository's, and needs nothing from this one.
   ([§4](#4-mig-2--sampling-retarget-usd-bridge-)).
 - ✅ **Draw the line through `vrmRetarget`** (2026-09-19). The line is by
   header, and only `HumanoidMap::GetRequiredBones` is cut in two
-  ([WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
+  ([WORKSPACE.md §9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
   The map itself is generic and moves as `RetargetMap`. What stays is VRM
   1.0's required-bone set, `ExpressionResolver` and `LookAtEvaluator`. Three
   findings are recorded there for the arrival: a caller-supplied required
@@ -105,7 +116,7 @@ repository's, and needs nothing from this one.
   Each move's own suites travel with it and must pass in the destination.
   The consumer-side rows stay here and are re-run against the consumed
   package before the in-tree copy is deleted
-  ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 2):
+  ([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules), rule 2):
 
   | Move | Travels, and must pass there | Stays, and re-runs here against the package |
   | --- | --- | --- |
@@ -127,8 +138,8 @@ repository's, and needs nothing from this one.
   channel's value is a `float`.
 - ✅ **The block is gone.** `ost` 0.23.2 resolves an external artifact declared
   in `requires.libraries` by digest per target, which is what
-  [report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
-  asked for and [report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)
+  [report 41](../../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
+  asked for and [report 43](../../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)
   finished on the root-build side.
 - ✅ **This repository consumes the package** (2026-09-21): `libs/motionCore` is
   gone, five members pin the published `motionCore` by digest, and the whole
@@ -137,7 +148,7 @@ repository's, and needs nothing from this one.
   The members that switched their edge: `usdVrmaFileFormat`, `vrmRetarget`,
   `motionSource`, `execMotion`, `execVrm` and the three CLIs — the adapters and
   `motionTracking` the original item also named had already left with MIG-4
-  ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 1).
+  ([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules), rule 1).
   Adapting code here to the renamed types was acceptable during migration
   (motion-plugins policy §37); keeping two cores was not.
 - ✅ The `.vrma` stage does not change: `/Animation`, `HumanoidSkeleton`,
@@ -176,7 +187,7 @@ repository's, and needs nothing from this one.
   - ✅ This repository consumes the packages and deleted `libs/motionRuntime`
     in the same change as MIG-1's `motionCore` (2026-09-21), once `ost` 0.23.2
     could declare a library from another repository
-    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
+    ([ost report 41](../../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
     The two behaviours that changed with the package — `BlendPoses`'
     `std::nullopt` and a NaN weight counting as none — are read, not
     predicted, by `execMotion` here.
@@ -185,7 +196,7 @@ repository's, and needs nothing from this one.
   finding `execVrm` and `motion_retarget` both carry a copy of today.
   - ✅ Arrived with its history (2026-09-19,
     [usd-motion-plugins #9](https://github.com/animu-sphere/usd-motion-plugins/pull/9)):
-    32 commits, cut along [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget),
+    32 commits, cut along [WORKSPACE.md §9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget),
     with `ExpressionResolver` and `LookAtEvaluator` left out of the history.
     `TargetSkeleton` is `SkeletonDescriptor` there, `TargetJoint` is
     `SkeletonJoint`, `HumanoidMap` is `RetargetMap`, and the codes are
@@ -222,7 +233,7 @@ repository's, and needs nothing from this one.
     (`libs/vrmRig/`), decided on 2026-09-20 — two resolvers and a bone
     set, none of it a retarget. It links `motionCore` alone, and its boundary
     check forbids the rest of `usd-motion-plugins`, so
-    [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
+    [WORKSPACE.md §9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
     line is held after the cut rather than only drawn before it. MIG-0's
     vocabulary check retired in the same change, its last headers gone.
 - ✅ `motionUsd`. The authoring half arrived on 2026-09-19
@@ -305,7 +316,7 @@ repository's, and needs nothing from this one.
     reading — the expression tracks, the gaze track and the clip's look-at
     offset — which the destination refused on purpose. It waited on `ost`
     0.23.2 materializing no artifact only a tool declares
-    ([report 44](../reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md));
+    ([report 44](../../reports/ost/44-2026-09-23-v0.23.2-a-tool-edge-reaches-nothing-and-a-tree-keeps-its-runtime.md));
     0.23.3 does, and graphs and validates the tool's edge as well.
     - A `vrm:` key the body does not share gets its pose from
       `PoseFromStageSample`, the rule the reader applies, so the tool holds no
@@ -351,7 +362,7 @@ repository's, and needs nothing from this one.
     the bundle `usd-motion-plugins` v0.5.1 pushed to its registry, per target,
     in `requires.bundles`. `ost` 0.23.5 materializes it for the root build and
     names its root as `OPENSTRATA_EXTERNAL_BUNDLE_execMotion_ROOT`
-    ([ost report 46](../reports/ost/46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md)'s
+    ([ost report 46](../../reports/ost/46-2026-09-24-v0.23.4-a-published-bundle-reaches-a-session-not-the-suite.md)'s
     P1), which `cmake/UsdVrmExecMotion.cmake` hands every suite that composes
     it.
     - The parity rows were re-run against the pulled bundle before the copy
@@ -445,7 +456,7 @@ repository's, and needs nothing from this one.
   - ✅ **This repository deleted `tools/motionCapture`** (2026-09-23), with the
     three trace fixtures only its suite read and its member, product and label
     entries. It waited on nothing external. This line used to say it waited on
-    [ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md),
+    [ost report 41](../../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md),
     which `ost` 0.23.0 answered, and deleting a member consumes nothing that
     report 44's P1 could block. The bake could not be re-pointed at the
     consumed tool as planned: `ost` has no way for this workspace to consume
@@ -458,7 +469,7 @@ repository's, and needs nothing from this one.
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
   `motion-connectors`, which depends on `usd-motion-plugins` and on nothing
   here. They arrive **together**, in `motion-connectors` v0.1.0, and leave
-  here in one change ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules)
+  here in one change ([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules)
   rule 7). The adapters lose the `vrm` prefix there, as
   `motionConnectorVmc`, `motionConnectorMocopi` and `motionConnectorVrchatOsc`.
   - ✅ The two leaves arrived with their history (2026-09-19):
@@ -481,8 +492,8 @@ repository's, and needs nothing from this one.
     target, with the `oci://` source from v0.5.0's generated pin table. Here the
     same edge existed in CMake and in no descriptor, so the declaration is a
     correction as well as a move. What made it possible is `ost` 0.23.2, which
-    answered [report 43](../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md);
-    the gap [report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
+    answered [report 43](../../reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md);
+    the gap [report 41](../../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)
     named is closed for that repository.
   - ✅ The three adapters arrived, each with its history, a move-only commit,
     then the rename:
@@ -544,7 +555,7 @@ repository's, and needs nothing from this one.
 - ✅ No generic motion source file remains here, checked mechanically
   (2026-09-24). `scripts/check_cmake_boundaries.py`
   (`workspace_cmake_boundaries`, and first in the plain-CMake lane) fails
-  when an identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+  when an identity [WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity)
   sent elsewhere comes back. It checks every name the identity has had, here
   and in its destination. A member directory fails, and so does a target or
   target prefix (`execMotion_blend_tests`), any file under `adapters/` or
@@ -623,7 +634,7 @@ repository's, and needs nothing from this one.
 
 ## 9. Done when
 
-- Every identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+- Every identity [WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity)
   gives another destination lives there, with its history.
 - This repository consumes them as installed packages and holds no copy.
 - Every parity baseline MIG-0 named was reproduced across the move.

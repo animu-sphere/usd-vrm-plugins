@@ -167,8 +167,8 @@ def check_bake(failures: Failures, source: Source, output: pathlib.Path,
         f"{source.name}: {compared} of the {carried} bones the clip carries and "
         f"the avatar binds were compared")
 
-    # Root motion is a delta from each rig's own start (MOTION_CONTRACT.md, root
-    # and hips), so the hips travel what the clip's travel, whatever the two
+    # Root motion is a delta from each rig's own start (usd-motion-plugins'
+    # RETARGETING_POLICY.md §6), so the hips travel what the clip's travel, whatever the two
     # rigs' heights.
     clip_hips = clip.find_leaf("hips")
     if failures.check(clip_hips is not None and "hips" in bound,

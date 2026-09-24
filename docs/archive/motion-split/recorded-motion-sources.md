@@ -1,9 +1,20 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-25.** This was the recorded motion source track (BVH, NPZ / AMASS), and it was
+> once authoritative. Do not use it to determine current architecture,
+> capabilities, ownership or roadmap: start from [docs/README.md](../../README.md).
+> Its section numbers are unchanged, so older documents can still cite
+> them. See [the archive index](../README.md).
+
 # Recorded motion sources — the BVH direction
 
 > **Destination (2026-09-17): `usd-motion-plugins`.** `motionSource`, `motionBvh`,
 > the BVH tools and the producer profiles move there, and so does §13's NPZ /
 > AMASS decision, behind the versioned NPZ payload contract that repository
-> requires first ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> requires first ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-3). This plan stays the record
 > of what was built and measured here.
 
@@ -15,9 +26,9 @@ This document holds **boundaries, order, and completion conditions** only. Where
 it touches structure it defers: the `motionSource` / `motionBvh` identities,
 their dependency directions, the profile placement, and the aggregate-product
 decision are settled in
-[architecture/WORKSPACE.md](../architecture/WORKSPACE.md) §1, §2, §5, and motion
+[architecture/WORKSPACE.md](../../architecture/WORKSPACE.md) §1, §2, §5, and motion
 semantics in
-[design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md)
+[design/MOTION_ARCHITECTURE_POLICY.md](../../design/MOTION_ARCHITECTURE_POLICY.md)
 §8.3, §14, §15. Items this plan needs from those contracts are listed in
 [§10](#10-contract-changes-this-plan-requires) rather than asserted here.
 
@@ -36,7 +47,7 @@ producer contract that §13's conversion has to satisfy is frozen first, as BND-
 instead of being answered by this reader on its way in.
 
 The version this targets is in the
-[roadmap status table](README.md#status-at-a-glance), not here.
+[roadmap status table](../../roadmap/README.md#status-at-a-glance), not here.
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
@@ -54,7 +65,7 @@ They share a vendor and very little else. The live surface argues about packets,
 arrival timestamps, restarts, and tracking loss; the recorded surface argues
 about a hierarchy, channel declaration order, a frame time, and a rest pose. So
 they are separate code, meeting at canonical motion and nowhere earlier
-([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)).
+([motion policy §8.3](../../design/MOTION_ARCHITECTURE_POLICY.md)).
 
 **The recorded half is a BVH pipeline, not a mocopi one.** That is a decision
 with a cost — it is more layers than reading one product's files needs — and it
@@ -189,7 +200,7 @@ any other — so the strict half would be written either way, and it is the half
 where the risk is. And YAML's implicit typing is actively wrong for this data: a
 joint named `on`, `y`, `no` or `null` is a *writer's word*, and a reader that
 turned it into a boolean would rename a joint nobody renamed. Against that,
-`motionSource` links exactly one thing ([WORKSPACE.md §2](../architecture/WORKSPACE.md)),
+`motionSource` links exactly one thing ([WORKSPACE.md §2](../../architecture/WORKSPACE.md)),
 and spending that on a configuration file would be a contract change.
 
 The consequence is that the subset must not disagree with YAML *silently*. So
@@ -360,7 +371,7 @@ BVH, and a VMC relay, compared at the canonical layer on sample timing, bone
 rotations, root translation, missing joints, provenance, metadata loss, and how
 each represents tracking loss. Latency is a live-path measurement only. Motion
 equivalence uses `NearlyEqual`; recorded-value identity uses `operator==`
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
 
 ## 8. Corpus
 
@@ -442,7 +453,7 @@ to make small.
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, two producers' profiles, basis and unit conversion, source rest pose, root policy, `MotionClip`, the semantic clip writer | ✅ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, the recorded corpus | 🚧 — only the **artifact-only smoke** is left, and it is unblocked ([§10](#10-contract-changes-this-plan-requires)) |
-| **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | 🚧 — two paths of three compared ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)); the relay is [current.md](current.md#carried-out-of-v070--evidence-an-operator-produces)'s |
+| **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | 🚧 — two paths of three compared ([report 01](../../reports/motion/01-2026-08-15-mocopi-cross-source.md)); the relay is [current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)'s |
 
 The measurements below are what BVH-0 bought, and they are kept because the two
 shipped profiles were written from them: a profile schema written from one
@@ -558,14 +569,14 @@ into.
 ## 10. Contract changes this plan requires
 
 Structural claims belong in the contracts, in their own change, before this plan
-depends on them ([docs/README.md](../README.md)).
+depends on them ([docs/README.md](../../README.md)).
 
 **What this track has already asked for is in the contracts, not repeated here.**
-[WORKSPACE.md](../architecture/WORKSPACE.md) §1, §2 and §5 carry the
+[WORKSPACE.md](../../architecture/WORKSPACE.md) §1, §2 and §5 carry the
 `motionSource` / `motionBvh` / CLI identities, the chain and its reversals, the
 aggregate membership, and the profile destination; a producer profile being data
 in which product names are permitted; and `tools/motionBvh/` as one member with
-two executables. [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) carries
+two executables. [MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md) carries
 `SourceProvenance` beside `SourceMetadata`, the quaternion rotation form,
 the canonical forward axis that nobody had written down until this track needed
 it, the six semantic diagnostics being the caller's to raise from typed
@@ -609,11 +620,11 @@ Still open:
   `share/usd-vrm-plugins/profiles/motion/` (2026-08-05, verified against a
   scratch prefix), and `ost` 0.22.3's `[[workspace.install_data]]` gives the
   mapping a product-level owner, with the aggregate reporting `data_files: 3`
-  ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
+  ([report 36](../../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
   Through v0.7.0 neither did: a `motion_bvh` archive was its two executables and
   its descriptor, so a converter unpacked from a product found nothing on its
   executable-relative search path and refused every file it was given — the
-  specific consequence [WORKSPACE.md §5](../architecture/WORKSPACE.md) put the
+  specific consequence [WORKSPACE.md §5](../../architecture/WORKSPACE.md) put the
   profiles beside the tools to prevent, and an `ost` ask rather than something a
   `--profile-dir` flag closes, because "works if you pass a flag naming a
   directory the artifact does not contain" is not an artifact-only smoke.
@@ -831,7 +842,7 @@ what one producer could not have shown.
   either provenance or it is out.
 - What is the corpus, and what is redistributable? AMASS datasets carry research
   licences that differ per sub-dataset — the same gate the VRM corpus hit, and
-  the [corpus policy](current.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)
+  the [corpus policy](../../roadmap/current.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)
   already has the shape for it: a manifest with no bytes.
 
 ### 13.4 Non-goals, added to §11

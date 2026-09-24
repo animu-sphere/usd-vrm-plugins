@@ -16,7 +16,7 @@ correction cannot pass it. That fixture is sharp *and* it is ours: every joint i
 it exists because a test wanted it, every bone the humanoid names is bound, and
 nothing in it can be surprising. Those are the properties a released avatar does
 not have, which is why the v0.7.0 release condition says **a target VRM** rather
-than a rig (roadmap/adapters-mocopi-vmc-ardy.md, Milestone C).
+than a rig (archive/motion-split/adapters-mocopi-vmc-ardy.md, Milestone C).
 
 `Seed-san.vrm` is a VRM 1.0 specification sample, committed and redistributable
 under its own permission flags (see the LICENSE.md beside it). *Seed-san model by

@@ -1,197 +1,154 @@
+---
+status: binding
+owner: usd-vrm-plugins
+---
+
 # Integration scope policy
 
-**Status:** canonical · **Adopted:** 2026-09-06 · **Revised:** 2026-09-17
-
-> **Revised 2026-09-17 to the `usd-motion-plugins` design policy.** The
-> ecosystem's motion architecture is now settled outside this repository:
-> vendor- and avatar-format-neutral motion lives in `usd-motion-plugins`,
-> device and protocol input in `motion-connectors`, and this repository
-> depends on both and keeps VRM and VRMA. §1, §10 and §11 say what that
-> changes; §13 is new. Where the motion foundation (layer 2 of §1) is
-> described below, the description holds for the tree **until each identity
-> moves** ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)).
+**Adopted:** 2026-09-06 · **Revised:** 2026-09-17, 2026-09-25
 
 What this repository is for, what it will not become, and the test a proposed
 identity, dependency or artifact has to pass. It is the *scope* half of the
 policy set: [DESIGN_POLICY.md](DESIGN_POLICY.md) says how the importer is built,
-[MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md) says how motion
-works, [architecture/WORKSPACE.md](../architecture/WORKSPACE.md) says where the
+[VRM_MOTION_POLICY.md](VRM_MOTION_POLICY.md) says how VRM and VRMA use motion,
+[architecture/WORKSPACE.md](../architecture/WORKSPACE.md) says where the
 code lives and what may depend on what, and
 [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md) says what
 each installed package promises. This document says **how far the repository
 goes**, which none of them states and all of them assume.
 
-It restates nothing those four already fix. Where it appears to overlap one, the
-other wins and this is the summary; a structural claim goes to WORKSPACE.md
-first, in its own PR.
+It restates nothing those four fix. Where it appears to overlap one, the other
+wins; a structural claim goes to WORKSPACE.md first, in its own PR. Section
+numbers are stable.
 
 ## 1. The scope statement
-
-> `usd-vrm-plugins` is the integration workspace that connects **VRM assets and
-> humanoid motion to OpenUSD**. It does not become a motion engine, a capture
-> SDK, a generative model, or a network protocol stack.
-
-Three layers grew out of the original file-format plugin, and all three are in
-scope:
-
-1. **Format integration** — VRM and VRMA read as OpenUSD assets and motion.
-2. **A vendor-neutral humanoid motion foundation** — canonical pose, animation,
-   root motion, constraints, and the runtime over them.
-3. **The layer that joins them** — retarget, VRM semantic resolution, and the
-   OpenExec exposure of both.
-
-The breadth is not the risk. The risk is re-coupling those three into one
-implementation unit, one dependency graph and one release artifact, which is
-what every boundary in WORKSPACE.md exists to prevent.
-
-**Since 2026-09-17 the three layers do not all stay.** Layer 1 stays. Layer 2
-moves to `usd-motion-plugins`, and the live inputs that feed it to
-`motion-connectors`. Layer 3 splits: the generic retarget and the vendor-neutral
-OpenExec nodes move to `usd-motion-plugins`, and VRM semantic resolution — the
-humanoid map from `VrmHumanoidAPI`, expressions, look-at, `execVrm` — stays.
-The scope statement becomes, once the moves are done:
 
 > `usd-vrm-plugins` connects **VRM assets, VRMA motion and VRM semantics to
 > OpenUSD**, over the shared motion core of `usd-motion-plugins`. It does not
 > become a motion engine, a capture SDK, a generative model, or a network
 > protocol stack.
 
+Two layers are in scope:
+
+1. **Format integration** — `.vrm` and `.vrma` read as OpenUSD assets and
+   motion, the schemas that carry VRM meaning, and resolution of resources
+   inside a `.vrm`.
+2. **VRM semantics applied to motion** — the humanoid binding from
+   `VrmHumanoidAPI`, VRM 1.0's required bones, expression arbitration,
+   look-at, the bake, and `execVrm`.
+
+Generic motion — values, sampling, filtering, recording, retargeting, the
+OpenUSD motion mapping and generic OpenExec nodes — is `usd-motion-plugins`',
+and this repository consumes it as installed packages. Device and protocol
+input is `motion-connectors`'. The split was completed in 2026-09; how it was
+done is [archive/motion-split/](../archive/motion-split/).
+
 ## 2. What this repository does not own
 
-Out of scope for the core, permanently, unless a specific decision recorded in
-this document reverses one:
+Out of scope, permanently, unless a decision recorded in this document
+reverses one:
 
-- A vendor SDK, device management, or a capture application's UI.
-- A general-purpose OSC or UDP framework. `libs/osc` is the OSC 1.0 wire format
-  and `libs/liveTransport` is a receiver and a capture file; neither is a
-  networking library with users of its own.
+- Generic motion semantics or processing (§1). A new generic capability is
+  proposed in `usd-motion-plugins`.
+- Device, protocol or network input, a vendor SDK, device management, or a
+  capture application's UI. These are `motion-connectors`'.
 - A general-purpose IK engine, animation graph, or behaviour/state machine.
 - A generative motion model, its training, or its inference infrastructure.
 - Large motion corpus hosting.
-- A general humanoid DCC toolchain, or a game runtime.
+- A general humanoid DCC toolchain, a game runtime, or the update loop that
+  composes avatars at run time (`usd-avatar-runtime`, `usd-stage-runner`).
 
-Each of these reaches the workspace, when it must, as an **adapter**, a thin
-integration library, or a dependency — never as a core feature. This is the
-existing non-goal list in [the backlog](../roadmap/backlog.md#non-goals) stated
-as a boundary rather than as a set of individual refusals.
+The same list, as refusals, is [the backlog's non-goals](../roadmap/backlog.md#non-goals).
 
 ## 3. The test for a new identity
 
 WORKSPACE.md §1 names the identities; this is the test a *proposed* one has to
-pass. A new bundle, library or adapter needs at least one of:
+pass. A new bundle or library needs at least one of:
 
 1. **A different OpenUSD plugin registration boundary.** Only something OpenUSD
-   discovers and registers is a plugin bundle. Convenience is not a reason —
-   `vrmAdapterVmc` is a library precisely because it registers nothing.
-2. **A different dependency direction.** `libs/osc` and `libs/liveTransport` are
-   siblings with empty edge sets, which is why they are two libraries and not
-   one.
+   discovers and registers is a plugin bundle; `usdVrmPackageResolver` is one
+   because it registers an `ArPackageResolver`.
+2. **A different dependency direction.** `vrmContainer` is a library because
+   the importer and the resolver both read GLB bytes and neither may link the
+   other.
 3. **A standalone consumer or distribution that means something.** A package
    nobody would install on its own is a directory, not an identity.
 
-An extraction meeting none of the three is deferred. `vrmCore` is the standing
-example: the importer's canonical model gets its own library when a **second
-consumer** appears and not before, exactly as `vrmContainer` did when the
-resolver became the second reader of GLB bytes (WORKSPACE.md §1). Abstractions
-are built from consumers, not from predictions.
+And it must pass §1: an identity with no VRM vocabulary belongs in
+`usd-motion-plugins` or `motion-connectors`. An extraction meeting none of the
+three is deferred. `vrmCore` is the standing example: the importer's canonical
+model gets its own library when a **second consumer** appears, exactly as
+`vrmContainer` did. Abstractions are built from consumers, not predictions.
 
 ## 4. Canonical motion is the only confluence
 
-Every producer terminates at `motion::MotionClip` / `MotionPose`, and
-nothing downstream of that point knows which producer it was. This is the
-invariant the motion layer is arranged around
-([motion policy §5](MOTION_ARCHITECTURE_POLICY.md), §8.3), and it is what makes
-a clip, a file, a live session and a generated take one pipeline rather than
-four.
+Every producer terminates at `usd-motion-plugins`' `MotionPose` /
+`MotionClip`, and nothing downstream of that point knows which producer it
+was. That invariant is owned there
+([its MOTION_CONTRACT.md](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/MOTION_CONTRACT.md));
+what it means here:
 
-Two consequences that are easy to lose:
-
-- **VRMA is not privileged.** It is the VRM ecosystem's standard motion
-  container and one input among several. `.vrma`, `.bvh`, a recorded trace, a
-  corpus array and a generated clip all reach the same type by the same rule:
-  format syntax and storage interpretation in the reader, semantics in a
-  profile or a specification, and nothing about a target rig anywhere below the
-  retarget.
-- **A container is not a format.** `.npz` is a storage container whose meaning
-  depends on the corpus that wrote it, so a reader for one is a reader plus an
-  explicit profile — never a generic "NPZ support" whose field layout leaks into
-  a core API. [The recorded track](../roadmap/recorded-motion-sources.md) §13
-  carries the measurement that decides its identity.
-
-**A tracker observation is not a pose**, and the same rule applies one layer
-out: a numbered device is pre-IK, so protocol decode, tracker identity, body
-region assignment and the solve are four boundaries and not one adapter
-([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5).
-
-**VRM semantics stay out of the generic types.** Expressions, look-at, spring
-bones and the humanoid schema binding are VRM vocabulary; a pose, a bone, a
-contact, a confidence and a timestamp are not. The two are evaluated together
-and are not the same abstraction — which is why a clip's expression weights
-travel as names on the canonical pose and are expanded onto a rig only in
-`vrmRetarget`.
+- **VRMA is not privileged.** It is the one producer this repository keeps. A
+  `.vrma` clip, a converted BVH file and a recorded session reach a VRM rig
+  through one `motion_retarget` argument list, and
+  `workspace_reference_pipeline` holds that.
+- **VRM semantics stay out of the generic types.** Expressions, look-at,
+  spring bones and the humanoid schema binding are VRM vocabulary; a pose, a
+  joint, a contact, a confidence and a timestamp are not. A clip's expression
+  weights travel as names on the canonical pose and are resolved onto a rig
+  only by `vrmRig` ([VRM_MOTION_POLICY.md §5](VRM_MOTION_POLICY.md#5-expressions-on-a-rig)).
 
 ## 5. OpenExec sits above the libraries, never under them
 
-OpenExec exposes computation this workspace already owns to a USD execution
-graph. The dependency runs one way:
+OpenExec exposes computation that libraries already own. The dependency runs
+one way:
 
 ```text
-motionCore ← motionRuntime ← vrmRetarget ← execMotion / execVrm
+consumed motion packages ← vrmRig ← execVrm
+                                ↖ motion_retarget
 ```
 
-and never `motionCore → OpenExec`. Every node is a thin wrapper over a library
+and never a library → OpenExec. Every node is a thin wrapper over a library
 call, so the same computation is reachable from a CLI, a unit test and an exec
-graph with one implementation behind all three
-([motion policy §11](MOTION_ARCHITECTURE_POLICY.md)). A node that cannot be
-written as a wrapper is a **finding about the library boundary**, not a licence
-to implement the computation a second time.
+graph with one implementation behind all three. A node that cannot be written
+as a wrapper is a **finding about the library boundary**, not a licence to
+implement the computation a second time.
 
-I/O inside a computation is a permanent non-goal, not a deferral: no socket, no
-file watch, no SDK callback, no wall clock. Receiving belongs to an adapter,
-buffering to `motionRuntime`, and a computation evaluates an immutable snapshot
-(motion policy §11.4).
+I/O inside a computation is a permanent non-goal: no socket, no file watch, no
+SDK callback, no wall clock. A computation evaluates an immutable snapshot
+(`usd-motion-plugins`' design policy §21, checked here by
+`execVrm_boundaries`).
 
 ## 6. Generators and constraints
 
-A generation product reaches the workspace behind a vendor-neutral
-`IMotionGenerator` and produces canonical motion like any other producer
-(`adapters/generators/`). Text-to-motion, trajectory-conditioned motion,
-procedural locomotion and a cloud API are then the same downstream shape.
+Not this repository's. The generator interface and `MotionConstraintSet` are
+`usd-motion-plugins`'; a generation adapter is `motion-connectors`'. A
+generated clip reaches a VRM rig the way any clip does (§4).
 
-`MotionConstraintSet` is deliberately not a generator feature. A **pose** and a
-**desired condition** are separate representations, and the second is what
-retarget correction, IK, interactive editing and generation all need — so it is
-specified once (motion policy §7) and consumed by whichever of them arrives
-first.
-
-## 7. The aggregate product and its optional adapters
+## 7. The aggregate product
 
 The aggregate product is what a default installation reproduces: the VRM and
-VRMA bundles, the libraries they need, and the product CLIs. **Live and vendor
-adapters are optional artifacts**, and are excluded for reasons that are
-properties of the adapter rather than of the release — hardware and SDK
-dependencies, a different licence, a different CI requirement, different
-platform availability, and a network surface the core does not have.
-
-Membership is declared, not implied by a build; the contract is
-[PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md) and the aggregate's
-members are `[workspace].release_members` (WORKSPACE.md §5). What is still open
-is whether a release *ships* the optional artifacts and under whose version —
-[the boundary track](../roadmap/boundary-consolidation.md) owns that decision.
+VRMA bundles, the libraries they need, the product CLI, and the consumed
+packages they resolve. Membership is declared, not implied by a build; the
+contract is [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md) and the
+members are `[workspace].release_members` (WORKSPACE.md §5). No live or vendor
+adapter is a member; whether and how those ship is `motion-connectors`'.
 
 ## 8. Release quality is artifact closure
 
 A version number describes an intention; the artifact is the release. Each one
 is expected to demonstrate, from the package and not from the source tree: the
 workspace graph, a standalone bundle build, the aggregate product package, an
-installed-consumer configure, an artifact-only smoke, installed data and
-profiles resolving, and each adapter's own closure.
+installed-consumer configure, an artifact-only smoke, and installed data
+resolving.
 
-"It works in the tree" is not a release claim, and the reason is measured rather
-than cautionary: a composed build resolves every target in-tree without ever
-opening a package config, so on 2026-08-29 two installed packages named a target
-no consumer could resolve while all seventeen lanes were green
-([the packaging track](../roadmap/packaging-hardening.md) §1).
+"It works in the tree" is not a release claim, and the reason is measured: a
+composed build resolves every target in-tree without opening a package config,
+so on 2026-08-29 two installed packages named a target no consumer could
+resolve while all seventeen lanes were green
+([the packaging track](../archive/packaging/packaging-hardening.md) §1). One
+checklist a release passes or fails is still open
+([current.md](../roadmap/current.md#release-closure-and-checkable-invariants)).
 
 ## 9. Four test layers
 
@@ -199,99 +156,68 @@ Each layer answers a question the one below it cannot:
 
 | Layer | Scope | Question |
 | --- | --- | --- |
-| 1 — unit | `vrmContainer`, `motionCore`, `motionRuntime`, `motionSource`, `motionTracking`, `osc`, `liveTransport` | Is the computation right, with no runtime and no I/O? |
-| 2 — format contract | VRM, VRMA, BVH, future corpus profiles | Does a file mean what we say it means — malformed input refused, mapping, timestamps, basis, root motion, missing bones, provenance? |
-| 3 — cross-boundary | source → canonical → retarget → `UsdSkelAnimation` | Do the boundaries compose, for every producer category? |
+| 1 — unit | `vrmContainer`, `vrmRig` | Is the computation right, with no runtime and no I/O? |
+| 2 — format contract | VRM, VRMA | Does a file mean what we say it means — malformed input refused, mapping, timestamps, root motion, missing bones, provenance? |
+| 3 — cross-boundary | VRMA and the consumed producers → canonical → VRM retarget → `UsdSkelAnimation`; offline against `execVrm` | Do the boundaries compose, for every producer category, on both implementations? |
 | 4 — installed artifact | the release package, off every source path | Does the thing we ship work? |
 
 Layer 4 is the acceptance layer. Layers 1–3 are how a failure there becomes
-attributable.
+attributable. Generic motion is unit-tested where it lives.
 
 ## 10. Repository split
 
-> **Superseded 2026-09-17.** The preconditions below asked *whether* a
-> component leaves; the `usd-motion-plugins` design policy has since decided
-> that generic motion leaves (its §19.1, §37), and
-> [WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)
-> fixes each identity's destination. The text is kept because the reasoning
-> it records — a split is a release and ownership decision, and a
-> cross-repository test runs in neither repository by default — still
-> governs how the move is done. The table's "Split candidate" column is
-> replaced by §9.1 of the workspace contract.
+Done. Generic motion moved to `usd-motion-plugins` and live input to
+`motion-connectors` (2026-09-19..24); each move reproduced its parity
+baseline before the copy here was deleted. What remains is that no copy comes
+back: `workspace_cmake_boundaries` fails when a moved identity reappears under
+any name it has had. The plan and the reasoning that preceded it are
+[archive/motion-split/motion-foundation-split.md](../archive/motion-split/motion-foundation-split.md);
+where each identity went is
+[WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture).
 
-Splitting the repository is a **release and ownership** decision, not a source
-boundary one — the source boundaries already exist and are enforced in-tree. A
-component leaves only when all of these hold:
-
-1. Two or more consumers outside VRM.
-2. An API that carries no VRM vocabulary.
-3. A need for independent versioning.
-4. A release cadence that has actually diverged from the plugins'.
-
-| Component | Split candidate | Note |
-| --- | --- | --- |
-| `vrmSchema`, `usdVrmFileFormat`, `usdVrmaFileFormat`, `usdVrmPackageResolver` | no | The product |
-| `vrmContainer` | unlikely | A VRM/GLB-specific shared leaf |
-| `motionCore`, `motionRuntime` | **yes — the standing candidate** | [The split track](../roadmap/motion-foundation-split.md) |
-| `vrmRetarget` | maybe | Its generic half and its VRM resolves would have to be re-separated first |
-| `motionSource`, `motionBvh` | later | Only if corpus tooling grows non-VRM users |
-| `liveTransport`, `osc` | unlikely | Small shared leaves; replacing them with an existing library is the likelier answer |
-| The `vrmAdapter*` leaves | no | Product extensions, already optional artifacts |
-| A generator engine | n/a | Never in this repository at all |
+A cross-repository test — VRMA → `MotionClip` → a target VRM — runs here,
+because this repository is its natural integrator, until an integration
+repository exists (`usd-motion-plugins`' design policy §30.6).
 
 ## 11. PR review checklist
 
 The invariants above, in the form a reviewer can apply:
 
+**Scope** — no generic motion capability, device input or protocol lands
+here; a moved identity does not come back; nothing here becomes a dependency
+of `usd-motion-plugins` or `motion-connectors`.
+
 **Import** — the importer authors and never evaluates; the `.vrma` reader never
 looks for a target avatar; a file format never retargets.
-
-**Motion** — no source-specific type in `motionCore`; root motion is not the
-hips' local pose; a missing bone is representable; a timestamp is not an integer
-frame index.
-
-**Adapter** — no vendor or protocol branch in the core; no product name outside
-`adapters/` except in a declarative profile file; a tracker observation is not
-called a pose.
 
 **USD** — a source asset and its derivative are separate; a composition
 relationship is explicit; canonical semantics and target joint paths do not
 mix.
 
-**Packaging** — an optional adapter never joins the aggregate implicitly; every
-`PUBLIC`/`INTERFACE` edge is a `find_dependency` row; an installed data path
-never resolves into the source tree.
+**Packaging** — every `PUBLIC`/`INTERFACE` edge is a `find_dependency` row; an
+installed data path never resolves into the source tree.
 
 **OpenExec** — a node is a wrapper; a computation performs no I/O and evaluates
 a snapshot.
 
-**Migration** (since 2026-09-17) — no new generic motion capability, device
-input or protocol lands in an identity whose destination is another
-repository; a moved identity leaves no copy behind; nothing here is made a
-dependency of `usd-motion-plugins` or `motion-connectors`
-([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)).
+**Documentation** — a sibling's contract is linked, never restated
+([contributing/documentation.md](../contributing/documentation.md)).
 
 ## 12. What success looks like
 
-Not the number of supported formats. These five:
-
 - `avatar.vrm` produces a deterministic OpenUSD asset.
-- A clip, a capture, a corpus file, a live trace and a generated take all
-  converge on `MotionClip`.
-- Canonical motion plus a VRM target goes through one retarget and runtime
-  contract, whichever produced the motion.
-- A CLI and an OpenExec graph call the same computation library.
+- `walk.vrma` produces an avatar-independent semantic clip.
+- Canonical motion plus a VRM target goes through one retarget, whichever
+  producer made the motion.
+- A CLI and an OpenExec graph call the same computation library, and agree.
 - The reference workflow runs from release artifacts, with no source checkout.
 
-Growth is measured in **boundary stability**, not in feature count. The
-repository splits when the motion foundation has users who have never heard of
-VRM — and not before, because until then the split costs a release contract and
-buys nothing.
+Growth is measured in **boundary stability**, not in feature count.
 
 ## 13. Place among the motion repositories
 
-Added 2026-09-17. The `usd-motion-plugins` design policy fixes the ecosystem's
-dependency direction, and this repository keeps it:
+The `usd-motion-plugins` design policy fixes the ecosystem's dependency
+direction, and this repository keeps it:
 
 ```text
 motion-connectors ─→ usd-motion-plugins ←─ usd-vrm-plugins
@@ -308,15 +234,4 @@ usd-avatar-runtime ─→ all of the above
 | Does it schedule evaluation, or wire motion, avatar semantics, physics and application state together? | `usd-avatar-runtime` |
 
 That table is the motion-plugins policy's §38, restated for the reviewer of a
-change here. Three consequences for this document:
-
-- **§4 still holds, one repository out.** Every producer terminates at the
-  shared core's pose and clip (`MotionPose`, `MotionClip` once renamed,
-  [WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)), and VRMA is
-  still not privileged — it is simply the one producer this repository keeps.
-- **§6's generator interface and §9's layer 1 move with the core.** The
-  generator contract is specified in `usd-motion-plugins`; the ARDY adapter,
-  a product integration, belongs to `motion-connectors`.
-- **§12's last paragraph is answered.** The split no longer waits for users
-  who have never heard of VRM; `usd-mmd-plugins` is the first planned one, and
-  the decision was taken where the motion architecture is owned.
+change here.
