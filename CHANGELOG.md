@@ -32,6 +32,17 @@ Current schema contract version: **1**.
   0.23.5 packages from does not carry that file. This reproduces from a clean
   tree and does not happen under 0.23.4. Until `ost` fixes it, `release.yml`
   cannot package.
+- **The `ost` pin is 0.23.6**, which fixes that regression. A workspace-installed
+  bundle's build record and its package stage are now the same install stage,
+  so `vrmSchema` no longer claims `lib/vrmSchema.exp` as an output. The change
+  touches the same three files: the pin, the regenerated `ost-source-ci.yml`,
+  and `release.yml`'s six mirrors of the pin.
+  [ost report 48](docs/reports/ost/48-2026-09-24-v0.23.6-the-product-packages-again.md)
+  re-ran the release lane's sequence locally on Windows. The product packages,
+  two runs give identical digests, and every later step passes: the library
+  check, the clean-install smoke, the artifact-only exec smoke and the VRMA
+  `--from-package` run. The hosted release cell and the Linux and macOS
+  products were not run.
 
 - **`motion_retarget` reads the clip through `motionUsd`** (MIG-2,
   2026-09-23). `StageIo`'s clip reading is a call to `usd-motion-plugins`'
