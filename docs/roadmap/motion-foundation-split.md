@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; ✅ MIG-3 — `motionSource`, `motionBvh`, the BVH tools and the profiles deleted here on 2026-09-23; 🚧 MIG-1 and MIG-2 — **consumed here since 2026-09-21: `motionCore`, `motionSampling`, `motionRecording`, and since 2026-09-23 `motionRetarget` and `motionUsd`**, with what stayed of `vrmRetarget` renamed `vrmRig`; and since 2026-09-24 `execMotion`, the last generic motion code this repository built; **every sending half of MIG-2 has arrived** — `motionRetarget` 2026-09-19, `execMotion` and `motionUsd`'s reading half 2026-09-20; **✅ MIG-4 on the connector side** — all six identities arrived in `motion-connectors` 2026-09-19..21 and left here in one change on 2026-09-21; `motion_capture` arrived in `usd-motion-plugins` as `motion_record` (2026-09-20) and was deleted here on 2026-09-23 · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check and the reduced contract are done, the release-artifact proof and the cross-repository test are not · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -117,7 +117,7 @@ repository's, and needs nothing from this one.
   Boundary suites (`*_boundaries`) travel too, and they are rewritten there
   for that repository's edges rather than reproduced.
 
-## 3. MIG-1 — the core 🚧
+## 3. MIG-1 — the core ✅
 
 - ✅ `motionCore` arrives in `usd-motion-plugins` under the same identity, with its
   history, renamed to the shared names, under `openstrata::motion`
@@ -140,13 +140,15 @@ repository's, and needs nothing from this one.
   ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 1).
   Adapting code here to the renamed types was acceptable during migration
   (motion-plugins policy §37); keeping two cores was not.
-- ⬜ The `.vrma` stage does not change: `/Animation`, `HumanoidSkeleton`,
+- ✅ The `.vrma` stage does not change: `/Animation`, `HumanoidSkeleton`,
   `BodyAnimation`, the `vrma` custom data. A standalone motion stage in
   `usd-motion-plugins`' shape is a separate decision, not a side effect.
+  Held across the whole move: no `usdVrmaFileFormat` golden changed from
+  2026-09-18 to MIG-2's last deletion on 2026-09-24.
 
-## 4. MIG-2 — sampling, retarget, USD bridge 🚧
+## 4. MIG-2 — sampling, retarget, USD bridge ✅
 
-- 🚧 `motionRuntime` arrives as `motionSampling` and `motionRecording`, with
+- ✅ `motionRuntime` arrives as `motionSampling` and `motionRecording`, with
   the exec findings fixed on arrival: a status-carrying `SampleClip`, a
   stateless `PoseFilter` step, `ConditionRootMotion` as a free function, an
   N-way blend that can answer *nothing to blend*.
@@ -178,7 +180,7 @@ repository's, and needs nothing from this one.
     The two behaviours that changed with the package — `BlendPoses`'
     `std::nullopt` and a NaN weight counting as none — are read, not
     predicted, by `execMotion` here.
-- 🚧 The generic retarget arrives as `motionRetarget`, with a
+- ✅ The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.
   - ✅ Arrived with its history (2026-09-19,
@@ -223,7 +225,7 @@ repository's, and needs nothing from this one.
     [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
     line is held after the cut rather than only drawn before it. MIG-0's
     vocabulary check retired in the same change, its last headers gone.
-- 🚧 `motionUsd`. The authoring half arrived on 2026-09-19
+- ✅ `motionUsd`. The authoring half arrived on 2026-09-19
   ([usd-motion-plugins #7](https://github.com/animu-sphere/usd-motion-plugins/pull/7)). Its source was
   `motion_capture`'s `ClipWriter`, not `StageIo`. `StageIo` reads a clip and
   bakes it onto a VRM, and that writing half is VRM-specific and stays here.
@@ -363,7 +365,7 @@ repository's, and needs nothing from this one.
       because `execVrm`'s boundary check had imported them from the bundle's
       tree. The schema partition is now read from the consumed bundle's
       `plugInfo.json`.
-- 🚧 What stays is re-read as a consumer: the VRM humanoid map,
+- ✅ What stays is re-read as a consumer: the VRM humanoid map,
   `ExpressionResolver`, `LookAtEvaluator`, `motion_retarget` as a VRM CLI,
   `execVrm`. The OpenExec parity values are re-run against the consumed
   packages before anything here is deleted — done for the retarget on
@@ -537,7 +539,7 @@ repository's, and needs nothing from this one.
 - ⬜ The ARDY adapter is created there, behind the generator interface
   `usd-motion-plugins` specifies; Motion Phase F does not start here.
 
-## 7. MIG-5 — nothing left behind ⬜
+## 7. MIG-5 — nothing left behind 🚧
 
 - ✅ No generic motion source file remains here, checked mechanically
   (2026-09-24). `scripts/check_cmake_boundaries.py`
@@ -551,8 +553,23 @@ repository's, and needs nothing from this one.
   them, and passes. The tree passes today. Before this, the check knew only
   `usd-motion-plugins`' current names, so none of the connector identities,
   `motionRuntime` or `vrmRetarget` could have failed it.
-- ⬜ WORKSPACE.md §1 and §2 describe the reduced tree, §9 becomes a record,
-  and `PACKAGE_CONTRACT.md` drops the packages that left.
+- ✅ WORKSPACE.md §1 and §2 describe the reduced tree, §9 becomes a record,
+  and `PACKAGE_CONTRACT.md` drops the packages that left (2026-09-24).
+  - WORKSPACE.md lost about 700 lines. §1 lists what this workspace builds,
+    and names what it consumes rather than tabulating it. §2's edges are the
+    ones the descriptors declare, and the graph gate reports
+    `5 bundle(s), 3 bundle edge(s), 2 libraries, 13 library edge(s), 1 tool(s)`
+    on `ost` 0.23.6. §5 keeps the product-membership rule — no product name,
+    and nothing that opens a transport — with the adapters and the BVH layer
+    it was argued over gone. §9 opens with the moves done and dates every
+    row.
+  - The reasoning each removed section held about identities that left is
+    the v0.9.0 copy of the document, the last release that built them, and
+    the document says so rather than keeping it.
+  - `PACKAGE_CONTRACT.md` §4 had already dropped each package in the change
+    that moved it. What was left was two §3 rules stated over `liveTransport`,
+    `osc` and the adapters in the present tense, now in the past with the
+    rule kept.
 - ⬜ The aggregate product still installs and opens a `.vrm` and a `.vrma`,
   with the shared core resolved as a dependency, from release artifacts.
 - ⬜ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs

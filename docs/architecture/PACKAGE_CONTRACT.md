@@ -76,16 +76,18 @@ true.
    descriptor does not declare would put WORKSPACE.md §2 and this file in
    disagreement, and §2 wins. Both left with MIG-3; the rule did not.
 4. **A platform dependency belongs to the library that uses it, not to its
-   consumers.** `liveTransport` links `ws2_32` (Windows) or `Threads::Threads`
-   (elsewhere) `PUBLIC` and its config resolves `Threads` itself; the three
-   adapters that link it declare neither. `ws2_32` needs no `find_dependency`
+   consumers.** `liveTransport` linked `ws2_32` (Windows) or `Threads::Threads`
+   (elsewhere) `PUBLIC` and its config resolved `Threads` itself; the three
+   adapters that linked it declared neither. `ws2_32` needs no `find_dependency`
    because it is a raw library name rather than an imported target — which is
-   also why it is the half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)
-   that a Windows run cannot check.
+   also why it was the half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)
+   that a Windows run cannot check. All four left with MIG-4; the rule did not,
+   and no package here has a platform dependency today.
 5. **Two libraries with no edge between them bring nothing for each other.**
-   WORKSPACE.md §2 forbids an edge between `liveTransport` and `osc` in both
-   directions, so a consumer of both resolves both. `vrmAdapterVmc`'s config
-   does exactly that, in two separate guarded blocks.
+   WORKSPACE.md §2 forbade an edge between `liveTransport` and `osc` in both
+   directions, so a consumer of both resolved both. `vrmAdapterVmc`'s config
+   did exactly that, in two separate guarded blocks. All three left with MIG-4;
+   the rule did not.
 
 ### 3.1 A `requires` range between two releases
 
