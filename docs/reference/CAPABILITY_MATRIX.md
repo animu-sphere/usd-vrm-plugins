@@ -57,7 +57,8 @@ simulates:
   one sample's retarget and its diagnostics — and none of these three yet;
   they follow on [the `ExecIr` track](../roadmap/execir-track.md).
 - MToon **shading** realization (beyond the PreviewSurface approximation) is
-  Product P5.
+  Product P5 ([material track](../roadmap/material-track.md)); the full MToon
+  renderer is `hydra-toon`'s, another repository.
 
 This separation is deliberate: the importer stays a pure, deterministic
 data-authoring step so downstream runtimes can be swapped without changing it.
