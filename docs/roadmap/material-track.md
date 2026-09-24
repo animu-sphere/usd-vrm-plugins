@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1 and 2 (unlit) shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1, 2 (unlit) and 3 shipped · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -38,10 +38,15 @@ The reasons are what Steps 1 and 2 left behind:
 - ✅ **Step 2 — `/mtlx` for unlit materials** (2026-08-14; policy §7.2 and
   §5.2.1). Lit materials carry `/preview` only; that half is now part of
   Step 6.
-- **MToon is raw only.** A VRM 1.0 material keeps its `VRMC_materials_mtoon`
-  block and a VRM 0.x material its whole `materialProperties` entry, Unity
-  property names and all, at `customData.vrm:mtoon:raw`, beside
-  `vrm:shaderModel = "MToon"`
+- ✅ **Step 3 — the canonical material schema contract** (2026-09-25; policy
+  §6, §6.4.1, §7.3). `VrmMaterialAPI`, `VrmMToonAPI` and
+  `VrmTextureInfoAPI` exist in `vrmSchema`, as Material interface inputs
+  (`inputs:vrm:*`).
+- **An imported stage is still MToon-raw.** The importer does not author the
+  Step 3 schemas yet (Step 4). A VRM 1.0 material keeps its
+  `VRMC_materials_mtoon` block and a VRM 0.x material its whole
+  `materialProperties` entry, Unity property names and all, at
+  `customData.vrm:mtoon:raw`, beside `vrm:shaderModel = "MToon"`
   ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
 - **Expression colour binds already target a slot, not a shader input.** A
   VRM 1.0 `materialColorBinds` entry is typed on its expression prim as a
@@ -58,7 +63,7 @@ Steps 3 → 4 → 5/6 are sequential; 5 and 6 are independent of each other.
 Step 7 needs Step 3's slot table and open question 9, not Steps 5–6. Step 8
 is another repository's.
 
-### Step 3 — the canonical material schema contract ⬜
+### Step 3 — the canonical material schema contract ✅
 
 `VrmMaterialAPI` (single-apply: base colour, emissive, alpha mode and cutoff,
 double-sidedness), `VrmMToonAPI` (single-apply: the `VRMC_materials_mtoon`
@@ -77,6 +82,28 @@ namespace.
 in the schema contract with their raw fallbacks (policy §10), the addition is
 additive within contract v1, and a MToon parameter is read through the
 generated API — not through JSON — on a hand-authored stage.
+
+**Shipped 2026-09-25.** Each condition, and where it is shown:
+
+- *generated and registered* — `vrmSchema` declares nine types, and
+  `ost plugin test plugins/vrmSchema` registers them (L2);
+- *rows and raw fallbacks* — the
+  [schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#material-semantics-are-interface-inputs)'s
+  typed-API table, raw-correspondence table and validator rules
+  (`VRM223`–`VRM226`);
+- *additive within v1* — the baseline diff is the schema, discovery, symbol
+  and diagnostic catalogues; no stage digest moved;
+- *read through the generated API* — `vrmschema_material_api` reads
+  `shadingToonyFactor` and the rest of `tests/fixtures/basic.usda`'s
+  `/Asset/mtl/Hair` through `UsdVrmMToonAPI`, `UsdVrmMaterialAPI` and
+  `UsdVrmTextureInfoAPI`, and fails when the fixture's value changes.
+
+The four questions: q1 — the policy's MToon field table matched the
+specification, its texture list did not (`outlineWidthMultiply`); q4 — eleven
+allowed roles; q5 — `vrm:shaderModel` stays; q9 — `inputs:vrm:*`, measured in
+Storm (policy §6.4.1). What Step 4 inherits from q9: a realization connected
+to an unauthored canonical input sees its own shader's default, not the
+schema fallback, so the importer authors every value a graph connects to.
 
 ### Step 4 — importer canonicalization, VRM 0.x and 1.0 ⬜
 

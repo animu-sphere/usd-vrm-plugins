@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # vrmSchema — the typed VRM API schemas (VrmHumanoidAPI, VrmExpressionAPI,
-# VrmLookAtAPI, VrmSpringBoneAPI, VrmColliderAPI, VrmConstraintAPI), split out
+# VrmLookAtAPI, VrmSpringBoneAPI, VrmColliderAPI, VrmConstraintAPI, and the
+# material schemas VrmMaterialAPI, VrmMToonAPI, VrmTextureInfoAPI), split out
 # of the usdVrm file-format bundle per docs/architecture/WORKSPACE.md §1.
 #
 # Self-contained so `ost plugin build plugins/vrmSchema` can configure it
@@ -60,7 +61,10 @@ set(VRMSCHEMA_COMMITTED_SCHEMA_SOURCES
     src/vrmSchema/vrmExpressionAPI.cpp
     src/vrmSchema/vrmHumanoidAPI.cpp
     src/vrmSchema/vrmLookAtAPI.cpp
-    src/vrmSchema/vrmSpringBoneAPI.cpp)
+    src/vrmSchema/vrmMaterialAPI.cpp
+    src/vrmSchema/vrmMToonAPI.cpp
+    src/vrmSchema/vrmSpringBoneAPI.cpp
+    src/vrmSchema/vrmTextureInfoAPI.cpp)
 
 add_library(${PLUGIN_NAME} SHARED)
 add_library(vrmSchema::vrmSchema ALIAS ${PLUGIN_NAME})
@@ -136,7 +140,10 @@ install(FILES
     src/vrmSchema/vrmExpressionAPI.h
     src/vrmSchema/vrmHumanoidAPI.h
     src/vrmSchema/vrmLookAtAPI.h
+    src/vrmSchema/vrmMaterialAPI.h
+    src/vrmSchema/vrmMToonAPI.h
     src/vrmSchema/vrmSpringBoneAPI.h
+    src/vrmSchema/vrmTextureInfoAPI.h
     DESTINATION "include/vrmSchema")
 
 include(CMakePackageConfigHelpers)

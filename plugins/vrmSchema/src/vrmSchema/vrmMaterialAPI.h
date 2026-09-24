@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDVRM_GENERATED_VRMEXPRESSIONAPI_H
-#define USDVRM_GENERATED_VRMEXPRESSIONAPI_H
+#ifndef USDVRM_GENERATED_VRMMATERIALAPI_H
+#define USDVRM_GENERATED_VRMMATERIALAPI_H
 
-/// \file usdVrm/vrmExpressionAPI.h
+/// \file usdVrm/vrmMaterialAPI.h
 
 #include "pxr/pxr.h"
 #include "./api.h"
@@ -30,23 +30,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// VRMEXPRESSIONAPI                                                           //
+// VRMMATERIALAPI                                                             //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdVrmExpressionAPI
+/// \class UsdVrmMaterialAPI
 ///
-/// A VRM expression (VRM 1.0 Expression / VRM 0.x BlendShapeGroup). Apply
-/// to each /Asset/rig/Expressions/<name> prim. Morph-target and material-color
-/// bindings are authored as relationships with parallel value arrays; evaluation is
-/// a downstream-runtime concern. Per-expression curves and unmapped data stay in
-/// customData.
+/// Generic source material semantics of one glTF / VRM material: the
+/// glTF 2.0 metallic-roughness core plus the two material extensions VRM
+/// avatars rely on (KHR_materials_unlit, KHR_materials_emissive_strength).
+/// Apply to the /Asset/mtl/<name> UsdShadeMaterial. Texture-bound values
+/// (normal scale, occlusion strength, every texture's asset and UV state) are
+/// VrmTextureInfoAPI instances on the same prim. Colours are linear, as glTF
+/// defines them. UsdPreviewSurface and MaterialX inputs are realizations of
+/// these values and are never storage.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdVrmTokens.
 /// So to set an attribute to the value "rightHanded", use UsdVrmTokens->rightHanded
 /// as the value.
 ///
-class UsdVrmExpressionAPI : public UsdAPISchemaBase
+class UsdVrmMaterialAPI : public UsdAPISchemaBase
 {
   public:
     /// Compile time constant representing what kind of schema this class is.
@@ -54,24 +57,24 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdVrmExpressionAPI on UsdPrim \p prim .
-    /// Equivalent to UsdVrmExpressionAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdVrmMaterialAPI on UsdPrim \p prim .
+    /// Equivalent to UsdVrmMaterialAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVrmExpressionAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
+    explicit UsdVrmMaterialAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdVrmExpressionAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdVrmExpressionAPI(schemaObj.GetPrim()),
+    /// Construct a UsdVrmMaterialAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdVrmMaterialAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVrmExpressionAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
+    explicit UsdVrmMaterialAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDVRM_API
-    virtual ~UsdVrmExpressionAPI();
+    virtual ~UsdVrmMaterialAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -79,17 +82,17 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
     USDVRM_API
     static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
-    /// Return a UsdVrmExpressionAPI holding the prim adhering to this
+    /// Return a UsdVrmMaterialAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdVrmExpressionAPI(stage->GetPrimAtPath(path));
+    /// UsdVrmMaterialAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDVRM_API
-    static UsdVrmExpressionAPI Get(const UsdStagePtr& stage, const SdfPath& path);
+    static UsdVrmMaterialAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
     /// Returns true if this <b>single-apply</b> API schema can be applied to
     /// the given \p prim. If this schema can not be a applied to the prim,
@@ -111,11 +114,11 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
     static bool CanApply(const UsdPrim& prim, std::string* whyNot = nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "VrmExpressionAPI" to the
+    /// This information is stored by adding "VrmMaterialAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     ///
-    /// \return A valid UsdVrmExpressionAPI object is returned upon success.
-    /// An invalid (or empty) UsdVrmExpressionAPI object is returned upon
+    /// \return A valid UsdVrmMaterialAPI object is returned upon success.
+    /// An invalid (or empty) UsdVrmMaterialAPI object is returned upon
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions
     /// resulting in failure.
     ///
@@ -126,7 +129,7 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static UsdVrmExpressionAPI Apply(const UsdPrim& prim);
+    static UsdVrmMaterialAPI Apply(const UsdPrim& prim);
 
   protected:
     /// Returns the kind of schema this class belongs to.
@@ -149,266 +152,244 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
 
   public:
     // --------------------------------------------------------------------- //
-    // VRMEXPRESSIONNAME
+    // BASECOLORFACTOR
     // --------------------------------------------------------------------- //
-    /// The expression name exactly as the source VRM spelled it. The prim
-    /// name is a sanitized, uniquified identifier and is not a join key: a clip
-    /// and an avatar sanitize independently, so a non-ASCII or colliding name
-    /// lands on a different prim name on each side. This attribute is the key
-    /// that survives, and it is the same one a .vrma clip authors on
-    /// /Animation/Expressions/<name>.
+    /// RGB of glTF pbrMetallicRoughness.baseColorFactor. glTF's
+    /// factor is RGBA; it is split so each half connects to a colour and a
+    /// float input without a conversion node in every realization.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token vrm:expressionName` |
+    /// | Declaration | `color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
+    USDVRM_API
+    UsdAttribute GetBaseColorFactorAttr() const;
+
+    /// See GetBaseColorFactorAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateBaseColorFactorAttr(VtValue const& defaultValue = VtValue(),
+                                           bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
+    // BASECOLORALPHAFACTOR
+    // --------------------------------------------------------------------- //
+    /// Alpha (fourth component) of glTF pbrMetallicRoughness.baseColorFactor.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float inputs:vrm:material:baseColorAlphaFactor = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDVRM_API
+    UsdAttribute GetBaseColorAlphaFactorAttr() const;
+
+    /// See GetBaseColorAlphaFactorAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateBaseColorAlphaFactorAttr(VtValue const& defaultValue = VtValue(),
+                                                bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
+    // METALLICFACTOR
+    // --------------------------------------------------------------------- //
+    /// glTF pbrMetallicRoughness.metallicFactor.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float inputs:vrm:material:metallicFactor = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDVRM_API
+    UsdAttribute GetMetallicFactorAttr() const;
+
+    /// See GetMetallicFactorAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateMetallicFactorAttr(VtValue const& defaultValue = VtValue(),
+                                          bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
+    // ROUGHNESSFACTOR
+    // --------------------------------------------------------------------- //
+    /// glTF pbrMetallicRoughness.roughnessFactor.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float inputs:vrm:material:roughnessFactor = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDVRM_API
+    UsdAttribute GetRoughnessFactorAttr() const;
+
+    /// See GetRoughnessFactorAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateRoughnessFactorAttr(VtValue const& defaultValue = VtValue(),
+                                           bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
+    // EMISSIVEFACTOR
+    // --------------------------------------------------------------------- //
+    /// glTF emissiveFactor.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
+    USDVRM_API
+    UsdAttribute GetEmissiveFactorAttr() const;
+
+    /// See GetEmissiveFactorAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateEmissiveFactorAttr(VtValue const& defaultValue = VtValue(),
+                                          bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
+    // EMISSIVESTRENGTH
+    // --------------------------------------------------------------------- //
+    /// KHR_materials_emissive_strength.emissiveStrength: a multiplier
+    /// on emissiveFactor, kept separate so the factor stays the glTF value.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float inputs:vrm:material:emissiveStrength = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDVRM_API
+    UsdAttribute GetEmissiveStrengthAttr() const;
+
+    /// See GetEmissiveStrengthAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateEmissiveStrengthAttr(VtValue const& defaultValue = VtValue(),
+                                            bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
+    // ALPHAMODE
+    // --------------------------------------------------------------------- //
+    /// glTF alphaMode: 'OPAQUE', 'MASK' or 'BLEND'; unauthored means
+    /// 'OPAQUE', as in glTF. The one property without a schema fallback:
+    /// usdGenSchema would name the fallback's C++ token `OPAQUE`, which is a
+    /// Windows (wingdi.h) macro and breaks every translation unit that sees
+    /// both.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token inputs:vrm:material:alphaMode` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDVRM_API
-    UsdAttribute GetVrmExpressionNameAttr() const;
+    UsdAttribute GetAlphaModeAttr() const;
 
-    /// See GetVrmExpressionNameAttr(), and also
+    /// See GetAlphaModeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmExpressionNameAttr(VtValue const& defaultValue = VtValue(),
-                                             bool writeSparsely = false) const;
+    UsdAttribute CreateAlphaModeAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
   public:
     // --------------------------------------------------------------------- //
-    // VRMEXPRESSIONTYPE
+    // ALPHACUTOFF
     // --------------------------------------------------------------------- //
-    /// 'preset' for a standard VRM expression, 'custom' otherwise.
+    /// glTF alphaCutoff. Meaningful only when alphaMode is 'MASK'.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token vrm:expressionType` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | Declaration | `float inputs:vrm:material:alphaCutoff = 0.5` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDVRM_API
-    UsdAttribute GetVrmExpressionTypeAttr() const;
+    UsdAttribute GetAlphaCutoffAttr() const;
 
-    /// See GetVrmExpressionTypeAttr(), and also
+    /// See GetAlphaCutoffAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmExpressionTypeAttr(VtValue const& defaultValue = VtValue(),
-                                             bool writeSparsely = false) const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMISBINARY
-    // --------------------------------------------------------------------- //
-    /// Whether the expression value is clamped to 0/1 (binary).
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform bool vrm:isBinary` |
-    /// | C++ Type | bool |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDVRM_API
-    UsdAttribute GetVrmIsBinaryAttr() const;
-
-    /// See GetVrmIsBinaryAttr(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDVRM_API
-    UsdAttribute CreateVrmIsBinaryAttr(VtValue const& defaultValue = VtValue(),
+    UsdAttribute CreateAlphaCutoffAttr(VtValue const& defaultValue = VtValue(),
                                        bool writeSparsely = false) const;
 
   public:
     // --------------------------------------------------------------------- //
-    // VRMOVERRIDEBLINK
+    // DOUBLESIDED
     // --------------------------------------------------------------------- //
-    /// What this expression does to the blink expressions while on.
-    /// 'none', 'block' (they are off whenever this one is on at all) or 'blend'
-    /// (they are attenuated by this expression's own weight). VRM 1.0's
-    /// `overrideBlink`, and the only mechanism the specification gives for two
-    /// co-active expressions whose morph targets displace the same vertices --
-    /// their offsets otherwise sum, and an eyelid driven by a blink and a smile
-    /// at once is driven roughly twice as far as shut. Authored only when the
-    /// source file states it; VRM 0.x has no such field. The token is carried
-    /// as the file spelled it and is not constrained by an allowedTokens list,
-    /// so a value outside the three reaches a consumer as data rather than
-    /// failing schema validation.
+    /// glTF doubleSided.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token vrm:overrideBlink` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | Declaration | `uniform bool inputs:vrm:material:doubleSided = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDVRM_API
-    UsdAttribute GetVrmOverrideBlinkAttr() const;
+    UsdAttribute GetDoubleSidedAttr() const;
 
-    /// See GetVrmOverrideBlinkAttr(), and also
+    /// See GetDoubleSidedAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmOverrideBlinkAttr(VtValue const& defaultValue = VtValue(),
-                                            bool writeSparsely = false) const;
+    UsdAttribute CreateDoubleSidedAttr(VtValue const& defaultValue = VtValue(),
+                                       bool writeSparsely = false) const;
 
   public:
     // --------------------------------------------------------------------- //
-    // VRMOVERRIDELOOKAT
+    // UNLIT
     // --------------------------------------------------------------------- //
-    /// What this expression does to the look-at expressions while on.
-    /// The same three tokens, over lookUp, lookDown, lookLeft and lookRight --
-    /// which is how one expression arbitrates the gaze of a rig that aims its
-    /// eyes with expressions rather than with bones.
+    /// Whether the source material declares KHR_materials_unlit. VRM
+    /// MToon materials usually do, as their glTF-only fallback.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token vrm:overrideLookAt` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | Declaration | `uniform bool inputs:vrm:material:unlit = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDVRM_API
-    UsdAttribute GetVrmOverrideLookAtAttr() const;
+    UsdAttribute GetUnlitAttr() const;
 
-    /// See GetVrmOverrideLookAtAttr(), and also
+    /// See GetUnlitAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmOverrideLookAtAttr(VtValue const& defaultValue = VtValue(),
-                                             bool writeSparsely = false) const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMOVERRIDEMOUTH
-    // --------------------------------------------------------------------- //
-    /// What this expression does to the mouth expressions while on.
-    /// The same three tokens, over aa, ih, ou, ee and oh.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform token vrm:overrideMouth` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDVRM_API
-    UsdAttribute GetVrmOverrideMouthAttr() const;
-
-    /// See GetVrmOverrideMouthAttr(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDVRM_API
-    UsdAttribute CreateVrmOverrideMouthAttr(VtValue const& defaultValue = VtValue(),
-                                            bool writeSparsely = false) const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMMORPHTARGETWEIGHTS
-    // --------------------------------------------------------------------- //
-    /// Per-target weights, parallel to vrm:morphTargets.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform float[] vrm:morphTargetWeights` |
-    /// | C++ Type | VtArray<float> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDVRM_API
-    UsdAttribute GetVrmMorphTargetWeightsAttr() const;
-
-    /// See GetVrmMorphTargetWeightsAttr(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDVRM_API
-    UsdAttribute CreateVrmMorphTargetWeightsAttr(VtValue const& defaultValue = VtValue(),
-                                                 bool writeSparsely = false) const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMMATERIALCOLORTYPES
-    // --------------------------------------------------------------------- //
-    /// Color slot per target (e.g. color, emission), parallel to vrm:materialColorTargets.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform token[] vrm:materialColorTypes` |
-    /// | C++ Type | VtArray<TfToken> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDVRM_API
-    UsdAttribute GetVrmMaterialColorTypesAttr() const;
-
-    /// See GetVrmMaterialColorTypesAttr(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDVRM_API
-    UsdAttribute CreateVrmMaterialColorTypesAttr(VtValue const& defaultValue = VtValue(),
-                                                 bool writeSparsely = false) const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMMATERIALCOLORVALUES
-    // --------------------------------------------------------------------- //
-    /// Target RGBA per material color bind, parallel to vrm:materialColorTargets.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform float4[] vrm:materialColorValues` |
-    /// | C++ Type | VtArray<GfVec4f> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float4Array |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDVRM_API
-    UsdAttribute GetVrmMaterialColorValuesAttr() const;
-
-    /// See GetVrmMaterialColorValuesAttr(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDVRM_API
-    UsdAttribute CreateVrmMaterialColorValuesAttr(VtValue const& defaultValue = VtValue(),
-                                                  bool writeSparsely = false) const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMMORPHTARGETS
-    // --------------------------------------------------------------------- //
-    /// The UsdSkelBlendShape prims this expression drives.
-    ///
-    USDVRM_API
-    UsdRelationship GetVrmMorphTargetsRel() const;
-
-    /// See GetVrmMorphTargetsRel(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDVRM_API
-    UsdRelationship CreateVrmMorphTargetsRel() const;
-
-  public:
-    // --------------------------------------------------------------------- //
-    // VRMMATERIALCOLORTARGETS
-    // --------------------------------------------------------------------- //
-    /// The materials whose colors this expression overrides.
-    ///
-    USDVRM_API
-    UsdRelationship GetVrmMaterialColorTargetsRel() const;
-
-    /// See GetVrmMaterialColorTargetsRel(), and also
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDVRM_API
-    UsdRelationship CreateVrmMaterialColorTargetsRel() const;
+    UsdAttribute CreateUnlitAttr(VtValue const& defaultValue = VtValue(),
+                                 bool writeSparsely = false) const;
 
   public:
     // ===================================================================== //

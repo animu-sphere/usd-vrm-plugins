@@ -17,7 +17,7 @@ import os
 import pathlib
 import sys
 
-from pxr import Plug, Sdf, Usd, UsdSkel, Vt
+from pxr import Plug, Sdf, Usd, UsdShade, UsdSkel, Vt
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 TOOLS = pathlib.Path(__file__).parents[1] / "tools"
@@ -205,6 +205,79 @@ def check_schema_token_rules():
     assert "VRM263" in _codes(validate_vrm.validate_stage(stage))
 
 
+def check_material_semantics_rules():
+    """The canonical material schemas (VRM222-VRM226). The importer does not
+    author them yet (P5 Step 4), so each case applies them in-session."""
+    material_codes = {"VRM222", "VRM223", "VRM224", "VRM225", "VRM226"}
+
+    def fresh():
+        # Usd.Stage.Open finds the root layer through the layer registry, and
+        # the previous case's stage is still alive while this one opens, so an
+        # edit to the root layer would carry into every later case. Each case
+        # edits its own stage's session layer instead, and starts clean.
+        stage = _open("materials.vrm")
+        stage.SetEditTarget(stage.GetSessionLayer())
+        found = _codes(validate_vrm.validate_stage(stage)) & material_codes
+        assert not found, f"a fresh stage already reports {found}"
+        mat = next(p for p in stage.Traverse() if p.IsA(UsdShade.Material))
+        return stage, mat
+
+    # A well-formed canonical material raises none of them.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmMaterialAPI")
+    mat.ApplyAPI("VrmTextureInfoAPI", "baseColor")
+    mat.GetAttribute("inputs:vrm:material:alphaMode").Set("MASK")
+    mat.GetAttribute("inputs:vrm:textureInfo:baseColor:wrapS").Set("clampToEdge")
+    found = _codes(validate_vrm.validate_stage(stage)) & material_codes
+    assert not found, found
+
+    stage, mat = fresh()
+    stage.GetPrimAtPath("/Asset").ApplyAPI("VrmMaterialAPI")
+    assert "VRM223" in _codes(validate_vrm.validate_stage(stage))
+
+    # ApplyAPI does not enforce the schema's allowed instance names; only
+    # CanApplyAPI does, which is why the validator checks the role.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmTextureInfoAPI", "outlineWidth")
+    assert "VRM224" in _codes(validate_vrm.validate_stage(stage))
+
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmMaterialAPI")
+    mat.GetAttribute("inputs:vrm:material:alphaMode").Set("CUTOUT")
+    assert "VRM225" in _codes(validate_vrm.validate_stage(stage))
+
+    # UsdUVTexture's `clamp` is a realization's vocabulary, not glTF's.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmTextureInfoAPI", "shadeMultiply")
+    mat.GetAttribute("inputs:vrm:textureInfo:shadeMultiply:wrapT").Set("clamp")
+    assert "VRM225" in _codes(validate_vrm.validate_stage(stage))
+
+    # specVersion names the model the values follow, never the source's own.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmMToonAPI")
+    mat.CreateAttribute("vrm:shaderModel", Sdf.ValueTypeNames.Token).Set("MToon")
+    mat.GetAttribute("inputs:vrm:mtoon:specVersion").Set("0.0")
+    assert "VRM225" in _codes(validate_vrm.validate_stage(stage))
+
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmMToonAPI")
+    mat.CreateAttribute("vrm:shaderModel", Sdf.ValueTypeNames.Token).Set("glTF")
+    assert "VRM226" in _codes(validate_vrm.validate_stage(stage))
+
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmTextureInfoAPI", "matcap")
+    mat.GetAttribute("inputs:vrm:textureInfo:matcap:file").Set(
+        Sdf.AssetPath("no_such_matcap.png"))
+    assert "VRM222" in _codes(validate_vrm.validate_stage(stage))
+
+    # A time-sampled asset path has no default value; it is checked all the same.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmTextureInfoAPI", "rimMultiply")
+    mat.GetAttribute("inputs:vrm:textureInfo:rimMultiply:file").Set(
+        Sdf.AssetPath("no_such_rim.png"), Usd.TimeCode(1))
+    assert "VRM222" in _codes(validate_vrm.validate_stage(stage))
+
+
 def check_collider_rules_without_spring_scope():
     """Collider validation must not depend on a SpringBones scope being present."""
     stage = _open("springbone.vrm")
@@ -298,6 +371,7 @@ def main() -> int:
                   check_springbone_end_node_vs_broken_path,
                   check_schema_parallel_array_rules,
                   check_schema_token_rules,
+                  check_material_semantics_rules,
                   check_collider_rules_without_spring_scope,
                   check_missing_default_prim,
                   check_report_sections_and_coded_import_warnings,

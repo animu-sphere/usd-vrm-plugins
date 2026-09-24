@@ -36,9 +36,7 @@ class SdfAssetPath;
 /// \class UsdVrmLookAtAPI
 ///
 /// VRM lookAt configuration. Apply to /Asset/rig/LookAt. The eyes name
-
 /// skeleton joints by token (joints are Skeleton.joints tokens, not prims); the
-
 /// range-map curves are preserved verbatim in customData (vrm:lookAt:raw).
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

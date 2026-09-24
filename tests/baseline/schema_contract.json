@@ -1,13 +1,16 @@
 {
   "baselineSchemaVersion": 1,
-  "generatedSchemaSha256": "f23875c35342b0c680f3e40bfb47861ef3955ee1033da9ae120cd8cae00c4255",
+  "generatedSchemaSha256": "b963e6efedc348d5e2133801388c4f2e9ce2041dbf7531c39665be2d46ab7997",
   "registryVisible": {
     "VrmColliderAPI": true,
     "VrmConstraintAPI": true,
     "VrmExpressionAPI": true,
     "VrmHumanoidAPI": true,
     "VrmLookAtAPI": true,
-    "VrmSpringBoneAPI": true
+    "VrmMToonAPI": true,
+    "VrmMaterialAPI": true,
+    "VrmSpringBoneAPI": true,
+    "VrmTextureInfoAPI": true
   },
   "schemaContractVersion": 1,
   "schemas": {
@@ -356,6 +359,184 @@
         }
       }
     },
+    "VrmMToonAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "inputs:vrm:mtoon:giEqualizationFactor": {
+          "default": 0.899999976,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:matcapFactor": {
+          "default": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:outlineColorFactor": {
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:outlineLightingMixFactor": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:outlineWidthFactor": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:outlineWidthMode": {
+          "default": "none",
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:mtoon:parametricRimColorFactor": {
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:parametricRimFresnelPowerFactor": {
+          "default": 5.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:parametricRimLiftFactor": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:renderQueueOffsetNumber": {
+          "default": 0,
+          "typeName": "int",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:mtoon:rimLightingMixFactor": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:shadeColorFactor": {
+          "default": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:shadingShiftFactor": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:shadingToonyFactor": {
+          "default": 0.899999976,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:specVersion": {
+          "default": "1.0",
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:mtoon:transparentWithZWrite": {
+          "default": false,
+          "typeName": "bool",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:mtoon:uvAnimationRotationSpeedFactor": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        }
+      }
+    },
+    "VrmMaterialAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "inputs:vrm:material:alphaCutoff": {
+          "default": 0.5,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:alphaMode": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:material:baseColorAlphaFactor": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:baseColorFactor": {
+          "default": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:doubleSided": {
+          "default": false,
+          "typeName": "bool",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:material:emissiveFactor": {
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:emissiveStrength": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:metallicFactor": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:roughnessFactor": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:material:unlit": {
+          "default": false,
+          "typeName": "bool",
+          "variability": "Sdf.VariabilityUniform"
+        }
+      }
+    },
     "VrmSpringBoneAPI": {
       "apiSchemaType": null,
       "properties": {
@@ -388,6 +569,61 @@
         },
         "vrm:stiffness": {
           "typeName": "VtArray<float>",
+          "variability": "Sdf.VariabilityUniform"
+        }
+      }
+    },
+    "VrmTextureInfoAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:file": {
+          "typeName": "SdfAssetPath",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:scale": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:strength": {
+          "default": 1.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:texCoord": {
+          "default": 0,
+          "typeName": "int",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:offset": {
+          "default": [
+            0.0,
+            0.0
+          ],
+          "typeName": "GfVec2f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:rotation": {
+          "default": 0.0,
+          "typeName": "float",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:scale": {
+          "default": [
+            1.0,
+            1.0
+          ],
+          "typeName": "GfVec2f",
+          "variability": "Sdf.VariabilityVarying"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:wrapS": {
+          "default": "repeat",
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "inputs:vrm:textureInfo:__INSTANCE_NAME__:wrapT": {
+          "default": "repeat",
+          "typeName": "TfToken",
           "variability": "Sdf.VariabilityUniform"
         }
       }

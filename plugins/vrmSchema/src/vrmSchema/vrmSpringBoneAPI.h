@@ -36,11 +36,8 @@ class SdfAssetPath;
 /// \class UsdVrmSpringBoneAPI
 ///
 /// A VRM SpringBone chain (secondary motion, data only - no simulation).
-
 /// Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. The per-joint
-
 /// parameter arrays are parallel to vrm:joints. gravityDir is model-space (it takes
-
 /// the VRM-0.x front bake). Colliders are referenced by relationship.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

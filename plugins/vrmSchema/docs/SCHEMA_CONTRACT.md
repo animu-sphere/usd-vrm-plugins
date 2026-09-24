@@ -56,20 +56,23 @@ v1 readers should treat `/Asset/rig/SecondaryMotion/*` as authoritative.
 ### Shading networks are not contract paths
 
 Under `/Asset/mtl` the contract covers the **material prim** — its path, its
-`vrm:shaderModel` attribute, and its `customData.vrm:mtoon:raw` fallback — and
-nothing below it. The generated shader network is a rendering *realization*, so
-its internal layout may change within v1:
+`vrm:shaderModel` attribute, its `customData.vrm:mtoon:raw` fallback, and the
+canonical material schemas applied to it
+([below](#material-semantics-are-interface-inputs)) — and nothing below it. The
+generated shader network is a rendering *realization*, so its internal layout
+may change within v1:
 
 | In the contract | Not in the contract |
 | --- | --- |
 | `/Asset/mtl/<material>` as the binding target | the shader prims below it |
 | `vrm:shaderModel`, `customData.vrm:mtoon:raw` on that prim | node names, node count, graph nesting |
+| `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI:<role>` on that prim | which realization input a canonical value is connected to |
 
 Consumers should reach the surface through `UsdShadeMaterial`'s terminal
 (`ComputeSurfaceSource()`), never by assuming a prim path inside the material.
 Since 2026-08-13 the UsdPreviewSurface network lives one level down, in a
-`/preview` `UsdShadeNodeGraph`, and a MaterialX `/mtlx` sibling is planned
-([material policy](../../../docs/design/MATERIAL_ARCHITECTURE_POLICY.md) §4);
+`/preview` `UsdShadeNodeGraph`, and a MaterialX `/mtlx` sibling followed on
+2026-08-14 ([material policy](../../../docs/design/MATERIAL_ARCHITECTURE_POLICY.md) §4);
 neither is a contract-version change, because no v1 path moved and no v1
 property changed meaning.
 
@@ -168,6 +171,75 @@ expression makes about *others*, so it belongs to the consumer step
 (`ExpressionResolve`) and never to this layer. Additive within v1: an old reader
 ignores all three and gets exactly the behaviour it had before they existed.
 
+## Material semantics are interface inputs
+
+Added 2026-09-25 (Product P5 Step 3), additive within v1. Three API schemas
+carry a material's source semantics on the `UsdShadeMaterial` itself, and
+every rendering realization — `/preview`, `/mtlx`, and any renderer's own —
+is generated from them and from nothing else
+([material policy](../../../docs/design/MATERIAL_ARCHITECTURE_POLICY.md) §3,
+§6):
+
+| Schema | Kind | Carries |
+| --- | --- | --- |
+| `VrmMaterialAPI` | single-apply | the glTF material core: `baseColorFactor` (RGB) and `baseColorAlphaFactor`, `metallicFactor`, `roughnessFactor`, `emissiveFactor`, `emissiveStrength` (`KHR_materials_emissive_strength`), `alphaMode`, `alphaCutoff`, `doubleSided`, `unlit` (`KHR_materials_unlit`) |
+| `VrmMToonAPI` | single-apply | every non-texture field of `VRMC_materials_mtoon` 1.0, spelled as the specification spells it |
+| `VrmTextureInfoAPI:<role>` | multiple-apply | one texture: `file`, `texCoord`, `wrapS`, `wrapT`, the contribution scalars `scale` / `strength`, and `KHR_texture_transform` under `transform:` (`offset`, `rotation`, `scale`) |
+
+Five rules are the contract rather than the implementation.
+
+**Every property is an `inputs:` attribute.** The names are
+`inputs:vrm:material:<field>`, `inputs:vrm:mtoon:<field>` and
+`inputs:vrm:textureInfo:<role>:<field>` — the `vrm:` namespace, inside
+UsdShade's `inputs:`, as UsdLux nests `inputs:shaping:*`. UsdShade connects
+only `inputs:` and `outputs:` attributes, so this is the only way a
+realization graph can *read* a canonical value rather than hold a copy of it,
+and the only way an animated value — an expression's material-colour bind —
+reaches whichever realization the renderer selects. Measured on 26.08 in
+Storm: a time-sampled `inputs:vrm:material:baseColorFactor` drives both
+`/preview` and `/mtlx` frame by frame through a NodeGraph interface
+connection, while the same connection to a plain `vrm:` attribute is discarded
+as an invalid source and the surface draws black with no error.
+
+**A fallback is not what a connected realization sees.** Each property's
+schema fallback is the specification default, and a *reader* gets it from an
+unauthored attribute. A UsdShade connection resolves to an *authored* value
+only, so a graph connected to an unauthored canonical input silently takes
+its own shader's default instead. A writer therefore authors every canonical
+value a realization connects to. `alphaMode` has no fallback at all (its
+generated C++ token would be `OPAQUE`, a Windows macro); unauthored means
+`OPAQUE`, as in glTF.
+
+**The texture roles are exactly eleven**: the glTF core `baseColor`,
+`metallicRoughness`, `normal`, `occlusion`, `emissive`, and the MToon
+`shadeMultiply`, `shadingShift`, `matcap`, `rimMultiply`,
+`outlineWidthMultiply`, `uvAnimationMask` — each the specification's texture
+name without `Texture`. The schema declares them as its allowed instance
+names; `CanApplyAPI` refuses any other, but `ApplyAPI` does not check, so the
+validator reports one (`VRM224`). Whether a role is colour or data is fixed by
+the role and is not stored.
+
+**Token values are glTF's and VRM's, not a realization's.** `alphaMode` is
+`OPAQUE`, `MASK` or `BLEND`; `outlineWidthMode` is `none`, `worldCoordinates`
+or `screenCoordinates`; `wrapS` / `wrapT` are `repeat`, `clampToEdge` or
+`mirroredRepeat` — not UsdUVTexture's `clamp` / `mirror`, which is a
+realization's translation. As for the expression overrides, the attributes
+carry no `allowedTokens` list; the validator reports a value outside the set
+(`VRM225`).
+
+**`vrm:shaderModel` stays.** It predates `VrmMToonAPI` and contract v1 cannot
+remove it, so it keeps its meaning and the two must agree: a material with
+`VrmMToonAPI` applied says `vrm:shaderModel = "MToon"` (`VRM226`). The raw
+block at `customData.vrm:mtoon:raw` stays the lossless fallback, and is never a
+runtime API — a value a consumer needs and cannot find in the typed schemas is
+a missing field, not a reason to parse JSON.
+
+**The importer does not author these schemas yet.** Step 3 defines the
+contract; the importer canonicalizes VRM 1.0 and 0.x materials into it in
+Step 4, and until then a material carries `vrm:shaderModel`, the raw block and
+the realizations exactly as before
+([material track](../../../docs/roadmap/material-track.md)).
+
 ## Humanoid representation decision
 
 The v1 contract uses one token attribute per human bone:
@@ -195,6 +267,9 @@ lossless.
 | `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | `vrm:joints` plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmColliderAPI` | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` | `vrm:shape`, `vrm:node`, `vrm:offset`, `vrm:radius`; `vrm:tail` for capsules | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmConstraintAPI` | `/Asset/rig/Constraints/<name>` | `vrm:type`, `vrm:constrained`, `vrm:source`, optional `vrm:axis`, `vrm:weight` | `/Asset/rig/Constraints/<name>.customData.vrm:constraint:raw` |
+| `VrmMaterialAPI` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only) | `inputs:vrm:material:*` — every property a realization connects to is authored | none on the stage: the glTF core is typed, and what is not (sampler filters, other extensions) lives only in the source file |
+| `VrmMToonAPI` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), with `vrm:shaderModel = "MToon"` | `inputs:vrm:mtoon:*` — every property a realization connects to is authored | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` |
+| `VrmTextureInfoAPI:<role>` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), one of eleven roles | `inputs:vrm:textureInfo:<role>:file`, `texCoord`; the rest where the source states them | as for the API that owns the role |
 
 Array ordering is part of the contract: every parallel array listed above uses
 the same index order as its relationship or `vrm:joints` token array.
@@ -209,8 +284,8 @@ the same index order as its relationship or `vrm:joints` token array.
 | VRM 1.0 `springBone` / VRM 0.x `secondaryAnimation` | `VrmSpringBoneAPI` and `VrmColliderAPI` | Raw spring-bone block at `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VRMC_node_constraint` | `VrmConstraintAPI` | Raw constraint block at each constraint prim's `customData.vrm:constraint:raw` |
 | VRM meta/license | `/Asset.customData.vrm:meta` | Same location as the readable source of truth |
-| MToon material extension | `vrm:shaderModel = "MToon"` plus UsdPreviewSurface fallback | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` |
-| KHR texture transform | `UsdTransform2d` node in the shader graph | Original material JSON remains under the raw VRM block |
+| MToon material extension | Defined: `VrmMToonAPI`, with `VrmMaterialAPI` and `VrmTextureInfoAPI` for the glTF core and textures. Authored by the importer from P5 Step 4; until then `vrm:shaderModel = "MToon"` plus the generated realizations | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` |
+| KHR texture transform | Defined: `VrmTextureInfoAPI:<role>`'s `transform:*` (P5 Step 4). Today: a node in each realization graph | Original material JSON remains under the raw VRM block |
 
 ## Public validator rules
 
@@ -223,6 +298,7 @@ Schema-contract-specific validator rules:
 | Codes | Rule |
 | --- | --- |
 | `VRM270`, `VRM271` | `/Asset` carries a supported schema contract version. |
+| `VRM222`-`VRM226` | Canonical material schemas apply only to a `UsdShadeMaterial`, use one of the eleven texture roles, carry token values from their documented sets, and agree with `vrm:shaderModel`; a canonical texture asset resolves. |
 | `VRM230`-`VRM232` | Humanoid prim applies `VrmHumanoidAPI`, resolves `vrm:skeleton`, and each authored bone token names a skeleton joint. |
 | `VRM240`-`VRM244` | Expression relationships resolve and all parallel arrays line up with their target relationships. |
 | `VRM245`-`VRM247` | LookAt prim applies `VrmLookAtAPI`; eye tokens resolve when a skeleton relationship is authored. |
@@ -240,4 +316,5 @@ These are intentionally outside v1:
 | `VrmColliderGroupAPI` | Collider groups remain structural scope prims; spring chains target them with `vrm:colliderGroups`. |
 | Expression texture-transform binds | Preserved in the raw VRM block. The typed v1 expression contract covers morph and material-color binds. |
 | Human-bone axis metadata | Not authored as per-bone API data in v1. Consumers should use the normalized +Z stage, `UsdSkel` rest/bind transforms, and raw fallback when they need source-axis detail. |
+| Sampler filters | glTF `magFilter` / `minFilter` are not typed on `VrmTextureInfoAPI`; no realization reads them. Preserved in the raw VRM block. |
 | Canonical-rest provenance per bone | The stage is already front-normalized and carries `vrm:sourceFrontAxis` / `vrm:frontAxisNormalized`; per-bone rest provenance is deferred. |

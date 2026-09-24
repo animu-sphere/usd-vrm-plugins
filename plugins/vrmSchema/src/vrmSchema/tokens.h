@@ -40,11 +40,179 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdVrmTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdVrmTokens->vrmAxis);
+///     gprim.GetMyTokenValuedAttr().Set(UsdVrmTokens->_1_0);
 /// \endcode
 struct UsdVrmTokensType
 {
     USDVRM_API UsdVrmTokensType();
+    /// \brief "1.0"
+    ///
+    /// Fallback value for UsdVrmMToonAPI::GetSpecVersionAttr()
+    const TfToken _1_0;
+    /// \brief "inputs:vrm:material:alphaCutoff"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialAlphaCutoff;
+    /// \brief "inputs:vrm:material:alphaMode"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialAlphaMode;
+    /// \brief "inputs:vrm:material:baseColorAlphaFactor"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialBaseColorAlphaFactor;
+    /// \brief "inputs:vrm:material:baseColorFactor"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialBaseColorFactor;
+    /// \brief "inputs:vrm:material:doubleSided"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialDoubleSided;
+    /// \brief "inputs:vrm:material:emissiveFactor"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialEmissiveFactor;
+    /// \brief "inputs:vrm:material:emissiveStrength"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialEmissiveStrength;
+    /// \brief "inputs:vrm:material:metallicFactor"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialMetallicFactor;
+    /// \brief "inputs:vrm:material:roughnessFactor"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialRoughnessFactor;
+    /// \brief "inputs:vrm:material:unlit"
+    ///
+    /// UsdVrmMaterialAPI
+    const TfToken inputsVrmMaterialUnlit;
+    /// \brief "inputs:vrm:mtoon:giEqualizationFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonGiEqualizationFactor;
+    /// \brief "inputs:vrm:mtoon:matcapFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonMatcapFactor;
+    /// \brief "inputs:vrm:mtoon:outlineColorFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonOutlineColorFactor;
+    /// \brief "inputs:vrm:mtoon:outlineLightingMixFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonOutlineLightingMixFactor;
+    /// \brief "inputs:vrm:mtoon:outlineWidthFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonOutlineWidthFactor;
+    /// \brief "inputs:vrm:mtoon:outlineWidthMode"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonOutlineWidthMode;
+    /// \brief "inputs:vrm:mtoon:parametricRimColorFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonParametricRimColorFactor;
+    /// \brief "inputs:vrm:mtoon:parametricRimFresnelPowerFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonParametricRimFresnelPowerFactor;
+    /// \brief "inputs:vrm:mtoon:parametricRimLiftFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonParametricRimLiftFactor;
+    /// \brief "inputs:vrm:mtoon:renderQueueOffsetNumber"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonRenderQueueOffsetNumber;
+    /// \brief "inputs:vrm:mtoon:rimLightingMixFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonRimLightingMixFactor;
+    /// \brief "inputs:vrm:mtoon:shadeColorFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonShadeColorFactor;
+    /// \brief "inputs:vrm:mtoon:shadingShiftFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonShadingShiftFactor;
+    /// \brief "inputs:vrm:mtoon:shadingToonyFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonShadingToonyFactor;
+    /// \brief "inputs:vrm:mtoon:specVersion"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonSpecVersion;
+    /// \brief "inputs:vrm:mtoon:transparentWithZWrite"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonTransparentWithZWrite;
+    /// \brief "inputs:vrm:mtoon:uvAnimationRotationSpeedFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonUvAnimationRotationSpeedFactor;
+    /// \brief "inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonUvAnimationScrollXSpeedFactor;
+    /// \brief "inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor"
+    ///
+    /// UsdVrmMToonAPI
+    const TfToken inputsVrmMtoonUvAnimationScrollYSpeedFactor;
+    /// \brief "inputs:vrm:textureInfo"
+    ///
+    /// Property namespace prefix for the UsdVrmTextureInfoAPI schema.
+    const TfToken inputsVrmTextureInfo;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:file"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_File;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:scale"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_Scale;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:strength"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_Strength;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:texCoord"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_TexCoord;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:offset"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_TransformOffset;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:rotation"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_TransformRotation;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:scale"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_TransformScale;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:wrapS"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_WrapS;
+    /// \brief "inputs:vrm:textureInfo:__INSTANCE_NAME__:wrapT"
+    ///
+    /// UsdVrmTextureInfoAPI
+    const TfToken inputsVrmTextureInfo_MultipleApplyTemplate_WrapT;
+    /// \brief "none"
+    ///
+    /// Fallback value for UsdVrmMToonAPI::GetOutlineWidthModeAttr()
+    const TfToken none;
+    /// \brief "repeat"
+    ///
+    /// Fallback value for UsdVrmTextureInfoAPI::GetWrapSAttr(), Fallback value for UsdVrmTextureInfoAPI::GetWrapTAttr()
+    const TfToken repeat;
     /// \brief "vrm:axis"
     ///
     /// UsdVrmConstraintAPI
@@ -413,10 +581,22 @@ struct UsdVrmTokensType
     ///
     /// Schema identifer and family for UsdVrmLookAtAPI
     const TfToken VrmLookAtAPI;
+    /// \brief "VrmMaterialAPI"
+    ///
+    /// Schema identifer and family for UsdVrmMaterialAPI
+    const TfToken VrmMaterialAPI;
+    /// \brief "VrmMToonAPI"
+    ///
+    /// Schema identifer and family for UsdVrmMToonAPI
+    const TfToken VrmMToonAPI;
     /// \brief "VrmSpringBoneAPI"
     ///
     /// Schema identifer and family for UsdVrmSpringBoneAPI
     const TfToken VrmSpringBoneAPI;
+    /// \brief "VrmTextureInfoAPI"
+    ///
+    /// Schema identifer and family for UsdVrmTextureInfoAPI
+    const TfToken VrmTextureInfoAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

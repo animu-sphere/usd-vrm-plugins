@@ -14,6 +14,18 @@ stamps onto `/Asset/rig/*` control prims —
 | `VrmColliderAPI` | spring-bone colliders |
 | `VrmConstraintAPI` | node constraints |
 
+— and the three canonical material schemas applied to each `/Asset/mtl/<name>`
+`UsdShadeMaterial`, whose properties are Material interface inputs
+(`inputs:vrm:*`) so every rendering realization reads them through a UsdShade
+connection ([material policy](../../docs/design/MATERIAL_ARCHITECTURE_POLICY.md)
+§6):
+
+| Schema | Carries |
+| --- | --- |
+| `VrmMaterialAPI` | the glTF material core: base colour, metallic/roughness, emissive, alpha, double-sidedness, unlit |
+| `VrmMToonAPI` | the `VRMC_materials_mtoon` 1.0 model, field names verbatim |
+| `VrmTextureInfoAPI:<role>` | one texture by role (multiple-apply, eleven allowed roles): asset, UV set, sampler wrap, `KHR_texture_transform` |
+
 plus the schema tokens and the **schema contract version** (see
 [docs/SCHEMA_CONTRACT.md](docs/SCHEMA_CONTRACT.md); tracked in the manifest as
 `schema.contract`, independent of `plugin.version`).

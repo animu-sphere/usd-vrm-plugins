@@ -28,7 +28,10 @@ provides:
   - usd-schema:VrmExpressionAPI
   - usd-schema:VrmHumanoidAPI
   - usd-schema:VrmLookAtAPI
+  - usd-schema:VrmMaterialAPI
+  - usd-schema:VrmMToonAPI
   - usd-schema:VrmSpringBoneAPI
+  - usd-schema:VrmTextureInfoAPI
 requires:
   capabilities: [usd-stage-read]
 usd:

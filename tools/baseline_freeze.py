@@ -103,7 +103,10 @@ SCHEMA_APIS = [
     "VrmExpressionAPI",
     "VrmHumanoidAPI",
     "VrmLookAtAPI",
+    "VrmMaterialAPI",
+    "VrmMToonAPI",
     "VrmSpringBoneAPI",
+    "VrmTextureInfoAPI",
 ]
 
 SECTIONS = ("usda", "digests", "schema", "discovery", "diagnostics", "symbols")

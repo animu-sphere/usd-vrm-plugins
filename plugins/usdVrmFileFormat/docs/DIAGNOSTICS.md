@@ -69,6 +69,10 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | VRM220 | INFO | validate | Mesh has no material binding |
 | VRM221 | ERROR | validate | Material binding target does not exist |
 | VRM222 | ERROR | validate | Texture asset does not resolve |
+| VRM223 | ERROR | validate | Material API schema is applied to a prim that is not a Material |
+| VRM224 | ERROR | validate | VrmTextureInfoAPI instance is not a texture role |
+| VRM225 | ERROR | validate | Canonical material token is outside its documented set |
+| VRM226 | ERROR | validate | VrmMToonAPI is applied but vrm:shaderModel is not 'MToon' |
 | VRM230 | ERROR | validate | Humanoid prim does not apply VrmHumanoidAPI |
 | VRM231 | ERROR | validate | Humanoid vrm:skeleton relationship is missing/broken |
 | VRM232 | ERROR | validate | Humanoid bone value is not a joint on the skeleton |

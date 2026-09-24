@@ -339,23 +339,17 @@ class "VrmExpressionAPI" (
     )
     uniform token vrm:overrideBlink (
         customData = {
-            string userDocBrief = """What this expression does to the blink expressions while on.\r
-        'none', 'block' (they are off whenever this one is on at all) or 'blend'\r
-        (they are attenuated by this expression's own weight)."""
+            string userDocBrief = "What this expression does to the blink expressions while on."
         }
     )
     uniform token vrm:overrideLookAt (
         customData = {
-            string userDocBrief = """What this expression does to the look-at expressions while on.\r
-        The same three tokens, over lookUp, lookDown, lookLeft and lookRight --\r
-        which is how one expression arbitrates the gaze of a rig that aims its\r
-        eyes with expressions rather than with bones."""
+            string userDocBrief = "What this expression does to the look-at expressions while on."
         }
     )
     uniform token vrm:overrideMouth (
         customData = {
-            string userDocBrief = """What this expression does to the mouth expressions while on.\r
-        The same three tokens, over aa, ih, ou, ee and oh."""
+            string userDocBrief = "What this expression does to the mouth expressions while on."
         }
     )
 }
@@ -390,8 +384,7 @@ class "VrmLookAtAPI" (
 
 class "VrmSpringBoneAPI" (
     customData = {
-        string userDocBrief = """A VRM SpringBone chain (secondary motion, data only - no simulation).\r
-    Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim."""
+        string userDocBrief = "A VRM SpringBone chain (secondary motion, data only - no simulation)."
     }
 )
 {
@@ -472,7 +465,7 @@ class "VrmColliderAPI" (
 
 class "VrmConstraintAPI" (
     customData = {
-        string userDocBrief = """A VRM node constraint (VRMC_node_constraint, data only - the constraint\r
+        string userDocBrief = """A VRM node constraint (VRMC_node_constraint, data only - the constraint
     is not baked)."""
     }
 )
@@ -500,6 +493,222 @@ class "VrmConstraintAPI" (
     uniform float vrm:weight (
         customData = {
             string userDocBrief = "Constraint weight in [0,1]."
+        }
+    )
+}
+
+class "VrmMaterialAPI" (
+    customData = {
+        string userDocBrief = """Generic source material semantics of one glTF / VRM material: the
+    glTF 2.0 metallic-roughness core plus the two material extensions VRM
+    avatars rely on (KHR_materials_unlit, KHR_materials_emissive_strength)."""
+    }
+)
+{
+    float inputs:vrm:material:alphaCutoff = 0.5 (
+        customData = {
+            string userDocBrief = "glTF alphaCutoff."
+        }
+    )
+    uniform token inputs:vrm:material:alphaMode (
+        customData = {
+            string userDocBrief = """glTF alphaMode: 'OPAQUE', 'MASK' or 'BLEND'; unauthored means
+        'OPAQUE', as in glTF."""
+        }
+    )
+    float inputs:vrm:material:baseColorAlphaFactor = 1 (
+        customData = {
+            string userDocBrief = "Alpha (fourth component) of glTF pbrMetallicRoughness.baseColorFactor."
+        }
+    )
+    color3f inputs:vrm:material:baseColorFactor = (1, 1, 1) (
+        customData = {
+            string userDocBrief = "RGB of glTF pbrMetallicRoughness.baseColorFactor."
+        }
+    )
+    uniform bool inputs:vrm:material:doubleSided = 0 (
+        customData = {
+            string userDocBrief = "glTF doubleSided."
+        }
+    )
+    color3f inputs:vrm:material:emissiveFactor = (0, 0, 0) (
+        customData = {
+            string userDocBrief = "glTF emissiveFactor."
+        }
+    )
+    float inputs:vrm:material:emissiveStrength = 1 (
+        customData = {
+            string userDocBrief = """KHR_materials_emissive_strength.emissiveStrength: a multiplier
+        on emissiveFactor, kept separate so the factor stays the glTF value."""
+        }
+    )
+    float inputs:vrm:material:metallicFactor = 1 (
+        customData = {
+            string userDocBrief = "glTF pbrMetallicRoughness.metallicFactor."
+        }
+    )
+    float inputs:vrm:material:roughnessFactor = 1 (
+        customData = {
+            string userDocBrief = "glTF pbrMetallicRoughness.roughnessFactor."
+        }
+    )
+    uniform bool inputs:vrm:material:unlit = 0 (
+        customData = {
+            string userDocBrief = "Whether the source material declares KHR_materials_unlit."
+        }
+    )
+}
+
+class "VrmMToonAPI" (
+    customData = {
+        string userDocBrief = """MToon source semantics: the VRMC_materials_mtoon 1.0 model, as
+    data and not as a shader."""
+    }
+)
+{
+    float inputs:vrm:mtoon:giEqualizationFactor = 0.9 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon giEqualizationFactor."
+        }
+    )
+    color3f inputs:vrm:mtoon:matcapFactor = (1, 1, 1) (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon matcapFactor (linear)."
+        }
+    )
+    color3f inputs:vrm:mtoon:outlineColorFactor = (0, 0, 0) (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon outlineColorFactor (linear)."
+        }
+    )
+    float inputs:vrm:mtoon:outlineLightingMixFactor = 1 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon outlineLightingMixFactor."
+        }
+    )
+    float inputs:vrm:mtoon:outlineWidthFactor = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon outlineWidthFactor."
+        }
+    )
+    uniform token inputs:vrm:mtoon:outlineWidthMode = "none" (
+        customData = {
+            string userDocBrief = """VRMC_materials_mtoon outlineWidthMode: 'none',
+        'worldCoordinates' or 'screenCoordinates'."""
+        }
+    )
+    color3f inputs:vrm:mtoon:parametricRimColorFactor = (0, 0, 0) (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon parametricRimColorFactor (linear)."
+        }
+    )
+    float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 5 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon parametricRimFresnelPowerFactor."
+        }
+    )
+    float inputs:vrm:mtoon:parametricRimLiftFactor = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon parametricRimLiftFactor."
+        }
+    )
+    uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon renderQueueOffsetNumber."
+        }
+    )
+    float inputs:vrm:mtoon:rimLightingMixFactor = 1 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon rimLightingMixFactor."
+        }
+    )
+    color3f inputs:vrm:mtoon:shadeColorFactor = (1, 1, 1) (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon shadeColorFactor (linear)."
+        }
+    )
+    float inputs:vrm:mtoon:shadingShiftFactor = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon shadingShiftFactor."
+        }
+    )
+    float inputs:vrm:mtoon:shadingToonyFactor = 0.9 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon shadingToonyFactor."
+        }
+    )
+    uniform token inputs:vrm:mtoon:specVersion = "1.0" (
+        customData = {
+            string userDocBrief = """The VRMC_materials_mtoon version whose model these values
+        follow."""
+        }
+    )
+    uniform bool inputs:vrm:mtoon:transparentWithZWrite = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon transparentWithZWrite."
+        }
+    )
+    float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon uvAnimationRotationSpeedFactor."
+        }
+    )
+    float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon uvAnimationScrollXSpeedFactor."
+        }
+    )
+    float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0 (
+        customData = {
+            string userDocBrief = "VRMC_materials_mtoon uvAnimationScrollYSpeedFactor."
+        }
+    )
+}
+
+class "VrmTextureInfoAPI" (
+    customData = {
+        string userDocBrief = "One texture a material samples, by role."
+    }
+)
+{
+    asset inputs:vrm:textureInfo:__INSTANCE_NAME__:file (
+        customData = {
+            string userDocBrief = """The image, as a USD asset path (an external file or a path
+        inside the .vrm package)."""
+        }
+    )
+    float inputs:vrm:textureInfo:__INSTANCE_NAME__:scale = 1 (
+        customData = {
+            string userDocBrief = """Contribution scale: glTF normalTexture.scale, or
+        VRMC_materials_mtoon shadingShiftTexture.scale."""
+        }
+    )
+    float inputs:vrm:textureInfo:__INSTANCE_NAME__:strength = 1 (
+        customData = {
+            string userDocBrief = "glTF occlusionTexture.strength."
+        }
+    )
+    uniform int inputs:vrm:textureInfo:__INSTANCE_NAME__:texCoord = 0 (
+        customData = {
+            string userDocBrief = "The TEXCOORD_<n> set sampled."
+        }
+    )
+    float2 inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:offset = (0, 0)
+    float inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:rotation = 0
+    float2 inputs:vrm:textureInfo:__INSTANCE_NAME__:transform:scale = (1, 1) (
+        customData = {
+            string userDocBrief = """Contribution scale: glTF normalTexture.scale, or
+        VRMC_materials_mtoon shadingShiftTexture.scale."""
+        }
+    )
+    uniform token inputs:vrm:textureInfo:__INSTANCE_NAME__:wrapS = "repeat" (
+        customData = {
+            string userDocBrief = "glTF sampler wrapS: 'repeat', 'clampToEdge' or 'mirroredRepeat'."
+        }
+    )
+    uniform token inputs:vrm:textureInfo:__INSTANCE_NAME__:wrapT = "repeat" (
+        customData = {
+            string userDocBrief = "glTF sampler wrapT: 'repeat', 'clampToEdge' or 'mirroredRepeat'."
         }
     )
 }
