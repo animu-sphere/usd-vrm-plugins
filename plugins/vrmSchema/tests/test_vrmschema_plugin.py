@@ -55,6 +55,11 @@ TEXTURE_ROLES = [
 
 ALL_APIS = SCHEMA_APIS + MATERIAL_APIS + [TEXTURE_INFO_API]
 
+# Contract attributes that belong to no API schema. `vrm:shaderModel` predates
+# VrmMToonAPI and stays beside it (material policy §11 q5): a material with
+# VrmMToonAPI applied must also say "MToon".
+CONTRACT_ATTRIBUTES = {"vrm:shaderModel"}
+
 # Every non-texture field of VRMC_materials_mtoon 1.0 with the default its
 # JSON schema declares (vrm-c/vrm-specification,
 # specification/VRMC_materials_mtoon-1.0/schema/VRMC_materials_mtoon.schema.json).
@@ -165,6 +170,8 @@ def test_fixture() -> None:
         builtin = set(prim.GetPrimDefinition().GetPropertyNames())
         for prop in prim.GetAuthoredProperties():
             name = prop.GetName()
+            if name in CONTRACT_ATTRIBUTES:
+                continue
             if name.startswith("vrm:") or name.startswith("inputs:vrm:"):
                 check(name in builtin,
                       f"{prim.GetPath()}.{name} is a builtin of {vrm_schemas}")
@@ -175,6 +182,8 @@ def test_fixture() -> None:
     toony = hair.GetAttribute("inputs:vrm:mtoon:shadingToonyFactor")
     check(abs(toony.Get() - 0.95) < 1e-6,
           "fixture MToon value reads back through the typed property")
+    check(hair.GetAttribute("vrm:shaderModel").Get() == "MToon",
+          "fixture MToon material also says vrm:shaderModel = 'MToon'")
 
 
 def _material(stage: Usd.Stage, path: str = "/Mat") -> Usd.Prim:

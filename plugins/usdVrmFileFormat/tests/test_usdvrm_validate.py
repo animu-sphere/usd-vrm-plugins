@@ -211,7 +211,14 @@ def check_material_semantics_rules():
     material_codes = {"VRM222", "VRM223", "VRM224", "VRM225", "VRM226"}
 
     def fresh():
+        # Usd.Stage.Open finds the root layer through the layer registry, and
+        # the previous case's stage is still alive while this one opens, so an
+        # edit to the root layer would carry into every later case. Each case
+        # edits its own stage's session layer instead, and starts clean.
         stage = _open("materials.vrm")
+        stage.SetEditTarget(stage.GetSessionLayer())
+        found = _codes(validate_vrm.validate_stage(stage)) & material_codes
+        assert not found, f"a fresh stage already reports {found}"
         mat = next(p for p in stage.Traverse() if p.IsA(UsdShade.Material))
         return stage, mat
 
@@ -245,6 +252,13 @@ def check_material_semantics_rules():
     mat.GetAttribute("inputs:vrm:textureInfo:shadeMultiply:wrapT").Set("clamp")
     assert "VRM225" in _codes(validate_vrm.validate_stage(stage))
 
+    # specVersion names the model the values follow, never the source's own.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmMToonAPI")
+    mat.CreateAttribute("vrm:shaderModel", Sdf.ValueTypeNames.Token).Set("MToon")
+    mat.GetAttribute("inputs:vrm:mtoon:specVersion").Set("0.0")
+    assert "VRM225" in _codes(validate_vrm.validate_stage(stage))
+
     stage, mat = fresh()
     mat.ApplyAPI("VrmMToonAPI")
     mat.CreateAttribute("vrm:shaderModel", Sdf.ValueTypeNames.Token).Set("glTF")
@@ -254,6 +268,13 @@ def check_material_semantics_rules():
     mat.ApplyAPI("VrmTextureInfoAPI", "matcap")
     mat.GetAttribute("inputs:vrm:textureInfo:matcap:file").Set(
         Sdf.AssetPath("no_such_matcap.png"))
+    assert "VRM222" in _codes(validate_vrm.validate_stage(stage))
+
+    # A time-sampled asset path has no default value; it is checked all the same.
+    stage, mat = fresh()
+    mat.ApplyAPI("VrmTextureInfoAPI", "rimMultiply")
+    mat.GetAttribute("inputs:vrm:textureInfo:rimMultiply:file").Set(
+        Sdf.AssetPath("no_such_rim.png"), Usd.TimeCode(1))
     assert "VRM222" in _codes(validate_vrm.validate_stage(stage))
 
 

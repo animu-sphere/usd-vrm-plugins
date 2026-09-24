@@ -13,7 +13,6 @@
 // instance-qualified name would pass every Python check and read nothing here.
 //
 // Usage: vrmschema_material_api <path/to/basic.usda>
-#include <vrmSchema/tokens.h>
 #include <vrmSchema/vrmMToonAPI.h>
 #include <vrmSchema/vrmMaterialAPI.h>
 #include <vrmSchema/vrmTextureInfoAPI.h>
@@ -71,6 +70,8 @@ main(int argc, char** argv)
     }
     const UsdPrim hair = stage->GetPrimAtPath(SdfPath("/Asset/mtl/Hair"));
     _Check(hair.IsValid(), "/Asset/mtl/Hair exists");
+    if (!hair.IsValid())
+        return 1; // every check below would dereference an invalid prim
 
     // VrmMToonAPI: authored values, and a fallback that is the
     // VRMC_materials_mtoon 1.0 default.
@@ -90,8 +91,10 @@ main(int argc, char** argv)
     _Check(!mtoon.GetGiEqualizationFactorAttr().HasAuthoredValue() &&
                mtoon.GetGiEqualizationFactorAttr().Get(&giEq) && _Near(giEq, 0.9f),
            "unauthored giEqualizationFactor falls back to the spec default 0.9");
+    // A literal, not the generated token: the token and the accessor come from
+    // the same usdGenSchema run and would rename together.
     _Check(mtoon.GetShadeColorFactorAttr().GetName() ==
-               UsdVrmTokens->inputsVrmMtoonShadeColorFactor,
+               TfToken("inputs:vrm:mtoon:shadeColorFactor"),
            "shadeColorFactor is spelled inputs:vrm:mtoon:shadeColorFactor");
 
     // VrmMaterialAPI.

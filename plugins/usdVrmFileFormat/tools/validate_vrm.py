@@ -41,13 +41,11 @@ COLLIDERS_PATH = "/Asset/rig/SecondaryMotion/Colliders"
 CONSTRAINTS_PATH = "/Asset/rig/Constraints"
 SCHEMA_CONTRACT_VERSION = 1
 
-# The canonical material schemas (material policy §6; schema contract).
+# The canonical material schemas (material policy §6; schema contract). Where
+# they may apply and which texture roles exist are read from the schema
+# registry, never copied here: adding a role to schema.usda is an additive v1
+# change (§11 q4), and a frozen copy would turn it into a validation error.
 MATERIAL_SCHEMAS = ("VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI")
-TEXTURE_ROLES = frozenset((
-    "baseColor", "metallicRoughness", "normal", "occlusion", "emissive",
-    "shadeMultiply", "shadingShift", "matcap", "rimMultiply",
-    "outlineWidthMultiply", "uvAnimationMask",
-))
 # Token-valued canonical properties carry no allowedTokens list in the schema
 # (a value outside the set reaches a consumer as data); this is where the set
 # is enforced. Texture-role properties are checked per applied instance.
@@ -55,6 +53,9 @@ MATERIAL_TOKEN_SETS = {
     "inputs:vrm:material:alphaMode": ("OPAQUE", "MASK", "BLEND"),
     "inputs:vrm:mtoon:outlineWidthMode":
         ("none", "worldCoordinates", "screenCoordinates"),
+    # The MToon model the canonical values follow -- 1.0 for a VRM 0.x source
+    # too, which is normalized into it (§6.6); never the source's own version.
+    "inputs:vrm:mtoon:specVersion": ("1.0",),
 }
 TEXTURE_WRAP_TOKENS = ("repeat", "clampToEdge", "mirroredRepeat")
 
@@ -277,6 +278,13 @@ def _check_material_semantics(stage: Usd.Stage, out: list[Diagnostic]) -> None:
     MToon semantics says so in `vrm:shaderModel` as well (§11 q5: the
     attribute stays, because contract v1 cannot remove it)."""
     resolver = Ar.GetResolver()
+    registry = Usd.SchemaRegistry()
+    # The rules below are the registered schema's own. A session without
+    # vrmSchema cannot judge them, and the registry answers "not allowed" for
+    # an unknown schema, so an unregistered family is left alone rather than
+    # reported against every material.
+    registered = {family for family in MATERIAL_SCHEMAS
+                  if registry.FindAppliedAPIPrimDefinition(family)}
     for prim in stage.Traverse():
         applied = [Usd.SchemaRegistry.GetTypeNameAndInstance(s)
                    for s in prim.GetAppliedSchemas()]
@@ -285,10 +293,21 @@ def _check_material_semantics(stage: Usd.Stage, out: list[Diagnostic]) -> None:
         if not material_apis:
             continue
         path = prim.GetPath().pathString
-        if not prim.IsA(UsdShade.Material):
+
+        misplaced = set()
+        for family, instance in material_apis:
+            if family not in registered:
+                continue
+            allowed = Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                family, instance)
+            if allowed and not any(
+                    prim.IsA(Usd.SchemaRegistry.GetTypeFromSchemaTypeName(name))
+                    for name in allowed):
+                misplaced.add(family)
+        if misplaced:
             out.append(diag.make(
                 "VRM223",
-                f"{', '.join(sorted({f for f, _ in material_apis}))} applied to a "
+                f"{', '.join(sorted(misplaced))} applied to a "
                 f"{prim.GetTypeName() or 'typeless'} prim, not a Material",
                 path))
 
@@ -296,7 +315,8 @@ def _check_material_semantics(stage: Usd.Stage, out: list[Diagnostic]) -> None:
         for family, role in material_apis:
             if family != "VrmTextureInfoAPI":
                 continue
-            if role not in TEXTURE_ROLES:
+            if family in registered and \
+                    not Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(family, role):
                 out.append(diag.make(
                     "VRM224", f"VrmTextureInfoAPI:{role} is not a texture role",
                     path))
@@ -305,12 +325,19 @@ def _check_material_semantics(stage: Usd.Stage, out: list[Diagnostic]) -> None:
             for axis in ("wrapS", "wrapT"):
                 token_attrs[base + axis] = TEXTURE_WRAP_TOKENS
             attr = prim.GetAttribute(base + "file")
-            value = attr.Get() if attr and attr.HasAuthoredValue() else None
-            authored = getattr(value, "path", "") if value else ""
-            if authored and not asset_path_resolves(stage, value, resolver):
-                out.append(diag.make(
-                    "VRM222",
-                    f"texture asset {authored!r} ({role}) does not resolve", path))
+            if not attr or not attr.HasAuthoredValue():
+                continue
+            # Every authored value, not only the default: a time-sampled asset
+            # path has no default, and reading one would skip the check.
+            values = [attr.Get(Usd.TimeCode(t)) for t in attr.GetTimeSamples()]
+            values.append(attr.Get())
+            for value in values:
+                authored = getattr(value, "path", "") if value else ""
+                if authored and not asset_path_resolves(stage, value, resolver):
+                    out.append(diag.make(
+                        "VRM222",
+                        f"texture asset {authored!r} ({role}) does not resolve",
+                        path))
 
         for name, allowed in token_attrs.items():
             attr = prim.GetAttribute(name)

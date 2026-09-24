@@ -100,6 +100,7 @@ def Xform "Asset"
             uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
             float2 inputs:vrm:textureInfo:baseColor:transform:scale = (2, 1)
             uniform token inputs:vrm:textureInfo:shadeMultiply:wrapS = "clampToEdge"
+            uniform token vrm:shaderModel = "MToon"
         }
     }
 }
