@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check and the reduced contract are done, the release-artifact proof and the cross-repository test are not · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check, the reduced contract and the cross-repository test are done; the release-artifact proof is the next release's dry run · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -572,10 +572,22 @@ repository's, and needs nothing from this one.
     rule kept.
 - ⬜ The aggregate product still installs and opens a `.vrm` and a `.vrma`,
   with the shared core resolved as a dependency, from release artifacts.
-- ⬜ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs
+- ✅ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs
   somewhere by default. The motion-plugins policy puts such tests in a runtime
   or integration repository (its §30.6); until one exists it stays here,
   because this repository is its natural integrator.
+  - It is `workspace_reference_pipeline` (2026-09-24), which is also boundary
+    consolidation's BND-1. It bakes three categories onto `Seed-san.vrm`
+    through one `motion_retarget` argument list: a `.vrma` through this
+    repository's importer, and a BVH export and a recorded session as
+    `motion_convert` and `motion_record` wrote them.
+  - It asserts that the half after the clip is one code path. The loaded
+    plugins and modules differ by the first arrow's importer alone, the
+    output layers share one shape, and each bake passes the same motion
+    checks.
+  - `workspace_reference_pipeline_local` repeats it over data that cannot be
+    committed, and is skipped without it. It passed over `AliciaSolid.vrm`
+    (VRM 0.x) and the seven VRM Animation MotionPack clips on 2026-09-24.
 
 ## 8. Open questions
 

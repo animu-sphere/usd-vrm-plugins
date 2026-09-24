@@ -248,6 +248,46 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
     endif()
 endif()
 
+# The reference pipeline: a `.vrma`, a converted BVH export and a recorded
+# session through one downstream invocation onto one VRM, asserted to be the
+# same code rather than three plausible outputs (MIG-5's cross-repository test,
+# boundary consolidation BND-1). Two of the three first arrows are
+# usd-motion-plugins' tools, read as their committed output; the third is
+# usdVrmaFileFormat, so this needs both importers and the tool in one build.
+#
+# `_local` is the same test over an avatar and `.vrma` files that cannot be
+# committed, named by USDVRM_LOCAL_AVATAR and USDVRM_LOCAL_VRMA_DIR in the
+# environment of the run; without them it reports Skipped.
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
+   AND TARGET motion_retarget
+   AND TARGET UsdVrmFileFormat AND TARGET UsdVrmaFileFormat
+   AND EXISTS "${_real_avatar}")
+    set(_reference_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
+    set(_reference_resources "${CMAKE_CURRENT_BINARY_DIR}/plugins")
+    set(_reference_common
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/test_reference_pipeline.py"
+        --retarget "$<TARGET_FILE:motion_retarget>"
+        --bvh-clip "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda"
+        --trace-clip "${CMAKE_CURRENT_SOURCE_DIR}/tools/motionRetarget/tests/fixtures/recorded_session_clip.usda")
+    add_test(NAME workspace_reference_pipeline
+        COMMAND "${USDVRM_TEST_PYTHON}" ${_reference_common}
+            --avatar "${_real_avatar}"
+            --vrma "${_reference_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma")
+    add_test(NAME workspace_reference_pipeline_local
+        COMMAND "${USDVRM_TEST_PYTHON}" ${_reference_common} --local)
+    set_tests_properties(workspace_reference_pipeline workspace_reference_pipeline_local
+        PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmaFileFormat>;PATH=path_list_prepend:${_reference_plugins}/vrmSchema/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_reference_resources}/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_reference_resources}/usdVrmaFileFormat/tests/resources/usdVrmaFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_reference_plugins}/vrmSchema/plugin/resources/vrmSchema"
+        LABELS "motion.integration;motion.real-corpus")
+    set_tests_properties(workspace_reference_pipeline_local PROPERTIES
+        SKIP_RETURN_CODE 77)
+else()
+    message(STATUS
+        "usd-vrm-plugins: a tool or a file-format bundle is not in this build "
+        "tree; skipping workspace_reference_pipeline")
+endif()
+
 # The OpenExec plan's P0-6: a `motion_retarget` bake against `execMotion` +
 # `execVrm` evaluating the same avatar and clip. Here for the same reason as the
 # two tests above -- it is a composition of both exec bundles and the retarget

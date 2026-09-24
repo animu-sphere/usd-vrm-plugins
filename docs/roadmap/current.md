@@ -209,8 +209,9 @@ Each step's record is in [the track](motion-foundation-split.md).
 - ⬜ The aggregate product installs and opens a `.vrm` and a `.vrma` from
   release artifacts, with the shared core resolved as a dependency. That is
   the next release's dry run.
-- ⬜ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs by
-  default somewhere, and here until an integration repository exists.
+- ✅ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs by
+  default: `workspace_reference_pipeline`, here until an integration
+  repository exists (2026-09-24).
 
 A new generic motion feature is proposed in `usd-motion-plugins`, and a new
 device or protocol input in `motion-connectors`

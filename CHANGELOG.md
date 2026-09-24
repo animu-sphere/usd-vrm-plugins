@@ -15,6 +15,36 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The reference pipeline: three source categories, one downstream half**
+  — `workspace_reference_pipeline`
+  ([`tests/motion/test_reference_pipeline.py`](tests/motion/test_reference_pipeline.py)).
+  This is the motion migration's cross-repository test (MIG-5) and boundary
+  consolidation's BND-1. It bakes three clips onto `Seed-san.vrm`:
+  - a `.vrma`, through this repository's importer;
+  - a BVH export, as `usd-motion-plugins`' `motion_convert` wrote it;
+  - a recorded live session, as its `motion_record` wrote it.
+
+  All three go through one `motion_retarget` argument list that differs only
+  in `--animation`. The test asserts that the downstream half is the same code,
+  in three ways:
+  - `--load-report`'s plugins and modules differ across sources by the first
+    arrow's plugin alone (`usdVrmaFileFormat` for a `.vrma`);
+  - the authored layers have one shape and one joint order;
+  - every bake passes the same checks with one tolerance. The bound bones
+    reproduce the clip's rotation away from rest and the hips its travel,
+    unbindable bones are named, nothing outside the humanoid moves, and scales
+    are authored.
+
+  Four mutations each fail at the check meant to catch them: a per-source
+  flag on the root motion, a swapped arm mapping, a first arrow that is not
+  allowed, and a renamed animation prim.
+
+  `workspace_reference_pipeline_local` runs the same checks over data that
+  cannot be committed. It reads `USDVRM_LOCAL_AVATAR` and
+  `USDVRM_LOCAL_VRMA_DIR`, can keep each bake in `USDVRM_LOCAL_OUTPUT_DIR`,
+  and reports Skipped without them. Measured on 2026-09-24 over
+  `AliciaSolid.vrm` (VRM 0.x) and the seven VRM Animation MotionPack clips,
+  with the export and the session beside them: all nine pass.
 - **A plain-CMake lane with no `ost` in it** —
   [`.github/workflows/plain-cmake.yml`](.github/workflows/plain-cmake.yml).
   On Linux it builds and tests the workspace from an OpenUSD 26.08 install

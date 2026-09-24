@@ -108,7 +108,7 @@ Generator:  request/context          -> MotionClip or a pose stream
 
 Done when a fifth producer can be added by naming which crossing it takes.
 
-## 3. BND-1 — one reference pipeline, proved once for every category ⬜
+## 3. BND-1 — one reference pipeline, proved once for every category ✅
 
 Every category reaches `UsdSkelAnimation` today, and each is proved by its own
 tests along its own path. There is no single test that says *the same thing*
@@ -118,13 +118,26 @@ happens to all of them.
 source → canonical MotionClip → vrmRetarget → UsdSkelAnimation → validation
 ```
 
-- ⬜ One integration test, three sources: a `.vrma` clip, a BVH export, and a
+- ✅ One integration test, three sources: a `.vrma` clip, a BVH export, and a
   recorded live trace — through the identical downstream call sequence, with the
   source-specific part confined to the first arrow.
-- ⬜ The assertion is that the downstream half is **the same code**, not that
+- ✅ The assertion is that the downstream half is **the same code**, not that
   three outputs are individually plausible. A source that needs a downstream
   branch has found a boundary defect, which is the point of running them
   together.
+
+**Done on 2026-09-24, as `workspace_reference_pipeline`**
+(`tests/motion/test_reference_pipeline.py`), which is also the motion
+migration's MIG-5 cross-repository test. `vrmRetarget` in the diagram above is
+now the consumed `motionRetarget` driven by `motion_retarget`. The BVH export
+and the recorded trace arrive as the clips `usd-motion-plugins`' converter and
+recorder wrote, because those first arrows are that repository's now. "The same
+code" is measured three ways:
+
+- the plugins and modules each run loads differ by the first arrow's importer
+  alone;
+- the authored layers share one shape and joint order;
+- every bake passes one set of motion checks.
 
 This is the test a fourth source is added *to*. NPZ/AMASS ships when it can join
 it without changing it.
