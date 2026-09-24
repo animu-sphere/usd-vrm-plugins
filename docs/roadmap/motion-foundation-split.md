@@ -539,7 +539,18 @@ repository's, and needs nothing from this one.
 
 ## 7. MIG-5 — nothing left behind ⬜
 
-- ⬜ No generic motion source file remains here, checked mechanically.
+- ✅ No generic motion source file remains here, checked mechanically
+  (2026-09-24). `scripts/check_cmake_boundaries.py`
+  (`workspace_cmake_boundaries`, and first in the plain-CMake lane) fails
+  when an identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+  sent elsewhere comes back. It checks every name the identity has had, here
+  and in its destination. A member directory fails, and so does a target or
+  target prefix (`execMotion_blend_tests`), any file under `adapters/` or
+  `profiles/motion/`, and a source that *opens* one of their namespaces.
+  Using them (`openstrata::motion::MotionPose`) is the point of consuming
+  them, and passes. The tree passes today. Before this, the check knew only
+  `usd-motion-plugins`' current names, so none of the connector identities,
+  `motionRuntime` or `vrmRetarget` could have failed it.
 - ⬜ WORKSPACE.md §1 and §2 describe the reduced tree, §9 becomes a record,
   and `PACKAGE_CONTRACT.md` drops the packages that left.
 - ⬜ The aggregate product still installs and opens a `.vrm` and a `.vrma`,

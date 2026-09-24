@@ -38,7 +38,12 @@ Current schema contract version: **1**.
   the plain lane. It checks the build graph and needs no build. It fails on:
   - a source tree of another repository (`add_subdirectory` out of the repo,
     `FetchContent`, `ExternalProject`);
-  - a `usd-motion-plugins` identity built here;
+  - an identity that left for `usd-motion-plugins` or `motion-connectors`
+    coming back, under the name it had here or the one it has there. That
+    covers a member directory, a target or target prefix
+    (`motionCore_tests`), any file under `adapters/` or `profiles/motion/`,
+    and a source that opens one of their namespaces (`openstrata`, `motion`,
+    `vrmAdapter*`, …). This is MIG-5's mechanical check;
   - the root resolving a consumed package;
   - a member reaching a package that WORKSPACE.md §2 does not allow it. The
     VRM importer may reach no motion package, and the `.vrma` importer may
