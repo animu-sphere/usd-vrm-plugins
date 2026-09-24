@@ -1,8 +1,8 @@
 # 04 — Three paths, two performances: what each one carries (2026-08-31)
 
-VRC-7 of [the OSC track](../../roadmap/osc-and-vrchat-trackers.md#vrc-7--cross-source-evidence),
+VRC-7 of [the OSC track](../../archive/motion-split/osc-and-vrchat-trackers.md#vrc-7--cross-source-evidence),
 and the completion condition
-[§11](../../roadmap/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
+[§11](../../archive/motion-split/osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session)
 rewrote on 2026-08-30 when the sender turned out to be unable to produce the
 session the original one asked for. One labelled sequence set, performed twice,
 observed three ways, compared at the canonical layer:
@@ -43,7 +43,7 @@ or an OSC address.
 **The assignment is the operator's and is written here once**:
 `1=hips 2=leftFoot 3=rightFoot head=head`. It is not derived and could not be —
 a tracker index is not a body role
-([§5.1](../../roadmap/osc-and-vrchat-trackers.md#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end))
+([§5.1](../../archive/motion-split/osc-and-vrchat-trackers.md#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end))
 — and report 03 §1.1's standing heights are what say it is the right one for
 this session.
 
@@ -77,7 +77,7 @@ The third column is the one that is a different kind of thing. The first two are
 determined by what the sender sends; the third is determined by a sentence an
 operator typed, and the same capture with `2=leftHand` in it reaches a different
 rig. A tracker source's bone set is a **statement**, and that is the whole of
-[§5](../../roadmap/osc-and-vrchat-trackers.md#5-a-tracker-source-is-not-a-pose-source)
+[§5](../../archive/motion-split/osc-and-vrchat-trackers.md#5-a-tracker-source-is-not-a-pose-source)
 arriving as a measurement.
 
 **The skeletons differ in shape and not only in size.** The tracker path's clip
@@ -343,7 +343,7 @@ So the file replays as one 779-frame session with a 4.85 s hole in it, which
 identity changed.
 
 Both refusals exist and their justifications are not transferable, which
-[VRC-6](../../roadmap/osc-and-vrchat-trackers.md#vrc-6--cli-and-record) already
+[VRC-6](../../archive/motion-split/osc-and-vrchat-trackers.md#vrc-6--cli-and-record) already
 recorded from the other side: the native path refuses because two clocks
 overlap, and the tracker path refuses because two calibrations are not one
 space. **A capture recorded today would answer differently** — the format grew a

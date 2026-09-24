@@ -57,7 +57,7 @@ The driver installs the package and its required packages into a scratch prefix
 holding nothing else, configures the fixture against that prefix alone, builds
 it, runs it, and reports the six criteria. `--prefix-source ost-package` asks
 the same question of an `ost`-produced prefix instead of a `cmake --install`
-one. See [roadmap/packaging-hardening.md](../../docs/roadmap/packaging-hardening.md).
+one. See [roadmap/packaging-hardening.md](../../docs/archive/packaging/packaging-hardening.md).
 
 A package with edges needs the packages it does *not* produce to come from
 somewhere, and they arrive the way they arrive for any other consumer:

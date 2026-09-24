@@ -1,7 +1,7 @@
 # 01 — One mocopi session, observed two ways (2026-08-15)
 
 The cross-source comparison of
-[the adapter plan §9.6](../../roadmap/adapters-mocopi-vmc-ardy.md#96-cross-source-comparison),
+[the adapter plan §9.6](../../archive/motion-split/adapters-mocopi-vmc-ardy.md#96-cross-source-comparison),
 which is v0.7.0's distinguishing check. One physical session was observed as
 **mocopi UDP** and as **that application's own BVH export**, over the same
 window, and the two were compared at the canonical layer.
@@ -135,7 +135,7 @@ prediction.
 **The travel row is the one that matters, and it is a policy rather than a
 defect.** The device sends the hips joint's absolute position in every frame —
 the only translating joint on this rig — and while
-[§5.2](../../roadmap/adapters-mocopi-vmc-ardy.md) is open no layer on the live
+[§5.2](../../archive/motion-split/adapters-mocopi-vmc-ardy.md) is open no layer on the live
 path will call it root motion, so it reaches no `MotionPose` and no trace.
 Retargeted onto an avatar, this session walks on the spot: the legs step, the
 body turns, and nothing travels.
@@ -186,7 +186,7 @@ it as nearly stationary. The `walk-root-motion` session is starker still —
   comparison above is two of three.
 - **The root/hips decision itself.** This report supplies the cost — 4.81 m in
   36 seconds — and does not make the choice, which is
-  [§5.2](../../roadmap/adapters-mocopi-vmc-ardy.md)'s to record.
+  [§5.2](../../archive/motion-split/adapters-mocopi-vmc-ardy.md)'s to record.
 - **The corpus still cannot be surprised by the protocol.** Every committed
   capture was generated from the measured grammar. A `BVH Sender` capture would
   be the fixture that can refute it, and none exists yet.

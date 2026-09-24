@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenExec plan's P0-6: `motion_retarget` against `execMotion` + `execVrm`,
-# on the same avatar and clip (docs/roadmap/openexec-foundation.md).
+# on the same avatar and clip (docs/archive/motion-split/openexec-foundation.md).
 #
 # Registered from the root rather than from either exec bundle or the tool,
 # for the reason workspace_bvh_end_to_end is: what is tested is a composition --
@@ -30,8 +30,8 @@ foreach(_t IN ITEMS arch tf gf js vt plug sdf usd usdGeom usdSkel
     endif()
 endforeach()
 
-# The driver contract as code (docs/design/MOTION_CONTRACT.md, "OpenExec
-# driver contract"), and where the VRM_OPENEXEC_* codes are raised. Static and
+# The driver contract as code (usd-motion-plugins' EXEC_CONTRACT.md §3 and
+# §4), and where the VRM_OPENEXEC_* codes are raised. Static and
 # test-support: its first client is the harness beside it, and it becomes a
 # workspace identity when the ExecIr track's evaluation client needs one.
 add_library(exec_driver STATIC ExecDriver.cpp)
@@ -141,7 +141,7 @@ set(_parity_driver
     --parity "$<TARGET_FILE:exec_parity>"
     --retarget "$<TARGET_FILE:motion_retarget>"
     --fixtures "${_repo_root}/tests/motion/fixtures"
-    --design-fixtures "${_repo_root}/docs/design/fixtures/motion"
+    --design-fixtures "${_repo_root}/tests/motion/fixtures/design_triplet"
     --design-map
         "${_repo_root}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json"
     --parity-fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures")

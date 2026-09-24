@@ -21,12 +21,10 @@ v0.1.0–v0.5.0 declared. Two reasons, and only the first applied before:
    against one OpenUSD and loaded into another is undefined behavior, and the
    range never made that safe — it only made it undiagnosed until load time.
 2. **The workspace is committed to OpenExec**, whose API is not stable either
-   ([the OpenExec plan §1](../roadmap/openexec-foundation.md)). Nothing links it
-   yet — the `execMotion` / `execVrm` bundles follow the producer tracks and
-   carry no version (the
-   [roadmap status table](../roadmap/README.md#status-at-a-glance)) — but the runtime is
-   required to carry it from v0.6.0 on, so the refusal is in place before the
-   first computation rather than after it.
+   ([the OpenUSD 26.08 OpenExec reports](../reports/openusd/README.md)).
+   `execVrm` links it, and the runtime has been required to carry it since
+   v0.6.0, so the refusal was in place before the first computation rather
+   than after it.
 
 Anything other than 26.08 is refused **at configure time**, by every entry
 point that resolves OpenUSD — the root project, each bundle built standalone by

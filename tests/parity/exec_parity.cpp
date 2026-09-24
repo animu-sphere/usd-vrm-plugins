@@ -24,7 +24,7 @@
 //
 // Onto that layer it authors the statements the tool takes from its command
 // line or from the clip's own stage, and exec can only take from a prim
-// (docs/roadmap/openexec-foundation.md §9):
+// (docs/archive/motion-split/openexec-foundation.md §9):
 //
 //   * `motion:timeCodesPerSecond` on the clip's animation, equal to the clip
 //     stage's rate, unless the clip already states one;
@@ -1130,7 +1130,7 @@ main(int argc, char** argv)
 
     // -- exec, two requests armed once and moved through the keys ------------
     // Through the driver, which is the driver contract as code
-    // (docs/design/MOTION_CONTRACT.md): it names each instant before
+    // (usd-motion-plugins' EXEC_CONTRACT.md §3): it names each instant before
     // computing, keeps what the arming compute posted, and raises the
     // `VRM_OPENEXEC_*` codes -- so a bundle missing from the session is a
     // named key here rather than an empty value and a coding error.

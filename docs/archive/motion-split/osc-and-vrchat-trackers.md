@@ -1,3 +1,14 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-25.** This was the shared OSC foundation and VRChat OSC Trackers track, and it was
+> once authoritative. Do not use it to determine current architecture,
+> capabilities, ownership or roadmap: start from [docs/README.md](../../README.md).
+> Its section numbers are unchanged, so older documents can still cite
+> them. See [the archive index](../README.md).
+
 # Shared OSC foundation and VRChat OSC Trackers input
 
 > **Moved (2026-09-21): `motion-connectors`.** `osc`, `liveTransport`,
@@ -7,7 +18,7 @@
 > [`motionConnectorTracking`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTracking) and
 > [`motionConnectorVrchatOsc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc)
 > there; this repository deleted its copies in the same change
-> ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-4). **This plan is a record
 > now, not a plan.**
 
@@ -18,13 +29,13 @@ maintains twice.
 This document holds **boundaries, order, and completion conditions** only. Where
 it touches structure it defers: adapter identities, dependency directions, and
 artifact naming are settled in
-[architecture/WORKSPACE.md](../architecture/WORKSPACE.md) §1, §2, §5, and motion
+[architecture/WORKSPACE.md](../../architecture/WORKSPACE.md) §1, §2, §5, and motion
 semantics in
-[design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md)
+[design/MOTION_ARCHITECTURE_POLICY.md](../../design/MOTION_ARCHITECTURE_POLICY.md)
 §8, §14, §15. Items this plan needs from those contracts are in
 [§10](#10-contract-changes-this-plan-requires) rather than asserted here. It
 names no release version; that is the
-[roadmap status table](README.md#status-at-a-glance)'s.
+[roadmap status table](../../roadmap/README.md#status-at-a-glance)'s.
 
 It is the sibling of [the live adapter plan](adapters-mocopi-vmc-ardy.md), not a
 section of it, for the reason that plan and
@@ -189,7 +200,7 @@ is the third.
 
 **It is not extracted, and the reason is a contract rather than a judgement.**
 The general implementation already exists and lives in the recorded half;
-[WORKSPACE.md §2](../architecture/WORKSPACE.md) gives an adapter four edges and
+[WORKSPACE.md §2](../../architecture/WORKSPACE.md) gives an adapter four edges and
 `motionSource` is not among them, so reaching it is forbidden and the honest
 alternatives are a third copy or a contract change. VRC-3 took the copy, because
 a milestone that is *about* measuring a basis should not also be moving the code
@@ -202,7 +213,7 @@ enumerator no live adapter has. A shared primitive in `motionCore` — the signe
 permutation, its determinant, and one angle composition — would have all three
 as consumers, which is one more than the rule this track keeps invoking asks
 for. It is a contract change ([§10](#10-contract-changes-this-plan-requires))
-and belongs with [the producer contract](backlog.md#canonical-motion-producer-contract),
+and belongs with [the producer contract](../../roadmap/backlog.md#canonical-motion-producer-contract),
 where the four producer categories are already being unified; doing it inside
 this track would settle a workspace-wide boundary from one adapter's needs.
 
@@ -248,7 +259,7 @@ out, and neither ruling is new here.
 [`libs/motionRuntime/tests/check_boundaries.py:94`](https://github.com/animu-sphere/usd-motion-plugins/blob/main/libs/motionSampling/tests/check_boundaries.py)
 refuses `winsock`, `sys/socket.h`, `asio`, `curl` and `websocket` in that
 library's sources. The contract behind the check is
-[WORKSPACE.md §2](../architecture/WORKSPACE.md): `motion_capture` is a member of
+[WORKSPACE.md §2](../../architecture/WORKSPACE.md): `motion_capture` is a member of
 the aggregate product and links `motionRuntime`, and *no tool in the product
 opens a transport or reads a wall clock, which is what makes every clip in this
 repository reproducible by construction*. A socket in `motionRuntime` puts one
@@ -256,7 +267,7 @@ in the product's link closure — the property being protected, reintroduced
 through the library rather than through the `--source vmc` flag that was already
 refused.
 
-**It cannot be `adapters/common/`.** [WORKSPACE.md §2](../architecture/WORKSPACE.md)
+**It cannot be `adapters/common/`.** [WORKSPACE.md §2](../../architecture/WORKSPACE.md)
 forbids an adapter → adapter edge, and a shared leaf between two leaves is that
 edge wearing a hat.
 
@@ -442,7 +453,7 @@ it is generic, so it is not the adapter's, and it names tracker regions, which
 `motionCore` has no vocabulary for. **Answered 2026-08-31, in the contract and
 ahead of any code** ([§10](#10-contract-changes-this-plan-requires)): a new leaf
 `libs/motionTracking`, on the terms
-[WORKSPACE.md §1](../architecture/WORKSPACE.md) states, with the region
+[WORKSPACE.md §1](../../architecture/WORKSPACE.md) states, with the region
 vocabulary as its own rather than as an alias for `HumanJoint` — the aliasing is
 what would collapse this table's middle row into its first, and the contract
 forbids it by name.
@@ -539,7 +550,7 @@ the extraction change and not here:
 1. `libs/osc` raises protocol-neutral codes (`OSC_PACKET_MALFORMED`,
    `OSC_TYPE_TAG_INVALID`, `OSC_BUNDLE_INVALID`) and each adapter maps them onto
    its own surface. This is the shape
-   [`MatchSourceProfile`](../architecture/WORKSPACE.md) already uses: the lower
+   [`MatchSourceProfile`](../../architecture/WORKSPACE.md) already uses: the lower
    layer returns a typed refusal naming the event, and the caller that knows
    which reader it holds maps it onto that reader's frozen codes.
 2. `libs/osc` returns a typed refusal carrying no code string at all, and every
@@ -653,7 +664,7 @@ inventory answers, from bytes, which subset of the VRChat OSC Trackers surface
 this sender actually uses.
 
 **Done 2026-08-30** — six captures, 44 918 datagrams, and the measurement is
-[report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) with
+[report 02](../../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) with
 [the session manifest](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json)
 beside it. **The subset is eight addresses**: three numbered trackers and a named
 `head`, each with `position` and `rotation`, every one of them `,fff`, one
@@ -800,7 +811,7 @@ is resolved in this layer.**
 **Done 2026-08-30** —
 [`TrackingSpace.h`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc/include/motionConnectorVrchatOsc/TrackingSpace.h),
 its suite and
-[report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md), which
+[report 03](../../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md), which
 re-reads the VRC-1 session rather than recording a new one. The documented space
 is the measured one — metres, +Y up, +Z forward, left-handed — so the conversion
 is VRM 1.0's reflection through X, which is the sibling's line.
@@ -830,7 +841,7 @@ by up to 25.7°. The adapter composes `Ry · Rx · Rz`, the survivor Unity
 documents — documentation breaking a tie the measurement narrowed, rather than
 standing in for one. **What closes it is one take**: a labelled *rolled* head or
 foot, held, which is twenty seconds of hardware
-([the operator-evidence list](current.md#carried-out-of-v070--evidence-an-operator-produces)).
+([the operator-evidence list](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)).
 
 Two consequences beyond the arithmetic. **The adapter's binaries load OpenUSD
 for the first time** — producing a canonical value is what took the `motionCore`
@@ -1056,7 +1067,7 @@ belong to a target rig this layer does not have and
 [§2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be) will not
 let it acquire. So the release claims tracker **input** reaching the canonical
 layer, which is the second of the two branches the roadmap offered
-([the release record](../releases/v0.8.0.md#the-solve-boundary-and-what-this-release-claims)).
+([the release record](../../releases/v0.8.0.md#the-solve-boundary-and-what-this-release-claims)).
 
 **The invariant is what makes "stays at rest" a measurement.** A pose carries
 rotations local to the semantic parent and a tracker reports a world
@@ -1119,7 +1130,7 @@ an avatar by this path. That is VRC-6's tool and an operator's twenty minutes.
 One tool, in the shape `vmc_record` and `mocopi_record` already have: listen ·
 diagnostics · packet capture · `--inspect` · `--export-trace`. The library
 authors no stage; the hand-off to the product is a `motion-capture-trace` file
-([WORKSPACE.md §2](../architecture/WORKSPACE.md)).
+([WORKSPACE.md §2](../../architecture/WORKSPACE.md)).
 
 Whether it is a third tool or a generic one is the question
 [§3.4](#34-what-is-not-shared-and-must-not-become-shared) defers to this point,
@@ -1188,7 +1199,7 @@ hair did not".
 **Done 2026-08-31**, on the condition §11 rewrote rather than the one the
 diagram drew: one labelled sequence set, performed twice, observed three ways,
 compared at the canonical layer —
-[report 04](../reports/motion/04-2026-08-31-cross-source-carry-drop.md). The
+[report 04](../../reports/motion/04-2026-08-31-cross-source-carry-drop.md). The
 relay arm is still unobserved and this milestone does not shorten that list.
 
 **The deliverable is the carry/drop table** (report 04 §7) and the entry that
@@ -1233,14 +1244,14 @@ all three paths, from three derivations that share no code**.
 ## 10. Contract changes this plan requires
 
 Structural claims land in the contracts, in their own change, before this plan
-depends on them ([docs/README.md](../README.md)).
+depends on them ([docs/README.md](../../README.md)).
 
 - ✅ **A shared transport library had no home in the current contract.**
   [§3.2](#32-the-transport-ring--extract-before-the-third-consumer) rules out
   both obvious ones — `motionRuntime` would put a socket in the aggregate
   product's link closure, and `adapters/common/` is the forbidden sibling edge.
   A new leaf under `libs/` needed an identity row in
-  [WORKSPACE.md §1](../architecture/WORKSPACE.md), edges in §2
+  [WORKSPACE.md §1](../../architecture/WORKSPACE.md), edges in §2
   (`adapters/* -> libs/liveTransport`, and the prohibition that keeps it out of
   every product tool), and an aggregate-exclusion decision in §5 — where it
   takes the *adapter* side of the split, not `motionSource`'s, because a library
@@ -1310,7 +1321,7 @@ depends on them ([docs/README.md](../README.md)).
 
   Three things were decided rather than transcribed. Its **edge set is empty
   and includes `liveTransport` in the prohibitions**, in both directions: every
-  other shared-leaf rule in [WORKSPACE.md §2](../architecture/WORKSPACE.md) is
+  other shared-leaf rule in [WORKSPACE.md §2](../../architecture/WORKSPACE.md) is
   asymmetric because one side is a layer and the other is what may reach it,
   and these two are the same layer twice — a decoder that can open a socket has
   become a receiver, and a receiver that can decode has become an adapter with
@@ -1335,7 +1346,7 @@ depends on them ([docs/README.md](../README.md)).
   passes without them.
 - ⬜ **Whose diagnostic codes does a shared decoder raise?**
   [§8](#8-diagnostics) states the three options and the precedent. This is
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)-adjacent but not its —
+  [MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md)-adjacent but not its —
   adapter diagnostics are the adapter plan's §8 and this decision amends it.
   Blocks OSC-3.
 
@@ -1372,7 +1383,7 @@ depends on them ([docs/README.md](../README.md)).
   rather than inherits it. Belongs with OSC-3.
 - ✅ **A capture can carry the only restart marker this wire has** *(landed
   2026-08-30, after being measured the same day)*. Measured
-  ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4):
+  ([report 02](../../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4):
   this sender marks a restart with a new ephemeral **source port** and with
   nothing else — no session identifier, no rest table, no handshake — and
   `liveTransport`'s capture format holds one `peer` in its header and none per
@@ -1423,7 +1434,7 @@ depends on them ([docs/README.md](../README.md)).
   owner described only by what it is not — generic, so not the adapter's, and
   naming regions, which `motionCore` has no vocabulary for. It is
   `libs/motionTracking`, a new identity on `liveTransport`'s and `osc`'s
-  procedure: [WORKSPACE.md](../architecture/WORKSPACE.md) §1 row, §2 edges, §5
+  procedure: [WORKSPACE.md](../../architecture/WORKSPACE.md) §1 row, §2 edges, §5
   side, written before a file existed.
 
   **Three things were decided rather than transcribed.** Its **edge set is
@@ -1465,7 +1476,7 @@ depends on them ([docs/README.md](../README.md)).
   semantics, the exec nodes — so a tracker sample there would be a value with
   no reader in the aggregate product, carrying an equality, a comparison and a
   trace-format obligation regardless, because
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) requires all three of
+  [MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md) requires all three of
   anything added to the value types. And what settles it against the adapter is
   the milestone itself: a solve inside an adapter is the second motion pipeline
   [adapter plan §2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be)
@@ -1474,7 +1485,7 @@ depends on them ([docs/README.md](../README.md)).
 
   **The edge is the price, and it is one line.** `motionTracking -> motionCore`
   leaves the forbidden list for the solve alone
-  ([WORKSPACE.md](../architecture/WORKSPACE.md) §2); the region vocabulary and
+  ([WORKSPACE.md](../../architecture/WORKSPACE.md) §2); the region vocabulary and
   the assignment keep the empty edge set they were given, and the alias
   prohibition is unchanged — what the boundary check does in exchange is scope
   its bone rule to the two files that must never name one, rather than drop it.
@@ -1488,7 +1499,7 @@ depends on them ([docs/README.md](../README.md)).
   is cheaper after it.
 - ⬜ **The workspace graph gate still does not reach an adapter**, and a third
   adapter makes the gap wider rather than different
-  ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
+  ([report 34](../../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
   A new library under `libs/` *is* discovered, so the shared halves of this plan
   are gated even while the adapter consuming them is not — which is an odd
   arrangement to inherit and worth stating before someone reads the green result
@@ -1534,7 +1545,7 @@ reaches the recorded path and nothing at all reaches the live one.
 ### One physical session is not available, and that is measured
 
 **Amended 2026-08-30, from the VRC-1 session**
-([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §5).
+([report 02](../../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §5).
 The diagram above asks for one performance observed four ways. This product
 cannot give it, for two reasons that compose:
 
@@ -1634,7 +1645,7 @@ specification. If the shape turns out to be something else entirely, VRC-1 is
 where that is discovered, at the cost of one PR rather than the adapter.
 
 > **It was not, and it was discovered there** (2026-08-30,
-> [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)):
+> [report 02](../../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)):
 > three numbered trackers out of eight, plus a **named** `head` sharing the path
 > position a number occupies. A decoder written from the specification would have
 > read that segment as an integer, dropped the head, and reported nothing wrong.

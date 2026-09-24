@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // What a run of motion_retarget exits with, frozen by the OpenExec plan's P1-1
-// (MOTION_CONTRACT.md, "motion_retarget exit codes").
+// (docs/design/VRM_MOTION_POLICY.md §7.1).
 //
 // A code says which input is at fault, so a script knows what to change
 // without reading the sentence; the sentence says what. Each refusal is

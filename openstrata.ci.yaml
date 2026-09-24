@@ -77,7 +77,7 @@
 #   `requires.libraries` can name a digest-pinned library artifact from another
 #   repository, and a rendered job pulls it (`ost library pull`) before it
 #   builds. That is what the motion migration's consuming half waits on
-#   (docs/roadmap/motion-foundation-split.md), so this pin is its precondition.
+#   (docs/archive/motion-split/motion-foundation-split.md), so this pin is its precondition.
 #   The pinned runtime leaves do not move: re-pulling one leaves its CMake
 #   package byte-identical, and report 37's P1 is still open against them.
 #   What the render gains beside the pull step: every cell now passes

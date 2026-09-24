@@ -27,7 +27,7 @@ add_test(
     COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/test_motion_retarget.py"
             --tool "$<TARGET_FILE:motion_retarget>"
-            --fixtures "${_repo_root}/docs/design/fixtures/motion"
+            --fixtures "${_repo_root}/tests/motion/fixtures/design_triplet"
             --tool-fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
             --humanoid-map
                 "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/design_avatar_humanoid_map.json")

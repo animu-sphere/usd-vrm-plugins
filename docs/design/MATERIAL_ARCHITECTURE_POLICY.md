@@ -14,9 +14,9 @@
 > numbered section never changes meaning.
 >
 > **This introduces no new phase sequence.** The three steps in §7 are the
-> internal order of **Product P5**, not a fourth sequence alongside Product
-> P0–P6, Workspace Phase 0–8, and Motion Phase A–H
-> ([roadmap](../roadmap/README.md#three-sequences-deliberately-separate)). The
+> internal order of **Product P5**, not another sequence alongside Product
+> P0–P6 and Workspace Phase 0–8
+> ([roadmap](../roadmap/README.md#sequences)). The
 > release P5 lands in is fixed by the
 > [roadmap status table](../roadmap/README.md#status-at-a-glance), never here.
 

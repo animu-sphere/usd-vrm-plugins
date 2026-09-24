@@ -33,7 +33,7 @@ struct VrmaJoint
 // `MotionPose::expressions` is what a given instant reported.
 //
 // A clip can say one of three things about an expression it declares, and they
-// are not the same statement (MOTION_CONTRACT.md, "Expression semantics"):
+// are not the same statement (VRM_MOTION_POLICY.md §3.3):
 // a channel drives the node, or the node states a translation and no channel
 // touches it -- a constant weight, since glTF leaves an un-animated node at its
 // own TRS -- or the node states no translation at all, which is a weight the
@@ -60,7 +60,7 @@ struct VrmaExpression
 // the target is a value of an *instant*, so it rides on the poses beside the
 // expression weights, while the offset is a measurement of the rig the clip was
 // authored on -- it cannot vary within a clip, and paying for it per sample
-// would buy nothing (MOTION_CONTRACT.md, "Look-at semantics").
+// would buy nothing (VRM_MOTION_POLICY.md §3.4).
 //
 // A clip says one of the same three things a declared expression can say: a
 // channel drives the node, or the node states a position nothing animates --

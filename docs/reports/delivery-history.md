@@ -411,7 +411,7 @@ IK/foot-locking) are in the [roadmap](../roadmap/).
 ## N. OpenExec foundation (v0.9.0)
 
 The plan and every measurement behind these rows are in
-[openexec-foundation.md](../roadmap/openexec-foundation.md) §6 and the
+[openexec-foundation.md](../archive/motion-split/openexec-foundation.md) §6 and the
 `openusd/26.08-openexec-*` reports; the summary is the
 [v0.9.0 record](../releases/v0.9.0.md).
 

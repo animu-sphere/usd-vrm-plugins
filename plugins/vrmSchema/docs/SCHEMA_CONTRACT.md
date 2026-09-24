@@ -118,7 +118,7 @@ key that is deduplicated.
 A consumer joining a clip's expression weight to an avatar's morph and
 material-colour binds **matches on `vrm:expressionName` and never on a path**.
 That is the key `ExpressionResolve` is specified against
-([motion policy](../../../docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.1); the
+([VRM motion policy §3.3](../../../docs/design/VRM_MOTION_POLICY.md#33-expressions)); the
 clip half shipped it in v0.8.0 and the avatar half is the prerequisite it was
 waiting on.
 

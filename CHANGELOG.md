@@ -369,8 +369,8 @@ Current schema contract version: **1**.
     and the only one with no edges at all — both shapes its §5 argument was
     built on, and both now `motion-connectors`'.
   - The two roadmap tracks that planned this work
-    ([the adapters](docs/roadmap/adapters-mocopi-vmc-ardy.md),
-    [the OSC foundation](docs/roadmap/osc-and-vrchat-trackers.md)) are records
+    ([the adapters](docs/archive/motion-split/adapters-mocopi-vmc-ardy.md),
+    [the OSC foundation](docs/archive/motion-split/osc-and-vrchat-trackers.md)) are records
     rather than plans now, and every link into the moved code points at the
     repository that holds it.
 
@@ -397,7 +397,7 @@ Current schema contract version: **1**.
   `requires.libraries` can name a digest-pinned library artifact from another
   repository, and every rendered job runs `ost library pull` before it builds —
   the edge the motion migration's consuming half waits on
-  ([the migration track](docs/roadmap/motion-foundation-split.md)). An
+  ([the migration track](docs/archive/motion-split/motion-foundation-split.md)). An
   explicitly empty workspace also renders CI now, which is that report's P3.
   The render gains one more thing beside the pull step: every cell passes
   `--require-openusd*` positionally, so a cell declaring neither no longer
@@ -456,6 +456,43 @@ Current schema contract version: **1**.
 
 ### Documentation
 
+- **Documentation consolidated to one owner per subject** (the motion
+  documentation consolidation policy). Generic motion is
+  `usd-motion-plugins`' and live input `motion-connectors`'; this repository
+  links their contracts and restates none of them.
+  - **[VRM_MOTION_POLICY.md](docs/design/VRM_MOTION_POLICY.md)** is new and
+    holds what stays VRM-specific: `.vrma` import, composition, the VRM rig
+    binding and required bones, expression arbitration, look-at, the bake and
+    its exit codes, `execVrm`, parity with the bake, and `ExecIr`.
+    `MOTION_ARCHITECTURE_POLICY.md` and `MOTION_CONTRACT.md` are superseded
+    stubs mapping each former section to its current owner.
+  - **Seven completed or superseded roadmap tracks moved to
+    [docs/archive/](docs/archive/)** — the six motion tracks under
+    `motion-split/`, packaging hardening under `packaging/` — each with a
+    *Historical only* banner. Their open remainder moved to
+    [current.md](docs/roadmap/current.md) and a new
+    [`ExecIr` track](docs/roadmap/execir-track.md). Links into them from
+    reports and release records were repointed, and nothing else in those
+    records changed.
+  - **The root README follows the shared shape** (Scope, Architecture,
+    Components, Documentation, Build, License), with no migration history or
+    version status. Build, test, CI and release-lane detail moved to
+    [docs/guides/BUILDING.md](docs/guides/BUILDING.md), and the authored-stage
+    tree to `usdVrmFileFormat`'s README.
+  - [INTEGRATION_SCOPE_POLICY.md](docs/design/INTEGRATION_SCOPE_POLICY.md)
+    describes the repository after the split, and the capability matrix states
+    only VRM and VRMA capability.
+  - [docs/contributing/documentation.md](docs/contributing/documentation.md)
+    is new: category ownership, the cross-repository rule, root README rules,
+    reports versus the archive, and front matter.
+  - `scripts/check_docs.py` enforces the new rules it can see: README entry
+    point, archive and superseded-stub lifecycle, and a roadmap that holds only
+    incomplete work.
+- **The design triplet moved from `docs/design/fixtures/motion/` to
+  [`tests/motion/fixtures/design_triplet/`](tests/motion/fixtures/design_triplet/)**,
+  beside the other motion fixtures, since the contract it sat beside is a
+  stub. `motion_retarget_design_triplet` and the parity cases read it there;
+  the files are unchanged.
 - **[ost report 47](docs/reports/ost/47-2026-09-24-v0.23.5-the-bundle-reaches-the-suite-and-the-schema-stage-loses-a-file.md)**,
   written from the consuming change that deleted `plugins/execMotion`
   (#227). Report 46's P1 is delivered: the root build composes the pinned
@@ -520,7 +557,7 @@ Current schema contract version: **1**.
   now names every destination identity, lower-camel as both destinations
   decided, and §9.2 rule 7 moves every live input at once.
 - **The parity baselines each move reproduces**, named per move in
-  [the migration track](docs/roadmap/motion-foundation-split.md#2-mig-0--preparation-).
+  [the migration track](docs/archive/motion-split/motion-foundation-split.md#2-mig-0--preparation-).
   `current.md` and the roadmap README now record v0.9.0 as published.
 
 ## [0.9.0] — 2026-09-17
@@ -784,7 +821,7 @@ Current schema contract version: **1**.
   lines in the seam, asserted against its definition rather than against the
   library, and `ConditionRootMotion(prior, pose, intake)` is the ask on
   `motionRuntime` for
-  [boundary consolidation](docs/roadmap/boundary-consolidation.md).
+  [boundary consolidation](docs/archive/motion-split/boundary-consolidation.md).
 
   `execMotion_root` drives the built bundle over two fixtures differing by one
   thing -- `rooted_clip.usda` is `sampled_clip.usda` plus `motion:root:intake`,
@@ -844,7 +881,7 @@ Current schema contract version: **1**.
   the free `motion::SampleAnimation` beneath it takes the history by reference
   and drops the status, and the time-order precondition its search relies on is
   stated nowhere. `SampleClip(animation, t) -> PoseSampleResult` is the ask for
-  [boundary consolidation](docs/roadmap/boundary-consolidation.md).
+  [boundary consolidation](docs/archive/motion-split/boundary-consolidation.md).
 
   `execMotion_interpolate` drives the built bundle over `sampled_clip.usda` and
   `unrated_clip.usda` -- no fixture of its own, since the node reads nothing off
@@ -889,7 +926,7 @@ Current schema contract version: **1**.
   interpolates its sources' timestamps as though they were samples in time. And
   its fold depends on the order it is given (4.247° between three sources and
   their reverse), which its header does not state. The ask for
-  [boundary consolidation](docs/roadmap/boundary-consolidation.md) is a blend
+  [boundary consolidation](docs/archive/motion-split/boundary-consolidation.md) is a blend
   that can say *there is nothing to blend* and states its preconditions.
 
   `execMotion_blend` drives the built bundle over `blended_clips.usda`, two
@@ -1782,7 +1819,7 @@ Current schema contract version: **1**.
   only a reordering. Both accepting cases compare the reported component list
   exactly, which is what catches a component dropped from the module and the
   fixture in one edit. This closes P0-1 of
-  [the OpenExec plan](docs/roadmap/openexec-foundation.md).
+  [the OpenExec plan](docs/archive/motion-split/openexec-foundation.md).
 
 - **The recorded-trace format is version 3**, adding a `lookat x y z` line — at
   most one per frame, like `contacts`. Format 1 and 2 files still parse, a
@@ -3206,7 +3243,7 @@ Current schema contract version: **1**.
   arms. `motion_retarget` already named the bone on stderr rather than losing it
   in silence. Whether dropping it is *right* is a contract question with two
   candidate answers and one avatar behind it, so it is raised in
-  [`docs/roadmap/recorded-motion-sources.md`](docs/roadmap/recorded-motion-sources.md)
+  [`docs/roadmap/recorded-motion-sources.md`](docs/archive/motion-split/recorded-motion-sources.md)
   §10 and pinned here as a characterisation test, not decided.
 
   Neither test adds an edge. The root one names no adapter, which is why the
@@ -3278,7 +3315,7 @@ Current schema contract version: **1**.
   where it has to end up.
 
   *A bound bone's local rotation is the composition of the path above it*
-  ([roadmap §10](docs/roadmap/recorded-motion-sources.md), written down before the
+  ([roadmap §10](docs/archive/motion-split/recorded-motion-sources.md), written down before the
   converter existed). A profile maps a rig onto a humanoid with fewer joints, and
   a joint between two mapped ones is on the path between them — taking a mapped
   joint's rotation verbatim would lose every rotation above it and place the arms
@@ -3352,7 +3389,7 @@ Current schema contract version: **1**.
   refused rather than dropped. That refusal is the point of the whole reader — a
   misspelled `requred:` a permissive parser ignored would unbind a joint the
   profile called mandatory and report nothing, which is the near-miss failure
-  [§3.1](docs/roadmap/recorded-motion-sources.md) forbids arriving through a
+  [§3.1](docs/archive/motion-split/recorded-motion-sources.md) forbids arriving through a
   typo. Two more properties are decisions: every convention's `unspecified` is
   refused *where it is written*, so "there is no default profile" holds inside a
   file as well as between files; and parsing ends in `ValidateSourceProfile`, so
@@ -3410,7 +3447,7 @@ Current schema contract version: **1**.
   Three decisions are the substance of it. **Every convention has an
   `Unspecified` and validation refuses it**, so a default-constructed profile is
   invalid by construction — "there is no default profile"
-  ([recorded-motion-sources.md §3.1](docs/roadmap/recorded-motion-sources.md))
+  ([recorded-motion-sources.md §3.1](docs/archive/motion-split/recorded-motion-sources.md))
   said somewhere it can be checked, because a silently-assumed handedness
   produces motion that is subtly misassembled rather than absent, which is worse
   than a refusal because it looks like a result. **A joint map is a hierarchy
@@ -3476,7 +3513,7 @@ Current schema contract version: **1**.
   of a link line.
 
 - **The recorded half is a generic BVH pipeline, not a capture product's
-  importer** — [`docs/roadmap/recorded-motion-sources.md`](docs/roadmap/recorded-motion-sources.md),
+  importer** — [`docs/roadmap/recorded-motion-sources.md`](docs/archive/motion-split/recorded-motion-sources.md),
   with the identities and edges in
   [`docs/architecture/WORKSPACE.md`](docs/architecture/WORKSPACE.md) §1, §2, §5.
   A BVH file outlives the application that wrote it, and joint names, units, axes
@@ -3960,7 +3997,7 @@ Current schema contract version: **1**.
   siblings rather than a stack; §5 keeps them out of the aggregate product. The
   motion policy gains VMC as a first-class generic input — it previously
   described one direct adapter only — and the plan lives in
-  [docs/roadmap/adapters-mocopi-vmc-ardy.md](docs/roadmap/adapters-mocopi-vmc-ardy.md).
+  [docs/roadmap/adapters-mocopi-vmc-ardy.md](docs/archive/motion-split/adapters-mocopi-vmc-ardy.md).
   The three identities were then corrected from *bundle* to *plain library plus
   CLI tool*, still ahead of any adapter directory: a plugin manifest names an
   OpenUSD plugin kind and a `plugInfo.json`, and an adapter — barred from

@@ -205,8 +205,8 @@ stderr. Retargeting onto a partial rig is legal and useful; doing it silently is
 not.
 
 Each of those is one line in a frozen code's format, one line per bone or joint
-([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md), "Retarget
-diagnostics"):
+([RETARGETING_POLICY.md §7](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/RETARGETING_POLICY.md#7-diagnostics)
+in `usd-motion-plugins`):
 
 ```text
 motion_retarget: [MOTION_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable subject=upperChest: the clip drives it and the target rig binds no joint for it
@@ -225,8 +225,7 @@ of output is how a bake looks correct and drives nothing.
 ## Exit codes
 
 A run that does not finish exits with the code of the input at fault
-([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md), "`motion_retarget`
-exit codes"):
+([VRM motion policy §7.1](../../docs/design/VRM_MOTION_POLICY.md#71-motion_retarget)):
 
 | Code | Meaning |
 | --- | --- |
@@ -244,7 +243,7 @@ exits 1; through v0.8.0 it exited 2.
 ## Testing
 
 `tests/test_motion_retarget.py` bakes the frozen design triplet
-(`docs/design/fixtures/motion/`) and compares the result with
+(`tests/motion/fixtures/design_triplet/`) and compares the result with
 `expected_retargeted.usda` at the value level, then exercises
 `--root-motion ignore`, `--resample`, and re-baking over an existing output.
 Every refusal path is run once and held to its exit code and to a fragment of

@@ -1116,7 +1116,7 @@ def main() -> int:
     if failed:
         print(f"\nFAIL: {args.package} does not meet criterion "
               f"{', '.join(sorted(failed))}. Fix the config, never the fixture "
-              f"(roadmap/packaging-hardening.md PKG-3)")
+              f"(archive/packaging/packaging-hardening.md PKG-3)")
         return 1
     print(f"\nPASS: {args.package} meets every criterion this host can check")
     return 0

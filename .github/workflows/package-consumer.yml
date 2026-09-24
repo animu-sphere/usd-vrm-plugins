@@ -4,7 +4,7 @@
 #   error[MANIFEST_INVALID]: cells[N].kind: unknown variant `consumer`,
 #   expected `bundle` or `workspace`
 #
-# PKG-4 of docs/roadmap/packaging-hardening.md. Every lane in this repository
+# PKG-4 of docs/archive/packaging/packaging-hardening.md. Every lane in this repository
 # builds these packages *composed* — a workspace build defines every target as
 # an alias in one CMake project, and `ost library build` composes
 # `requires.libraries` the same way — so no lane opens a `*Config.cmake` at any

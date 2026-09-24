@@ -181,7 +181,7 @@ add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarge
 # fixture rig and, for the real avatar below, a plugin bundle in the same
 # build. It is the one test that would catch the recorded path needing a special
 # case in the retargeter — which is the claim that makes stopping at the
-# avatar-independent clip worth anything (roadmap/recorded-motion-sources.md §5,
+# avatar-independent clip worth anything (archive/motion-split/recorded-motion-sources.md §5,
 # §7).
 if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
    AND TARGET motion_retarget
@@ -205,7 +205,7 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
         LABELS "motion.integration;motion.real-corpus")
 
     # The same chain onto a real VRM, which is v0.7.0's release condition's own
-    # wording (roadmap/adapters-mocopi-vmc-ardy.md, Milestone C) and not a
+    # wording (archive/motion-split/adapters-mocopi-vmc-ardy.md, Milestone C) and not a
     # second opinion about the tools. It
     # is registered separately rather than folded into the test above because the
     # two rigs answer different questions and neither substitutes: the fixture is

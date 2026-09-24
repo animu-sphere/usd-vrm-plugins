@@ -40,7 +40,7 @@ import tempfile
 from pathlib import Path
 
 
-# The plan's labels (docs/roadmap/openexec-foundation.md, P0-2) and the
+# The plan's labels (docs/archive/motion-split/openexec-foundation.md, P0-2) and the
 # directories each must come from, relative to the source root ("." is the
 # root CMakeLists.txt itself).
 # `motion.core` and `motion.runtime` have no source here since MIG-1..MIG-2:

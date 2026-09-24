@@ -93,7 +93,7 @@ struct SkeletonOutcome
 /// Each joint's rest transform is decomposed into the rotation, translation and
 /// scale `openstrata::motion::SkeletonJoint` carries -- **the scale kept apart as
 /// `restScale`, not folded into the rotation, and shear dropped** (the scale
-/// policy, MOTION_CONTRACT.md) -- and each joint's parent is derived from its
+/// policy, usd-motion-plugins' RETARGETING_POLICY.md §6.1) -- and each joint's parent is derived from its
 /// token by `SkeletonDescriptor::ResolveParentsFromTokens`, the library's own
 /// "a/b/c" rule.
 ///
@@ -101,7 +101,7 @@ struct SkeletonOutcome
 /// Building a skeleton from its rest transforms existed only in
 /// `tools/motionRetarget`'s `StageIo.cpp`, in a *tool*, where a bundle cannot
 /// call it, so this node carried a copy matched to the tool's line for line.
-/// The ask for [boundary consolidation](../../../docs/roadmap/boundary-consolidation.md)
+/// The ask for [boundary consolidation](../../../docs/archive/motion-split/boundary-consolidation.md)
 /// -- a `SkeletonDescriptor` built from tokens and rest matrices -- arrived in
 /// `motionRetarget` as `BuildSkeletonDescriptor`, and this node and the tool
 /// both call it, so the rule has one implementation again. What stays here is
@@ -788,7 +788,7 @@ struct JointTransformsOutcome
 /// joint at all (`openstrata::motion::JointLocalTransforms`).
 ///
 /// **Every scale is the joint's rest scale**, which is the scale policy
-/// (MOTION_CONTRACT.md, decided 2026-09-17) and `motion_retarget`'s rule: a
+/// (usd-motion-plugins' RETARGETING_POLICY.md §6.1) and `motion_retarget`'s rule: a
 /// retargeted clip never animates scale, and the bake carries the rig's own. A
 /// joint whose rest is scaled keeps that scale under this sample, because
 /// UsdSkel takes an animated joint's local transform from the animation whole,

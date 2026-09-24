@@ -4,7 +4,7 @@
 [![OpenUSD 26.08](https://img.shields.io/badge/OpenUSD-26.08-2f6f9f)](docs/reference/SUPPORTED_CONFIGURATIONS.md)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-4b8bbe.svg)](LICENSE)
 
-OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
+**VRM / VRMA-specific integration with OpenUSD.**
 
 <p align="center">
   <img src="docs/assets/usdVRMwithHydraStorm.gif" alt="VRM animation retargeting preview in usdview with Hydra Storm" width="640" />
@@ -12,439 +12,96 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
   <p align="center"><i>A VRM scene loaded directly through the file-format plugin, with a VRMA motion file retargeted onto the avatar, previewed in usdview with Hydra Storm.</i></p>
 </p>
 
-This repository is an OpenUSD plugin **workspace**: it separates schema
-definitions, file-format import, package resolution, and shared GLB container
-parsing into independently buildable, independently testable components. The
-v0.9.0 release is the OpenExec foundation: two OpenExec bundles, `execMotion`
-and `execVrm`, evaluate a humanoid through OpenExec as thin wrappers over the
-motion libraries and agree with the offline bake bit for bit, from the installed
-product. That brings the workspace to six plugin bundles, twelve shared
-libraries, and seven CLIs.
+## Scope
 
-The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
-a static USD stage. It **never evaluates or simulates** — that boundary is the
-project's central design decision, and it is described below.
+This repository owns what needs the [VRM](https://vrm.dev/en/) specification:
 
-> **Built with [OpenStrata](https://github.com/animu-sphere/open-strata).**
-> `usd-vrm-plugins` is OpenStrata's first external adopter, and the `ost` CLI is
-> how this workspace is built, tested, packaged, and released. The record of
-> adopting it — every version from pre-0.3 to 0.22.2, including what broke — is
-> published in [docs/reports/ost/](docs/reports/ost/). The repo is
-> **dual-mode**: everything also builds and tests with plain CMake against an
-> OpenUSD 26.08 install and installed `usd-motion-plugins` packages, with no
-> `ost` involved — and [a CI lane](.github/workflows/plain-cmake.yml) proves it.
+- `.vrm` import — VRM 0.x and 1.0, normalized into one canonical model and
+  authored as a deterministic OpenUSD stage;
+- `.vrma` import — VRM Animation clips as avatar-independent semantic motion;
+- the VRM schemas, and resolution of resources embedded in a `.vrm`;
+- VRM humanoid semantics on a rig — the humanoid binding, VRM 1.0's required
+  bones, expressions and look-at;
+- `execVrm`, VRM semantics as OpenExec computations.
 
-## Workspace components
+It does not own:
 
-| Component | Type | Role | Status |
-| --- | --- | --- | --- |
-| [`vrmSchema`](plugins/vrmSchema) | USD schema bundle (`usd-schema`) | VRM typed API schemas + the schema contract | Shipped |
-| [`usdVrmFileFormat`](plugins/usdVrmFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrm` parsing, canonicalization, USD authoring | Shipped |
-| [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | `ArPackageResolver` bundle (`usd-package-resolver`) | Embedded resource resolution from `.vrm` | Shipped |
-| [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
-| [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
-| [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at | v0.4.0 (as `vrmRetarget`) |
-| [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
-| [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion) | OpenExec bundle, **consumed** | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend. `usd-motion-plugins`' published bundle since MIG-2; `execVrm` pins it and its package embeds it | v0.9.0 (here); consumed since MIG-2 |
-| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | v0.9.0 |
-| `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
+| Subject | Owner |
+| --- | --- |
+| Generic motion: values, sampling, filtering, recording, retargeting, the OpenUSD motion mapping | [`usd-motion-plugins`](https://github.com/animu-sphere/usd-motion-plugins) |
+| Live input: devices, protocols, source profiles, trackers | [`motion-connectors`](https://github.com/animu-sphere/motion-connectors) |
+| Runtime composition and the update loop | `usd-avatar-runtime` |
 
-`usdVrm` is not a bundle id — it names the product as a whole. It *was* the
-file-format bundle's name until the workspace split; documentation and artifacts
-that predate that rename use it in the old sense.
+The importers **author data and never evaluate or simulate it**. Evaluation
+belongs to `execVrm` or to a runtime outside this repository.
 
-### The motion layer
-
-> **The core and the runtime have moved too (2026-09-21), and are consumed.**
-> `motionCore` and `motionRuntime` are `usd-motion-plugins`' `motionCore`,
-> `motionSampling` and `motionRecording`; this workspace resolves them as
-> published packages, pinned by digest, and builds neither. Every type this
-> product's motion layer speaks — `MotionPose`, `MotionClip`, `HumanJoint` —
-> is that repository's vocabulary now, under `openstrata::motion`.
->
-> **So has the retarget (2026-09-23).** The pose retargeter, the skeleton and
-> the joint map, rest-pose correction and root-motion policy are
-> `usd-motion-plugins`' `motionRetarget`, consumed the same way. What stayed
-> of `vrmRetarget` is what a VRM rig adds to it, as `vrmRig`.
->
-> **And the capture-replay CLI (2026-09-23).** `motion_capture` is
-> `usd-motion-plugins`' `motion_record`, and this product no longer ships it.
-> A recorded session still reaches an avatar here: `motion_retarget`'s suite
-> bakes a clip that the published recorder wrote.
->
-> **And the recorded-file path (2026-09-23).** `motionSource`, `motionBvh`,
-> `motion_bvh_inspect`, `motion_bvh_convert` and the producer profiles are
-> `usd-motion-plugins`' — the converter as `motion_convert` — and this product
-> no longer reads a BVH file. A converted recording still reaches an avatar
-> here: the end-to-end, real-avatar and parity suites bake a clip the published
-> converter wrote. `motion_retarget` reads every clip through the consumed
-> `motionUsd`.
->
-> **The live inputs have moved (2026-09-21).** `liveTransport`, `osc`,
-> `motionTracking`, the three adapters and their record tools are
-> [`motion-connectors`](https://github.com/animu-sphere/motion-connectors)'
-> now, under `motionConnector*` names, and this repository no longer builds,
-> ships or tests any of them. What is left of the generic half of this layer
-> — `execMotion` — moves to `usd-motion-plugins` next. This repository keeps VRM and VRMA, VRM semantic
-> resolution and `execVrm`, and consumes the rest as installed packages
-> ([WORKSPACE.md §9](docs/architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
-> [the migration plan](docs/roadmap/motion-foundation-split.md)). The table
-> below describes the tree as it is today.
-
-`motionCore` and `usdVrmaFileFormat` were the v0.3.0 foundation; v0.4.0 added
-`motionRuntime`, `vrmRetarget`, and the `motion_retarget` CLI, which together
-make a `.vrma` clip play back on a real avatar. v0.5.0 adds the observation
-side — a vendor-neutral `LiveCaptureSource`, a recorded-trace format, and the
-`motion_capture` CLI — which produces the *same* semantic clip, so a live
-session is baked by the retarget tool unchanged. The fixed contract is
-[docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md).
-v0.6.0 supplies the first product-specific input leaf: `vrmAdapterVmc` decodes
-VMC Protocol from OSC-over-UDP through frame assembly and VRM bone mapping into
-the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
-inspection and corpus work, and `--export-trace` hands what the adapter
-delivered to `motion_capture` as a plain capture trace — the product's tools
-consume a live VMC session without linking the adapter, or knowing it exists.
-v0.7.0 adds `vrmAdapterMocopi` and `mocopi_record` on that same shape, and a
-body that travels: a rig whose only translating joint is the hips now composes
-`RootMotion`, so a live session no longer retargets in place.
-
-v0.7.0 supplies the other half of the input layer, and the first evidence off
-real hardware. A capture product sends packets *and* writes files: the packets
-go through `vrmAdapterMocopi`, a native UDP path for a wire grammar with no
-published specification, and the files go through a **generic** BVH pipeline
-(`motionBvh` + `motionSource` + a declarative producer profile) that is
-deliberately not that product's importer. The two halves meet at `motionCore`
-and nowhere earlier — and when one physical session is observed both ways, they
-agree to a median **0.084°** per bone
-([report 01](docs/reports/motion/01-2026-08-15-mocopi-cross-source.md)).
-OpenExec evaluation follows: `execMotion` and `execVrm` re-evaluate that
-pipeline, and on the recorded export they agree with the offline bake bit for
-bit. They shipped in v0.9.0. What comes next:
-[docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
-
-| Component | Type | Role |
-| --- | --- | --- |
-| [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
-| [`vrmRig`](libs/vrmRig) | Plain static CMake library | What a VRM rig adds to the retarget: VRM 1.0's required bones, expression resolve, look-at |
-| [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
-| [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion) | OpenExec bundle, consumed from `usd-motion-plugins` | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set, pinned by `execVrm` and embedded in its package |
-| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `motionRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
-
-`.vrm` and `.vrma` are deliberately **separate** file-format plugins with
-symmetric structure, and they compose by **reference**, not `subLayer` — a
-subLayer stack cannot express which skeleton a clip applies to. A third
-binding/assembly layer relates them.
-
-### Dependencies
+## Architecture
 
 ```text
-usdVrmFileFormat ───────> vrmSchema
-        │
-        └───────────────> vrmContainer
-
-usdVrmPackageResolver ──> vrmContainer
-
-usdVrmaFileFormat ──────> vrmContainer, motionCore
-
-vrmRig ─────────────────> motionCore
-motion_retarget (CLI) ──> motionRetarget, vrmRig, motionCore, motionSampling,
-                          motionUsd + OpenUSD stage APIs
-
-vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport, osc
-vrmAdapterMocopi ───────> motionCore, motionRuntime, liveTransport
-vrmAdapterVrchatOsc ────> motionCore, liveTransport, osc (no motionRuntime: it
-                          stops at an observation, and a pose is what reaches
-                          that library)
-liveTransport ──────────> nothing — its allowed edge set is empty, not short
-osc ────────────────────> nothing — the same, `liveTransport` included
-motionTracking ─────────> nothing — the same again, and for a third reason: it
-                          maps one vocabulary it owns onto another
-
-                          (planned)
-execMotion ─────────────> motionCore, motionSampling, motionRecording
-execVrm ────────────────> vrmSchema, motionCore, motionRetarget, vrmRig
+avatar.vrm ─▶ usdVrmFileFormat ─▶ /Asset  (skeleton, humanoid, expressions, look-at)
+walk.vrma  ─▶ usdVrmaFileFormat ─▶ /Animation  (semantic humanoid clip)
+                                        │
+                       usd-motion-plugins: MotionClip, retarget
+                                        │
+             vrmRig: VRM binding, expressions, look-at
+                                        │
+            motion_retarget (bake)  ·  execVrm (OpenExec)
+                                        ▼
+                            UsdSkelAnimation on the avatar
 ```
 
-Five rules keep those edges honest:
+`.vrm` and `.vrma` are separate plugins and compose by reference, never by
+`subLayer` ([VRM motion policy](docs/design/VRM_MOTION_POLICY.md)).
 
-- `vrmSchema` depends on no other bundle or library.
-- `usdVrmPackageResolver` never links the file-format bundle; the importer's
-  dependency on the resolver is runtime-only, never link-time.
-- `execVrm` reads the schema contract from the stage — never the importer's
-  private API or canonical model.
-- `vrmRig` does not depend on OpenExec, and neither does the retarget it
-  completes: both are finished and testable before any OpenExec node exists;
-  the nodes are thin wrappers.
-- Adapters depend on the core. The core never depends on an adapter, and
-  `motionCore` never sees a vendor SDK, a network protocol, or a product name.
-- **Live input and recorded files meet at `motionCore` and nowhere earlier.** An
-  adapter never reaches for a reader, and a reader never reaches for an adapter.
+## Components
 
-The bundle graph is validated by `ost plugin test --workspace`, and each
-consumer adds a binary link check proving what it does and does not import. Full
-contract: [docs/architecture/WORKSPACE.md](docs/architecture/WORKSPACE.md).
+| Component | Responsibility |
+| --- | --- |
+| [`vrmSchema`](plugins/vrmSchema) | VRM typed API schemas and the schema contract |
+| [`usdVrmFileFormat`](plugins/usdVrmFileFormat) | `.vrm` parsing, canonicalization and USD authoring |
+| [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | Resolution of resources embedded in a `.vrm` |
+| [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `.vrma` clips → a `UsdSkelAnimation` on a canonical semantic skeleton |
+| [`execVrm`](plugins/execVrm) | VRM retarget computations for OpenExec over the applied `VrmHumanoidAPI` |
+| [`vrmContainer`](libs/vrmContainer) | GLB parsing and byte-range validation, shared by the importer and the resolver |
+| [`vrmRig`](libs/vrmRig) | What a VRM rig adds to the generic retarget: required bones, expression resolve, look-at |
+| [`motion_retarget`](tools/motionRetarget) | CLI: bakes a semantic clip onto a VRM rig as `UsdSkelAnimation` |
+| `usdVrm` | The aggregate product name — never a bundle id |
 
-## What the importer produces
-
-`.vrm` is read as a GLB container (via vendored
-[cgltf](https://github.com/jkuhlmann/cgltf) v1.15) and normalized — VRM 0.x and 1.0 differences are
-absorbed into a canonical model before any USD is authored — into:
-
-```
-/Asset                     SkelRoot (or Xform when there is no skeleton), kind=component
-  customData.vrm.*         sourceFormat / sourceVersion / specVersion / meta / rawExtension
-  geo/                     Scope of UsdGeomMesh (one per glTF primitive)
-    <Mesh>                 points/normals/st, material binding; skel binding when
-                           skinned, else the glTF node transform as xformOp
-  mtl/<Material>           UsdShadeMaterial: identity, binding target, VRM semantics
-    preview/               UsdShadeNodeGraph holding the UsdPreviewSurface network
-  skel/Skeleton            single UsdSkelSkeleton unified across all glTF skins
-                           (bind transforms from the inverse bind matrices)
-  rig/Humanoid             vrm:humanBones:<bone> joint tokens, typed VrmHumanoidAPI
-```
-
-Every `/Asset/rig/*` control prim carries typed schema data. The **schema types
-themselves are provided by the `vrmSchema` bundle**; `usdVrmFileFormat` depends
-on schema contract version 1 and authors against it. Raw VRM blocks stay in
-`customData` as the lossless fallback.
-
-## Runtime boundary
-
-```text
-Import:   VRM bytes ──> canonical model ──> USD stage
-Runtime:  USD stage + vrmSchema ──> OpenExec / DCC / renderer runtime
-```
-
-The importer **authors data only**:
-
-- Import is deterministic. The same bytes produce the same stage.
-- LookAt, node constraints, and spring bones are *written as typed schema data*,
-  never executed.
-- Evaluation and simulation belong to `execVrm` (planned) or an external
-  runtime.
-- No physics runs at import time.
-
-This keeps import pure, so a runtime can be swapped without touching the
-importer.
-
-## Feature support
-
-VRM 0.x / 1.0 detection and canonicalization, geometry, `UsdPreviewSurface`
-materials with the full texture set, MToon source preservation
-(`vrm:mtoon:raw`; renderer-specific realization is not implemented), unified
-skeleton + skinning from inverse bind matrices, skeletal animation, humanoid
-mapping, front-direction normalization, and a coded diagnostic taxonomy.
-
-Per-feature status is in
-[docs/reference/CAPABILITY_MATRIX.md](docs/reference/CAPABILITY_MATRIX.md).
-Supported platforms, OpenUSD versions, and build requirements are in
-[docs/reference/SUPPORTED_CONFIGURATIONS.md](docs/reference/SUPPORTED_CONFIGURATIONS.md).
-The schema contract is in
-[plugins/vrmSchema/docs/SCHEMA_CONTRACT.md](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
-
-## Install
-
-See [docs/guides/INSTALL.md](docs/guides/INSTALL.md) for release-artifact,
-OpenStrata, and from-source installation, verification, and troubleshooting.
-
-> **Install the components you use from the release artifacts.** Each release
-> publishes four member bundles and one aggregate product archive. The three
-> VRM bundles are installed together; `usdVrmaFileFormat` is independently
-> installable because it has no plugin-bundle dependency. The
-> member bundles are separately addressable, while the aggregate archive keeps
-> the exact workspace closure together. See the
-> [install guide](docs/guides/INSTALL.md) for extraction and verification.
-
-## Build and test
-
-### Whole workspace, with OpenStrata (`ost`)
-
-Requires `ost` 0.19+, so `requires.bundles` and `requires.libraries` are
-composed automatically.
-
-```sh
-# One-time: adopt an OpenUSD install as the cy2026 runtime.
-ost runtime pull cy2026 --profile usd --from-usd /path/to/openusd-install
-
-# Validate the bundle graph, then test every bundle in dependency order.
-ost plugin test --workspace
-```
-
-### A single bundle
-
-```sh
-ost plugin build plugins/usdVrmFileFormat
-ost plugin test  plugins/usdVrmFileFormat            # L0-L5 verification pyramid
-
-ost plugin build plugins/usdVrmaFileFormat
-ost plugin test  plugins/usdVrmaFileFormat           # L0-L5 + VRMA golden
-
-# Inspect a real avatar. build/test/run/package compose the manifest's
-# requires.bundles closure automatically:
-ost plugin run plugins/usdVrmFileFormat \
-    -- python plugins/usdVrmFileFormat/tools/inspect_vrm.py avatar.vrm
-
-# `view` / `test-view` are the exception: they load only what --with names, so
-# the runtime siblings must be spelled out or the schema apply fails.
-ost plugin view plugins/usdVrmFileFormat avatar.vrm \
-    --with plugins/vrmSchema --with plugins/usdVrmPackageResolver
-```
-
-### With plain CMake (no OpenStrata)
-
-Two installed prefixes, and nothing else: an OpenUSD 26.08 install, and a
-`cmake --install` of [`usd-motion-plugins`](https://github.com/animu-sphere/usd-motion-plugins)
-— which is consumed as a package, never as a sibling source tree.
-
-```sh
-# usd-motion-plugins, once
-cmake -S usd-motion-plugins -B build-motion -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_PREFIX_PATH=<openusd-prefix> -DCMAKE_INSTALL_PREFIX=<motion-prefix>
-cmake --build build-motion --config Release
-cmake --install build-motion --config Release
-
-# this workspace
-cmake -S . -B build "-DCMAKE_PREFIX_PATH=<openusd-prefix>;<motion-prefix>" \
-      -DPython3_EXECUTABLE=<the python OpenUSD's bindings are built for>
-cmake --build build --config Release
-ctest --test-dir build -C Release
-```
-
-Two things `ost` supplies that a plain build states itself:
-
-- **The Python OpenUSD was built against, where it was built against it.**
-  An OpenUSD install's CMake package names that Python's headers by absolute
-  path, so pass its interpreter as `Python3_EXECUTABLE`, and have its headers
-  and `libpython` where the install expects them. For the pinned Linux
-  runtime, that is deadsnakes' `python3.13-dev` on Ubuntu 24.04.
-  [Plain CMake](docs/reference/SUPPORTED_CONFIGURATIONS.md#plain-cmake)
-  explains why no `Python3_*` hint can point it elsewhere.
-- **`-DUSDVRM_EXEC_MOTION_ROOT=<dir>`**, an extracted
-  [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion)
-  bundle, for the suites that compose it (the `execVrm` retarget cases and
-  the OpenExec parity rows). Without it they are not registered, and
-  `workspace_ctest_labels` says which labels that leaves empty.
-
-[`plain-cmake.yml`](.github/workflows/plain-cmake.yml) runs exactly this on
-Linux, taking the usd-motion-plugins commit its pinned packages were built from
-([`scripts/plain_cmake_inputs.py`](scripts/plain_cmake_inputs.py)).
-
-The motion layer's suites carry CTest labels, so one layer runs on its own:
-`motion.retarget`, `motion.cli`, `motion.integration`, `motion.openexec` and
-`motion.real-corpus` (`ctest --test-dir build -C Release -L motion.openexec`).
-[The OpenExec plan](docs/roadmap/openexec-foundation.md) (P0-2) says what each
-names.
-
-Each member also builds standalone against *installed* packages
-(`find_package(vrmSchema CONFIG REQUIRED)`), resolving only what it links: the
-root resolves no dependency on a member's behalf, so `usdVrmFileFormat` configures
-with no motion package on the prefix path at all. A member never reaches
-sideways into a sibling's source tree, and
-[`scripts/check_cmake_boundaries.py`](scripts/check_cmake_boundaries.py) holds
-every member's edges to [WORKSPACE.md §2](docs/architecture/WORKSPACE.md).
-
-The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in
-`plugins/usdVrmFileFormat/lib/`; add
-`plugins/usdVrmFileFormat/plugin/resources/usdVrmFileFormat` to
-`PXR_PLUGINPATH_NAME` and the `lib/` dir to your dynamic-loader path to use it.
-
-### Clean-install smoke
-
-Verifies the *packaged* bundles have no build-tree dependency:
-
-```sh
-python scripts/clean_install_smoke.py               # build + package + extract + smoke
-python scripts/clean_install_smoke.py --skip-build   # reuse the current build
-```
-
-It packages the three VRM bundles with `ost`, extracts them into a fresh directory
-**outside** the repo, and runs the assertions in
-`plugins/usdVrmFileFormat/tests/clean_install_smoke.py` against that extracted
-tree: `.vrm` discovery served from the package, a textured fixture and a corpus
-avatar open and validate, and an embedded texture resolves straight from the
-`.vrm` container. Needs `ost` + a validated `cy2026` runtime.
-
-### CI
-
-CI is generated from the support matrix in `openstrata.ci.yaml`
-(`ost ci generate github`). The PR lane (`.github/workflows/ost-source-ci.yml`)
-runs **seven cells** against digest-pinned cy2026 runtimes on hosted Windows /
-macOS arm64 / Linux:
-
-- **One graph cell** (`verify: graph`), which runs
-  `ost plugin test --workspace --graph-only` — the [WORKSPACE.md §2](docs/architecture/WORKSPACE.md)
-  dependency-direction gate — before anything is built, in milliseconds.
-- **Three workspace cells** (`kind: workspace`), one per OS, which build the
-  root CMake tree and run its CTest suite. This is the behavioral lane: the root
-  tree is the only configuration in which the plain libraries and the CLI tools
-  exist, and its suite also contains every bundle's own tests, so it is the
-  coverage `vrmRig`, `vrmContainer`, `motion_retarget`, all four plugin bundles and the
-  whole-workspace `usdvrm_baseline` gate get.
-- **Three bundle cells** — `usdVrmFileFormat` on each OS — which build that
-  bundle *standalone* (`ost plugin build`, no root tree in scope), run its
-  pyramid (`--up-to 5`; Windows is capped at 4), and `ost plugin package` it.
-  Neither the standalone configure nor packaging is reachable from a workspace
-  cell, and they are per-platform, which is what these three are for.
-
-There were sixteen cells until 2026-08-30 — all four bundles on all three OS.
-Nine were removed as measured duplicates of the workspace suite; `openstrata.ci.yaml`
-carries the evidence and what to re-run before adding them back. There is no
-scheduled lane any more: its one cell targeted a self-hosted runner that does
-not exist and had been cancelled weekly since 2026-07-27.
-
-## Release artifacts
-
-Pushing a tag `vX.Y.Z` (matching [`VERSION`](VERSION), with that version's
-`CHANGELOG.md` section finalized) runs `.github/workflows/release.yml`: it builds
-on all three OS cells, proves the *packaged* artifact (packaged-artifact
-verification, clean-install smoke, digest-reproducible packaging), and assembles
-a **draft** GitHub release — per-target lean + debug bundles, a source archive,
-`SHA256SUMS`, and notes rendered from `CHANGELOG.md` via
-[docs/contributing/RELEASE_NOTES_TEMPLATE.md](docs/contributing/RELEASE_NOTES_TEMPLATE.md).
-Publishing the draft is a human decision. Run the workflow manually
-(`workflow_dispatch`) for a dry run that creates no release.
-
-`usdVrmFileFormat` carries a `buildInfo.json` stamp (commit / toolchain /
-OpenUSD release and `PXR_VERSION` / OpenExec components / build type / schema
-contract version), surfaced by `tools/vrm_report.py`.
-
-Every bundle is built against **OpenUSD 26.08 and nothing else**, and against a
-26.08 that carries OpenExec. Both are enforced at configure time by
-[`cmake/UsdVrmOpenUsd.cmake`](cmake/UsdVrmOpenUsd.cmake), for `ost` and
-plain-CMake builds alike — see
-[supported configurations](docs/reference/SUPPORTED_CONFIGURATIONS.md).
+Identities and dependency directions:
+[docs/architecture/WORKSPACE.md](docs/architecture/WORKSPACE.md).
 
 ## Documentation
 
-[docs/](docs/) is organized by responsibility — the same layout `open-strata`
-and `hydra-merlin` use:
-
 | | |
 | --- | --- |
-| [docs/architecture/](docs/architecture/) | The binding workspace contract: identities, dependency directions, artifact naming |
-| [docs/guides/](docs/guides/) | How to install |
-| [docs/reference/](docs/reference/) | What is supported, on what |
-| [docs/roadmap/](docs/roadmap/) | What is planned next (incomplete work only) |
-| [docs/releases/](docs/releases/) | Per-version release records |
-| [docs/design/](docs/design/) | Why the significant decisions were made |
-| [docs/reports/](docs/reports/) | Evidence from real runs: the `ost` dogfooding series + the delivery log |
+| [What is implemented](docs/reference/CAPABILITY_MATRIX.md) | Per-feature status, for the importer and for motion on a VRM rig |
+| [Supported configurations](docs/reference/SUPPORTED_CONFIGURATIONS.md) | Platforms, OpenUSD, build requirements |
+| [Incomplete work](docs/roadmap/current.md) | The next release's open conditions |
+| [Release history](CHANGELOG.md) | The changelog, and the per-version [release records](docs/releases/) |
+| [docs/](docs/README.md) | Which document owns which subject |
 
-Release history is in the [CHANGELOG](CHANGELOG.md); the release version lives
-in the single-source [VERSION](VERSION) file.
+## Build
 
-## Contributing
+Install a released product with [docs/guides/INSTALL.md](docs/guides/INSTALL.md).
+To build from source, with [OpenStrata](https://github.com/animu-sphere/open-strata):
 
-Small fixes, documentation updates, tests, and questions are welcome. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the short setup and pull request guide.
-Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) and
-[Security Policy](SECURITY.md).
+```sh
+ost runtime pull cy2026 --profile usd --from-usd /path/to/openusd-install
+ost plugin test --workspace
+```
+
+or with plain CMake against an OpenUSD 26.08 install and installed
+`usd-motion-plugins` packages. Both paths, the test labels, CI and the release
+lane are in [docs/guides/BUILDING.md](docs/guides/BUILDING.md).
 
 ## License
 
 Original source and documentation: Apache-2.0 (see [LICENSE](LICENSE)).
 Third-party components keep their own licenses; see
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). cgltf v1.15 is vendored under
-[`third_party/cgltf`](third_party/cgltf) with its MIT license.
+[`third_party/cgltf`](third_party/cgltf) with its MIT license. Contributions:
+[CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md) ·
+[Security Policy](SECURITY.md).
 
 > Local test VRM avatars used during development are **not** part of this
 > repository and are not redistributed here; mind their individual licenses.

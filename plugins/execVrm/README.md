@@ -2,7 +2,7 @@
 
 OpenExec computations applying VRM semantics to a target rig, driven by the
 schema contract only. Workspace Phase 8 / Motion Phase E; the plan is
-[docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
+[docs/roadmap/openexec-foundation.md](../../docs/archive/motion-split/openexec-foundation.md)
 §6, P0-5.
 
 **The rig, one sample of a clip on it, and what the retarget said.** It
@@ -94,7 +94,7 @@ The unbound bones cost one executor warning each per compute of the map — the
 fixture's 49 of 55 on the first compute, none on a cached recompute. They are
 not this bundle's warnings and it cannot silence them; a `""` fallback on each
 bone attribute in `vrmSchema` would, and is a schema-contract question filed with
-[boundary consolidation](../../docs/roadmap/boundary-consolidation.md).
+[boundary consolidation](../../docs/archive/motion-split/boundary-consolidation.md).
 
 ## What a humanoid may state, and what is refused
 
@@ -223,7 +223,7 @@ a request armed on a wrong stage still reports the statement.
 adds, and nothing else: the rig's joint tokens, read off
 `vrm.computeTargetSkeleton` across `vrm:skeleton` because a retargeted pose does
 not carry them, and each joint's rest scale (the
-[scale policy](../../docs/design/MOTION_CONTRACT.md#scale-policy-v090)). The rotations, translations
+[scale policy](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/RETARGETING_POLICY.md#61-scale-carried-from-usd-vrm-plugins-v090)). The rotations, translations
 and timestamp pass through bit for bit. It is what `motion_retarget` authors per
 sample, so it is the value P0-6 compares against a bake. It answers components
 rather than matrices, because the matrices are UsdSkel's own composition of
@@ -254,8 +254,8 @@ It is a question P1-2 has to answer
 ## What the retarget said
 
 A retarget reports what it could not honour as P1-1's frozen `MOTION_RETARGET_*`
-codes ([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md), "Retarget
-diagnostics"), and the codes are a value here, not a warning a caller of
+codes ([RETARGETING_POLICY.md §7](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/RETARGETING_POLICY.md#7-diagnostics)
+in `usd-motion-plugins`), and the codes are a value here, not a warning a caller of
 `Compute` never sees. Two computations answer them, split where the library
 splits them:
 
@@ -375,7 +375,7 @@ which turns a rest matrix into the rotation, translation and scale a
 `SkeletonJoint` carries; `motion_retarget` calls the same builder. It arrived with the scale policy, because carrying the rest scale in two
 copies of the decomposition would have been a parity difference waiting to
 happen. What remains of the ask for
-[boundary consolidation](../../docs/roadmap/boundary-consolidation.md) is
+[boundary consolidation](../../docs/archive/motion-split/boundary-consolidation.md) is
 reading the tokens and matrices off a skeleton, which is a stage read.
 
 ## How a computation refuses

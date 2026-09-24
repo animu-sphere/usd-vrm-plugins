@@ -11,14 +11,10 @@ Phase 2 `vrmContainer` extraction, Phase 3 `usdVrmPackageResolver` split, and
 Phase 4 `usdVrm` → `usdVrmFileFormat` rename landed (see §8). `usdVrm` is no
 longer a bundle id; it names the aggregate product only (§1).
 
-The motion layer (`.vrma` import, retargeting, the OpenExec runtime) was added
-to this contract on 2026-07-18 from
-[design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md).
-Workspace Phase 6a (`motionCore`) and Phase 7 (`usdVrmaFileFormat`) land in
-v0.3.0; the remaining motion identities are reserved. Workspace Phase 5 emits
-the aggregate product archive, but its standalone packaging-closure P0 remains
-open. The implementation contract for the shipped motion foundation is
-[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md).
+How VRM and VRMA use motion is
+[design/VRM_MOTION_POLICY.md](../design/VRM_MOTION_POLICY.md). Workspace Phase 5
+emits the aggregate product archive, but its standalone packaging-closure P0
+remains open.
 
 **Every generic motion identity has left this repository** (MIG-1..MIG-4,
 2026-09-19..24). The `usd-motion-plugins` design policy settles the
@@ -82,7 +78,7 @@ name (MIG-5).
 
 `adapters/` no longer exists. An input adapter is `motion-connectors`', and
 this workspace has none. The `ExecIr` adapter named in
-[the OpenExec plan §3](../roadmap/openexec-foundation.md) is a different
+[the OpenExec plan §3](../archive/motion-split/openexec-foundation.md) is a different
 thing: an internal insulation layer inside `execVrm` that confines a
 possibly-experimental OpenUSD dependency.
 
@@ -213,7 +209,7 @@ reviewer can check them without opening the policy:
   I/O.** Receiving is a connector's job and buffering is `motionSampling`'s;
   a callback that opened a socket or read a clock would make cache reuse and
   invalidation untestable, which is the whole reason to be on OpenExec at all
-  ([OpenExec plan §5](../roadmap/openexec-foundation.md)). `execVrm_boundaries`
+  ([OpenExec plan §5](../archive/motion-split/openexec-foundation.md)). `execVrm_boundaries`
   checks it here, along with the bundle's links and its half of the schema
   partition above, on the source, the built library's imports, the target's
   link libraries and `plugInfo.json`. `execMotion_boundaries` checks the other
@@ -223,7 +219,7 @@ reviewer can check them without opening the policy:
   adapter layer inside `execVrm`; the canonical motion contract is not derived
   from its representation, the importer never has to author its prims, and the
   offline pipeline stays whole with it absent
-  ([OpenExec plan §7.0](../roadmap/openexec-foundation.md)).
+  ([OpenExec plan §7.0](../archive/motion-split/openexec-foundation.md)).
 
 Enforcement: `ost plugin test --workspace` (ost >= 0.15.0) validates the
 bundle graph declared via `requires.bundles` before running any bundle's
@@ -517,7 +513,7 @@ policy" below) fixes one dependency direction for the ecosystem —
 reverse — and says generic motion code in this repository migrates there
 (its §19.1, §37). This section is the structural half of that decision: where
 each identity goes. The plan and its order are
-[the migration track](../roadmap/motion-foundation-split.md); why the
+[the migration track](../archive/motion-split/motion-foundation-split.md); why the
 scope changed is
 [the scope policy](../design/INTEGRATION_SCOPE_POLICY.md).
 
@@ -644,7 +640,7 @@ Workspace ladder (§8) does not grow for them: it tracked the move out of
 ### 9.5 The line through `vrmRetarget`
 
 Drawn on 2026-09-19, as MIG-0's second item
-([the migration track §2](../roadmap/motion-foundation-split.md#2-mig-0--preparation-)).
+([the migration track §2](../archive/motion-split/motion-foundation-split.md#2-mig-0--preparation-)).
 It is drawn here, in a change of its own, because it splits an identity.
 
 The split is by header, and one function in one header is the only thing cut in
@@ -658,7 +654,7 @@ inferred from the names:
 | `HumanoidMap.h` | `HumanoidMap`, without `GetRequiredBones` | `motionRetarget` as `RetargetMap` | it maps `motion::HumanJoint` to a joint index, and it never reads a VRM binding. Every caller builds one from `VrmHumanoidAPI` (`execVrm`'s `ExecVrmRig`, `motion_retarget`'s `StageIo`), and that reading stays with the caller |
 | `HumanoidMap.h` | `GetRequiredBones`, and the check that reads it | **cut**: the set stays here, the check moves with a caller-supplied set | finding 1 below |
 | `RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` | `motionRetarget` | the rest-pose path rule, stated for any two rigs |
-| `RootMotionPolicy.h` | `RootMotionMode`, `RootMotionOptions`, `ResolveRootTranslation` | `motionRetarget` | the root-motion policy. `Hips` is the default because the motion contract records body translation on the hips ([Root and hips](../design/MOTION_CONTRACT.md#root-and-hips-v070)), which is a rule for every producer and not a `.vrma` convention |
+| `RootMotionPolicy.h` | `RootMotionMode`, `RootMotionOptions`, `ResolveRootTranslation` | `motionRetarget` | the root-motion policy. `Hips` is the default because the motion contract records body translation on the hips ([`usd-motion-plugins` MOTION_CONTRACT.md §5.3](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/MOTION_CONTRACT.md#53-root-motion-and-the-hips)), which is a rule for every producer and not a `.vrma` convention |
 | `PoseRetargeter.h` | `PoseRetargeter`, `RetargetedPose`, `RetargetedAnimation`, `JointLocalTransforms`, `GetJointWorldTransform`, `DiagnoseRig`, `RetargetOptions` | `motionRetarget` | the retarget itself |
 | `Diagnostics.h` | the eight frozen `RetargetDiagnosticCode`s and their record | `motionRetarget`, codes restyled (§9.3) | the body retarget's codes: five raised by the library, three by a stage-holding caller that is itself `motionUsd` or a CLI there |
 | `ExpressionResolver.h` | `ExpressionResolver` and its diagnostics | **stays** | resolves producer expression names onto one avatar's VRM expressions and binds |

@@ -261,7 +261,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
     // translation carries the weight; the vocabulary is open, so nothing here
     // validates the *name* -- a preset this build has never heard of is still a
     // name a producer used, and motionCore carries it verbatim
-    // (MOTION_CONTRACT.md, "Expression semantics"). Only the node is checked.
+    // (docs/design/VRM_MOTION_POLICY.md §3.3). Only the node is checked.
     std::map<int, std::size_t> expressionByNodeIndex;
     std::set<std::string> expressionNames;
     if (const JsObject* expressions = AsObject(Find(*root, "expressions")))
@@ -468,7 +468,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath, const std::vector
     // sample is evaluated there. An expression that keys on its own beats is
     // therefore not resampled onto the body's -- it adds instants the body is
     // evaluated at too, which is the rule the body channels already followed and
-    // the reason expressions can ride on the pose (MOTION_CONTRACT.md).
+    // the reason expressions can ride on the pose (VRM_MOTION_POLICY.md §3.2).
     const auto keepKeys = [&](const cgltf_animation_sampler* sampler)
     {
         std::vector<float>& keys = samplerKeys[sampler];

@@ -367,7 +367,7 @@ def main() -> int:
         for failure in failures:
             print(f"  - {failure}")
         print("\nA difference is a defect until PACKAGE_CONTRACT.md documents "
-              "it (roadmap/packaging-hardening.md PKG-4). Fix the config file "
+              "it (archive/packaging/packaging-hardening.md PKG-4). Fix the config file "
               "or the contract cell, never this check.")
         return 1
 

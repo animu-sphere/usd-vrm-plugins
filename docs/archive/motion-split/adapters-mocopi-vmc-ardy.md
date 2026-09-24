@@ -1,3 +1,14 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-25.** This was the live input adapter track (VMC, mocopi, ARDY), and it was
+> once authoritative. Do not use it to determine current architecture,
+> capabilities, ownership or roadmap: start from [docs/README.md](../../README.md).
+> Its section numbers are unchanged, so older documents can still cite
+> them. See [the archive index](../README.md).
+
 # Input adapters — the VMC → mocopi → ARDY direction
 
 > **Moved (2026-09-21): `motion-connectors`.** The VMC and mocopi adapters and
@@ -6,7 +17,7 @@
 > [`motionConnectorMocopi`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi) and the
 > two recorders under that repository's root `tools/`; this repository deleted
 > its copies in the same change
-> ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-4). The ARDY adapter (§7) is
 > created there, behind the generator interface `usd-motion-plugins` specifies.
 > **This plan is a record now, not a plan**: what it measured is what was built
@@ -19,9 +30,9 @@ reaching into it.
 This document holds **boundaries, order, and completion conditions** only. Where
 it touches structure it defers: adapter identities, dependency directions, and
 artifact naming are settled in
-[architecture/WORKSPACE.md](../architecture/WORKSPACE.md) §1, §2, §5, and motion
+[architecture/WORKSPACE.md](../../architecture/WORKSPACE.md) §1, §2, §5, and motion
 semantics in
-[design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md)
+[design/MOTION_ARCHITECTURE_POLICY.md](../../design/MOTION_ARCHITECTURE_POLICY.md)
 §8, §14, §15. Items this plan needs from those contracts are listed in
 [§11](#11-contract-changes-this-plan-requires) rather than asserted here.
 
@@ -31,8 +42,8 @@ semantics in
 > changelog entry still resolve; it is not the implementation order.
 >
 > **Both pose leaves have shipped.** Milestone A–B landed in
-> [v0.6.0](../releases/v0.6.0.md) and Milestones C–D in
-> [v0.7.0](../releases/v0.7.0.md); what remains of them is evidence an operator
+> [v0.6.0](../../releases/v0.6.0.md) and Milestones C–D in
+> [v0.7.0](../../releases/v0.7.0.md); what remains of them is evidence an operator
 > produces, carried in [§10](#10-milestones). The
 > [OpenExec foundation](openexec-foundation.md) was ordered behind this track
 > because its parity comparison wants recorded sessions from a real device and
@@ -72,7 +83,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 Three inputs, added one at a time:
 
 1. **A VMC Protocol adapter** — generic real-time input from any sender
-   application. Shipped in [v0.6.0](../releases/v0.6.0.md).
+   application. Shipped in [v0.6.0](../../releases/v0.6.0.md).
 2. **A direct capture-product adapter** (mocopi) — native input from a real
    device, built *after* the protocol path so the two can be compared. v0.7.0.
 3. **A generation adapter** (ARDY) — generated motion behind a vendor-neutral
@@ -159,7 +170,7 @@ second. `vrmAdapterMocopi` handles native mocopi input and does not use
 `vrmAdapterVmc` internally; `vrmAdapterVmc` knows nothing about which
 application filled its datagrams. Collapsing the two is how a protocol adapter
 acquires a vendor's assumptions
-([WORKSPACE.md §2](../architecture/WORKSPACE.md), sibling rule).
+([WORKSPACE.md §2](../../architecture/WORKSPACE.md), sibling rule).
 
 ## 3. This track does not wait for OpenExec
 
@@ -197,7 +208,7 @@ One consequence is worth stating because it would otherwise leak in as a hidden
 blocker. This path has an independent upstream constraint in OpenUSD 26.08 —
 `usdExecImaging` resolves prim adapters from a hard-coded list, so a `UsdSkel`
 avatar cannot be displayed through the exec scene index
-([migration report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)):
+([migration report §8.2](../../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)):
 
 ```text
 mocopi / VMC -> OpenExec -> UsdSkel joint transforms -> usdExecImaging -> usdview
@@ -222,7 +233,7 @@ adapters/
 ```
 
 The `liveCapture/` and `generators/` grouping is the one already fixed in
-[WORKSPACE.md §1](../architecture/WORKSPACE.md); the source policy's flatter
+[WORKSPACE.md §1](../../architecture/WORKSPACE.md); the source policy's flatter
 sketch (`adapters/vrmAdapterVmc/`) is the same set of leaves and the contract
 wins on structure.
 
@@ -231,7 +242,7 @@ The manifest is `openstrata.library.yaml`, and each `tools/` CLI carries an
 until 2026-07-29, which no adapter could ever have written: a plugin manifest
 names an OpenUSD plugin kind and a `plugInfo.json`, and an adapter registers
 nothing with OpenUSD. The reasoning and the corrected identities are in
-[WORKSPACE.md §1](../architecture/WORKSPACE.md); nothing else in this plan moves
+[WORKSPACE.md §1](../../architecture/WORKSPACE.md); nothing else in this plan moves
 with it.
 
 No `adapters/common/`. It gets extracted when two adapters demonstrably
@@ -251,12 +262,12 @@ anticipation.
 > arriving exactly on schedule.
 >
 > **It is deliberately not fixed in the change that found it.** `adapters/common/`
-> is the wrong shape — [WORKSPACE.md §2](../architecture/WORKSPACE.md) forbids an
+> is the wrong shape — [WORKSPACE.md §2](../../architecture/WORKSPACE.md) forbids an
 > adapter→adapter edge, and a shared leaf between two leaves is that edge wearing
 > a hat. The candidate is a protocol-agnostic bridge beside `LiveCaptureSource`
 > in `motionRuntime`, parameterised on the frame type, which is a **contract
 > change**: it moves the restart-policy vocabulary into the motion layer, and
-> [docs/README.md](../README.md) requires those to land in their own change before
+> [docs/README.md](../../README.md) requires those to land in their own change before
 > a plan depends on them. §11 carries it as such.
 >
 > Deciding it before `vrmAdapterArdy` is written is cheaper than after — but ARDY
@@ -406,8 +417,8 @@ mocopi native UDP stream → vrmAdapterMocopi → canonical motion
 > [recorded-motion-sources.md](recorded-motion-sources.md), built as a generic BVH
 > pipeline rather than as this product's importer, and the two meet at
 > `motionCore` and nowhere earlier
-> ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md),
-> [WORKSPACE.md §2](../architecture/WORKSPACE.md)). Sharing a decoder between them
+> ([motion policy §8.3](../../design/MOTION_ARCHITECTURE_POLICY.md),
+> [WORKSPACE.md §2](../../architecture/WORKSPACE.md)). Sharing a decoder between them
 > is how a file reader acquires a socket's assumptions, or a socket a file's.
 >
 > They do meet again in one place that is worth the trouble: the **same physical
@@ -706,7 +717,7 @@ each path represents tracking loss. **Latency is a live-path measurement only** 
 a file has none, and reporting one for it would be inventing a number.
 
 `NearlyEqual` for motion equivalence, `operator==` for recorded-value identity
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
 A difference outside tolerance is classified before it is accepted, and the useful
 outcome of this comparison is not a green test — it is the list of what each path
 cannot carry, written down once, from evidence.
@@ -728,7 +739,7 @@ about it says nothing about whether the two paths agree about a session's
 movement, its timing, or what each drops.
 
 **The real comparison happened on 2026-08-15, on two of the three paths**
-([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)). One
+([report 01](../../reports/motion/01-2026-08-15-mocopi-cross-source.md)). One
 physical session was recorded as UDP and exported as BVH over the same window,
 and both halves were driven to a canonical clip and compared there.
 
@@ -780,9 +791,9 @@ take**, or the comparison is between two performances.
 | F — the generation adapter | unscheduled | ⬜ |
 
 **What shipped is not restated here.** Milestones A–D are recorded per
-capability in the [delivery history](../reports/delivery-history.md) §I and §J,
-per release in [v0.6.0](../releases/v0.6.0.md) and
-[v0.7.0](../releases/v0.7.0.md), and per decision in the two adapter READMEs and
+capability in the [delivery history](../../reports/delivery-history.md) §I and §J,
+per release in [v0.6.0](../../releases/v0.6.0.md) and
+[v0.7.0](../../releases/v0.7.0.md), and per decision in the two adapter READMEs and
 the headers beside the code — which is where a reader of the code will look.
 What stays below is what is **still open**, with the reason it could not close.
 
@@ -791,7 +802,7 @@ be verified from committed bytes shipped with v0.6.0; everything in it that need
 an operator, a sender application, or a device is the evidence half, and no
 amount of code closes those. The carried items below all sit on that same line,
 and the ones that are release conditions are tracked in
-[current.md](current.md#carried-out-of-v070--evidence-an-operator-produces).
+[current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces).
 
 ### Milestone A — VMC decoding ✅ (v0.6.0, one item carried)
 
@@ -804,7 +815,7 @@ settle, and both are settled: a VMC bone rotation is the sender's local rotation
 (a sender whose humanoid rest is not identity needs `vrmRetarget`'s
 `SourceRestPose`, never a rest manufactured from the first frame), and how a
 hips offset composes with `/VMC/Ext/Root/Pos` is the record in
-[`MOTION_CONTRACT.md`](../design/MOTION_CONTRACT.md#root-and-hips-v070).
+[`MOTION_CONTRACT.md`](../../design/MOTION_CONTRACT.md#root-and-hips-v070).
 
 - ⬜ **An unknown bone name is unit-tested and not in the corpus.** The refusal
   path (`VRM_VMC_UNSUPPORTED_MESSAGE`, the bone dropped and the frame kept) has
@@ -897,7 +908,7 @@ and the first can say it about `motion_capture` too.
 - ⬜ **The artifact-only leg is not done.** Nothing here has been run from
   packaged artifacts. An adapter artifact is producible as of `ost` 0.22.3, so
   what remains is the run, in
-  [current.md](current.md#carried-out-of-v070--evidence-an-operator-produces),
+  [current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces),
   and the decision about whether a release carries one, which is
   [BND-2](boundary-consolidation.md#4-bnd-2--settle-the-adapter-distribution-decision-).
 
@@ -907,7 +918,7 @@ and the first can say it about `motion_capture` too.
 receiver · packet decoder · joint mapping · coordinate conversion · frame
 assembly · `LiveCaptureSource` bridge · the loopback corpus · `mocopi_record` ·
 **the cross-source comparison of §9.6** ([report
-01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)).
+01](../../reports/motion/01-2026-08-15-mocopi-cross-source.md)).
 
 **The build order was Milestone A's and is not** — amended 2026-08-11, after the
 receiver landed first. It was planned as recorded decoder → mapping →
@@ -927,7 +938,7 @@ transmits a BVH file over the same UDP format — and that produces a capture wi
 no device at all: pointed at a `.bvh` this repository wrote, it yields bytes
 whose *encoding* is the vendor's and whose *content* is ours. That is the only
 route to a committable, publicly CI-runnable mocopi capture, which is why
-[the redistributable-capture carry-over](current.md#carried-out-of-v070--evidence-an-operator-produces)
+[the redistributable-capture carry-over](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)
 names `BVH Sender` rather than a phone. Such a capture belongs in `generated/`
 with its provenance saying what produced it: its bytes are genuinely the
 vendor's protocol, so it is not generated in the sense the VMC corpus is, and
@@ -946,7 +957,7 @@ as a new value type, so its output meets the *same* contract as
   unproducible on this product, so `VRM_MOCOPI_TRACKING_LOST` stays frozen and
   unraised and the explicit tracking state §11 asks `motionCore` for is not
   built. Closing this is a recovery a device can actually produce, or a decision
-  that this product cannot — [current.md](current.md#carried-out-of-v070--evidence-an-operator-produces).
+  that this product cannot — [current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces).
 
 ### Milestone E — the generator contract ⬜
 
@@ -963,13 +974,13 @@ retarget integration test · provider metadata · packaging
 ## 11. Contract changes this plan requires
 
 Structural claims belong in the contracts, in their own change, before this plan
-depends on them ([docs/README.md](../README.md)). What has landed is in the
+depends on them ([docs/README.md](../../README.md)). What has landed is in the
 contracts themselves — adapter identities, dependency directions and artifact
-names in [WORKSPACE.md](../architecture/WORKSPACE.md) §1, §2 and §5; the VMC-first
+names in [WORKSPACE.md](../../architecture/WORKSPACE.md) §1, §2 and §5; the VMC-first
 ordering and the datagram-queue hand-off in
-[motion policy](../design/MOTION_ARCHITECTURE_POLICY.md) §8.2 and §11.4;
+[motion policy](../../design/MOTION_ARCHITECTURE_POLICY.md) §8.2 and §11.4;
 deterministic comparison in
-[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060).
+[MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060).
 One of them is worth keeping visible because it is a rule rather than a
 capability:
 
@@ -977,7 +988,7 @@ capability:
   This item read "Milestone C adds `--source vmc --listen <addr>` alongside
   `--replay`" until the change was costed. `motion_capture` is a product tool and
   every adapter is excluded from the product
-  ([WORKSPACE.md §5](../architecture/WORKSPACE.md)), so the edge would have
+  ([WORKSPACE.md §5](../../architecture/WORKSPACE.md)), so the edge would have
   pulled a protocol decoder and a product name into the aggregate artifact —
   once per adapter, because `--source vmc` invites `--source mocopi` behind it;
   no tool in the product opens a transport, which is what makes every clip
@@ -1007,8 +1018,8 @@ Still owed:
   which moves the restart-policy vocabulary — `Reset` versus `Refuse`, and the
   rule that splicing the two sessions is offered nowhere — out of the adapters
   and into the motion contract. That is
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s to state and
-  [WORKSPACE.md §2](../architecture/WORKSPACE.md)'s to permit, in its own change,
+  [MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md)'s to state and
+  [WORKSPACE.md §2](../../architecture/WORKSPACE.md)'s to permit, in its own change,
   before either adapter is rewritten against it. **Its third instance is
   scheduled** — a VRChat OSC adapter has the datagram, restart and session clock
   ARDY may not
@@ -1019,7 +1030,7 @@ Still owed:
 - ⬜ **The generator contract has no home yet.** `IMotionGenerator` and
   `MotionGenerationRequest` are named in motion policy §16 Phase F as
   deliverables, but the interface itself will need a contract document before
-  Milestone E, in the way [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)
+  Milestone E, in the way [MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md)
   serves the shipped motion foundation.
 - ⬜ **`adapter-hardware-opt-in` has no expressible lane shape.** The other three
   lanes of §9.5 need none: `ost` 0.21.0's `kind: workspace` cells picked the
@@ -1030,10 +1041,10 @@ Still owed:
 Two items that stood here through v0.7.0 have since closed, and are recorded
 where they landed rather than repeated: plain-library discovery now reaches an
 adapter, so the graph gate validates a declared adapter edge
-([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §1),
+([report 35](../../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §1),
 and `ost library package` composes `requires.libraries`, so an adapter is
 separately shippable
-([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)).
+([report 36](../../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)).
 Whether a release *carries* an adapter artifact is a decision, not a tool, and it
 is scheduled as
 [BND-2](boundary-consolidation.md#4-bnd-2--settle-the-adapter-distribution-decision-).
@@ -1062,7 +1073,7 @@ stability · clean install · package closure.
 ## 13. Release boundaries
 
 Adapters are never part of the aggregate product
-([WORKSPACE.md §5](../architecture/WORKSPACE.md)), so each of these is its own
+([WORKSPACE.md §5](../../architecture/WORKSPACE.md)), so each of these is its own
 shippable boundary:
 
 | Milestone | Release | Includes | Excludes |

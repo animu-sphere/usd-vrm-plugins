@@ -1,15 +1,26 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-25.** This was the OpenExec foundation plan (v0.9.0), and it was
+> once authoritative. Do not use it to determine current architecture,
+> capabilities, ownership or roadmap: start from [docs/README.md](../../README.md).
+> Its section numbers are unchanged, so older documents can still cite
+> them. See [the archive index](../README.md).
+
 # The OpenExec foundation
 
 > **After v0.9.0 (decided 2026-09-17).** The foundation finishes here. Then
 > `execMotion` moves to `usd-motion-plugins` as its optional OpenExec bundle,
 > while `execVrm` and the `ExecIr` track (§7) stay
-> ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-2). The findings the nodes
 > produced are fixed in the destination libraries on arrival.
 
 > **Target: v0.9.0** — the number it took when v0.8.0 was cut on 2026-09-01.
 > The one place a track carries a version is the
-> [roadmap status table](README.md#status-at-a-glance); this block mirrors it and
+> [roadmap status table](../../roadmap/README.md#status-at-a-glance); this block mirrors it and
 > nothing else in this document states a release number for its own work. The
 > `ExecIr` invertible rig is on its own track after this one.
 >
@@ -44,7 +55,7 @@
 >
 > **Renamed 2026-08-03**, from `openexec-v0.6.0-v0.7.0.md`. The filename carried
 > two version numbers and both moved: v0.6.0 shipped
-> [VMC input](../releases/v0.6.0.md) instead, and this plan moved back so that
+> [VMC input](../../releases/v0.6.0.md) instead, and this plan moved back so that
 > [v0.7.0](adapters-mocopi-vmc-ardy.md)'s recorded sessions from a real
 > device and real senders exist *before* they are used as parity input (§4.6). A
 > version-free name is what stops the next re-ordering from leaving a filename
@@ -53,8 +64,8 @@
 This document holds the **boundaries, priorities, and completion conditions**
 only. Where it touches structure it defers: bundle identities and dependency
 directions are settled in
-[architecture/WORKSPACE.md](../architecture/WORKSPACE.md), and motion semantics
-in [design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md).
+[architecture/WORKSPACE.md](../../architecture/WORKSPACE.md), and motion semantics
+in [design/MOTION_ARCHITECTURE_POLICY.md](../../design/MOTION_ARCHITECTURE_POLICY.md).
 Items this plan needs from those contracts are listed in
 [§9](#9-contract-changes-this-plan-requires) rather than asserted here.
 
@@ -79,7 +90,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
   in place before the first computation, not after it.
 - `motionCore`, `motionRuntime`, and `vrmRetarget` stay **OpenExec-independent**.
   This is already the binding rule in
-  [WORKSPACE.md §2](../architecture/WORKSPACE.md); the plan does not relax it.
+  [WORKSPACE.md §2](../../architecture/WORKSPACE.md); the plan does not relax it.
 - An OpenExec computation is a **thin wrapper over the existing plain C++
   implementation**. It never becomes a second algorithm.
 - **A computation evaluates an immutable snapshot and performs no I/O.** No
@@ -154,7 +165,7 @@ what v0.1.0–v0.4.0 already shipped.
 | Presentation / application | `usdExecImaging`, Hydra / usdview, `motion_retarget` | user-visible results |
 
 Required directions, additional to
-[WORKSPACE.md §2](../architecture/WORKSPACE.md):
+[WORKSPACE.md §2](../../architecture/WORKSPACE.md):
 
 ```text
 ExecIr adapter  -> execVrm, OpenExec / ExecIr
@@ -176,15 +187,15 @@ The exact pin, the three digest-pinned runtimes and the migration report all
 landed before this plan starts, and each is recorded where it belongs:
 `cmake/UsdVrmOpenUsd.cmake` and the bundle manifests' `==26.08` carry the pin
 (the mechanism, and why `find_package(pxr 26.08 EXACT)` can never work, is in
-[SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md), kept
+[SUPPORTED_CONFIGURATIONS.md](../../reference/SUPPORTED_CONFIGURATIONS.md), kept
 from drifting by `scripts/check_docs.py`); `buildInfo.json` schema 2 stamps the
 release, `PXR_VERSION` and OpenExec availability; the Windows, Linux and macOS
 arm64 runtimes were published 2026-07-26 with digests and evidence in
-[report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
+[report 29](../../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
 and
-[report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md);
+[report 30](../../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md);
 and the audit is
-[reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md),
+[reports/openusd/26.08-openexec-migration.md](../../reports/openusd/26.08-openexec-migration.md),
 read off the published runtime and the `v26.08` sources with nothing compiled or
 run.
 
@@ -221,8 +232,8 @@ into the task below it:
 5. **Inversion is a plugin-level construct in 26.08**, with an in-source TODO
    saying it moves into the core later.
 
-The report's [§9](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)
-lists all nine consequences; [§10](../reports/openusd/26.08-openexec-migration.md#10-what-this-audit-did-not-do)
+The report's [§9](../../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)
+lists all nine consequences; [§10](../../reports/openusd/26.08-openexec-migration.md#10-what-this-audit-did-not-do)
 is what it did *not* verify.
 
 ## 5. 26.08 features this plan leans on
@@ -266,7 +277,7 @@ this from a self-imposed restriction to a documented behavior: the builtin
 `computeValue` forwards a computed value across **exactly one** connection to a
 same-typed attribute, and silently falls back to the attribute's own resolved
 value when there are two
-([report §5.1](../reports/openusd/26.08-openexec-migration.md#51-the-connection-rule-the-plan-half-guessed)).
+([report §5.1](../../reports/openusd/26.08-openexec-migration.md#51-the-connection-rule-the-plan-half-guessed)).
 One connection per link is a correctness requirement, and only we can enforce it.
 Fan-in exists today through `Relationship().TargetedObjects<T>()` and
 `IncomingConnections<T>()`, the latter with no deterministic ordering.
@@ -277,7 +288,7 @@ not a requirement here — the latter is a standing non-goal
 (motion policy §12.1). The plumbing is one environment variable
 (`USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX`), but 26.08 resolves prim
 adapters from a hard-coded list rather than from plugins
-([report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)),
+([report §8.2](../../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)),
 which is why P0-7 proves the mechanism on `UsdGeomXformable` and leaves skinned
 display to a later milestone.
 
@@ -303,7 +314,7 @@ a component the contract deliberately does *not* require) and asserts both that
 it refuses and why.
 
 **The capability probe carries what the audit found** *(2026-09-06,
-[report §9.1](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan))*.
+[report §9.1](../../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan))*.
 It probes nine components rather than six. `ef`, `esf` and `esfUsd` were
 unprobed but are transitively required by the public exec headers — a runtime
 missing them fails at *compile* time inside a bundle, which is the failure the
@@ -311,7 +322,7 @@ probe exists to move earlier — and `usdExecImaging` is gone from the required
 set, since it is built whether or not `PXR_BUILD_EXEC` is on. The imaging side
 is `usdIrImaging` now, which OpenUSD does gate on that toggle, so the component
 that refuses a `core` runtime leaf
-([SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md)) says
+([SUPPORTED_CONFIGURATIONS.md](../../reference/SUPPORTED_CONFIGURATIONS.md)) says
 something about OpenExec as well as about imaging. Which runtimes are refused
 did not change: a `core` leaf lacks both.
 
@@ -344,7 +355,7 @@ OpenExec/offline parity.
 
 **The lane shape is delivered**: four `ost` 0.21.0 `kind: workspace` cells build
 the root tree and run its whole CTest suite on all three OS
-([report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)).
+([report 33](../../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)).
 What remains of this task is coverage, not lane shape — the CTest labels above
 and the OpenExec/offline parity case, which needs P0-4 and P0-5 first. *The
 parity case exists since 2026-09-13*: five `workspace_exec_parity_*` names in
@@ -374,7 +385,7 @@ fails on four things: a member's `tests/CMakeLists.txt` that registers no test,
 a label a directory in the table should contribute and does not, a test missing
 a label its whole directory carries, and a `motion.*` label not in the table.
 The first is the local half of the per-member attribution asked of `ost`
-([current.md](current.md), "`ost` cannot tell us a workspace member ran no
+([current.md](../../roadmap/current.md), "`ost` cannot tell us a workspace member ran no
 tests"): it covers the 24 member suites of the root build. On the tree before
 the labels it reported 28 findings, none of them about members, and a copy of
 the tree with `usdVrmaFileFormat`'s registrations emptied reported exactly that
@@ -424,7 +435,7 @@ code page is not ours. The two plugin legs run in the test's own process for
 that reason. Each fix was taken out once and the test failed on the leg it
 names. The first attempt passed with the `CanRead` fix reverted, because opening
 a layer never calls `CanRead`, so the test now calls it directly. This row was
-also Product P3's Unicode item ([current.md](current.md)).
+also Product P3's Unicode item ([current.md](../../roadmap/current.md)).
 
 ### P0-3 — `motion_retarget` distribution ✅
 
@@ -447,7 +458,7 @@ evaluated joint transforms, and the absence of any build-tree dependency.
 `motion_capture` tool members of the aggregate product and `release.yml` stages
 them with the bundles. Still open here: the artifact-only smoke above, and two
 existing carry-overs — the unverified non-`ost` Windows install path and the
-DLL-discovery question in [INSTALL.md](../guides/INSTALL.md).
+DLL-discovery question in [INSTALL.md](../../guides/INSTALL.md).
 
 *Part of that smoke runs since 2026-09-13*, inside P0-4's packaged run: the
 product's `motion_retarget` bakes `Seed-san.vrm` and a `.vrma` walk from the
@@ -530,7 +541,7 @@ shortcut: a computation is handed a frame, `MotionPose::timestamp` is seconds,
 and the rate between them is stage metadata exec does not deliver to a callback
 — so **P0-4's remaining nodes need the rate as an explicit input**, decided
 before `motion.sampleAnimation` rather than after
-([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §5). Discovery goes through `plugInfo.json` and `PXR_PLUGINPATH_NAME` and the
+([the mechanism report](../../reports/openusd/26.08-openexec-mechanism.md) §5). Discovery goes through `plugInfo.json` and `PXR_PLUGINPATH_NAME` and the
 test does not link the plugin, so moving that file aside turns the test red with
 `Failed to find computation` — the audit's §2.1 prediction, confirmed as a
 behaviour rather than restated as a risk. The identity computation is the whole
@@ -538,7 +549,7 @@ of the behaviour on purpose: with no algorithm in the bundle, a wrong answer can
 only be a wrong mechanism.
 
 Four measurements came out of it and they are in
-[the mechanism report](../reports/openusd/26.08-openexec-mechanism.md); three
+[the mechanism report](../../reports/openusd/26.08-openexec-mechanism.md); three
 change tasks below. The one that changes this task is **`execMotion` now owns
 the `UsdSkelAnimation` schema**, because 26.08 allows exactly one plugin to
 declare a schema and drops the loser's computations silently.
@@ -564,7 +575,7 @@ the attribute is a shim for an upstream gap that goes away if exec ever delivers
 stage metadata to a callback. Nothing in this repository authors it yet; §9 has
 the producer half.
 
-**Four measurements, in [the sampling report](../reports/openusd/26.08-openexec-sampling.md),
+**Four measurements, in [the sampling report](../../reports/openusd/26.08-openexec-sampling.md),
 and two of them change tasks below.** `.Required()` **does not refuse a missing
 attribute** — the request compiles, `IsValid()` is true, and the callback runs
 with an input that has no value, which is the mechanism report's metadata finding
@@ -610,7 +621,7 @@ different judgement from the rate, and the difference is what an absent value
 costs: a missing rate produces a second no consumer can tell from a measured
 one, a missing cutoff selects the library's documented behaviour.
 
-**Four measurements, in [the filtering report](../reports/openusd/26.08-openexec-filtering.md),
+**Four measurements, in [the filtering report](../../reports/openusd/26.08-openexec-filtering.md),
 and three change tasks below.** A computation **reads another computation** on
 the same prim and the registered aggregate crosses that link unchanged, so the
 chain in §5 is links rather than one node — and `Computation<T>()` is not a
@@ -658,7 +669,7 @@ the *library's* ordering: `LiveCaptureSource` conditions the root of the frame
 as it arrived and smooths afterwards, so a node differentiating a filtered
 position would answer a question P0-6 then has to explain rather than measure.
 
-**Four measurements, in [the root-motion report](../reports/openusd/26.08-openexec-root-motion.md),
+**Four measurements, in [the root-motion report](../../reports/openusd/26.08-openexec-root-motion.md),
 and three change tasks below.** A bundle **registers more than one value type**,
 and a computation may answer in a type other than the one it reads — one request
 returns a pose and a root motion side by side — so nothing forces the remaining
@@ -687,8 +698,8 @@ in every node here — an empty value is the one shape no computation ever
 produces as an *answer*, which is the only thing that keeps a refusal
 distinguishable — and **a refusal propagates**, since a dependent handed no
 value refuses in turn rather than filtering a pose nobody sampled. It corrects
-one sentence of [the sampling report](../reports/openusd/26.08-openexec-sampling.md),
-in [the root-motion report](../reports/openusd/26.08-openexec-root-motion.md) §6
+one sentence of [the sampling report](../../reports/openusd/26.08-openexec-sampling.md),
+in [the root-motion report](../../reports/openusd/26.08-openexec-root-motion.md) §6
 rather than in the audit, because an audit is history.
 
 **The absent-input rule is now general, because this attribute answers it both
@@ -731,7 +742,7 @@ that tells a stopped source from a live one. Registering that type needed an
 exact `operator==` on it, which `motionRuntime` now carries: the v0.6.0 ask,
 answered for the first time outside `motionCore`.
 
-**Four measurements, in [the interpolation report](../reports/openusd/26.08-openexec-interpolation.md),
+**Four measurements, in [the interpolation report](../../reports/openusd/26.08-openexec-interpolation.md),
 and two of them change what P0-6's harness has to do.** An override of a key whose type is a **whole
 history** (`motion::MotionClip`) reaches its dependent like a pose-typed
 one, closing the root-motion report's open question for a second registered
@@ -772,7 +783,7 @@ each target's `motion.sampleAnimation` and hands the poses to the N-way
 `motion.interpolatePose` it is one library call, and unlike that one it costs no
 copy.
 
-**Four measurements, in [the blending report](../reports/openusd/26.08-openexec-blending.md),
+**Four measurements, in [the blending report](../../reports/openusd/26.08-openexec-blending.md),
 and one corrects this plan.** A **relationship fan-in arrives in authored target
 order**. That holds at first compile, after an edit that reorders the targets
 while both source nodes are already compiled, and in a fresh system. So the
@@ -827,11 +838,11 @@ on the stage it compares, and that is how v0.9.0 ships them. **A one-joint
 clip's fallback-filled root is kept and pinned**, not refused: the callback
 cannot tell it from an authored origin, so `execMotion_sample` asserts it and
 the driver contract states it
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080)).
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080)).
 
 **The driver contract is written, and it is code** *(2026-09-14)*. The rules
 this section collected are ten lines in
-[MOTION_CONTRACT.md, "OpenExec driver contract"](../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080).
+[MOTION_CONTRACT.md, "OpenExec driver contract"](../../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080).
 None of them can be found from the computations themselves. They are: arm a
 request with one compute and keep what it posted; name the instant before
 computing; hold one previous answer and one snapshot per prim and hand both in
@@ -843,7 +854,7 @@ first client, now drives exec through it. Two rules came out of writing it
 rather than out of an earlier report. **An override of a key nothing compiled
 is skipped without a word, mistyped or not.** **A request whose every key
 expired reports itself valid**, as an `InvalidateAll` leaves one
-([the driver report](../reports/openusd/26.08-openexec-driver.md) §3, §4).
+([the driver report](../../reports/openusd/26.08-openexec-driver.md) §3, §4).
 
 **The packaged-plugin half of step 7 ran on 2026-09-13**, and it is P0-6's
 harness rather than a new suite: `scripts/artifact_only_exec_smoke.py` installs
@@ -864,7 +875,7 @@ lane rather than the bundles: the product carried no `vrmContainer` binary,
 because packaging stages every bundle's library runtime out of one prefix that
 the last `ost plugin build` refilled with its own closure — `execVrm`'s, which
 is static
-([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)).
+([ost report 40](../../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)).
 The loop order is the workaround and `scripts/check_product_libraries.py` the
 check; the run above is what found it, which is the reason an artifact-only run
 was on this list at all.
@@ -884,10 +895,10 @@ adapter corpus
 and P0-6 parity wanted a tolerant comparison rather than the exact one. One
 change, three callers, and the two answers are documented as different questions
 rather than as one comparison with a knob
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
 
 **The value-type constraint is settled, not open**
-([report §4](../reports/openusd/26.08-openexec-migration.md#4-value-types-and-the-vtarray-rule)):
+([report §4](../../reports/openusd/26.08-openexec-migration.md#4-value-types-and-the-vtarray-rule)):
 `VtArray` is rejected by `ExecTypeRegistry::RegisterType` and by every
 `Computation<T>`, so a pose crosses a computation boundary as a `motionCore`
 value type registered with `ExecTypeRegistry::RegisterType` — which requires
@@ -911,7 +922,7 @@ registry requires was added to `vrmRetarget` for this, the ask motionCore's
 aggregates answered in v0.6.0. The bundle links neither `vrmSchema` nor its
 generated class, and requires it as a bundle.
 
-**Six measurements, in [the humanoid report](../reports/openusd/26.08-openexec-humanoid.md),
+**Six measurements, in [the humanoid report](../../reports/openusd/26.08-openexec-humanoid.md),
 and the first reaches back into P0-4.** **An attribute a schema defines and the
 stage gives no value reaches a callback as one element of the type's fallback**
 — an empty token, an identity matrix, a zero vector — beside an executor
@@ -940,7 +951,7 @@ make that `motion_retarget` tolerates and `execVrm` refuses or cannot see — re
 transforms that do not pair, a binding to a joint the skeleton lacks, two bones
 on one joint, no `vrm:skeleton`, the attributes without the schema — each of the
 missing-field kind, none reachable from what the importer authors
-([the report](../reports/openusd/26.08-openexec-humanoid.md) §7). As
+([the report](../../reports/openusd/26.08-openexec-humanoid.md) §7). As
 `motion.blendPoses` does, the map reads its relationship twice, and here the
 count decides the answer rather than the message: with it disabled, a humanoid
 naming a skeleton and a `Scope` was answered against the skeleton.
@@ -962,7 +973,7 @@ halves of a clip can be reached. It is a convention of this bundle and nothing
 authors it yet (§9). `vrmRetarget::RestPoseCorrection` gained the exact
 `operator==` the registry requires.
 
-**Five measurements, in [the correction report](../reports/openusd/26.08-openexec-rest-correction.md).**
+**Five measurements, in [the correction report](../../reports/openusd/26.08-openexec-rest-correction.md).**
 **The node is one library call**: it equals the library's answer over the rigs
 computed beside it, bit for bit. **One computation serves both rigs**, through
 two relationships, one of them defined by no schema. **A path to nothing
@@ -1010,7 +1021,7 @@ humanoid, `motion_retarget`'s four flags word for word. `vrmRetarget::Retargeted
 gained the exact `operator==` the registry requires, and `execVrm` registers
 `motion::MotionPose` as well as `execMotion` does.
 
-**Six measurements, in [the retarget report](../reports/openusd/26.08-openexec-retarget.md).**
+**Six measurements, in [the retarget report](../../reports/openusd/26.08-openexec-retarget.md).**
 **The node is one library call**, bit for bit, and applies exactly the
 correction `vrm.computeRestPoseCorrection` caches. **A value crosses bundles
 unchanged, and exec says nothing when the other bundle is missing**: without
@@ -1054,7 +1065,7 @@ rotations and timestamp bit for bit, and one `(1, 1, 1)` scale per joint.
 because the components are what `motion_retarget` authors and what P0-6
 compares, and the matrices are UsdSkel's own composition of them.
 
-**Five measurements, in [the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md).**
+**Five measurements, in [the joint-transforms report](../../reports/openusd/26.08-openexec-joint-transforms.md).**
 **Authored the way the tool authors it, the value is what UsdSkel resolves**:
 `UsdSkelMakeTransforms` over it, exactly. Leave `scales` out, or make the arrays
 one joint short, and UsdSkel resolves the rig's **rest**, silently. So the scales
@@ -1092,7 +1103,7 @@ bytes, joint-name heuristics, and duplicating an algorithm that already exists i
 lives with the *registering* library, not the schema owner, and nothing else
 declares them. A missing block fails as "computation not found", not as a load
 error
-([report §2.1](../reports/openusd/26.08-openexec-migration.md#21-the-pluginfo-half)).
+([report §2.1](../../reports/openusd/26.08-openexec-migration.md#21-the-pluginfo-half)).
 
 **And one correction to it, measured on 2026-09-06.** That block may name the
 `Vrm*API` schemas and `UsdSkelSkeleton`; it may **not** name `UsdSkelAnimation`.
@@ -1104,8 +1115,8 @@ reaches an animation through an **input accessor** instead. Where it needs to
 compute on a prim whose typed schema belongs elsewhere — a `UsdGeomXformable`,
 which `execGeom` owns — it registers on an applied API schema that prim carries;
 that route is measured
-([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §2, §3)
-and the rule is [WORKSPACE.md §2](../architecture/WORKSPACE.md).
+([the mechanism report](../../reports/openusd/26.08-openexec-mechanism.md) §2, §3)
+and the rule is [WORKSPACE.md §2](../../architecture/WORKSPACE.md).
 
 ### P0-6 — OpenExec / offline parity ✅
 
@@ -1129,7 +1140,7 @@ exec under each root-motion statement, held against the default bake, diverges
 in translation only.
 
 **Six measurements**
-([the parity report](../reports/openusd/26.08-openexec-parity.md)). **The only
+([the parity report](../../reports/openusd/26.08-openexec-parity.md)). **The only
 value that is not exact is placement**: frames 31 and 62 of an integer-keyed
 30 fps clip bake 2.37e-16 s late. The recorded input never shows it, because
 its keys round-trip. Compared at the bake's own samples, as the joint-transforms
@@ -1169,7 +1180,7 @@ and compares whole formatted lines with the tool's library-raised ones. They
 agree on all five cases, the parity report's `upperChest` on Seed-san included.
 A committed negative pair drops one line from the tool's log and requires the
 run to fail on exactly that line with no value moving
-([the diagnostics report](../reports/openusd/26.08-openexec-diagnostics.md)).
+([the diagnostics report](../../reports/openusd/26.08-openexec-diagnostics.md)).
 Two findings came with it: a node nothing invalidates posts its refusal only at
 the compute that arms a request, which is a driver-contract line; and the node
 repeats the retarget, because the library reports a pose's diagnostics only
@@ -1185,7 +1196,7 @@ answers to a question no user can ask. The rows stay listed in the parity
 report's §7 table, so the day a producer can reach one, it becomes a parity
 case rather than an assertion. The partial skeleton policy states the two of
 them where the implementations part on purpose (rows 2 and 3,
-[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090)).
+[MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090)).
 
 This is the check that keeps a computation a wrapper. v0.4.0 already produced the
 mechanism it needs: the design triplet is compared through USD composition at the
@@ -1214,13 +1225,13 @@ manifests with no bytes, as v0.7.0 and v0.8.0 recorded, so the right-hand
 column is otherwise still a list of captures to make.
 
 Two comparisons, not one, and they are not interchangeable
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)):
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060)):
 
 - serialization and registered-value identity → `operator==`
 - offline vs OpenExec motion equivalence → `NearlyEqual`
 
 *How the second is applied to a bake* is now stated in
-[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060):
+[MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060):
 joint by joint over `JointLocalTransforms`, at the bake's own samples, under
 `MotionTolerance`'s angle, distance and time. The run did not need the
 tolerance, since every value was `==`.
@@ -1230,11 +1241,11 @@ tolerance, since every value was `==`.
 `(timeCode / rate) × rate`, which at 30 fps puts frame 62 at
 `62.00000000000001`; read at 62, the bake answers a rotation 1.7e-16 off its
 key. `vrm.computeJointLocalTransforms` is the value to compare against it
-([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
+([the joint-transforms report](../../reports/openusd/26.08-openexec-joint-transforms.md)
 §8, §9). *The harness does this, and the tool is unchanged*: compared at its
 own samples the bake is exact, so the fix to author at the time code it read
 stays the ninth boundary finding's ask rather than a parity requirement
-([the parity report](../reports/openusd/26.08-openexec-parity.md) §3).
+([the parity report](../../reports/openusd/26.08-openexec-parity.md) §3).
 
 **A failing case is classified, never widened.** Reaching for a larger epsilon is
 how a real divergence becomes a tolerance. The categories, in the order they are
@@ -1250,7 +1261,7 @@ in the contract.
 on `UsdGeomXformable`" cannot mean *our* computation registered for that schema:
 `execGeom` declares it, and a second declarer is refused. What is left is either
 an applied API schema of ours on the Xformable prim — measured to work
-([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §3) — or
+([the mechanism report](../../reports/openusd/26.08-openexec-mechanism.md) §3) — or
 `execGeom`'s own computations. The upstream ask (option (c) below) is unaffected
 and now has a second thing to ask for.
 
@@ -1264,7 +1275,7 @@ connection to an attribute of the same type. No new schema and no applied API
 was needed. `usdExecImaging`'s Xformable adapter hands that matrix to Hydra. In
 Storm, the same stage draws the marker at its authored place with the exec scene
 index off, and on the clip's hips path with it on
-([the display report](../reports/openusd/26.08-openexec-display.md) §4).
+([the display report](../../reports/openusd/26.08-openexec-display.md) §4).
 
 `execMotion_display` asserts four of the five "done when" rows on every lane,
 through the stage scene index with an observer where Hydra would be, no GL
@@ -1289,7 +1300,7 @@ target, or a target of another type. **The precondition is two-sided**:
 `execGeom` also reads a `xformOp:transform` that `xformOpOrder` does not list,
 which UsdGeom ignores. And **the first frame drawn from a scene camera is empty**,
 with or without this bundle, an upstream behaviour seen only through an engine
-([the display report](../reports/openusd/26.08-openexec-display.md) §3, §6, §7).
+([the display report](../../reports/openusd/26.08-openexec-display.md) §3, §6, §7).
 
 **Originally:** avatar stage + VRMA semantic animation + an OpenExec request →
 computed transforms → `usdExecImaging` → usdview, with a skinned avatar moving.
@@ -1299,7 +1310,7 @@ public header that reads like a plugin point, but the registry behind it is a
 hard-coded pair of `IsA<>` checks — `UsdGeomXformable` and `ExecIrXformable` —
 with a source TODO promising generic plugin registration later. A VRM avatar
 posed through `UsdSkel` skinning is neither, so no adapter can be registered
-([report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)).
+([report §8.2](../../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)).
 
 **Decided 2026-07-29: prove the mechanism on `UsdGeomXformable`.** This plan
 ships a display test over an exec-computed `UsdGeomXformable`, not a skinned avatar:
@@ -1330,12 +1341,12 @@ The other two options considered are **not** dropped; they are re-filed:
   should reach a callback as no value, or exec should offer a builtin saying
   whether an attribute has one — 26.08 fills it with the type's fallback and a
   warning the callback never sees
-  ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §8).
+  ([the humanoid report](../../reports/openusd/26.08-openexec-humanoid.md) §8).
   Three more since the display slice ran: an absent computed transform draws
   as the identity, so a refusal cannot reach a picture; the first frame an
   engine draws through the exec scene index from a scene camera is empty; and
   `execGeom` reads a `xformOp:transform` its prim's `xformOpOrder` does not
-  list ([the display report](../reports/openusd/26.08-openexec-display.md) §3,
+  list ([the display report](../../reports/openusd/26.08-openexec-display.md) §3,
   §6, §7).
 - ⬜ **Real `UsdSkel` skinning display is its own milestone**, after the
   `ExecIr` track, and is a release condition for neither. Four routes
@@ -1351,7 +1362,7 @@ the geom adapter: the exec `UsdGeomXformable` computation reads that one
 attribute and **ignores `xformOpOrder`**. Our importer happens to author exactly
 that and nothing else, but a composed third-party avatar would draw wrong with no
 diagnostic
-([report §8.3](../reports/openusd/26.08-openexec-migration.md#83-the-xformoptransform-only-rule)).
+([report §8.3](../../reports/openusd/26.08-openexec-migration.md#83-the-xformoptransform-only-rule)).
 
 ### P1-1 — retarget diagnostics ✅
 
@@ -1375,7 +1386,7 @@ request. 26.08 has exactly one structured compilation error
 (`ExecValidationErrorType::DataDependencyCycle`); everything else arrives as
 free-text `TF_ERROR` / `TF_RUNTIME_ERROR`, detectable with a `TfErrorMark` but
 not classifiable
-([report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation)).
+([report §6](../../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation)).
 
 **The retarget half is frozen, as values** *(2026-09-13)*.
 `vrmRetarget/Diagnostics.h` holds the `VRM_RETARGET_*` set in one table, and a
@@ -1383,7 +1394,7 @@ retarget reports `RetargetDiagnostic` values — code, subject, detail — into 
 list that keeps each code and subject once and compares exactly. That is P0-6's
 ask from the parity report (§6): codes a node can answer beside the pose rather
 than log. The contract is
-[MOTION_CONTRACT.md, "Retarget diagnostics"](../design/MOTION_CONTRACT.md).
+[MOTION_CONTRACT.md, "Retarget diagnostics"](../../design/MOTION_CONTRACT.md).
 
 **Freezing after the raisers rather than before changed the list by one.** The
 VMC, mocopi and BVH sets were frozen before their decoders; this library had
@@ -1412,7 +1423,7 @@ library caller with a live source's animation could.
 **The exit codes are frozen, one class per input at fault** *(2026-09-14)*.
 `motion_retarget` had exited 2 for a usage error and 1 for everything else.
 Each refusal is now classified where it is raised, into the table above
-([MOTION_CONTRACT.md, "`motion_retarget` exit codes"](../design/MOTION_CONTRACT.md)).
+([MOTION_CONTRACT.md, "`motion_retarget` exit codes"](../../design/MOTION_CONTRACT.md)).
 Only the raiser knows whether it was given a path the user typed or found a
 stage missing something. The contract adds three rules to the drafted table:
 
@@ -1438,7 +1449,7 @@ two `execVrm` computations, compared with the tool line for line (P0-6 above).
 
 **The `VRM_OPENEXEC_*` codes are frozen and raised** *(2026-09-14)*. Their
 table is in the driver contract
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#vrm_openexec_-codes)). It
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#vrm_openexec_-codes)). It
 waited for a driver, and P0-4's driver contract produced one.
 `COMPUTATION_UNAVAILABLE` is a key the session cannot compute: no prim at its
 path that exec computes on, or no computation of its name for that prim.
@@ -1453,13 +1464,13 @@ from exec's text, which travels in the detail. `exec_driver_contract` raises
 each one by the failure it names and holds it to its key. With `execVrm` out of
 the session, the parity harness now names both of its keys as unavailable where
 it used to show empty values
-([the driver report](../reports/openusd/26.08-openexec-driver.md)).
+([the driver report](../../reports/openusd/26.08-openexec-driver.md)).
 `NON_UNIT_SCALE` stays frozen and unraised until P1-2 decides what raises it.
 
 ### P1-2 — scale policy ✅
 
 **Decided and landed 2026-09-17**, and stated in
-[MOTION_CONTRACT.md, "Scale policy"](../design/MOTION_CONTRACT.md#scale-policy-v090):
+[MOTION_CONTRACT.md, "Scale policy"](../../design/MOTION_CONTRACT.md#scale-policy-v090):
 a bake states each joint's **rest** scale, constant over the clip; scale is not
 retargeted; a clip that animates scale raises `VRM_RETARGET_NON_UNIT_SCALE`
 once and is never applied; a rig whose rest is scaled is not refused. OpenExec
@@ -1482,11 +1493,11 @@ identity scale; animated joint scale is unsupported; a non-unit animated scale
 input is a structured warning; scale animation is never silently applied;
 OpenExec and offline behave identically.* It formalized the fix that shipped
 with the v0.4.0 tag —
-[UsdSkel resolves a scale-less animation to the rest pose](../releases/v0.4.0.md#the-defect-that-made-the-whole-thing-visible)
+[UsdSkel resolves a scale-less animation to the rest pose](../../releases/v0.4.0.md#the-defect-that-made-the-whole-thing-visible)
 — and did not name a rig whose rest is scaled.
 
 **One case the rule does not yet name, measured 2026-09-13**
-([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
+([the joint-transforms report](../../reports/openusd/26.08-openexec-joint-transforms.md)
 §4): a rig whose **rest** is scaled. A bake states every joint, UsdSkel takes an
 animated joint's transform from the animation whole, and the rule states 1, so
 the rest scale is replaced — the fixture's arm, rested at 2, bakes at 1, in
@@ -1504,7 +1515,7 @@ finger/eye/jaw bones; duplicate mappings; hierarchy mismatch; a non-identity
 parent rest transform.
 
 **Done 2026-09-17**, in
-[MOTION_CONTRACT.md, "Partial skeleton policy"](../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090):
+[MOTION_CONTRACT.md, "Partial skeleton policy"](../../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090):
 seven rows, each with what the retarget does, what it reports, and the test that
 holds it. Nothing about the behaviour changed. Three rows had no test, and have
 one now: a rig with every required bone and no optional one reports nothing;
@@ -1541,7 +1552,7 @@ Explicitly **not** a gate here, each for a different reason:
 - **realtime skinned-avatar display** — upstream-blocked (P0-7);
 - **any `ExecIr` dependency** — a later track, and optional even there (§7.0);
 - **network I/O inside a computation**, and any mocopi SDK reaching OpenExec —
-  permanent non-goals, not deferrals ([backlog](backlog.md#non-goals));
+  permanent non-goals, not deferrals ([backlog](../../roadmap/backlog.md#non-goals));
 - **`ExecIr` as a requirement** rather than an adapter;
 - **merging an adapter into an exec bundle** — the two are separate boundaries
   ([adapters plan §13](adapters-mocopi-vmc-ardy.md#13-release-boundaries));
@@ -1567,7 +1578,7 @@ UsdSkel / VRM semantics  ↕  ExecIr adapter  ↕  ExecIr representation
 ```
 
 Forbidden, in addition to
-[WORKSPACE.md §2](../architecture/WORKSPACE.md):
+[WORKSPACE.md §2](../../architecture/WORKSPACE.md):
 
 ```text
 usdVrmFileFormat  -X->  authoring ExecIr prims as a requirement
@@ -1591,7 +1602,7 @@ forward and inverse evaluation, and transform publication. Anything general move
 to `ExecIr`; only VRM semantics stay in `execVrm`.
 
 Start from the shape table in
-[report §7.2](../reports/openusd/26.08-openexec-migration.md#72-the-shape-mismatch-with-usdskel).
+[report §7.2](../../reports/openusd/26.08-openexec-migration.md#72-the-shape-mismatch-with-usdskel).
 The real question is not what `execVrm` duplicates but what a `UsdSkel`↔`ExecIr`
 conversion costs and where it lives: `ExecIr` is one prim per joint with scalar
 Euler avars in **world** space, against one prim holding quaternion arrays in
@@ -1641,7 +1652,7 @@ already holds one system per stage and its requests, follows the driver
 contract, and raises the `VRM_OPENEXEC_*` codes. It is test support, because
 the parity harness is its one client. This task is where it becomes a
 workspace identity
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080)).
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080)).
 
 ### P0-7 — invalidation tests ⬜
 
@@ -1692,7 +1703,7 @@ Spring-bone simulation proper, full-body IK, foot locking, contact solving, GPU
 computation, per-frame stage write-back, editor UI, Python computation
 registration, production-grade arbitrary rig authoring, and realtime skinned
 display through `usdExecImaging` (P0-7). Several are permanent non-goals — see
-[backlog.md](backlog.md#non-goals).
+[backlog.md](../../roadmap/backlog.md#non-goals).
 
 **Corrected 2026-07-29, and again on 2026-08-03.** This list previously also
 deferred "motion generation, vendor SDK integration, Mocopi / ARDY adapters
@@ -1707,10 +1718,10 @@ evidence rather than a parallel curiosity (§4.6, P0-6).
 ## 9. Contract changes this plan requires
 
 Structural claims belong in the contracts, in their own change, before this plan
-depends on them ([docs/README.md](../README.md)). Open:
+depends on them ([docs/README.md](../../README.md)). Open:
 
 - ⬜ **`ExecIr` adapter is not in the workspace contract.**
-  [WORKSPACE.md §2](../architecture/WORKSPACE.md)'s dependency tables have no
+  [WORKSPACE.md §2](../../architecture/WORKSPACE.md)'s dependency tables have no
   `ExecIr adapter` row, and §1's identity table has no adapter entry. §3 and
   §7.0 above state the edges — they need to move into the contract. *(The
   `execVrm -X-> GLB parser` rule and the four §7.0 `ExecIr` prohibitions landed
@@ -1721,7 +1732,7 @@ depends on them ([docs/README.md](../README.md)). Open:
   measured rather than proposed*: a clip declares `motion:root:transform`, a
   prop connects its `xformOp:transform` to it, and `execGeom` and
   `usdExecImaging` do the rest
-  ([the display report](../reports/openusd/26.08-openexec-display.md) §1). Two
+  ([the display report](../../reports/openusd/26.08-openexec-display.md) §1). Two
   statements now need a home: that attribute and that connection are authored
   by the fixture and by nothing else, which is the rate's situation again and
   goes to BND-0; and a stage shown this way states `xformOp:transform` and no
@@ -1734,8 +1745,8 @@ depends on them ([docs/README.md](../README.md)). Open:
   authors it.** `motion.sampleAnimation` reads `motion:timeCodesPerSecond` off
   the `UsdSkelAnimation` prim because a computation cannot reach the stage
   metadatum that means the same thing
-  ([the sampling report](../reports/openusd/26.08-openexec-sampling.md) §2, and
-  [the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §5).
+  ([the sampling report](../../reports/openusd/26.08-openexec-sampling.md) §2, and
+  [the mechanism report](../../reports/openusd/26.08-openexec-mechanism.md) §5).
   Today only the bundle's own fixtures author it, so the attribute is a test
   convention rather than a contract — and **P0-6 parity needs a real clip that
   carries it**, which means either `motion_retarget`'s bake and the `.vrma`
@@ -1747,13 +1758,13 @@ depends on them ([docs/README.md](../README.md)). Open:
   2026-09-13, and only for P0-6*: the parity harness authors it onto the stage
   it compares, equal to the clip stage's rate, and leaves a rate the clip
   already states alone
-  ([the parity report](../reports/openusd/26.08-openexec-parity.md) §5). No
+  ([the parity report](../../reports/openusd/26.08-openexec-parity.md) §5). No
   producer authors it, so the contract half is still BND-0's.
 - ⬜ **A humanoid has to say which skeleton a clip was authored against, and
   nothing authors that either** *(2026-09-13)*. `vrm.computeRestPoseCorrection`
   reads the clip's rest across `vrm:retarget:sourceSkeleton`, a relationship on
   the humanoid that no schema defines
-  ([the correction report](../reports/openusd/26.08-openexec-rest-correction.md)
+  ([the correction report](../../reports/openusd/26.08-openexec-rest-correction.md)
   §1). The offline tool never needs it, because it opens the clip as a separate
   stage. Exec evaluates one stage, and that stage has to name the clip's
   skeleton. It is the rate's situation for a second input: P0-6's harness authors
@@ -1766,21 +1777,21 @@ depends on them ([docs/README.md](../README.md)). Open:
   authors, and four `vrm:retarget:*` attributes on the humanoid state where the
   root lands. Those four are `motion_retarget`'s flags, and nothing authors them
   either
-  ([the retarget report](../reports/openusd/26.08-openexec-retarget.md) §7).
+  ([the retarget report](../../reports/openusd/26.08-openexec-retarget.md) §7).
   *Answered for P0-6 as the rate is*: the parity harness states the
   relationship, the four statements for the flags it is given, and, for an
   avatar with no humanoid, `--humanoid-map` as `vrm:humanBones:*` on a prim it
   defines. With those five statements the two implementations agree bit for
-  bit ([the parity report](../reports/openusd/26.08-openexec-parity.md) §5).
+  bit ([the parity report](../../reports/openusd/26.08-openexec-parity.md) §5).
 - ⬜ **Every node that reads an attribute owes a fallback decision, and one
   schema may want to state it.** 26.08 hands an unauthored schema attribute
   to a callback as one element of Sdf's default for the type
-  ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §4), so
+  ([the humanoid report](../../reports/openusd/26.08-openexec-humanoid.md) §4), so
   for each such input the question is what that one element looks like against
   what it pairs with. *Widened on 2026-09-13*: an attribute no schema defines
   that the prim declares with no value, or blocks, arrives the same way, so
   `vrm.humanoidRetarget`'s valueless `translationScale` is a scale of 0
-  ([the retarget report](../reports/openusd/26.08-openexec-retarget.md) §4). `motion.sampleAnimation` has a shape where it pairs (a
+  ([the retarget report](../../reports/openusd/26.08-openexec-retarget.md) §4). `motion.sampleAnimation` has a shape where it pairs (a
   one-joint clip) and cannot tell; `vrm.computeHumanoidMap` reads it as unbound,
   and a `""` fallback on `VrmHumanoidAPI`'s bone attributes would make that the
   schema's statement and silence one executor warning per unbound bone. That is
@@ -1841,7 +1852,7 @@ OpenExec schema has exactly one declarer, so `execMotion` and `execVrm`
 partition them** — `UsdSkelAnimation` to the first, the `Vrm*API` applied schemas
 and `UsdSkelSkeleton` to the second, neither declaring the other's, and a bundle
 reaching a prim it does not own the schema of through an input accessor or an
-applied API schema ([WORKSPACE.md §2](../architecture/WORKSPACE.md)). This was
+applied API schema ([WORKSPACE.md §2](../../architecture/WORKSPACE.md)). This was
 not a change anyone predicted: it came out of running the mechanism, and it
 would have cost `execVrm` a silent loss of every computation it registered on an
 animation.
@@ -1850,7 +1861,7 @@ Two of this plan's contract asks have landed and are stated in the contracts
 rather than here: the `motionCore` aggregates carry **two** comparisons — the
 exact `operator==` that `ExecTypeRegistry::RegisterType` requires and the
 tolerant `NearlyEqual` that P0-6 parity needs
-([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)) —
+([MOTION_CONTRACT.md](../../design/MOTION_CONTRACT.md#comparison-semantics-v060)) —
 and the OpenUSD version contract is one supported version with two enforcing
 mechanisms
-([SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md)).
+([SUPPORTED_CONFIGURATIONS.md](../../reference/SUPPORTED_CONFIGURATIONS.md)).

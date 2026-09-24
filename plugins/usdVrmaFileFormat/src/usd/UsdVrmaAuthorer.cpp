@@ -159,7 +159,7 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document, std::strin
                 // Declared, and the file gave no weight anywhere: no channel and
                 // no transform on the node to read one out of. The attribute
                 // stays unauthored rather than being written as zero, because an
-                // unreported weight is not a weight of zero (MOTION_CONTRACT.md)
+                // unreported weight is not a weight of zero (VRM_MOTION_POLICY.md §3.3)
                 // and a zero here would be this importer saying what the file
                 // did not.
                 continue;

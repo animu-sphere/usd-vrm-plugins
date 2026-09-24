@@ -39,8 +39,7 @@ Three things this deliberately does *not* do:
   meshes plus material colours, and which ones is the *avatar's* property. A
   clip bound to no avatar cannot know them, so no `blendShapes` /
   `blendShapeWeights` binding is authored and `ExpressionResolve` stays a
-  consumer step ([motion policy](../../docs/design/MOTION_ARCHITECTURE_POLICY.md)
-  §4.3).
+  consumer step ([VRM motion policy §5](../../docs/design/VRM_MOTION_POLICY.md#5-expressions-on-a-rig)).
 - **It does not clamp.** The specification clamps a weight to `[0, 1]`; a file
   that said `1.5` is carried verbatim with a `VRMA109` warning, because
   correcting it here would hide the authoring tool from whoever reads the clip.
@@ -51,7 +50,7 @@ Three things this deliberately does *not* do:
   un-animated node at its own TRS and VRMA reads the weight out of that
   translation. No channel and no transform → **no `vrm:expressionWeight` at
   all**, because an unreported weight is not a weight of zero
-  ([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md#expression-semantics-v070)).
+  ([VRM motion policy §3.3](../../docs/design/VRM_MOTION_POLICY.md#33-expressions)).
   What separates the last two is what the file wrote, never whether the number
   happens to be zero.
 
@@ -91,7 +90,7 @@ def Scope "LookAt"
   joints and its range maps — and a clip bound to no avatar cannot know them. So
   nothing here is applied to a pair of eyes; `LookAtEvaluate` is the consumer
   step, exactly as `ExpressionResolve` is for a weight
-  ([motion policy](../../docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.3).
+  ([VRM motion policy §6](../../docs/design/VRM_MOTION_POLICY.md#6-look-at-on-a-rig)).
 - **The target is placed where the file put it.** A look-at node may be
   parented, so the ancestors' stated transforms are composed into the target; an
   ancestor the clip itself animates is warned about (`VRMA114`) rather than
@@ -116,7 +115,7 @@ def Scope "LookAt"
 The offset is `uniform` because it is a measurement of the rig the clip was
 authored on and cannot vary within the clip; the target is `point3f` because it
 is a place in the clip's space
-([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md#look-at-semantics-after-v080)).
+([VRM motion policy §3.4](../../docs/design/VRM_MOTION_POLICY.md#34-look-at)).
 
 `BodyAnimation` does author a constant identity `scales`. Scale is not
 animated, but `UsdSkelAnimation.scales` has no schema fallback and UsdSkel

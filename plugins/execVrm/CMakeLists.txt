@@ -14,7 +14,7 @@
 # `vrm.humanoidRetarget`, which is one sample of the clip on it, and
 # `vrm.computeJointLocalTransforms`, which is that sample in the shape a
 # `UsdSkelAnimation` states -- P0-5's five nodes, and two it needed
-# (docs/roadmap/openexec-foundation.md).
+# (docs/archive/motion-split/openexec-foundation.md).
 #
 # Self-contained so `ost plugin build plugins/execVrm` can configure it
 # directly, and also add_subdirectory()-able from the repo-root CMakeLists.txt

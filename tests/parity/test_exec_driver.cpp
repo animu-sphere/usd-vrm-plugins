@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // exec_driver_contract -- the driver contract, run against execMotion
-// (docs/design/MOTION_CONTRACT.md, "OpenExec driver contract").
+// (usd-motion-plugins' EXEC_CONTRACT.md §3).
 //
 // Each `VRM_OPENEXEC_*` code is raised here by the failure it names, and each
 // is held to its subject: a request with one key nobody can compute beside one
