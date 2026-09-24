@@ -13,12 +13,20 @@
 > policy §4"). Later revisions may add *subsections* under an existing number; a
 > numbered section never changes meaning.
 >
-> **This introduces no new phase sequence.** The three steps in §7 are the
+> **This introduces no new phase sequence.** The steps in §7 are the
 > internal order of **Product P5**, not another sequence alongside Product
 > P0–P6 and Workspace Phase 0–8
 > ([roadmap](../roadmap/README.md#sequences)). The
 > release P5 lands in is fixed by the
-> [roadmap status table](../roadmap/README.md#status-at-a-glance), never here.
+> [roadmap status table](../roadmap/README.md#status-at-a-glance), never here;
+> the open steps and their status are the
+> [material track](../roadmap/material-track.md).
+>
+> **Revised 2026-09-25: semantics first.** The canonical schemas no longer come
+> last (§7), the renderer-specific realization is named — `hydra-toon`, a
+> separate repository (§5.3) — and three rules are added: the source-of-truth
+> order (§6.5), VRM 0.x normalization (§6.6), and expression binds landing on
+> semantic slots (§6.7).
 
 ---
 
@@ -40,8 +48,8 @@ This policy fixes the split. Its goals:
 - Keep `UsdPreviewSurface` as a broad compatibility fallback.
 - Add MaterialX as the preferred portable approximation of MToon.
 - Preserve VRM/MToon source semantics independently of any rendering backend.
-- Leave room for a future `hdVrmMToon` without changing the canonical
-  representation.
+- Leave room for a native MToon renderer — `hydra-toon` — without changing
+  the canonical representation.
 - Keep the generated hierarchy legible in `usdview`, `usdcat`, and DCC tooling.
 
 It maps one-to-one onto the three layers DESIGN_POLICY §9 already names:
@@ -50,7 +58,7 @@ It maps one-to-one onto the three layers DESIGN_POLICY §9 already names:
 | --- | --- |
 | Layer 1 — source semantics | `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` on the Material (§6) |
 | Layer 2 — portable approximation | the `/preview` and `/mtlx` NodeGraphs (§5) |
-| Layer 3 — renderer-specific realization | `hdVrmMToon` or equivalent, out of scope here (§5.3) |
+| Layer 3 — renderer-specific realization | `hydra-toon` or equivalent, another repository (§5.3) |
 
 ---
 
@@ -91,7 +99,7 @@ same flag `/preview`'s unlit branch reads, so the two realizations never
 disagree about what "unlit" means. On the vendored corpus that is 13 of 13
 materials for one avatar and 10 of 17 for the other — the remaining 7 are
 ordinary glTF PBR accessories (a backpack, glass, a logo), which is the lit
-follow-up in §7.2, not an oversight.
+follow-up — once §7.2's, now Step 6's (§7.5) — not an oversight.
 
 The behavior below is what the restructure had to leave unchanged, and did —
 the baseline diff is a path move (§7.1). It is still the behavior any later
@@ -136,7 +144,7 @@ canonical material semantics
         ↓
    ┌────────────┬────────────────┬──────────────┐
    ↓            ↓                ↓
-UsdPreviewSurface   MaterialX        hdVrmMToon
+UsdPreviewSurface   MaterialX        hydra-toon
 fallback            portable         full
 ```
 
@@ -349,11 +357,46 @@ case. The MaterialX graph is a generated representation, never a source of truth
 
 ### 5.3 Renderer-specific realization
 
-Out of scope for P5's three steps. The architecture only has to leave room for
-it: a delegate-side implementation consumes the same canonical semantics and adds
-no requirement to the canonical representation. Consistent with DESIGN_POLICY §9
-Layer 3, renderer-specific shader implementations are not coupled into the
-file-format plugin.
+Complete MToon reproduction is a renderer's job, not this repository's. The
+architecture only has to leave room for it: a renderer consumes the same
+canonical semantics and adds no requirement to the canonical representation.
+Consistent with DESIGN_POLICY §9 Layer 3, renderer-specific shader
+implementations are not coupled into the file-format plugin.
+
+The renderer this is planned against is **`hydra-toon`**, a separate
+repository (not yet created), which reads `VrmMToonAPI` and
+`VrmTextureInfoAPI` directly:
+
+```text
+usd-vrm-plugins  →  VrmMToonAPI / VrmTextureInfoAPI  →  hydra-toon
+```
+
+#### 5.3.1 The boundary with `hydra-toon`
+
+| | `usd-vrm-plugins` | `hydra-toon` |
+| --- | --- | --- |
+| Owns | VRM parsing; VRM 0.x / 1.0 normalization; MToon and texture semantics; the USD schemas; the PreviewSurface fallback; the portable MaterialX realization; raw source preservation | consuming `VrmMToonAPI`; the full MToon realization (toon lighting, shade, shading shift and toony, GI equalization, rim, MatCap, outline, UV animation, MToon transparency, render ordering); an MMD toon realization; Vulkan and WebGPU shaders; runtime material evaluation |
+| Does not own | a full MToon raster implementation; an outline renderer; any Vulkan or WebGPU pipeline; renderer-specific shading tricks | the source formats, or the meaning of any canonical attribute |
+
+**The contract between the two is the USD schema and nothing else.** Neither
+links the other, and neither reads the other's generated graphs: `hydra-toon`
+does not start from `/mtlx`, and nothing here is shaped to suit one renderer's
+pipeline.
+
+#### 5.3.2 Outline
+
+Outline is the case that shows the boundary. It is not a shader-graph feature
+— inverted hull, a dedicated pass, a screen-space edge, or a hybrid are all
+legitimate — so USD holds what the avatar asked for and stops there:
+
+```text
+outlineWidthMode, outlineWidthFactor, outlineWidthTexture,
+outlineColorFactor, outlineLightingMixFactor
+```
+
+How it is drawn is `hydra-toon`'s decision. `outlineWidthMode` (`none`,
+`worldCoordinates`, `screenCoordinates`) is kept as an MToon semantic, not as
+a rendering instruction.
 
 ### 5.4 Responsibility and expected fidelity
 
@@ -364,7 +407,7 @@ file-format plugin.
 | `VrmTextureInfoAPI` | source texture semantics | lossless |
 | `/preview` graph | broad USD fallback | low / medium |
 | `/mtlx` graph | portable MToon approximation | medium / high |
-| `hdVrmMToon` or equivalent | complete renderer implementation | high |
+| `hydra-toon` or equivalent | complete renderer implementation | high |
 
 This split is stated in code comments and asserted in tests. PreviewSurface and
 MaterialX get **separate** expected-fidelity criteria and are never required to
@@ -451,7 +494,7 @@ generation (§11).
 outline semantics
     PreviewSurface → ignored
     MaterialX      → ignored or approximated
-    hdVrmMToon     → fully rendered
+    hydra-toon     → fully rendered
 ```
 
 That is the architecture working, not failing.
@@ -492,13 +535,91 @@ Two constraints come from the shipped
 The raw fallback stays: `customData.vrm:mtoon:raw` remains the lossless fallback
 alongside the typed data, matching every other `Vrm*API` in the contract.
 
+### 6.5 Source of truth
+
+For a material, the source of truth is, in order:
+
+```text
+VrmMaterialAPI · VrmMToonAPI · VrmTextureInfoAPI    what runtimes, tools and renderers read
+customData.vrm:mtoon:raw                            lossless fallback, diagnostics, reconstruction
+```
+
+The raw JSON is **never a runtime API**: a consumer that needs a value the
+typed schemas lack is a missing field in the schema, not a reason to parse the
+blob.
+
+Every realization is **derived**. Deleting `/preview` loses no canonical
+information, and neither does deleting `/mtlx`. A later realization —
+`/realtime`, `/webgpu`, `/slang`, whatever it is called — is added without
+changing the semantic contract, because it reads the same attributes the
+existing two do.
+
+### 6.6 VRM 0.x normalizes into the same schemas
+
+VRM 0.x MToon (`materialProperties`, in Unity shader property names) and VRM
+1.0 `VRMC_materials_mtoon` are two spellings of one model, and both land in
+the same canonical `VrmMToonAPI`:
+
+```text
+VRM 0.x MToon  ─┐
+                ├→  VrmMToonAPI
+VRM 1.0 MToon  ─┘
+```
+
+Version-specific spellings and legacy parameters are absorbed at the importer
+boundary; the schema carries no `vrm0` field and no version switch. Where a
+0.x parameter does not map onto a 1.0 field by renaming alone, the conversion
+is recorded with its fidelity class (DESIGN_POLICY §6) rather than hidden, and
+the raw block keeps what a lossless reconstruction needs.
+
+### 6.7 Expressions change semantic slots, not shader inputs
+
+A VRM expression can drive material values as well as morph targets — `color`,
+`emissionColor`, `shadeColor`, `matcapColor`, `rimColor`, `outlineColor`. What
+it drives is a **canonical slot**, never a realization's input:
+
+```text
+avoid:   expression → /preview/surface.inputs:diffuseColor
+prefer:  expression → material semantic slot → VrmMaterialAPI / VrmMToonAPI
+                                               → whichever realization is selected
+```
+
+Anything else breaks the moment the renderer selects a different realization
+(§5.5): a colour written into `/preview` is invisible through `/mtlx` and
+unknown to `hydra-toon`. The slot → attribute table is part of the schema
+contract (§10), so every writer and every evaluator resolves a slot the same
+way.
+
 ---
 
-## 7. Product P5 in three steps
+## 7. Product P5, in order
 
-The order is chosen so each step is independently reviewable, and so the first
-rendering improvements are not coupled to the schema redesign. It is the internal
-order of Product P5 and not a phase sequence (see the header).
+The internal order of Product P5, not a phase sequence (see the header). Each
+step is independently reviewable. The open steps' status and "done when" are
+the [material track](../roadmap/material-track.md); this section keeps the
+order's rationale and the record of the steps that shipped.
+
+**The order was revised on 2026-09-25.** It was: restructure `/preview`, add
+`/mtlx`, and the schemas **last**, so that the first rendering improvements
+were not coupled to a schema redesign. Those improvements have shipped (§7.1,
+§7.2), and what they left is the argument for reversing it: both generators
+still read source JSON, every approximation added that way is one more
+generator to re-point later, and the next consumers — expression colour binds
+(§6.7) and `hydra-toon` (§5.3) — need something typed to read. So:
+
+| Step | What | Where |
+| --- | --- | --- |
+| 1 | `/preview` hierarchy | §7.1 — shipped |
+| 2 | `/mtlx` for unlit materials | §7.2 — shipped; the lit half moves to Step 6 |
+| 3 | the canonical schema contract | §7.3 |
+| 4 | importer canonicalization, VRM 0.x and 1.0 | §7.5 |
+| 5 | `/preview` generated from canonical semantics | §7.5 |
+| 6 | `/mtlx` generated from canonical semantics, lit and MToon approximations | §7.5 |
+| 7 | expression material binds onto canonical slots | §7.5 |
+| 8 | `hydra-toon` consumes the contract | §5.3 — another repository |
+
+The highest-value item is Step 3 with Step 4: **free MToon semantics from the
+raw JSON.** Renderer work of any kind is behind it.
 
 ### 7.1 Step 1 — restructure the PreviewSurface hierarchy
 
@@ -584,6 +705,13 @@ acceptance criteria.
 **Objective.** Move source semantics out of the realizations into
 `VrmMaterialAPI`, `VrmMToonAPI`, and `VrmTextureInfoAPI:<slot>`.
 
+> **Narrowed 2026-09-25.** This section used to be the whole schema step,
+> importer and generators included. Step 3 is now the **contract** — the
+> first three items below and the validation half of the last; authoring in
+> the importer is Step 4 and re-pointing the generators Steps 5 and 6
+> (§7.5). The migration rule and the "done when" below describe where Steps
+> 3–6 end together, and still hold.
+
 **Work**
 
 - Fix schema ownership and namespaces (§6.4).
@@ -591,7 +719,8 @@ acceptance criteria.
   attributes.
 - Define texture slot instance names and texture transform semantics.
 - Author the schemas in the importer; consume them in readers and exporters.
-- Re-point **both** generators at canonical semantics.
+  *(Step 4.)*
+- Re-point **both** generators at canonical semantics. *(Steps 5 and 6.)*
 - Add schema round-trip tests, plus validation of allowed values and slot names.
 
 **Migration rule.** Never carry two competing authoritative representations. The
@@ -645,6 +774,30 @@ The rule to preserve:
 
 > **VRM semantics belong to schemas on the Material. Rendering implementations
 > belong to child NodeGraphs.**
+
+### 7.5 Steps 4–7 — after the contract
+
+Added 2026-09-25 with the revised order. Status and "done when" for each are
+the [material track](../roadmap/material-track.md); what is fixed here is what
+each step may and may not do.
+
+- **Step 4 — importer canonicalization.** Both source versions author the same
+  canonical fields (§6.6). The raw block is untouched; the baseline diff is
+  additive.
+- **Step 5 — `/preview` from canonical semantics.** The generator's input is
+  the canonical field set and nothing else, so it can be run on a stage as
+  well as in the importer. No value changes.
+- **Step 6 — `/mtlx` from canonical semantics.** The shipped unlit graph is
+  re-pointed first with no value change; then lit glTF PBR through the same
+  `gltf_pbr` terminal (§5.2.1); then portable MToon approximations — shade,
+  toon transition, rim, MatCap — in standard nodes (§5.2). Outline,
+  screen-space width, render ordering and MToon transparency stay out.
+- **Step 7 — expression material binds.** Resolved colours land on canonical
+  slots through the contract's slot table (§6.7), and reach whichever
+  realization is selected without being written into it.
+
+Steps 5 and 6 are independent of each other. Step 7 needs Step 3's slot table
+and §11 q9, not Steps 5–6.
 
 ---
 
@@ -702,8 +855,10 @@ must be isolated one at a time:
    now understood rather than suspected (§5.5);
 5. asset-specific source data actually consumed by the VRM renderer — **the
    remaining candidate.** The asset's hair carries `_ShadeTexture` and
-   `_ShadeColor`, which no realization reads yet; that is Step 3 plus the
-   MToon follow-up in §7.2, not an alpha or colour-space problem.
+   `_ShadeColor`, which no realization reads yet; that is Steps 3–4 and then
+   Step 6's MToon approximations (§7.5), not an alpha or colour-space problem.
+   Those are Unity property names — a VRM 0.x source — so Step 4's 0.x half
+   (§6.6) is on this target's path, not only the 1.0 one.
 
 Do not assume `COLOR_0` must be multiplied into MToon appearance without checking
 the source material and the applicable VRM/MToon specification behavior. That
@@ -713,15 +868,17 @@ these five are hard to separate today is itself an argument for the restructure.
 
 ## 9. Non-goals
 
-The three steps do not require:
+Product P5 does not require, and this repository does not undertake:
 
 - complete MToon reproduction in MaterialX;
 - renderer-independent outline rendering;
-- a custom Hydra delegate;
-- custom MaterialX node definitions;
+- a custom Hydra delegate, shipped with or linked into these plugins;
+- custom MaterialX node definitions, beyond an interoperability case;
 - removal of `UsdPreviewSurface`;
 - identical images from PreviewSurface and MaterialX;
-- solving every DCC's MaterialX compatibility behavior.
+- solving every DCC's MaterialX compatibility behavior;
+- renderer pipeline details in the schema;
+- shader node paths as a public contract (§4.3).
 
 These are addressed incrementally once the canonical structure is stable.
 
@@ -738,6 +895,9 @@ their own PRs:
 | ✅ Confirm whether moving shader prims under `/preview` requires a schema contract bump — **it does not**, and the contract now says so rather than leaving it inferable (§11 q3) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 1 |
 | `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI` added to the typed API table, with their raw fallbacks | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
+| The VRM 0.x MToon row: `materialProperties` lands in the same typed schemas (§6.6) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 4 |
+| The slot → canonical attribute table for expression material binds (§6.7), on the `VrmExpressionAPI` row; VRM 0.x `materialValues` typed onto the same slots, narrowing `VRM150` | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 7 |
+| The MToon rows restated as typed-and-realized once both generators read canonical semantics | [CAPABILITY_MATRIX.md](../reference/CAPABILITY_MATRIX.md) | Steps 5–6 |
 
 ---
 
@@ -754,3 +914,6 @@ their own PRs:
 | 6a | Confirm the non-Windows runtimes ship the MaterialX `libraries/` tree, so the Sdr check runs rather than skips in the Linux and macOS CI cells. | — |
 | 7 | Is `/Asset/mtl/_shared` ever needed, or do per-material graphs suffice? | deferred |
 | ~~8~~ | ~~Does `COLOR_0` participate in MToon appearance for the issue #119 asset?~~ **No** — the asset has no `COLOR_0` on any primitive (settled on the issue, 2026-08-12). Kept as a question for other assets, not this one. | — |
+| 9 | How does an animated canonical value reach a generated realization? `UsdShade` connects only `inputs:` / `outputs:` attributes, so a namespaced `vrm:mtoon:*` attribute cannot be a connection source: either the Material also exposes interface `inputs:` that each graph connects to, or the canonical attributes themselves are `inputs:`. Decided before any name is frozen, because it decides §6.4's namespace. | Step 3, Step 7 |
+| 10 | Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6). | Step 4 |
+| 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |

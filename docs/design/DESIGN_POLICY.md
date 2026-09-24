@@ -936,14 +936,15 @@ Provide, as far as feasible:
 
 ### P5: MToon realization
 
-> **Restructured 2026-08-13.** P5's detail lives in
-> [MATERIAL_ARCHITECTURE_POLICY.md](MATERIAL_ARCHITECTURE_POLICY.md) §7, which
-> orders it as three steps — PreviewSurface hierarchy restructure, MaterialX
-> realization, then the VRM material API schemas. The work list below is the
-> pre-material-policy plan, kept for rationale; it is no longer the plan of
-> record. In particular the schemas come **last**, so the first rendering
-> improvements are not coupled to the schema redesign. The three steps are the
-> internal order of P5 and **not** a fourth phase sequence.
+> **Restructured 2026-08-13, re-ordered 2026-09-25.** P5's detail lives in
+> [MATERIAL_ARCHITECTURE_POLICY.md](MATERIAL_ARCHITECTURE_POLICY.md) §7, and
+> its open steps in the [material track](../roadmap/material-track.md). The
+> work list below is the pre-material-policy plan, kept for rationale; it is
+> no longer the plan of record. The PreviewSurface restructure and the unlit
+> MaterialX realization shipped first; since 2026-09-25 the VRM material API
+> schemas come **next**, ahead of any further realization work, and the full
+> MToon renderer is `hydra-toon`'s, another repository. The steps are the
+> internal order of P5 and **not** another phase sequence.
 
 **Work** *(superseded — see material policy §7)*
 

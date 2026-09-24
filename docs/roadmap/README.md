@@ -18,6 +18,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked
 | [current.md](current.md) | The next release's open conditions, and work carried out of shipped releases. |
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the product tracks, VRM motion open questions, cross-cutting items, non-goals. |
 | [execir-track.md](execir-track.md) | The `ExecIr` invertible VRM humanoid rig, expression and look-at computations, and skinned display — the OpenExec work this repository still owns. |
+| [material-track.md](material-track.md) | Product P5's open steps: the canonical MToon schemas first, then importer canonicalization, both realizations generated from them, expression material binds, and the `hydra-toon` boundary. |
 
 ## Sequences
 
@@ -48,6 +49,7 @@ table.
 | release-artifact proof of the reduced product | Planned | the next release |
 | release closure checklist and checkable invariants | Planned | unscheduled |
 | `ExecIr` invertible VRM humanoid rig | Planned | unscheduled |
+| MToon canonical semantics (Product P5) | In progress | unscheduled |
 
 How the motion tracks were ordered before they left this repository is
 [archive/motion-split/roadmap-orderings.md](../archive/motion-split/roadmap-orderings.md).

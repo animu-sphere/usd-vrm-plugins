@@ -90,33 +90,22 @@ never the canonical model — and `vrmRig` never depends on OpenExec.
 ## Product P5 — MToon realization
 
 *Goal: source parameters preserved; a portable fallback exists; at least one
-renderer reproduces the main MToon look; an image regression test exists.*
+renderer reproduces the main MToon look — that renderer is `hydra-toon`'s, not
+this repository's; an image regression test exists.*
 (design policy §9, §17-P5; the plan of record is
 [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7)
 
-Today: source data is preserved, `UsdPreviewSurface` is the fallback, and
-`vrm:mtoon:raw` carries the raw block. Renderer-specific realization is **not
-implemented**.
+P5's open steps are their own document, the
+[material track](material-track.md). Since 2026-09-25 the order is
+**semantics first**: the canonical schemas come next, ahead of any further
+realization work, and the full MToon renderer is `hydra-toon`'s, another
+repository.
 
-The three steps below are P5's internal order, not a phase sequence. The schemas
-come **last** so the first rendering improvements are not coupled to the schema
-redesign.
-
-- ✅ **Step 1 — shipped 2026-08-13.** The PreviewSurface network moved below a
-  `/preview` `UsdShadeNodeGraph`, terminals run material → graph → shader, and
-  the baseline diff was verified to be a path move and nothing else
-  ([material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7.1)
-- 🟡 **Step 2 — unlit shipped 2026-08-14.** Unlit materials carry a `/mtlx`
-  `UsdShadeNodeGraph` on `outputs:mtlx:surface`, which is the terminal a
-  MaterialX-aware renderer draws; the baseline diff is additive and `/preview`
-  is untouched (§7.2). The node choice is `gltf_pbr` with the lit response
-  zeroed, because MaterialX's direct unlit terminals do not render on the pinned
-  runtime — §5.2.1 records what was measured and when to revisit it
-- ⬜ **Step 2 (lit)** — the remaining half: glTF PBR materials through the same
-  `gltf_pbr` terminal, so every material carries both realizations (§7.2)
-- ⬜ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as the
-  canonical semantics both generators consume (§7.3)
-- ⬜ Renderer adapter, outline, conformance images, transparent-sorting behavior
+- ⬜ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as
+  the schema contract ([track §3](material-track.md#3-steps))
+- ⬜ **Steps 4–7** — importer canonicalization of VRM 0.x and 1.0, `/preview`
+  and `/mtlx` generated from canonical semantics, expression material binds
+  onto canonical slots ([track §3](material-track.md#3-steps))
 
 ## Product P6 — round-trip / exporter research
 
@@ -154,6 +143,8 @@ individual cases of one boundary,
 
 - Full VRM runtime physics execution → `execVrm` or a physics repository
 - Pixel-perfect MToon across all renderers
+- A native MToon renderer, outline pass or GPU pipeline → `hydra-toon`
+  ([material policy §5.3](../design/MATERIAL_ARCHITECTURE_POLICY.md#53-renderer-specific-realization))
 - Auto-repair of arbitrary broken glTF
 - A full VRM exporter (P6 is research only)
 - DCC-specific UI
@@ -176,7 +167,7 @@ recorded in the [delivery history](../reports/delivery-history.md):
 | 1 | VRM 0.x/1.0 corpus continuously verified in CI | Product P3 / corpus expansion |
 | 2 | Skinned mesh / skeleton / humanoid / expression / spring-bone inspectable on stage | ✅ shipped |
 | 3 | Textures exportable as a portable package | ✅ shipped |
-| 4 | MToon fallback vs fidelity responsibilities clear | Product P5 |
+| 4 | MToon fallback vs fidelity responsibilities clear | Product P5 ([material track](material-track.md)) |
 | 5 | Import warnings / fidelity loss retrievable as a report | ✅ shipped |
 | 6 | Schema contract documented + versioned | ✅ shipped (contract v1) |
 | 7 | External pipelines (OpenExec) can run the importer as a structured task | Product P4 ([`ExecIr` track](execir-track.md)) |
