@@ -116,7 +116,7 @@ not needed for a source build. A source build needs two installed prefixes:
 
 | Input | What it is | How `ost` supplies it | How a plain build supplies it |
 | --- | --- | --- | --- |
-| OpenUSD 26.08 | an OpenUSD install prefix (`pxrConfig.cmake` at its root), with OpenExec | the pinned runtime artifact, materialized and activated | any OpenUSD 26.08 install; the pinned runtime's archive *is* one |
+| OpenUSD 26.08 | an OpenUSD install prefix (`pxrConfig.cmake` at its root), with OpenExec, **and the Python it was built against** | the pinned runtime artifact, materialized and activated | any OpenUSD 26.08 install on the host it was built for; the pinned runtime's archive is one, for an Ubuntu 24.04 host with deadsnakes' Python 3.13 |
 | `usd-motion-plugins` ≥ 0.5, < 0.6 | the `motionCore`, `motionRetarget`, `motionSampling` and `motionUsd` CMake packages | each descriptor's digest-pinned artifact | `cmake --install` of that repository |
 
 ```sh
@@ -140,12 +140,29 @@ if something does. Each member resolves only what it links. A standalone
 configure of `usdVrmFileFormat`, `usdVrmPackageResolver`, `vrmSchema` or
 `vrmContainer` needs no motion package on the prefix path.
 
-A plain build must state three things itself, because `ost` supplies them
+**An OpenUSD install is not relocatable across Pythons.** Its CMake package
+names the Python it was built against by absolute path in two places:
+
+- `pxrConfig.cmake` defaults `Python3_LIBRARY` and `Python3_INCLUDE_DIR` to
+  it.
+- `pxrTargets.cmake` bakes the include directory into the
+  `INTERFACE_INCLUDE_DIRECTORIES` of `gf`, `usd` and others. Defining every
+  `Python3_*` hint does not override this, and the configure then fails at
+  generate time on a non-existent directory.
+
+`ost` rewrites those paths when it materializes a runtime; a plain build does
+not. So a plain build needs that Python at those paths. For the pinned Linux
+archive, that is `python3.13-dev` from deadsnakes on Ubuntu 24.04, which is
+what `plain-cmake.yml` installs. Someone who built OpenUSD on their own host
+already has it.
+
+A plain build must also state three things itself, because `ost` supplies them
 through its toolchain or its session:
 
-- **`-DPython3_EXECUTABLE=`** the Python that OpenUSD's bindings are built
-  for, when the host has more than one. Otherwise CMake picks the newest, and
-  the Python-driven suites fail to import `pxr`.
+- **`-DPython3_EXECUTABLE=`** that Python's interpreter. Otherwise
+  `pxrConfig.cmake` defaults to the producer's interpreter path, or CMake
+  picks the newest Python on a host with several, and the Python-driven
+  suites fail to import `pxr`.
 - **`-DUSDVRM_EXEC_MOTION_ROOT=`** an extracted `execMotion` bundle, for the
   suites that compose it. Without it, those suites are not registered, and
   `workspace_ctest_labels` reports the labels they carry as missing.

@@ -312,9 +312,13 @@ ctest --test-dir build -C Release
 
 Two things `ost` supplies that a plain build states itself:
 
-- **`Python3_EXECUTABLE`**, on any host with more than one Python: CMake
-  otherwise picks the newest, and the Python-driven suites then fail to import
-  `pxr`.
+- **The Python OpenUSD was built against, where it was built against it.**
+  An OpenUSD install's CMake package names that Python's headers by absolute
+  path, so pass its interpreter as `Python3_EXECUTABLE`, and have its headers
+  and `libpython` where the install expects them. For the pinned Linux
+  runtime, that is deadsnakes' `python3.13-dev` on Ubuntu 24.04.
+  [Plain CMake](docs/reference/SUPPORTED_CONFIGURATIONS.md#plain-cmake)
+  explains why no `Python3_*` hint can point it elsewhere.
 - **`-DUSDVRM_EXEC_MOTION_ROOT=<dir>`**, an extracted
   [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion)
   bundle, for the suites that compose it (the `execVrm` retarget cases and

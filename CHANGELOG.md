@@ -25,8 +25,13 @@ Current schema contract version: **1**.
   the `execMotion` bundle from `execVrm`'s descriptor, and fetches both by
   digest. It builds `usd-motion-plugins` from the commit that the pinned
   packages' SLSA provenance names, so the lane moves when the pins move.
-  Measured locally in an Ubuntu 24.04 container: 40/40, the same suite that
-  `ost test` runs.
+  Measured locally in a clean `ubuntu:24.04` container: 40/40, the same suite
+  that `ost test` runs. The lane installs deadsnakes' `python3.13-dev`, not
+  setup-python, because an OpenUSD install's CMake package names its build
+  Python by absolute path, in `pxrConfig.cmake` and in `pxrTargets.cmake`'s
+  include directories. `ost` rewrites those paths when it materializes a
+  runtime; a plain build has to supply that Python where the install expects
+  it (docs/reference/SUPPORTED_CONFIGURATIONS.md, "Plain CMake").
 - **A CMake dependency-boundary audit**:
   [`scripts/check_cmake_boundaries.py`](scripts/check_cmake_boundaries.py),
   registered as `workspace_cmake_boundaries` plus a self-test and run first in
