@@ -97,11 +97,16 @@ jobs:
 
       - name: Build and install usd-motion-plugins with plain CMake
         shell: bash
+        # Python3_EXECUTABLE here too: pxrConfig.cmake find_dependency's
+        # Python3 Development, and on a runner with a system Python beside
+        # setup-python's, FindPython3 otherwise looks for the headers and
+        # libpython under /usr and fails the configure.
         run: |
           set -euo pipefail
           cmake -S _deps/usd-motion-plugins -B "$RUNNER_TEMP/build-motion" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/openusd" \
+            -DPython3_EXECUTABLE="${{ steps.python.outputs.python-path }}" \
             -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/motion" \
             -DUSDMOTION_BUILD_TESTS=OFF \
             -DUSDMOTION_BUILD_EXEC_MOTION=OFF
