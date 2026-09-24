@@ -150,9 +150,10 @@ if(USDVRM_EXEC_MOTION_BUNDLE)
         COMMAND execVrm_diagnostics_tests "${_exec_vrm_retarget_fixture}")
 else()
     message(STATUS
-        "execVrm: no consumed execMotion in this build (a standalone configure); "
-        "execVrm_retarget, _joint_transforms, _diagnostics and _boundaries are "
-        "built and not registered -- the root build registers them")
+        "execVrm: no consumed execMotion in this build; execVrm_retarget, "
+        "_joint_transforms, _diagnostics and _boundaries are built and not "
+        "registered. `ost build` materializes the bundle; a plain-CMake build "
+        "names an extracted one with -DUSDVRM_EXEC_MOTION_ROOT=<dir>")
 endif()
 
 # The same executable, in a session with vrmSchema and no execMotion: what
@@ -217,9 +218,8 @@ set(_plug_resources "${_bundle_dir}/plugin/resources/execVrm")
 set(_vrm_schema_bundle "${_bundle_dir}/../vrmSchema")
 set(_vrm_schema_resources "${_vrm_schema_bundle}/plugin/resources/vrmSchema")
 
-# And execMotion, which the retarget reads a computation of.
-set(_exec_motion_bundle "${USDVRM_EXEC_MOTION_BUNDLE}")
-set(_exec_motion_resources "${USDVRM_EXEC_MOTION_RESOURCES}")
+# And execMotion, which the retarget reads a computation of, through
+# USDVRM_EXEC_MOTION_ENV (cmake/UsdVrmExecMotion.cmake).
 
 set(_exec_vrm_path_env
     "PATH=path_list_prepend:${_usd_root}/bin"
@@ -234,7 +234,7 @@ if(USDVRM_EXEC_MOTION_BUNDLE)
     set_tests_properties(execVrm_retarget execVrm_joint_transforms
                          execVrm_diagnostics PROPERTIES
         ENVIRONMENT_MODIFICATION
-            "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
+            "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};${USDVRM_EXEC_MOTION_ENV}")
 endif()
 
 # `set`, not a prepend, for the reason execVrm_humanoid_without_schema gives:

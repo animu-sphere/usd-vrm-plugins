@@ -30,8 +30,9 @@ project's central design decision, and it is described below.
 > how this workspace is built, tested, packaged, and released. The record of
 > adopting it — every version from pre-0.3 to 0.22.2, including what broke — is
 > published in [docs/reports/ost/](docs/reports/ost/). The repo is
-> **dual-mode**: everything also builds with plain CMake against any OpenUSD
-> install, with no `ost` involved.
+> **dual-mode**: everything also builds and tests with plain CMake against an
+> OpenUSD 26.08 install and installed `usd-motion-plugins` packages, with no
+> `ost` involved — and [a CI lane](.github/workflows/plain-cmake.yml) proves it.
 
 ## Workspace components
 
@@ -146,8 +147,8 @@ usdVrmPackageResolver ──> vrmContainer
 usdVrmaFileFormat ──────> vrmContainer, motionCore
 
 vrmRig ─────────────────> motionCore
-motion_retarget (CLI) ──> motionRetarget, vrmRig, motionSampling + OpenUSD
-                          stage APIs
+motion_retarget (CLI) ──> motionRetarget, vrmRig, motionCore, motionSampling,
+                          motionUsd + OpenUSD stage APIs
 
 vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport, osc
 vrmAdapterMocopi ───────> motionCore, motionRuntime, liveTransport
@@ -161,7 +162,7 @@ motionTracking ─────────> nothing — the same again, and for 
 
                           (planned)
 execMotion ─────────────> motionCore, motionSampling, motionRecording
-execVrm ────────────────> vrmSchema, motionRetarget, vrmRig
+execVrm ────────────────> vrmSchema, motionCore, motionRetarget, vrmRig
 ```
 
 Five rules keep those edges honest:
@@ -291,24 +292,56 @@ ost plugin view plugins/usdVrmFileFormat avatar.vrm \
 
 ### With plain CMake (no OpenStrata)
 
-The workspace root composes every bundle:
+Two installed prefixes, and nothing else: an OpenUSD 26.08 install, and a
+`cmake --install` of [`usd-motion-plugins`](https://github.com/animu-sphere/usd-motion-plugins)
+— which is consumed as a package, never as a sibling source tree.
 
 ```sh
-cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/openusd-install
+# usd-motion-plugins, once
+cmake -S usd-motion-plugins -B build-motion -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_PREFIX_PATH=<openusd-prefix> -DCMAKE_INSTALL_PREFIX=<motion-prefix>
+cmake --build build-motion --config Release
+cmake --install build-motion --config Release
+
+# this workspace
+cmake -S . -B build "-DCMAKE_PREFIX_PATH=<openusd-prefix>;<motion-prefix>" \
+      -DPython3_EXECUTABLE=<the python OpenUSD's bindings are built for>
 cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
 
+Two things `ost` supplies that a plain build states itself:
+
+- **The Python OpenUSD was built against, where it was built against it.**
+  An OpenUSD install's CMake package names that Python's headers by absolute
+  path, so pass its interpreter as `Python3_EXECUTABLE`, and have its headers
+  and `libpython` where the install expects them. For the pinned Linux
+  runtime, that is deadsnakes' `python3.13-dev` on Ubuntu 24.04.
+  [Plain CMake](docs/reference/SUPPORTED_CONFIGURATIONS.md#plain-cmake)
+  explains why no `Python3_*` hint can point it elsewhere.
+- **`-DUSDVRM_EXEC_MOTION_ROOT=<dir>`**, an extracted
+  [`execMotion`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/plugins/execMotion)
+  bundle, for the suites that compose it (the `execVrm` retarget cases and
+  the OpenExec parity rows). Without it they are not registered, and
+  `workspace_ctest_labels` says which labels that leaves empty.
+
+[`plain-cmake.yml`](.github/workflows/plain-cmake.yml) runs exactly this on
+Linux, taking the usd-motion-plugins commit its pinned packages were built from
+([`scripts/plain_cmake_inputs.py`](scripts/plain_cmake_inputs.py)).
+
 The motion layer's suites carry CTest labels, so one layer runs on its own:
-`motion.core`, `motion.runtime`, `motion.retarget`, `motion.cli`,
-`motion.integration`, `motion.openexec` and `motion.real-corpus`
-(`ctest --test-dir build -C Release -L motion.openexec`).
+`motion.retarget`, `motion.cli`, `motion.integration`, `motion.openexec` and
+`motion.real-corpus` (`ctest --test-dir build -C Release -L motion.openexec`).
 [The OpenExec plan](docs/roadmap/openexec-foundation.md) (P0-2) says what each
 names.
 
-Each bundle also builds standalone against *installed* sibling packages
-(`find_package(vrmSchema CONFIG REQUIRED)`), which is what CI proves; a bundle
-never reaches sideways into a sibling's source tree.
+Each member also builds standalone against *installed* packages
+(`find_package(vrmSchema CONFIG REQUIRED)`), resolving only what it links: the
+root resolves no dependency on a member's behalf, so `usdVrmFileFormat` configures
+with no motion package on the prefix path at all. A member never reaches
+sideways into a sibling's source tree, and
+[`scripts/check_cmake_boundaries.py`](scripts/check_cmake_boundaries.py) holds
+every member's edges to [WORKSPACE.md §2](docs/architecture/WORKSPACE.md).
 
 The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in
 `plugins/usdVrmFileFormat/lib/`; add

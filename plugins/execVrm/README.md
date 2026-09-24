@@ -408,8 +408,9 @@ pose nothing, and the retarget refuses after it.
 ([its README](https://github.com/animu-sphere/usd-motion-plugins/blob/main/plugins/execMotion/README.md#how-the-rules-are-checked)). It uses that
 check's snapshot-rule tables, imported along the one edge the two bundles may
 have. What it adds is this bundle's own: the links it may have are `motionCore`,
-`motionSampling`, `motionRecording`, `motionRetarget` and `vrmRig`, and nothing
-of `vrmSchema`. No GLB parser or
+`motionRetarget` and `vrmRig`, and nothing of `vrmSchema` — nor
+`motionSampling` or `motionRecording`, which were linked from MIG-1 without a
+source here including either. No GLB parser or
 importer may be named in the source. The binary imports neither `vrmSchema` nor
 `execMotion`. No schema may be declared that `execMotion`'s `plugInfo.json`
 declares.

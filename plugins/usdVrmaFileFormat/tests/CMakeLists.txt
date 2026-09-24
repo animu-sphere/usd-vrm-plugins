@@ -16,7 +16,6 @@ endif()
 set(_bundle_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
 set(_lib_dir "${_bundle_dir}/lib")
 set(_vrm_container_dir "$<TARGET_FILE_DIR:vrmContainer::vrmContainer>")
-set(_motion_core_dir "$<TARGET_FILE_DIR:motionCore::motionCore>")
 set(USDVRMA_TEST_LIBRARYPATH
     "${_lib_dir}/lib${PLUGIN_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(_plug_resources "${CMAKE_CURRENT_BINARY_DIR}/resources/usdVrmaFileFormat")
@@ -26,7 +25,7 @@ configure_file(
     @ONLY)
 
 set(_test_env
-    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PATH=path_list_prepend:${_vrm_container_dir};PATH=path_list_prepend:${_motion_core_dir};PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
+    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PATH=path_list_prepend:${_vrm_container_dir};PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
 
 add_test(
     NAME usdvrma_python_smoke

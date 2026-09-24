@@ -3,17 +3,25 @@
 # Top-level project for usd-vrm-plugins.
 #
 # This repo is dual-mode by design:
-#   * OpenStrata-native: `ost plugin build|test plugins/usdVrmFileFormat` drives the bundle
+#   * OpenStrata-native: `ost build` / `ost test` drive this file, and
+#     `ost plugin build|test plugins/usdVrmFileFormat` drives one bundle's
 #     CMakeLists.txt directly against the activated runtime's toolchain.
-#   * Plain CMake: anyone without OpenStrata can configure THIS file, point
-#     CMAKE_PREFIX_PATH at an OpenUSD install, and build every bundle. Use the
+#   * Plain CMake: anyone without OpenStrata can configure THIS file with an
+#     OpenUSD 26.08 install and a `cmake --install` of usd-motion-plugins on
+#     CMAKE_PREFIX_PATH, and build and test every member. Use the
 #     CMakePresets.json here, or:
-#       cmake -S . -B build -DCMAKE_PREFIX_PATH=<usd-install>
+#       cmake -S . -B build "-DCMAKE_PREFIX_PATH=<usd-install>;<motion-install>"
 #       cmake --build build --config Release
+#       ctest --test-dir build -C Release
+#     .github/workflows/plain-cmake.yml runs exactly that, with no `ost`.
 #
-# Each plugin under plugins/<name> is a self-contained CMake project (so `ost
-# plugin build` can target it standalone) that is also add_subdirectory()-able
-# from here.
+# This file orchestrates and nothing else: the project and its version, the
+# OpenUSD contract, the member list, and the tests that span members. A
+# dependency belongs to the member that links it (cmake/UsdVrmConsumedPackage.cmake).
+#
+# Each member under libs/, plugins/ and tools/ is a self-contained CMake project
+# (so `ost plugin build` / `ost library build` can target it standalone) that is
+# also add_subdirectory()-able from here.
 cmake_minimum_required(VERSION 3.22)
 
 # Single source of truth for the release version: the repo-root VERSION file.
@@ -91,24 +99,25 @@ add_subdirectory("libs/vrmContainer")
 find_package(pxr REQUIRED CONFIG)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/UsdVrmOpenUsd.cmake")
 
-# The generic motion libraries are consumed, not built (MIG-1..MIG-3).
-# `motionCore`, `motionSampling`, `motionRecording`, `motionRetarget` and
-# `motionUsd` are published `usd-motion-plugins` artifacts, pinned by digest per target in each
-# descriptor that names one; `ost` materializes them and puts
-# their prefixes on CMAKE_PREFIX_PATH before this file is configured, so every
-# `find_package` below resolves against a package rather than a sibling
-# directory. A plain-CMake build resolves them from CMAKE_PREFIX_PATH the same
-# way it resolves OpenUSD.
+# The generic motion libraries are consumed, not built (MIG-1..MIG-3), and this
+# file resolves none of them. `motionCore`, `motionRetarget`, `motionSampling`
+# and `motionUsd` are usd-motion-plugins' installed packages: `ost`
+# materializes each digest-pinned artifact and puts its prefix on
+# CMAKE_PREFIX_PATH, and a plain-CMake build names a `cmake --install` of that
+# repository there, the same way it names OpenUSD. Never a sibling source tree.
 #
-# Resolved once here, after pxr, so the composed build never asks any of their
-# configs to define OpenUSD's imported targets a second time. Each member still
-# guards its own `find_package` with `if(NOT TARGET ...)`, which is what keeps a
-# standalone configure of that member working.
-foreach(_consumed IN ITEMS motionCore motionSampling motionRecording motionRetarget motionUsd)
-    if(NOT TARGET ${_consumed}::${_consumed})
-        find_package(${_consumed} REQUIRED CONFIG)
-    endif()
-endforeach()
+# Each member resolves what it links, through usdvrm_consume_package()
+# (cmake/UsdVrmConsumedPackage.cmake), so this build requires exactly the union
+# of what its members use -- and a standalone configure of one member requires
+# only that member's own. OpenUSD is resolved above first, so no package config
+# is ever the one that defines OpenUSD's targets.
+#
+# Set for the members' workspace-wide tests, which need bundles a standalone
+# member configure does not have. A variable rather than a target probe: a
+# probe answers "which package happens to be visible here", which is not the
+# question and stopped being the same answer when this file stopped resolving
+# packages for its members.
+set(USDVRM_COMPOSED_BUILD ON)
 
 # What is still built here from this layer: what a VRM rig adds to the
 # consumed retarget (WORKSPACE.md §2, §9.5).
@@ -254,7 +263,10 @@ if(USDVRM_BUILD_TESTS AND USDVRM_EXEC_MOTION_BUNDLE AND TARGET ExecVrm
 elseif(USDVRM_BUILD_TESTS)
     message(STATUS
         "usd-vrm-plugins: no consumed execMotion or no execVrm in this build; "
-        "skipping the OpenExec parity cases")
+        "skipping the OpenExec parity cases. A plain-CMake build names an "
+        "extracted execMotion bundle with -DUSDVRM_EXEC_MOTION_ROOT=<dir>; "
+        "without one, workspace_ctest_labels reports the labels these cases "
+        "carry as missing")
 endif()
 
 # The live half left with MIG-4. `liveTransport`, `osc`, `motionTracking` and
@@ -329,6 +341,28 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON)
     add_test(NAME workspace_ctest_labels_selftest
         COMMAND "${USDVRM_TEST_PYTHON}"
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_ctest_labels.py"
+            --selftest)
+
+    # The CMake dependency boundary (WORKSPACE.md §2) as the build states it:
+    # what each member resolves, links and includes, against what it may; the
+    # root resolving nothing on a member's behalf; no source tree of another
+    # repository. And the consumed packages this build actually resolved,
+    # read for any code that knows VRM -- whichever prefix they came from, the
+    # artifact `ost` pulled or a plain `cmake --install`.
+    set(_boundary_includes)
+    foreach(_consumed IN ITEMS motionCore motionRetarget motionSampling motionUsd)
+        if(TARGET ${_consumed}::${_consumed})
+            list(APPEND _boundary_includes --motion-include
+                 "$<TARGET_PROPERTY:${_consumed}::${_consumed},INTERFACE_INCLUDE_DIRECTORIES>")
+        endif()
+    endforeach()
+    add_test(NAME workspace_cmake_boundaries
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_cmake_boundaries.py"
+            ${_boundary_includes})
+    add_test(NAME workspace_cmake_boundaries_selftest
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_cmake_boundaries.py"
             --selftest)
 endif()
 

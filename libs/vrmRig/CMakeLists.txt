@@ -40,9 +40,10 @@ if(NOT pxr_FOUND)
 endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
-if(NOT TARGET motionCore::motionCore)
-    find_package(motionCore REQUIRED CONFIG)
-endif()
+# The joint vocabulary a humanoid binds, and nothing else of the motion stack:
+# none of what is here samples, records or retargets.
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmConsumedPackage.cmake")
+usdvrm_consume_package(motionCore)
 
 add_library(vrmRig STATIC
     src/ExpressionResolver.cpp

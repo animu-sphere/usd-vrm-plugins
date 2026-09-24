@@ -163,7 +163,7 @@ jobs:
       - name: Materialize the packages this workspace consumes
         shell: bash
         # The libraries this repository no longer builds -- usd-motion-plugins'
-        # motionCore, motionSampling and motionRecording -- are declared by
+        # motionCore, motionRetarget, motionSampling and motionUsd -- are declared by
         # digest in the descriptors and resolved like OpenUSD: as a prefix the
         # consumer is handed. Pulled here rather than by the driver, because a
         # lane that reaches the network from inside a consumer fixture would be

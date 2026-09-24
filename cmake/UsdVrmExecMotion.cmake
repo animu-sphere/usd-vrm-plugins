@@ -17,6 +17,20 @@
 # Sets:
 #   USDVRM_EXEC_MOTION_BUNDLE     - the bundle root, or empty
 #   USDVRM_EXEC_MOTION_RESOURCES  - its plugInfo.json directory, or empty
+#   USDVRM_EXEC_MOTION_ENV        - the ENVIRONMENT_MODIFICATION entries a test
+#                                   needs to load it, or empty
+#
+# **The loader path is part of loading it.** The published library carries no
+# path to OpenUSD that holds on this host: its RUNPATH is the producer's CI
+# checkout, and its activation contract (openstrata.activation.json) names the
+# platform loader variable instead. So OpenUSD's libraries that this process
+# has not loaded by the time the plugin is opened -- usdSkel, exec, the Python
+# bindings -- are found only through that variable. `ost test` sets it by
+# activating the runtime, which is why this was invisible there; a plain CTest
+# run has only what the test says. Without it the plugin fails to open, and
+# what a suite sees is a computation that returns nothing (measured on Linux:
+# execVrm_diagnostics and workspace_exec_driver). On Windows PATH is the
+# loader variable, as it always was here.
 #
 # Empty means no suite that composes the bundle is registered, and every caller
 # says so with a status message rather than registering a test that cannot
@@ -52,4 +66,29 @@ if(_usdvrm_exec_motion_root)
             "execMotion: '${_usdvrm_exec_motion_root}' has no "
             "plugin/resources/execMotion/plugInfo.json")
     endif()
+endif()
+
+set(USDVRM_EXEC_MOTION_ENV "")
+if(USDVRM_EXEC_MOTION_BUNDLE)
+    set(_usdvrm_exec_motion_usd_lib "")
+    if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
+        set(_usdvrm_exec_motion_usd_lib "${pxr_DIR}/lib")
+    elseif(pxr_DIR)
+        get_filename_component(_usdvrm_exec_motion_usd_lib "${pxr_DIR}/../../../lib" ABSOLUTE)
+    endif()
+    if(WIN32)
+        set(_usdvrm_loader PATH)
+    elseif(APPLE)
+        set(_usdvrm_loader DYLD_LIBRARY_PATH)
+    else()
+        set(_usdvrm_loader LD_LIBRARY_PATH)
+    endif()
+    list(APPEND USDVRM_EXEC_MOTION_ENV
+        "${_usdvrm_loader}=path_list_prepend:${USDVRM_EXEC_MOTION_BUNDLE}/lib")
+    if(_usdvrm_exec_motion_usd_lib)
+        list(APPEND USDVRM_EXEC_MOTION_ENV
+            "${_usdvrm_loader}=path_list_prepend:${_usdvrm_exec_motion_usd_lib}")
+    endif()
+    list(APPEND USDVRM_EXEC_MOTION_ENV
+        "PXR_PLUGINPATH_NAME=path_list_prepend:${USDVRM_EXEC_MOTION_RESOURCES}")
 endif()

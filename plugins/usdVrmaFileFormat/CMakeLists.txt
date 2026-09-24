@@ -50,9 +50,12 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Dependencies.cmake")
 if(NOT TARGET vrmContainer::vrmContainer)
     find_package(vrmContainer CONFIG REQUIRED)
 endif()
-if(NOT TARGET motionCore::motionCore)
-    find_package(motionCore CONFIG REQUIRED)
-endif()
+# The joint vocabulary the canonical document is stated in. Only that: a .vrma
+# is read without knowing which avatar it will drive, so nothing that maps,
+# retargets or knows a VRM rig -- `vrmRig`, `motionRetarget` -- is linked here
+# (scripts/check_cmake_boundaries.py holds it to that).
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmConsumedPackage.cmake")
+usdvrm_consume_package(motionCore)
 
 set(PLUGIN_NAME UsdVrmaFileFormat)
 add_library(${PLUGIN_NAME} SHARED

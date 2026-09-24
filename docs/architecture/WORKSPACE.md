@@ -291,8 +291,7 @@ motion_retarget       -> motionRetarget, vrmRig, motionSampling, motionUsd,
 execMotion            -> motionCore, motionRuntime
 execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
 execVrm               -> vrmSchema
-execVrm               -> motionCore, motionSampling, motionRecording,
-                         motionRetarget, vrmRig
+execVrm               -> motionCore, motionRetarget, vrmRig
 execVrm               -> execMotion  (runtime only: `vrm.computeBoundPose`
                          reads `motion.sampleAnimation` by name; nothing is
                          linked, and the reverse edge is not allowed)
@@ -621,6 +620,18 @@ no sibling adapter, no `vrmRetarget`, and no plugin bundle — which is what
 covers the sibling rule and the prohibitions above the line in any case, since
 nothing declares an edge it is forbidden to have.
 
+**The consumed-package edges above are also checked as the build states
+them**, by `scripts/check_cmake_boundaries.py` (`workspace_cmake_boundaries`),
+statically and on every lane. The graph gate reads what a descriptor declares;
+this reads what each member's CMake resolves and links and what its sources
+include. It fails when those three disagree with each other, with the
+descriptor, or with the allowed set here. `execVrm` carried a link to
+`motionSampling` and `motionRecording` through a release after the last
+include of either, and the graph gate could not see that: the descriptor
+declared those same two packages as well. The `ALLOWED` table in that script
+restates this section for consumed packages. A new member gets a row there
+by hand, or the check refuses to run.
+
 ## 3. Schema contract versioning
 
 - `vrmSchema` carries two independent versions: `plugin.version` (semantic
@@ -657,6 +668,20 @@ be composed with `add_subdirectory` in the workspace build, but every bundle
 must also build standalone against installed packages
 (`find_package(vrmSchema CONFIG REQUIRED)` etc.); sibling
 `add_subdirectory(../otherBundle)` from inside a bundle is forbidden.
+
+**The root resolves no dependency on a member's behalf.** A package this
+workspace consumes from another repository — every `usd-motion-plugins`
+library — is resolved by the member that links it, through
+`usdvrm_consume_package()` (`cmake/UsdVrmConsumedPackage.cmake`), which also
+makes the resolved targets global so a later member and a root-registered test
+reuse the one definition. Until 2026-09-24 the root `find_package`'d all five
+motion packages up front, which made every configure require every package —
+`motionRecording` included, which nothing here includes. That package is
+reached only as an installed prefix on `CMAKE_PREFIX_PATH`: never
+`add_subdirectory` of its source, never `FetchContent`. `ost` puts the
+digest-pinned artifact there; a plain-CMake build puts a `cmake --install`
+there, and `.github/workflows/plain-cmake.yml` proves that path with no `ost`
+at all.
 
 ## 5. Artifact naming and versioning
 

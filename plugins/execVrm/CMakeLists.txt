@@ -60,20 +60,14 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 # every node here is a thin wrapper over a `motionRetarget` call, and the
 # values that cross the boundary are its own (WORKSPACE.md §2, motion policy
 # §11.4). `vrmRig` is what a VRM rig adds -- here, the required bones.
-if(NOT TARGET motionCore::motionCore)
-    find_package(motionCore CONFIG REQUIRED)
-endif()
-if(NOT TARGET motionRetarget::motionRetarget)
-    find_package(motionRetarget CONFIG REQUIRED)
-endif()
-if(NOT TARGET motionSampling::motionSampling)
-    find_package(motionSampling CONFIG REQUIRED)
-endif()
-# The other half of what was one `motionRuntime`: the live-capture intake and
-# the capture trace are `motionRecording`'s.
-if(NOT TARGET motionRecording::motionRecording)
-    find_package(motionRecording CONFIG REQUIRED)
-endif()
+#
+# Not `motionSampling` and not `motionRecording`. Both were linked from MIG-1,
+# when one `motionRuntime` became the two and this bundle took both halves, but
+# no source here includes either: the pose a retarget reads is sampled by
+# execMotion's `motion.sampleAnimation`, read by name across the stage, and
+# nothing here reads or writes a capture trace.
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmConsumedPackage.cmake")
+usdvrm_consume_package(motionCore motionRetarget)
 if(NOT TARGET vrmRig::vrmRig)
     find_package(vrmRig CONFIG REQUIRED)
 endif()
@@ -98,8 +92,6 @@ target_include_directories(${PLUGIN_NAME} PRIVATE
 target_link_libraries(${PLUGIN_NAME} PRIVATE
     motionCore::motionCore
     motionRetarget::motionRetarget
-    motionSampling::motionSampling
-    motionRecording::motionRecording
     vrmRig::vrmRig)
 
 if(MSVC)

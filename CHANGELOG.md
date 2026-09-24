@@ -13,7 +13,66 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Added
+
+- **A plain-CMake lane with no `ost` in it** —
+  [`.github/workflows/plain-cmake.yml`](.github/workflows/plain-cmake.yml).
+  On Linux it builds and tests the workspace from an OpenUSD 26.08 install
+  and a `cmake --install` of `usd-motion-plugins`, and refuses to run if
+  `ost` is on `PATH`. It copies no pin.
+  [`scripts/plain_cmake_inputs.py`](scripts/plain_cmake_inputs.py) reads the
+  OpenUSD archive from the Linux workspace cell in `openstrata.ci.yaml` and
+  the `execMotion` bundle from `execVrm`'s descriptor, and fetches both by
+  digest. It builds `usd-motion-plugins` from the commit that the pinned
+  packages' SLSA provenance names, so the lane moves when the pins move.
+  Measured locally in a clean `ubuntu:24.04` container: 40/40, the same suite
+  that `ost test` runs. The lane installs deadsnakes' `python3.13-dev`, not
+  setup-python, because an OpenUSD install's CMake package names its build
+  Python by absolute path, in `pxrConfig.cmake` and in `pxrTargets.cmake`'s
+  include directories. `ost` rewrites those paths when it materializes a
+  runtime; a plain build has to supply that Python where the install expects
+  it (docs/reference/SUPPORTED_CONFIGURATIONS.md, "Plain CMake").
+- **A CMake dependency-boundary audit**:
+  [`scripts/check_cmake_boundaries.py`](scripts/check_cmake_boundaries.py),
+  registered as `workspace_cmake_boundaries` plus a self-test and run first in
+  the plain lane. It checks the build graph and needs no build. It fails on:
+  - a source tree of another repository (`add_subdirectory` out of the repo,
+    `FetchContent`, `ExternalProject`);
+  - a `usd-motion-plugins` identity built here;
+  - the root resolving a consumed package;
+  - a member reaching a package that WORKSPACE.md §2 does not allow it. The
+    VRM importer may reach no motion package, and the `.vrma` importer may
+    reach neither `vrmRig` nor `motionRetarget`;
+  - a member whose resolved, linked and included packages are not the same
+    set;
+  - a descriptor whose `requires.libraries` disagrees with its CMake.
+
+  Given an installed `usd-motion-plugins` `include/`, it also fails on any
+  code there that knows VRM. Against `main` before this change it reports 17
+  violations.
+
 ### Changed
+
+- **The root `CMakeLists.txt` resolves no consumed package.** Each member
+  resolves what it links through `usdvrm_consume_package()`
+  ([`cmake/UsdVrmConsumedPackage.cmake`](cmake/UsdVrmConsumedPackage.cmake)).
+  The root used to `find_package` all five motion packages up front. That
+  made every configure require every package, including `motionRecording`,
+  which nothing here includes. Each member now configures and builds on its
+  own against a prefix holding only its own packages. `usdVrmFileFormat`,
+  `usdVrmPackageResolver`, `vrmSchema` and `vrmContainer` need no motion
+  package at all.
+- **`execVrm` no longer links `motionSampling` or `motionRecording`**, and its
+  descriptor no longer pins them. Both were carried from MIG-1, when
+  `motionRuntime` became two packages, but no source here includes either.
+  `motionRecording` is no longer consumed by this workspace.
+- **`motion_retarget` links `motionCore` by name**, because it includes a
+  `motionCore/` header. It used to reach that package only through
+  `motionRetarget`'s link line.
+- **`usdvrm_baseline` asks whether it is in the root build**
+  (`USDVRM_COMPOSED_BUILD`). It used to ask whether `motionCore`'s target was
+  visible. That check stood in for the real question and would have silently
+  dropped the gate once the root stopped resolving packages.
 
 - **Every `usd-motion-plugins` pin is v0.5.1**, the release that pushed
   `execMotion` and the CLIs to its registry as well as the libraries. The five
@@ -337,6 +396,16 @@ Current schema contract version: **1**.
   ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Fixed
+
+- **Suites that load the consumed `execMotion` now set the loader path**
+  (`USDVRM_EXEC_MOTION_ENV`,
+  [`cmake/UsdVrmExecMotion.cmake`](cmake/UsdVrmExecMotion.cmake)). The
+  published library's `RUNPATH` points at the producer's CI checkout. It
+  therefore opens only when `LD_LIBRARY_PATH` names OpenUSD, which `ost test`
+  sets by activating the runtime and a plain CTest run did not. On Linux
+  outside `ost`, `execVrm_diagnostics` and `workspace_exec_driver` failed:
+  the plugin never loaded, and the computations came back empty. The plain
+  lane found this on its first run.
 
 - **The release lane could not package the product since MIG-4.**
   `openstrata.toml`'s `release_exclude` still named `mocopi_record`,

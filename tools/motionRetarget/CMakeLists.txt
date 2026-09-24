@@ -42,24 +42,20 @@ if(NOT pxr_FOUND)
 endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
-if(NOT TARGET motionRetarget::motionRetarget)
-    find_package(motionRetarget REQUIRED CONFIG)
-endif()
+# This tool is where the generic retarget and the VRM semantics compose: the
+# algorithm is `motionRetarget`'s and knows no VRM, `vrmRig` is what a VRM rig
+# adds to it, and neither library is linked to the other.
+#
+# `motionSampling` by name rather than through a PUBLIC re-export: the tool
+# resamples the clip itself, before either half of the bake expands it, so it
+# has a real edge on it and declaring it leaves nothing to be inferred from a
+# transitive dependency that could stop being transitive. The clip is read
+# through `motionUsd`, the library home of the clip -> pose rule `execMotion`
+# reads by as well; the `vrm:` tracks it refuses are read here, in StageIo.cpp.
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmConsumedPackage.cmake")
+usdvrm_consume_package(motionCore motionRetarget motionSampling motionUsd)
 if(NOT TARGET vrmRig::vrmRig)
     find_package(vrmRig REQUIRED CONFIG)
-endif()
-# By name rather than through a PUBLIC re-export: the tool resamples the clip
-# itself, before either half of the bake expands it, so it has a real edge on
-# `motionSampling` and declaring it leaves nothing to be inferred from a
-# transitive dependency that could stop being transitive.
-if(NOT TARGET motionSampling::motionSampling)
-    find_package(motionSampling REQUIRED CONFIG)
-endif()
-# The clip is read through `motionUsd`, the library home of the clip -> pose
-# rule `execMotion` reads by as well; the `vrm:` tracks it refuses are read
-# here, in StageIo.cpp.
-if(NOT TARGET motionUsd::motionUsd)
-    find_package(motionUsd REQUIRED CONFIG)
 endif()
 
 # `--build-info`'s stamp. Like usdVrmFileFormat's buildInfo.json it carries no
@@ -99,6 +95,7 @@ target_include_directories(motion_retarget PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/
 target_compile_features(motion_retarget PRIVATE cxx_std_17)
 target_link_libraries(motion_retarget
     PRIVATE
+        motionCore::motionCore
         motionRetarget::motionRetarget
         vrmRig::vrmRig
         motionSampling::motionSampling

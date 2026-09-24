@@ -10,6 +10,11 @@
 # all of them. The root CMakeLists.txt adds this directory after every tool, so
 # each target named below either exists or the guard there skipped it.
 
+# What the two harnesses link, declared here rather than borrowed from the
+# members that happened to resolve it first.
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmConsumedPackage.cmake")
+usdvrm_consume_package(motionCore motionRetarget motionSampling)
+
 # NDEBUG undefined, as in every suite here. The harness reports through its
 # exit code rather than `assert()`, but a Release build silently dropping a
 # check is the one failure a parity run must never have.
@@ -54,7 +59,7 @@ if(MSVC)
 endif()
 
 # The driver's own suite: each VRM_OPENEXEC_* code raised by the failure it
-# names, against execMotion alone. motionRuntime for the history sampler's
+# names, against execMotion alone. motionSampling for the history sampler's
 # result type, which is one of the keys it declares.
 add_executable(exec_driver_contract test_exec_driver.cpp)
 target_link_libraries(exec_driver_contract PRIVATE
@@ -86,10 +91,9 @@ set(_plugins "${_repo_root}/plugins")
 set(_parity_env
     "PATH=path_list_prepend:${_usd_root}/bin"
     "PATH=path_list_prepend:${_usd_root}/lib"
-    "PATH=path_list_prepend:${USDVRM_EXEC_MOTION_BUNDLE}/lib"
+    ${USDVRM_EXEC_MOTION_ENV}
     "PATH=path_list_prepend:${_plugins}/execVrm/lib"
     "PATH=path_list_prepend:${_plugins}/vrmSchema/lib"
-    "PXR_PLUGINPATH_NAME=path_list_prepend:${USDVRM_EXEC_MOTION_RESOURCES}"
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/execVrm/plugin/resources/execVrm"
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/vrmSchema/plugin/resources/vrmSchema")
 
