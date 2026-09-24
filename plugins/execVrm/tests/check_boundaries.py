@@ -9,11 +9,12 @@ to import them from.
 
 What is execVrm's own:
 
-  links    motionCore, motionSampling, motionRecording, motionRetarget and
-           vrmRig, and nothing of vrmSchema:
+  links    motionCore, motionRetarget and vrmRig, and nothing of vrmSchema:
            the schema is a bundle edge exec resolves by type name, and linking
            it would add a runtime dependency on a library the bundle needs
-           nothing from
+           nothing from. Nor motionSampling or motionRecording: the pose is
+           sampled by execMotion's computation, read by name, and no capture
+           trace is read or written here
   source   no GLB parser, no importer model, no reparse of the source .vrm or
            .vrma bytes -- `execVrm`'s only input contract is what is on the stage
   binary   neither vrmSchema nor vrmContainer nor any importer, and not
@@ -51,8 +52,7 @@ def main() -> int:
     errors += rules.purity_import_errors(library)
     errors += rules.link_errors(
         "execVrm", sys.argv[3],
-        {"motionCore::motionCore", "motionSampling::motionSampling",
-         "motionRecording::motionRecording", "motionRetarget::motionRetarget",
+        {"motionCore::motionCore", "motionRetarget::motionRetarget",
          "vrmRig::vrmRig"})
 
     declared, schema_errors = rules.schema_errors("execVrm", source)

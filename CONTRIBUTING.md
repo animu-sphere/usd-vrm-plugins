@@ -19,13 +19,19 @@ The main development path uses OpenStrata:
 ost plugin test --workspace
 ```
 
-Plain CMake is also supported when an OpenUSD installation is available:
+Plain CMake is also supported, with an OpenUSD 26.08 install and a
+`cmake --install` of `usd-motion-plugins` on the prefix path (see
+[Plain CMake](docs/reference/SUPPORTED_CONFIGURATIONS.md#plain-cmake)):
 
 ```sh
-cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/openusd-install
+cmake -S . -B build "-DCMAKE_PREFIX_PATH=/path/to/openusd-install;/path/to/motion-install"
 cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
+
+A member resolves the packages it links itself (`usdvrm_consume_package()`),
+never the root on its behalf. `python scripts/check_cmake_boundaries.py`
+checks that in a second, with no build.
 
 The supported toolchain is documented in
 [SUPPORTED_CONFIGURATIONS.md](docs/reference/SUPPORTED_CONFIGURATIONS.md).

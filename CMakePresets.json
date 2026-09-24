@@ -18,12 +18,12 @@
         {
             "name": "windows-msvc",
             "displayName": "Windows / Visual Studio 2022 (plain CMake)",
-            "description": "Set USD_INSTALL_ROOT to your OpenUSD install (e.g. C:/dev/build/usd2605).",
+            "description": "Set USD_INSTALL_ROOT to your OpenUSD 26.08 install and USD_MOTION_PREFIX to a cmake --install of usd-motion-plugins.",
             "inherits": "base",
             "generator": "Visual Studio 17 2022",
             "architecture": "x64",
             "cacheVariables": {
-                "CMAKE_PREFIX_PATH": "$env{USD_INSTALL_ROOT}"
+                "CMAKE_PREFIX_PATH": "$env{USD_INSTALL_ROOT};$env{USD_MOTION_PREFIX}"
             },
             "condition": {
                 "type": "equals",
@@ -34,10 +34,11 @@
         {
             "name": "linux-ninja",
             "displayName": "Linux / Ninja (plain CMake)",
+            "description": "Set USD_INSTALL_ROOT to your OpenUSD 26.08 install and USD_MOTION_PREFIX to a cmake --install of usd-motion-plugins.",
             "inherits": "base",
             "generator": "Ninja Multi-Config",
             "cacheVariables": {
-                "CMAKE_PREFIX_PATH": "$env{USD_INSTALL_ROOT}"
+                "CMAKE_PREFIX_PATH": "$env{USD_INSTALL_ROOT};$env{USD_MOTION_PREFIX}"
             },
             "condition": {
                 "type": "equals",

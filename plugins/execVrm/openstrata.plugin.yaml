@@ -69,32 +69,9 @@ requires:
           cy2026-windows-x86_64-py313-usd:
             digest: sha256:18203f389c0b045056bcfe5b462c570c799fcff112e1fa6a9c1da6879835c225
             source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:21651895936f6985dfb6a27452f035295a66b922d74b7934da2104f3dbb2ba89
-    - id: motionSampling
-      version: ">=0.5,<0.6"
-      artifact:
-        targets:
-          cy2026-linux-x86_64-py313-usd:
-            digest: sha256:4889f3f0aec786d64f49dcc58fc82631f8d97bb6d6d8ec6722ad9fd236608886
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:5631945c39d2b7c39d98813ca7523d5094e2032bbd0b04e6a1f038036d9fbca6
-          cy2026-macos-arm64-py313-usd:
-            digest: sha256:3b3aa30b6cfeff2a8a7f993779a860e26b3e43856d3c8ca5f6c62030ce589f35
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:63759d3ffda0982c9ec0131dca267fd3d9030542771c5df324219548c1c8f7d9
-          cy2026-windows-x86_64-py313-usd:
-            digest: sha256:bc7d75601e541110d4ca9d3d9a6683e1b34ddce21514fa6907e32315d6c86e45
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:a02b1a5b962e0f93d929d4588d70d19a91504ac112de9f078c8907b5efe5a9d8
-    - id: motionRecording
-      version: ">=0.5,<0.6"
-      artifact:
-        targets:
-          cy2026-linux-x86_64-py313-usd:
-            digest: sha256:d3447732b63df0d8e247dc8316755c68ea9fa583c93b34d370b0e57d42503104
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:6337da6c33650e61872154d780677ccfc6aaf36da4c6786547a0f4a73e88fffc
-          cy2026-macos-arm64-py313-usd:
-            digest: sha256:0e7758821dd31c3cf04dc84f642163718912d658ee488e31d9b3ffaaf5f29e7d
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:272c3f40271f8b00a3a53ff2bb5937f8522b45c23c464c23cd9a311a39971f2e
-          cy2026-windows-x86_64-py313-usd:
-            digest: sha256:1daf034651f86b6d1e5e2bfdf038437649fe0a6caacba6ddcc7970b8495bd6b3
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:d84cd5b53af7faa9e611c6442fe2951f3c989cb67f9669afd357a1f6c30c15cd
+    # Not motionSampling or motionRecording, which were pinned here from MIG-1
+    # until no source was found to include either (the CMake edge went with
+    # them): the pose a retarget reads is sampled by execMotion, by name.
   # The typed Vrm*API schemas. Not linked: exec resolves `UsdVrmHumanoidAPI`
   # by TfType name when it reads this bundle's Exec block, so what this bundle
   # needs is vrmSchema's plugInfo registered in the session. Without it the

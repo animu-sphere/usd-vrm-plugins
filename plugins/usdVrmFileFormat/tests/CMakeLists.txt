@@ -162,11 +162,14 @@ get_filename_component(_repo_root "${_bundle_dir}/../.." ABSOLUTE)
 # of this bundle, and its absence makes the generator abort rather than silently
 # freeze a short union.
 #
-# So it is registered only from the root workspace build. A standalone bundle
-# configure (`ost plugin build plugins/usdVrmFileFormat`) has neither that
-# bundle nor motionCore in scope, and a test that cannot pass there is worse
-# than no test.
-if(TARGET motionCore::motionCore)
+# So it is registered only from the root workspace build, which says so with
+# USDVRM_COMPOSED_BUILD. A standalone bundle configure (`ost plugin build
+# plugins/usdVrmFileFormat`) does not have that bundle, and a test that cannot
+# pass there is worse than no test. This used to ask whether motionCore's target
+# was visible, which was only ever a stand-in for the question and stopped
+# answering it when the root stopped resolving packages for its members; and
+# the importer tested here links no motion package at all.
+if(USDVRM_COMPOSED_BUILD)
     set(_vrma_bundle "${_bundle_dir}/../usdVrmaFileFormat")
     set(_vrma_resources "${_vrma_bundle}/plugin/resources/usdVrmaFileFormat")
     # execMotion joins for the same reason usdVrmaFileFormat did: the generator
@@ -176,9 +179,9 @@ if(TARGET motionCore::motionCore)
     # changes what the gate can verify, not what discovery.json contains.
     # It is the consumed bundle now (cmake/UsdVrmExecMotion.cmake), which the
     # root build this gate runs in always has.
+    # USDVRM_EXEC_MOTION_ENV carries its library, its plugInfo.json and the
+    # loader path the published library needs to open.
     include("${_bundle_dir}/../../cmake/UsdVrmExecMotion.cmake")
-    set(_exec_motion_bundle "${USDVRM_EXEC_MOTION_BUNDLE}")
-    set(_exec_motion_resources "${USDVRM_EXEC_MOTION_RESOURCES}")
     # execVrm joins for execMotion's reason, and like it registers no USD type.
     # Its Exec block names `UsdVrmHumanoidAPI`, a type vrmSchema declares --
     # which this session already carries, so the name resolves here as it
@@ -186,7 +189,7 @@ if(TARGET motionCore::motionCore)
     set(_exec_vrm_bundle "${_bundle_dir}/../execVrm")
     set(_exec_vrm_resources "${_exec_vrm_bundle}/plugin/resources/execVrm")
     set(_baseline_env
-        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PATH=path_list_prepend:${_exec_vrm_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_vrm_resources}")
+        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_vrm_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_vrm_resources};${USDVRM_EXEC_MOTION_ENV}")
 
     add_test(
         NAME usdvrm_baseline

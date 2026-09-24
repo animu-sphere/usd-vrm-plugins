@@ -109,6 +109,51 @@ three.
 typed schema sources; the generated C++ and `generatedSchema.usda` are committed
 as the plain-CMake fallback, so a normal build does not run it.
 
+## Plain CMake
+
+OpenStrata is how this workspace is built, packaged and released, but it is
+not needed for a source build. A source build needs two installed prefixes:
+
+| Input | What it is | How `ost` supplies it | How a plain build supplies it |
+| --- | --- | --- | --- |
+| OpenUSD 26.08 | an OpenUSD install prefix (`pxrConfig.cmake` at its root), with OpenExec | the pinned runtime artifact, materialized and activated | any OpenUSD 26.08 install; the pinned runtime's archive *is* one |
+| `usd-motion-plugins` ≥ 0.5, < 0.6 | the `motionCore`, `motionRetarget`, `motionSampling` and `motionUsd` CMake packages | each descriptor's digest-pinned artifact | `cmake --install` of that repository |
+
+```sh
+cmake -S . -B build "-DCMAKE_PREFIX_PATH=<openusd-prefix>;<motion-prefix>"
+cmake --build build --config Release
+ctest --test-dir build -C Release
+```
+
+That this passes is the definition of plain-CMake support.
+[`plain-cmake.yml`](../../.github/workflows/plain-cmake.yml) checks it on every
+PR on `ubuntu-24.04`, with no `ost` on the runner. The lane copies no pin. Its
+OpenUSD is the Linux workspace cell's pinned runtime archive, fetched by
+digest. Its `usd-motion-plugins` is built from the commit that the pinned
+packages' provenance names. The lane runs on one platform because what it
+proves is the dependency contract; the `ost` lanes provide the platform
+coverage.
+
+`usd-motion-plugins` is consumed only as an installed package. Nothing in this
+repository adds its source tree, and `scripts/check_cmake_boundaries.py` fails
+if something does. Each member resolves only what it links. A standalone
+configure of `usdVrmFileFormat`, `usdVrmPackageResolver`, `vrmSchema` or
+`vrmContainer` needs no motion package on the prefix path.
+
+A plain build must state three things itself, because `ost` supplies them
+through its toolchain or its session:
+
+- **`-DPython3_EXECUTABLE=`** the Python that OpenUSD's bindings are built
+  for, when the host has more than one. Otherwise CMake picks the newest, and
+  the Python-driven suites fail to import `pxr`.
+- **`-DUSDVRM_EXEC_MOTION_ROOT=`** an extracted `execMotion` bundle, for the
+  suites that compose it. Without it, those suites are not registered, and
+  `workspace_ctest_labels` reports the labels they carry as missing.
+- **The loader path**, for running a bundle outside CTest. The published
+  `execMotion` library finds OpenUSD only through `LD_LIBRARY_PATH` /
+  `DYLD_LIBRARY_PATH` / `PATH`. The suites set that path themselves
+  (`USDVRM_EXEC_MOTION_ENV`); a session you compose yourself has to set it.
+
 ## Platforms & architectures (CI-verified)
 
 These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
@@ -150,8 +195,8 @@ The file-format plugins are **shared** libraries
 (`libUsdVrmFileFormat.{dll,so,dylib}` and
 `libUsdVrmaFileFormat.{dll,so,dylib}`) — USD loads them dynamically. There is
 no supported static-plugin build. `vrmRig`, and the `usd-motion-plugins`
-packages this product consumes (`motionCore`, `motionSampling`,
-`motionRecording`, `motionRetarget`), are intentionally static and are linked
+packages this product consumes (`motionCore`, `motionRetarget`,
+`motionSampling`, `motionUsd`), are intentionally static and are linked
 into their consumers;
 `motion_retarget` and the BVH CLIs are ordinary executables and register
 nothing with OpenUSD.
