@@ -36,9 +36,7 @@ class SdfAssetPath;
 /// \class UsdVrmColliderAPI
 ///
 /// A single VRM SpringBone collider (data only). Apply to each
-
 /// /Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n> prim. vrm:tail is only
-
 /// meaningful for capsule shapes.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

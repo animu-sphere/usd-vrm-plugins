@@ -36,13 +36,9 @@ class SdfAssetPath;
 /// \class UsdVrmConstraintAPI
 ///
 /// A VRM node constraint (VRMC_node_constraint, data only - the constraint
-
 /// is not baked). Apply to each /Asset/rig/Constraints/<name> prim. The constrained
-
 /// and source nodes are named by joint path token (joints are Skeleton.joints tokens,
-
 /// not prims); the full constraint block is preserved as customData
-
 /// (vrm:constraint:raw). VRM 1.0 only; VRM 0.x has no node-constraint equivalent.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

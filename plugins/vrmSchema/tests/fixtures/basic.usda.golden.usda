@@ -1,8 +1,10 @@
 #usda 1.0
 (
     """Schema-only smoke fixture: applies every Vrm*API schema and authors a
-    few builtins, with no .vrm importer involved. Exercised by the bundle's
-    tests.smoke/tests.roundtrip entries and tests/test_vrmschema_plugin.py."""
+    few builtins, with no .vrm importer involved. The material schemas are
+    applied to a UsdShadeMaterial, the only prim type they may apply to.
+    Exercised by the bundle's tests.smoke/tests.roundtrip entries,
+    tests/test_vrmschema_plugin.py and tests/test_material_api.cpp."""
     defaultPrim = "Asset"
     doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\vrmSchema\\tests\\fixtures\\basic.usda
 """
@@ -78,6 +80,26 @@ def Xform "Asset"
                 uniform token vrm:type = "roll"
                 uniform float vrm:weight = 0.5
             }
+        }
+    }
+
+    def Scope "mtl"
+    {
+        def Material "Hair" (
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:shadeMultiply"]
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.4
+            uniform token inputs:vrm:material:alphaMode = "MASK"
+            color3f inputs:vrm:material:baseColorFactor = (0.9, 0.8, 0.7)
+            uniform bool inputs:vrm:material:unlit = 1
+            float inputs:vrm:mtoon:outlineWidthFactor = 0.002
+            uniform token inputs:vrm:mtoon:outlineWidthMode = "worldCoordinates"
+            color3f inputs:vrm:mtoon:shadeColorFactor = (0.6, 0.5, 0.55)
+            float inputs:vrm:mtoon:shadingToonyFactor = 0.95
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (2, 1)
+            uniform token inputs:vrm:textureInfo:shadeMultiply:wrapS = "clampToEdge"
         }
     }
 }

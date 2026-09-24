@@ -176,6 +176,26 @@
       "source": "validate",
       "title": "Texture asset does not resolve"
     },
+    "VRM223": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Material API schema is applied to a prim that is not a Material"
+    },
+    "VRM224": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "VrmTextureInfoAPI instance is not a texture role"
+    },
+    "VRM225": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Canonical material token is outside its documented set"
+    },
+    "VRM226": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "VrmMToonAPI is applied but vrm:shaderModel is not 'MToon'"
+    },
     "VRM230": {
       "severity": "ERROR",
       "source": "validate",

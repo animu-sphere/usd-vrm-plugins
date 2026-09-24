@@ -41,6 +41,23 @@ COLLIDERS_PATH = "/Asset/rig/SecondaryMotion/Colliders"
 CONSTRAINTS_PATH = "/Asset/rig/Constraints"
 SCHEMA_CONTRACT_VERSION = 1
 
+# The canonical material schemas (material policy §6; schema contract).
+MATERIAL_SCHEMAS = ("VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI")
+TEXTURE_ROLES = frozenset((
+    "baseColor", "metallicRoughness", "normal", "occlusion", "emissive",
+    "shadeMultiply", "shadingShift", "matcap", "rimMultiply",
+    "outlineWidthMultiply", "uvAnimationMask",
+))
+# Token-valued canonical properties carry no allowedTokens list in the schema
+# (a value outside the set reaches a consumer as data); this is where the set
+# is enforced. Texture-role properties are checked per applied instance.
+MATERIAL_TOKEN_SETS = {
+    "inputs:vrm:material:alphaMode": ("OPAQUE", "MASK", "BLEND"),
+    "inputs:vrm:mtoon:outlineWidthMode":
+        ("none", "worldCoordinates", "screenCoordinates"),
+}
+TEXTURE_WRAP_TOKENS = ("repeat", "clampToEdge", "mirroredRepeat")
+
 
 def _skeletons(stage: Usd.Stage) -> list[Usd.Prim]:
     return [p for p in stage.Traverse() if p.IsA(UsdSkel.Skeleton)]
@@ -252,6 +269,66 @@ def _check_materials(stage: Usd.Stage, out: list[Diagnostic]) -> None:
                 out.append(diag.make(
                     "VRM222", f"texture asset {authored!r} does not resolve",
                     prim.GetPath().pathString))
+
+
+def _check_material_semantics(stage: Usd.Stage, out: list[Diagnostic]) -> None:
+    """The canonical material schemas: where they apply, which texture roles
+    exist, which token values are meaningful, and that a material claiming
+    MToon semantics says so in `vrm:shaderModel` as well (§11 q5: the
+    attribute stays, because contract v1 cannot remove it)."""
+    resolver = Ar.GetResolver()
+    for prim in stage.Traverse():
+        applied = [Usd.SchemaRegistry.GetTypeNameAndInstance(s)
+                   for s in prim.GetAppliedSchemas()]
+        material_apis = [(family, instance) for family, instance in applied
+                         if family in MATERIAL_SCHEMAS]
+        if not material_apis:
+            continue
+        path = prim.GetPath().pathString
+        if not prim.IsA(UsdShade.Material):
+            out.append(diag.make(
+                "VRM223",
+                f"{', '.join(sorted({f for f, _ in material_apis}))} applied to a "
+                f"{prim.GetTypeName() or 'typeless'} prim, not a Material",
+                path))
+
+        token_attrs = dict(MATERIAL_TOKEN_SETS)
+        for family, role in material_apis:
+            if family != "VrmTextureInfoAPI":
+                continue
+            if role not in TEXTURE_ROLES:
+                out.append(diag.make(
+                    "VRM224", f"VrmTextureInfoAPI:{role} is not a texture role",
+                    path))
+                continue
+            base = f"inputs:vrm:textureInfo:{role}:"
+            for axis in ("wrapS", "wrapT"):
+                token_attrs[base + axis] = TEXTURE_WRAP_TOKENS
+            attr = prim.GetAttribute(base + "file")
+            value = attr.Get() if attr and attr.HasAuthoredValue() else None
+            authored = getattr(value, "path", "") if value else ""
+            if authored and not asset_path_resolves(stage, value, resolver):
+                out.append(diag.make(
+                    "VRM222",
+                    f"texture asset {authored!r} ({role}) does not resolve", path))
+
+        for name, allowed in token_attrs.items():
+            attr = prim.GetAttribute(name)
+            if not attr or not attr.HasAuthoredValue():
+                continue
+            value = attr.Get()
+            if str(value) not in allowed:
+                out.append(diag.make(
+                    "VRM225",
+                    f"{name} = {value!r} is not one of {', '.join(allowed)}", path))
+
+        if any(family == "VrmMToonAPI" for family, _ in material_apis):
+            model = prim.GetAttribute("vrm:shaderModel")
+            value = model.Get() if model and model.HasAuthoredValue() else None
+            if value != "MToon":
+                out.append(diag.make(
+                    "VRM226",
+                    f"VrmMToonAPI is applied but vrm:shaderModel is {value!r}", path))
 
 
 def _check_humanoid(stage: Usd.Stage, out: list[Diagnostic]) -> None:
@@ -470,6 +547,7 @@ def validate_stage(stage: Usd.Stage) -> list[Diagnostic]:
     _check_skinning(stage, out)
     _check_skeleton_topology(stage, out)
     _check_materials(stage, out)
+    _check_material_semantics(stage, out)
     _check_humanoid(stage, out)
     _check_expressions(stage, out)
     _check_lookat(stage, out)

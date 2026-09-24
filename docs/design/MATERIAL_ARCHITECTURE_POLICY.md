@@ -27,6 +27,11 @@
 > separate repository (§5.3) — and three rules are added: the source-of-truth
 > order (§6.5), VRM 0.x normalization (§6.6), and expression binds landing on
 > semantic slots (§6.7).
+>
+> **Step 3 shipped the same day.** The three schemas exist in `vrmSchema`; the
+> open questions it owned are answered in §11, and the one that changed a rule
+> here is q9 — canonical attributes are Material interface inputs,
+> `inputs:vrm:*`, not plain `vrm:*` attributes (§6.4.1).
 
 ---
 
@@ -123,7 +128,8 @@ Two facts about this state shape everything below.
 ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)). Nothing can
 read a shading-shift factor without re-parsing JSON, which is precisely the
 "typed data first, raw as fallback" rule that every other `Vrm*API` already
-follows. Step 1 moved nodes; it did not make MToon queryable. That is Step 3.
+follows. Step 1 moved nodes; it did not make MToon queryable. Step 3 defined
+the schemas that will (2026-09-25); an imported stage carries them from Step 4.
 
 **Shader prim paths are load-bearing for the baseline.**
 `tests/baseline/digests/**` keys materials by shader path (now
@@ -443,11 +449,11 @@ VRM semantics are grouped by schema and property namespace, applied to the
 
 ```text
 /Asset/mtl/Hair
-    + VrmMaterialAPI
-    + VrmMToonAPI
-    + VrmTextureInfoAPI:baseColor
-    + VrmTextureInfoAPI:shadeMultiply
-    + VrmTextureInfoAPI:matcap
+    + VrmMaterialAPI                   inputs:vrm:material:*
+    + VrmMToonAPI                      inputs:vrm:mtoon:*
+    + VrmTextureInfoAPI:baseColor      inputs:vrm:textureInfo:baseColor:*
+    + VrmTextureInfoAPI:shadeMultiply  inputs:vrm:textureInfo:shadeMultiply:*
+    + VrmTextureInfoAPI:matcap         inputs:vrm:textureInfo:matcap:*
 ```
 
 Do **not** add a child prim such as `/Asset/mtl/Hair/vrm` to group VRM metadata.
@@ -458,6 +464,15 @@ is what namespaces are for.
 
 Generic source material semantics needed for VRM/glTF reconstruction: base color
 factor, emissive factor, alpha mode, alpha cutoff, double-sidedness.
+
+As shipped (Step 3) the set is wider, because Step 5 regenerates `/preview`
+from canonical attributes *alone* and `/preview` already reads more than that:
+`baseColorFactor` (RGB) and `baseColorAlphaFactor`, `metallicFactor`,
+`roughnessFactor`, `emissiveFactor`, `emissiveStrength`
+(`KHR_materials_emissive_strength`), `alphaMode`, `alphaCutoff`, `doubleSided`,
+and `unlit` (`KHR_materials_unlit`, which decides the unlit branch of both
+realizations). glTF's RGBA base colour is split so each half connects to a
+colour and a float input without a conversion node in every graph.
 
 The final property set covers source semantics that need a stable USD
 representation, without duplicating values that already have a canonical home
@@ -506,11 +521,20 @@ A generic **multiple-apply** API schema, so texture data does not inflate
 
 | Group | Instances |
 | --- | --- |
-| glTF core | `baseColor`, `normal`, `emissive` |
-| MToon | `shadeMultiply`, `shadingShift`, `matcap`, `rimMultiply`, `outlineWidth`, `uvAnimationMask` |
+| glTF core | `baseColor`, `metallicRoughness`, `normal`, `occlusion`, `emissive` |
+| MToon | `shadeMultiply`, `shadingShift`, `matcap`, `rimMultiply`, `outlineWidthMultiply`, `uvAnimationMask` |
 
-Per-instance properties: source file, texCoord set, and the UV transform
-(offset / rotation / scale).
+Each is the specification's texture name without `Texture`. As shipped (Step
+3) the glTF core gained `metallicRoughness` and `occlusion`, which `/preview`
+samples, and the MToon outline texture is `outlineWidthMultiply` — the
+specification's `outlineWidthMultiplyTexture`; this table had it as
+`outlineWidth` until the names were checked (§11 q1). These eleven are the
+schema's allowed instance names (§11 q4).
+
+Per-instance properties: source file, texCoord set, sampler wrap (`wrapS`,
+`wrapT`, in glTF's vocabulary), the contribution scalars `scale` (normal,
+shading shift) and `strength` (occlusion), and the UV transform under
+`transform:` (offset / rotation / scale).
 
 Do not conflate **UV transform scale** with **MToon texture contribution
 scalars**. A shading-shift texture's contribution scale is a different quantity
@@ -524,16 +548,43 @@ Two constraints come from the shipped
 
 - **Namespace.** Everything shipped uses the single `vrm:` prefix
   (`vrm:humanBones:<bone>`, `vrm:skeleton`, `vrm:expressionType`). Material
-  properties follow it — `vrm:mtoon:shadeColorFactor`, `vrm:material:alphaMode`,
-  `vrm:textureInfo:<instance>:file` — rather than introducing sibling top-level
-  namespaces. Multiple-apply properties are declared with the instance
-  placeholder, e.g. `vrm:textureInfo:__INSTANCE_NAME__:file`.
+  properties follow it — rather than introducing sibling top-level
+  namespaces — **inside UsdShade's `inputs:`**:
+  `inputs:vrm:mtoon:shadeColorFactor`, `inputs:vrm:material:alphaMode`,
+  `inputs:vrm:textureInfo:<instance>:file` (§6.4.1). Multiple-apply
+  properties are declared with the instance placeholder, e.g.
+  `inputs:vrm:textureInfo:__INSTANCE_NAME__:file`.
 - **Versioning.** Contract v1 permits adding optional typed attributes and new
   optional API schemas, so §7.3 is additive within v1 provided existing prims
   keep their meaning.
 
 The raw fallback stays: `customData.vrm:mtoon:raw` remains the lossless fallback
 alongside the typed data, matching every other `Vrm*API` in the contract.
+
+### 6.4.1 Canonical attributes are Material interface inputs
+
+Decided 2026-09-25 (§11 q9), before any name was frozen, and measured rather
+than argued. UsdShade connects only `inputs:` and `outputs:` attributes. So:
+
+- a time-sampled `inputs:vrm:material:baseColorFactor` on the Material,
+  connected through a `/preview` and a `/mtlx` NodeGraph interface input,
+  drives **both** realizations frame by frame in Storm (26.08);
+- the same connection to a plain `vrm:material:baseColorFactor` is discarded
+  as an invalid source — the graph input has no value-producing attribute, and
+  the surface draws **black with no error**.
+
+The first is what §6.7 needs: an expression that changes a canonical value
+reaches whichever realization the renderer selects (§5.5), and nothing is
+written into a graph. The alternatives were a second, `inputs:` copy of each
+value — two authoritative representations, which §7.3's migration rule
+forbids — or regenerating realizations whenever a value animates.
+
+One consequence to design around: **a connected realization never sees a
+schema fallback.** UsdShade resolves an interface connection to an *authored*
+value only, so a graph connected to an unauthored canonical input takes its
+own shader's default. Generators (Steps 5–6) and the importer (Step 4) author
+every canonical value a graph connects to; the schema fallbacks — the
+specification defaults — are for readers.
 
 ### 6.5 Source of truth
 
@@ -701,6 +752,16 @@ acceptance criteria.
 - Focused visual regression tests cover representative unlit/MToon materials.
 
 ### 7.3 Step 3 — the VRM material API schemas
+
+> **Contract shipped 2026-09-25.** `VrmMaterialAPI`, `VrmMToonAPI` and
+> `VrmTextureInfoAPI` are generated and registered in `vrmSchema`, with their
+> rows, raw fallbacks and rules in the
+> [schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#material-semantics-are-interface-inputs),
+> and validator codes `VRM223`–`VRM226`. A hand-authored stage is read through
+> the generated C++ API (`vrmschema_material_api`). Additive within v1: the
+> baseline diff is the schema, discovery, symbol and diagnostic catalogues, and
+> no stage digest moved. The importer does not author the schemas yet — that
+> is Step 4.
 
 **Objective.** Move source semantics out of the realizations into
 `VrmMaterialAPI`, `VrmMToonAPI`, and `VrmTextureInfoAPI:<slot>`.
@@ -893,8 +954,8 @@ their own PRs:
 | --- | --- | --- |
 | ✅ `/Asset/mtl` gains the `/preview` and `/mtlx` NodeGraph structure | [DESIGN_POLICY.md](DESIGN_POLICY.md) §4 | Step 1 |
 | ✅ Confirm whether moving shader prims under `/preview` requires a schema contract bump — **it does not**, and the contract now says so rather than leaving it inferable (§11 q3) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 1 |
-| `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI` added to the typed API table, with their raw fallbacks | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
-| The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
+| ✅ `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI` added to the typed API table, with their raw fallbacks | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
+| ✅ The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | The VRM 0.x MToon row: `materialProperties` lands in the same typed schemas (§6.6) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 4 |
 | The slot → canonical attribute table for expression material binds (§6.7), on the `VrmExpressionAPI` row; VRM 0.x `materialValues` typed onto the same slots, narrowing `VRM150` | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 7 |
 | The MToon rows restated as typed-and-realized once both generators read canonical semantics | [CAPABILITY_MATRIX.md](../reference/CAPABILITY_MATRIX.md) | Steps 5–6 |
@@ -905,15 +966,15 @@ their own PRs:
 
 | # | Question | Blocks |
 | --- | --- | --- |
-| 1 | Exact `VRMC_materials_mtoon` field names against the VRM 1.0 specification. | Step 3 |
+| ~~1~~ | ~~Exact `VRMC_materials_mtoon` field names against the VRM 1.0 specification.~~ **§6.2's table was right, field for field** (checked 2026-09-25 against `VRMC_materials_mtoon.schema.json` in vrm-c/vrm-specification): nineteen non-texture fields, and `vrmSchema`'s test asserts both the names and the specification defaults. The texture list was not — the outline texture is `outlineWidthMultiplyTexture` (§6.3). | — |
 | ~~2~~ | ~~Render-context terminal naming for the pinned OpenUSD version.~~ **`outputs:mtlx:surface`** (settled 2026-08-14). `UsdShadeMaterial::CreateSurfaceOutput("mtlx")` authors exactly that on 26.08, and Storm advertises the `mtlx` context, so it is also the terminal that draws (§5.5). | — |
 | ~~3~~ | ~~Does the Step 1 path move need a schema contract bump?~~ **No** (settled 2026-08-13). Contract v1 freezes control-prim paths under `/Asset/rig`, the material prim path, and `vrm:mtoon:raw` on that prim — none of which moved. The shader network below a material was never a contract path, and the contract now states that explicitly instead of leaving it to inference. | — |
-| 4 | Restrict `VrmTextureInfoAPI` instance names via schema metadata, or allow arbitrary instances? | Step 3 |
-| 5 | Does `vrm:shaderModel` remain once `VrmMToonAPI` exists, or become redundant? | Step 3 |
+| ~~4~~ | ~~Restrict `VrmTextureInfoAPI` instance names via schema metadata, or allow arbitrary instances?~~ **Restricted, to the eleven roles of §6.3** (settled 2026-09-25) through `apiSchemaAllowedInstanceNames`. `CanApplyAPI` enforces it and `ApplyAPI` does not, so the validator checks it too (`VRM224`). A new glTF texture extension is an additive v1 change to the list. | — |
+| ~~5~~ | ~~Does `vrm:shaderModel` remain once `VrmMToonAPI` exists, or become redundant?~~ **It remains** (settled 2026-09-25): contract v1 cannot remove a property. It keeps its meaning, and a material with `VrmMToonAPI` must also say `vrm:shaderModel = "MToon"` (`VRM226`). | — |
 | ~~6~~ | ~~MaterialX availability across the supported runtime matrix.~~ **The plugin path is clean** (settled 2026-08-14): authoring `/mtlx` is `UsdShade` prim writing and nothing else — no MaterialX link, no `usdMtlx` dependency, no build-system change on any platform. MaterialX is needed only to *resolve* the node ids, which is why §8.1's Sdr check skips rather than fails where the definitions are absent. `MaterialXConfigAPI` applies from the schema registry without linking. | — |
 | 6a | Confirm the non-Windows runtimes ship the MaterialX `libraries/` tree, so the Sdr check runs rather than skips in the Linux and macOS CI cells. | — |
 | 7 | Is `/Asset/mtl/_shared` ever needed, or do per-material graphs suffice? | deferred |
 | ~~8~~ | ~~Does `COLOR_0` participate in MToon appearance for the issue #119 asset?~~ **No** — the asset has no `COLOR_0` on any primitive (settled on the issue, 2026-08-12). Kept as a question for other assets, not this one. | — |
-| 9 | How does an animated canonical value reach a generated realization? `UsdShade` connects only `inputs:` / `outputs:` attributes, so a namespaced `vrm:mtoon:*` attribute cannot be a connection source: either the Material also exposes interface `inputs:` that each graph connects to, or the canonical attributes themselves are `inputs:`. Decided before any name is frozen, because it decides §6.4's namespace. | Step 3, Step 7 |
+| ~~9~~ | ~~How does an animated canonical value reach a generated realization? `UsdShade` connects only `inputs:` / `outputs:` attributes, so a namespaced `vrm:mtoon:*` attribute cannot be a connection source: either the Material also exposes interface `inputs:` that each graph connects to, or the canonical attributes themselves are `inputs:`. Decided before any name is frozen, because it decides §6.4's namespace.~~ **The canonical attributes themselves are `inputs:`** — `inputs:vrm:*` (settled 2026-09-25, measured in Storm; §6.4.1). | — |
 | 10 | Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6). | Step 4 |
 | 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |

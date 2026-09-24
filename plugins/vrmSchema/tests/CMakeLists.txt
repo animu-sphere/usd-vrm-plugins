@@ -13,12 +13,6 @@ elseif(pxr_DIR)
     get_filename_component(_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
 endif()
 
-find_package(Python3 COMPONENTS Interpreter QUIET)
-if(NOT Python3_Interpreter_FOUND)
-    message(STATUS "vrmSchema: Python3 interpreter not found; skipping schema tests")
-    return()
-endif()
-
 set(_bundle_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 # The source-tree plugInfo.json is configured for this platform by the bundle
@@ -28,6 +22,29 @@ set(_plug_resources "${_bundle_dir}/plugin/resources/vrmSchema")
 
 set(_schema_env
     "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_bundle_dir}/lib;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
+
+# The canonical material semantics read through the generated C++ API on a
+# hand-authored stage (material policy §7.3). Registered before the Python
+# check below, which returns early: this test needs no interpreter.
+add_executable(vrmschema_material_api test_material_api.cpp)
+target_link_libraries(vrmschema_material_api PRIVATE vrmSchema::vrmSchema)
+if(MSVC)
+    # pxr headers do not survive windows.h min/max macros (robin_hash.h C2238).
+    target_compile_definitions(vrmschema_material_api PRIVATE NOMINMAX)
+    target_compile_options(vrmschema_material_api PRIVATE /utf-8)
+endif()
+add_test(
+    NAME vrmschema_material_api
+    COMMAND vrmschema_material_api
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/basic.usda")
+set_tests_properties(vrmschema_material_api PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_schema_env}")
+
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(NOT Python3_Interpreter_FOUND)
+    message(STATUS "vrmSchema: Python3 interpreter not found; skipping schema tests")
+    return()
+endif()
 
 add_test(
     NAME vrmschema_plugin

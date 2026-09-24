@@ -15,6 +15,29 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The canonical material schemas: `VrmMaterialAPI`, `VrmMToonAPI`,
+  `VrmTextureInfoAPI`** — Product P5 Step 3
+  ([material track](docs/roadmap/material-track.md)), additive within schema
+  contract v1. They carry a material's source semantics on the
+  `UsdShadeMaterial` itself:
+  - `VrmMaterialAPI` — the glTF material core, plus `KHR_materials_unlit` and
+    `KHR_materials_emissive_strength`;
+  - `VrmMToonAPI` — every non-texture field of `VRMC_materials_mtoon` 1.0,
+    under the specification's names and defaults;
+  - `VrmTextureInfoAPI:<role>` — one texture per role, eleven allowed roles,
+    with sampler wrap, contribution scalars and `KHR_texture_transform`.
+
+  Every property is a Material interface input (`inputs:vrm:*`), so a
+  rendering realization reads a canonical value through a UsdShade
+  connection, animated values included. That was measured in Storm before the
+  names were frozen: a plain `vrm:` attribute is discarded as a connection
+  source and the surface draws black with no error
+  ([material policy §6.4.1](docs/design/MATERIAL_ARCHITECTURE_POLICY.md)).
+  `tools/validate_vrm.py` gains `VRM223`–`VRM226` for the new schemas, and
+  checks canonical texture assets under `VRM222`.
+  **The importer does not author them yet** (Step 4): an imported stage is
+  unchanged, and no baseline stage digest moved.
+
 - **The reference pipeline: three source categories, one downstream half**
   — `workspace_reference_pipeline`
   ([`tests/motion/test_reference_pipeline.py`](tests/motion/test_reference_pipeline.py)).

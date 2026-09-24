@@ -282,3 +282,270 @@ class "VrmConstraintAPI" (
         doc = "Constraint weight in [0,1]."
     )
 }
+
+# ---------------------------------------------------------------------------
+# Canonical material semantics (Product P5 Step 3; material policy §6).
+#
+# Applied to the UsdShadeMaterial at /Asset/mtl/<name> itself, never to a
+# child prim: the hierarchy below a material is reserved for rendering
+# realizations (/preview, /mtlx), and every realization is generated from
+# these attributes and from nothing else (policy §3, §6.5).
+#
+# Every property is a Material interface input -- `inputs:vrm:...` -- rather
+# than a plain `vrm:` attribute (policy §11 q9). UsdShade connects only
+# `inputs:` / `outputs:` attributes, so a realization graph can read a
+# canonical value only through an interface connection, and an animated value
+# (an expression's material-colour bind, policy §6.7) reaches whichever
+# realization the renderer selects only that way. A connection from a graph to
+# a plain `vrm:` attribute is discarded as an invalid source and the input
+# silently falls back to the shader's own default.
+#
+# Fallbacks are the VRM / glTF specification defaults, for readers. They are
+# NOT what a connected realization sees: UsdShade resolves an interface
+# connection to an *authored* value only, so a writer authors every value a
+# graph connects to.
+#
+# Token-valued properties carry no allowedTokens list, as for
+# VrmExpressionAPI's overrides: a value outside the documented set reaches a
+# consumer as data, and tools/validate_vrm.py reports it.
+# ---------------------------------------------------------------------------
+
+class "VrmMaterialAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["Material"]
+    }
+    doc = """Generic source material semantics of one glTF / VRM material: the
+    glTF 2.0 metallic-roughness core plus the two material extensions VRM
+    avatars rely on (KHR_materials_unlit, KHR_materials_emissive_strength).
+    Apply to the /Asset/mtl/<name> UsdShadeMaterial. Texture-bound values
+    (normal scale, occlusion strength, every texture's asset and UV state) are
+    VrmTextureInfoAPI instances on the same prim. Colours are linear, as glTF
+    defines them. UsdPreviewSurface and MaterialX inputs are realizations of
+    these values and are never storage."""
+)
+{
+    color3f inputs:vrm:material:baseColorFactor = (1, 1, 1) (
+        doc = """RGB of glTF pbrMetallicRoughness.baseColorFactor. glTF's
+        factor is RGBA; it is split so each half connects to a colour and a
+        float input without a conversion node in every realization."""
+        customData = { string apiName = "baseColorFactor" }
+    )
+    float inputs:vrm:material:baseColorAlphaFactor = 1 (
+        doc = "Alpha (fourth component) of glTF pbrMetallicRoughness.baseColorFactor."
+        customData = { string apiName = "baseColorAlphaFactor" }
+    )
+    float inputs:vrm:material:metallicFactor = 1 (
+        doc = "glTF pbrMetallicRoughness.metallicFactor."
+        customData = { string apiName = "metallicFactor" }
+    )
+    float inputs:vrm:material:roughnessFactor = 1 (
+        doc = "glTF pbrMetallicRoughness.roughnessFactor."
+        customData = { string apiName = "roughnessFactor" }
+    )
+    color3f inputs:vrm:material:emissiveFactor = (0, 0, 0) (
+        doc = "glTF emissiveFactor."
+        customData = { string apiName = "emissiveFactor" }
+    )
+    float inputs:vrm:material:emissiveStrength = 1 (
+        doc = """KHR_materials_emissive_strength.emissiveStrength: a multiplier
+        on emissiveFactor, kept separate so the factor stays the glTF value."""
+        customData = { string apiName = "emissiveStrength" }
+    )
+    uniform token inputs:vrm:material:alphaMode (
+        doc = """glTF alphaMode: 'OPAQUE', 'MASK' or 'BLEND'; unauthored means
+        'OPAQUE', as in glTF. The one property without a schema fallback:
+        usdGenSchema would name the fallback's C++ token `OPAQUE`, which is a
+        Windows (wingdi.h) macro and breaks every translation unit that sees
+        both."""
+        customData = { string apiName = "alphaMode" }
+    )
+    float inputs:vrm:material:alphaCutoff = 0.5 (
+        doc = "glTF alphaCutoff. Meaningful only when alphaMode is 'MASK'."
+        customData = { string apiName = "alphaCutoff" }
+    )
+    uniform bool inputs:vrm:material:doubleSided = false (
+        doc = "glTF doubleSided."
+        customData = { string apiName = "doubleSided" }
+    )
+    uniform bool inputs:vrm:material:unlit = false (
+        doc = """Whether the source material declares KHR_materials_unlit. VRM
+        MToon materials usually do, as their glTF-only fallback."""
+        customData = { string apiName = "unlit" }
+    )
+}
+
+class "VrmMToonAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["Material"]
+    }
+    doc = """MToon source semantics: the VRMC_materials_mtoon 1.0 model, as
+    data and not as a shader. Apply to the /Asset/mtl/<name> UsdShadeMaterial
+    alongside VrmMaterialAPI, which carries the glTF core the MToon model
+    builds on. Property names are the specification's field names verbatim.
+    A VRM 0.x MToon material (Unity property names) is normalized into the same
+    fields at the importer boundary; this schema has no version switch. Fields
+    that no portable realization reproduces -- outline, render queue,
+    transparent-with-z-write, UV animation -- are canonical all the same: the
+    renderer decides what to do with them. MToon textures are
+    VrmTextureInfoAPI instances on the same prim. The source block stays at
+    customData `vrm:mtoon:raw` as the lossless fallback and is never a runtime
+    API."""
+)
+{
+    uniform token inputs:vrm:mtoon:specVersion = "1.0" (
+        doc = """The VRMC_materials_mtoon version whose model these values
+        follow. A VRM 0.x source is normalized into the 1.0 model and carries
+        that model's version, not its own; the raw block keeps the original."""
+        customData = { string apiName = "specVersion" }
+    )
+
+    # Rendering.
+    uniform bool inputs:vrm:mtoon:transparentWithZWrite = false (
+        doc = "VRMC_materials_mtoon transparentWithZWrite."
+        customData = { string apiName = "transparentWithZWrite" }
+    )
+    uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = 0 (
+        doc = "VRMC_materials_mtoon renderQueueOffsetNumber."
+        customData = { string apiName = "renderQueueOffsetNumber" }
+    )
+
+    # Shading.
+    color3f inputs:vrm:mtoon:shadeColorFactor = (1, 1, 1) (
+        doc = "VRMC_materials_mtoon shadeColorFactor (linear)."
+        customData = { string apiName = "shadeColorFactor" }
+    )
+    float inputs:vrm:mtoon:shadingShiftFactor = 0 (
+        doc = "VRMC_materials_mtoon shadingShiftFactor."
+        customData = { string apiName = "shadingShiftFactor" }
+    )
+    float inputs:vrm:mtoon:shadingToonyFactor = 0.9 (
+        doc = "VRMC_materials_mtoon shadingToonyFactor."
+        customData = { string apiName = "shadingToonyFactor" }
+    )
+    float inputs:vrm:mtoon:giEqualizationFactor = 0.9 (
+        doc = "VRMC_materials_mtoon giEqualizationFactor."
+        customData = { string apiName = "giEqualizationFactor" }
+    )
+
+    # MatCap.
+    color3f inputs:vrm:mtoon:matcapFactor = (1, 1, 1) (
+        doc = "VRMC_materials_mtoon matcapFactor (linear)."
+        customData = { string apiName = "matcapFactor" }
+    )
+
+    # Rim.
+    color3f inputs:vrm:mtoon:parametricRimColorFactor = (0, 0, 0) (
+        doc = "VRMC_materials_mtoon parametricRimColorFactor (linear)."
+        customData = { string apiName = "parametricRimColorFactor" }
+    )
+    float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 5 (
+        doc = "VRMC_materials_mtoon parametricRimFresnelPowerFactor."
+        customData = { string apiName = "parametricRimFresnelPowerFactor" }
+    )
+    float inputs:vrm:mtoon:parametricRimLiftFactor = 0 (
+        doc = "VRMC_materials_mtoon parametricRimLiftFactor."
+        customData = { string apiName = "parametricRimLiftFactor" }
+    )
+    float inputs:vrm:mtoon:rimLightingMixFactor = 1 (
+        doc = "VRMC_materials_mtoon rimLightingMixFactor."
+        customData = { string apiName = "rimLightingMixFactor" }
+    )
+
+    # Outline.
+    uniform token inputs:vrm:mtoon:outlineWidthMode = "none" (
+        doc = """VRMC_materials_mtoon outlineWidthMode: 'none',
+        'worldCoordinates' or 'screenCoordinates'. An MToon semantic, not a
+        rendering instruction: how an outline is drawn is the renderer's
+        decision."""
+        customData = { string apiName = "outlineWidthMode" }
+    )
+    float inputs:vrm:mtoon:outlineWidthFactor = 0 (
+        doc = "VRMC_materials_mtoon outlineWidthFactor."
+        customData = { string apiName = "outlineWidthFactor" }
+    )
+    color3f inputs:vrm:mtoon:outlineColorFactor = (0, 0, 0) (
+        doc = "VRMC_materials_mtoon outlineColorFactor (linear)."
+        customData = { string apiName = "outlineColorFactor" }
+    )
+    float inputs:vrm:mtoon:outlineLightingMixFactor = 1 (
+        doc = "VRMC_materials_mtoon outlineLightingMixFactor."
+        customData = { string apiName = "outlineLightingMixFactor" }
+    )
+
+    # UV animation.
+    float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0 (
+        doc = "VRMC_materials_mtoon uvAnimationScrollXSpeedFactor."
+        customData = { string apiName = "uvAnimationScrollXSpeedFactor" }
+    )
+    float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0 (
+        doc = "VRMC_materials_mtoon uvAnimationScrollYSpeedFactor."
+        customData = { string apiName = "uvAnimationScrollYSpeedFactor" }
+    )
+    float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0 (
+        doc = "VRMC_materials_mtoon uvAnimationRotationSpeedFactor."
+        customData = { string apiName = "uvAnimationRotationSpeedFactor" }
+    )
+}
+
+class "VrmTextureInfoAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix = "inputs:vrm:textureInfo"
+        token[] apiSchemaCanOnlyApplyTo = ["Material"]
+        token[] apiSchemaAllowedInstanceNames = [
+            "baseColor", "metallicRoughness", "normal", "occlusion", "emissive",
+            "shadeMultiply", "shadingShift", "matcap", "rimMultiply",
+            "outlineWidthMultiply", "uvAnimationMask"
+        ]
+    }
+    doc = """One texture a material samples, by role. Apply once per role to
+    the /Asset/mtl/<name> UsdShadeMaterial; the instance name is the role,
+    spelled as the source specification spells the texture without its
+    'Texture' suffix: the five glTF core textures and the six
+    VRMC_materials_mtoon textures. Only these eleven instance names are
+    allowed. Whether a texture is colour (sRGB) or data is fixed by its role
+    and is not stored. KHR_texture_transform lives under `transform:`, apart
+    from the texture's own contribution scalars (`scale`, `strength`): a UV
+    scale and a contribution scale are different quantities."""
+)
+{
+    asset file (
+        doc = """The image, as a USD asset path (an external file or a path
+        inside the .vrm package)."""
+    )
+    uniform int texCoord = 0 (
+        doc = """The TEXCOORD_<n> set sampled. The effective set: a
+        KHR_texture_transform texCoord override is folded in by the importer."""
+    )
+    uniform token wrapS = "repeat" (
+        doc = "glTF sampler wrapS: 'repeat', 'clampToEdge' or 'mirroredRepeat'."
+    )
+    uniform token wrapT = "repeat" (
+        doc = "glTF sampler wrapT: 'repeat', 'clampToEdge' or 'mirroredRepeat'."
+    )
+    float scale = 1 (
+        doc = """Contribution scale: glTF normalTexture.scale, or
+        VRMC_materials_mtoon shadingShiftTexture.scale. Not a UV scale, and
+        meaningless on any other role."""
+    )
+    float strength = 1 (
+        doc = "glTF occlusionTexture.strength. Meaningless on any other role."
+    )
+    float2 transform:offset = (0, 0) (
+        doc = "KHR_texture_transform offset."
+        customData = { string apiName = "transformOffset" }
+    )
+    float transform:rotation = 0 (
+        doc = "KHR_texture_transform rotation, in radians, as glTF defines it."
+        customData = { string apiName = "transformRotation" }
+    )
+    float2 transform:scale = (1, 1) (
+        doc = "KHR_texture_transform scale: a UV scale, not the contribution scale above."
+        customData = { string apiName = "transformScale" }
+    )
+}
