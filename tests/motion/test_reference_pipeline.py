@@ -55,7 +55,6 @@ import argparse
 import json
 import os
 import pathlib
-import shutil
 import sys
 import tempfile
 
@@ -321,6 +320,12 @@ def main() -> int:
         for index, source in enumerate(sources):
             output = work / f"{index}-bake.usda"
             report = work / f"{index}-load.json"
+            if keep is not None:
+                # Baked in place rather than copied there: the bake references
+                # its avatar by a path relative to itself, which a copy breaks.
+                stem = f"{avatar.stem}__{source.kind}__{source.path.stem}"
+                output = keep / f"{stem}.usda"
+                report = keep / f"{stem}.load.json"
             result = downstream(arguments.retarget, avatar, source, output, report)
             if not failures.check(
                     result.returncode == 0,
@@ -334,10 +339,6 @@ def main() -> int:
                 targets[source.name] = target
             print(f"{source.name}: baked {len(target.times) if target else 0} "
                   f"samples onto {avatar.name}")
-            if keep is not None:
-                stem = f"{avatar.stem}__{source.kind}__{source.path.stem}"
-                shutil.copyfile(output, keep / f"{stem}.usda")
-                shutil.copyfile(report, keep / f"{stem}.load.json")
 
         baked = [source for source in sources if source.name in outputs]
         if len(baked) == len(sources):
