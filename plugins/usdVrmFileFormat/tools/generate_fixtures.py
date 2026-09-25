@@ -20,7 +20,8 @@ specific import behavior the smoke test then asserts:
   names.vrm          duplicate / Japanese / empty mesh & material names
   materials.vrm      alpha BLEND + double-sided, alpha MASK with a cutoff, and
                      the unlit cases the MaterialX realization is built on:
-                     unlit, unlit + texture + MASK, unlit + KHR_texture_transform
+                     unlit, unlit + texture + MASK, unlit + KHR_texture_transform;
+                     lit emission through a texture with emissive strength
   constraints.vrm    a VRMC_node_constraint (roll) driving one node from another
   badext.vrm         semantically broken VRM humanoid (must warn, not crash)
   mtoon_vrm0.vrm     VRM 0.x MToon materialProperties covering every 0.x -> 1.0
@@ -323,9 +324,19 @@ def build_materials():
                      }},
                  },
              }},
+            # Lit emission through a texture: glTF multiplies the texture by
+            # emissiveFactor and KHR_materials_emissive_strength, so /preview
+            # has to fold (0.5, 0.25, 1.0) * 2 into the texture, not drop it.
+            {"name": "Glow",
+             "pbrMetallicRoughness": {"baseColorFactor": [0.2, 0.2, 0.2, 1.0]},
+             "emissiveFactor": [0.5, 0.25, 1.0],
+             "emissiveTexture": {"index": 0},
+             "extensions": {"KHR_materials_emissive_strength": {
+                 "emissiveStrength": 2.0}}},
         ],
         "extensionsUsed": ["VRMC_vrm", "KHR_materials_unlit",
-                           "KHR_texture_transform"],
+                           "KHR_texture_transform",
+                           "KHR_materials_emissive_strength"],
         "extensions": {"VRMC_vrm": vrm1_extension({})},
     }
     return b.build(gltf)

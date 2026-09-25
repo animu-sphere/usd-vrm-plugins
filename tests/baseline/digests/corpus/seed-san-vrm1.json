@@ -2050,9 +2050,9 @@
               "connectedTo": "/Asset/mtl/green_emit/preview/baseColorTexture.rgb"
             },
             "emissiveColor": [
-              0.178010464,
-              1.0,
-              0.188481659
+              0.2321468,
+              1.30411887,
+              0.245802492
             ],
             "metallic": 0.0,
             "opacity": 1.0,
@@ -3262,12 +3262,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:outlineWidthMultiply",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/hair",
       "type": "Material"
@@ -3359,12 +3359,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:normal",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/huku_bake",
       "type": "Material"
@@ -3456,13 +3456,13 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:outlineWidthMultiply",
         "VrmTextureInfoAPI:shadeMultiply",
-        "VrmTextureInfoAPI:shadingShift"
+        "VrmTextureInfoAPI:shadingShift",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/body_bake",
       "type": "Material"
@@ -3554,11 +3554,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/eye",
       "type": "Material"
@@ -3650,10 +3650,10 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/eye_trans",
       "type": "Material"
@@ -3745,11 +3745,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/arm_mat",
       "type": "Material"
@@ -3841,12 +3841,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:matcap",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/arm_plastic",
       "type": "Material"
@@ -3978,12 +3978,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:normal",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/body_nm",
       "type": "Material"
@@ -4115,12 +4115,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:matcap",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/armgear_plastic",
       "type": "Material"
@@ -4212,12 +4212,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:emissive",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/robo_face",
       "type": "Material"

@@ -328,6 +328,14 @@ def check_materials():
     # so they resolve through the universal terminal.
     assert not stage.GetPrimAtPath("/Asset/mtl/Glass/mtlx").IsValid()
 
+    # Lit emission through a texture: factor * strength folded into the
+    # texture's scale, since glTF emission is factor * texture * strength.
+    glow = stage.GetPrimAtPath("/Asset/mtl/Glow/preview/emissiveTexture")
+    assert _vclose(glow.GetAttribute("inputs:scale").Get(), (1.0, 0.5, 2.0, 1.0))
+    assert stage.GetPrimAtPath("/Asset/mtl/Glow/preview/surface").GetAttribute(
+        "inputs:emissiveColor").GetConnections() == [
+            glow.GetPath().AppendProperty("outputs:rgb")]
+
 
 def check_mtlx_textured_unlit():
     """The unlit + textured + alpha-masked path, which is what a VRM avatar is
@@ -778,9 +786,17 @@ def check_mtoon_vrm0_matches_vrm1():
     # the glTF core the 0.x exporter wrote beside it...
     assert _vclose(hair.GetAttribute("inputs:vrm:material:baseColorFactor").Get(),
                    (0.21404114, 1.0, 0.05087609))
-    # ...while the realizations still read that glTF core until Step 5.
-    assert _vclose(vrm0.GetPrimAtPath("/Asset/mtl/Hair/preview/surface")
-                   .GetAttribute("inputs:diffuseColor").Get(), (0.5, 1.0, 0.25))
+    # ...and /preview is generated from it (Step 5): unlit (UniVRM marks every
+    # MToon material so), BLEND from _BlendMode, the linear factor folded into
+    # the texture -- where the glTF core beside it says lit, OPAQUE, gamma.
+    tex = vrm0.GetPrimAtPath("/Asset/mtl/Hair/preview/baseColorTexture")
+    assert _vclose(tex.GetAttribute("inputs:scale").Get(),
+                   (0.21404114, 1.0, 0.05087609, 0.75))
+    surface = vrm0.GetPrimAtPath("/Asset/mtl/Hair/preview/surface")
+    assert surface.GetAttribute("inputs:emissiveColor").GetConnections() == [
+        tex.GetPath().AppendProperty("outputs:rgb")]
+    assert surface.GetAttribute("inputs:opacity").GetConnections() == [
+        tex.GetPath().AppendProperty("outputs:a")]
     # The raw block is still the whole materialProperties entry.
     gltf, _ = material_oracle.read_glb(FIXTURES / "mtoon_vrm0.vrm")
     raw = hair.GetCustomData()["vrm"]["mtoon"]["raw"]

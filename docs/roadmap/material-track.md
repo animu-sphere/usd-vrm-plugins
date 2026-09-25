@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1, 2 (unlit), 3 and 4 shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1, 2 (unlit), 3, 4 and 5 shipped · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -45,11 +45,13 @@ The reasons are what Steps 1 and 2 left behind:
 - ✅ **Step 4 — importer canonicalization** (2026-09-25; policy §6.6). Every
   imported material carries the Step 3 schemas, VRM 0.x and 1.0 alike; the
   raw block stays beside them, unchanged.
-- **The realizations still read the source material.** `/preview` and
-  `/mtlx` are generated from the importer's reading of the glTF core, not
-  from the canonical attributes, until Steps 5–6. For a VRM 0.x MToon
-  material the two can differ, since its canonical values come from
-  `materialProperties` (below).
+- ✅ **Step 5 — `/preview` generated from canonical semantics** (2026-09-25;
+  policy §6.5). It is a function of the Material's canonical attributes and
+  nothing else, run by the importer on what it reads back from the stage.
+- **`/mtlx` still reads the source material** — the importer's reading of
+  the glTF core — until Step 6. For a VRM 0.x MToon material the two
+  realizations can therefore disagree: `/preview` follows
+  `materialProperties`, `/mtlx` the glTF fallback beside it.
 - **Expression colour binds already target a slot, not a shader input.** A
   VRM 1.0 `materialColorBinds` entry is typed on its expression prim as a
   relationship to the `UsdShadeMaterial` plus a VRM slot name (`color`,
@@ -158,7 +160,7 @@ Each condition, and where it is shown:
 `package_vrm.py` now packages a canonical texture file like a realization's:
 it is what Steps 5–6 regenerate from, so it has to travel with the package.
 
-### Step 5 — `/preview` generated from canonical semantics ⬜
+### Step 5 — `/preview` generated from canonical semantics ✅
 
 The PreviewSurface generator's input becomes exactly the canonical field set:
 a function from a material's canonical attributes to a graph, which the
@@ -172,6 +174,41 @@ JSON or an extension block; and the baseline diff shows no value change —
 with one expected exception, which is the point: a VRM 0.x MToon material
 whose glTF core disagrees with its `materialProperties` (`mtoon_vrm0.vrm`, by
 construction) moves to the canonical value.
+
+**Shipped 2026-09-25.** The generator (`PreviewRealization.cpp`) takes a
+`VrmMaterialSemantics` and nothing else; the importer authors the canonical
+attributes, reads them back from the stage (`MaterialSemantics.cpp`) and
+generates `/preview` from what it read. Each condition, and where it is shown:
+
+- *regenerating reproduces the graph* — `usdvrm_preview_regenerate` flattens
+  every fixture and corpus stage, so no source file, file format or importer
+  state is reachable, deletes each `/preview`, regenerates it from the
+  canonical attributes and requires the original back: 27 stages, 71
+  materials. It also moves one canonical value and requires `/preview` to
+  follow;
+- *no source JSON* — the generator's signature has no way to reach it;
+- *no value change* — with `apiSchemas` sorted, 31 of 32 digests are
+  identical. The canonical schemas are now applied before `/mtlx` applies
+  `MaterialXConfigAPI`, which reorders that list and nothing else; the one
+  digest that moves is `mtoon_vrm0.vrm`, the expected exception (its Hair is
+  now unlit, BLEND, and draws `_MainTex` with its tiling).
+
+Two things changed with it. A texture's `transform:*` is authored only when
+the source states a `KHR_texture_transform` — the fallback is the identity,
+so readers see the same mapping, but whether the source said it is what
+`/preview` reproduces (Seed-san states 35 identity transforms, each a
+`UsdTransform2d` node). And, as a separate commit with its own one-value
+baseline diff, `/preview` now honours glTF's emissive factor and
+`KHR_materials_emissive_strength`: it ignored the strength, and on a lit
+material with an emissive texture dropped the factor too.
+
+**Values, not connections.** `/preview` carries generated *values*; it
+connects to no canonical input. Which realization inputs should instead
+connect to the Material's `inputs:vrm:*`, so an animated canonical value
+reaches them without regenerating, is Step 7's question (policy §11 q12):
+UsdPreviewSurface has no arithmetic node, so anything folded — factor ×
+texture, occlusion and normal scale/bias, glTF alpha coverage — can only be
+a generated value.
 
 ### Step 6 — `/mtlx` generated from canonical semantics ⬜
 
@@ -211,6 +248,10 @@ input (policy §6.6). The work:
 - `motion_retarget` authors resolved colours onto the canonical attributes
   instead of warning, and the realizations follow them (q9).
 - `textureTransformBinds`: in or out of scope (q11).
+- Which realization inputs connect to the canonical `inputs:vrm:*` and which
+  stay generated values (q12). `/preview` folds factor × texture into
+  `UsdUVTexture.scale`, which no connection can express, so an animated base
+  colour on a textured material reaches `/preview` only by regeneration.
 
 The OpenExec half — `vrm.computeMaterialColorOverrides` — is the
 [`ExecIr` track](execir-track.md)'s P1-1 and reads the same table.

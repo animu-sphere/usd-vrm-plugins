@@ -72,9 +72,6 @@ def Xform "Asset" (
             float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
             asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]@
             uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
-            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
             token outputs:surface.connect = </Asset/mtl/Skin/preview.outputs:surface>

@@ -81,16 +81,19 @@ def _texture(gltf, binary, info, contribution=None):
     """The expected VrmTextureInfoAPI instance for a glTF textureInfo."""
     texture = gltf["textures"][info["index"]]
     sampler = gltf["samplers"][texture["sampler"]] if "sampler" in texture else {}
-    xf = info.get("extensions", {}).get("KHR_texture_transform", {})
+    xf = info.get("extensions", {}).get("KHR_texture_transform")
     t = {
         "bytes": _image_bytes(gltf, binary, info["index"]),
-        "texCoord": xf.get("texCoord", info.get("texCoord", 0)),
+        "texCoord": (xf or {}).get("texCoord", info.get("texCoord", 0)),
         "wrapS": _WRAP[sampler.get("wrapS", 10497)],
         "wrapT": _WRAP[sampler.get("wrapT", 10497)],
-        "transform:offset": tuple(xf.get("offset", (0.0, 0.0))),
-        "transform:rotation": xf.get("rotation", 0.0),
-        "transform:scale": tuple(xf.get("scale", (1.0, 1.0))),
     }
+    # Authored only when the source states a transform, identity included: the
+    # difference is whether the source said it, which /preview reproduces.
+    if xf is not None:
+        t["transform:offset"] = tuple(xf.get("offset", (0.0, 0.0)))
+        t["transform:rotation"] = xf.get("rotation", 0.0)
+        t["transform:scale"] = tuple(xf.get("scale", (1.0, 1.0)))
     if contribution:
         name, value = contribution
         t[name] = value

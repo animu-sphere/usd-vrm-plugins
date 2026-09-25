@@ -130,8 +130,9 @@ read a shading-shift factor without re-parsing JSON, which is precisely the
 "typed data first, raw as fallback" rule that every other `Vrm*API` already
 follows. Step 1 moved nodes; it did not make MToon queryable. Step 3 defined
 the schemas that do, and since Step 4 (both 2026-09-25) every imported
-material carries them — VRM 0.x and 1.0 in the same fields. The realizations
-below still read the source material until Steps 5–6.
+material carries them — VRM 0.x and 1.0 in the same fields. Since Step 5
+`/preview` is generated from them alone; `/mtlx` still reads the source
+material until Step 6.
 
 **Shader prim paths are load-bearing for the baseline.**
 `tests/baseline/digests/**` keys materials by shader path (now
@@ -850,7 +851,8 @@ each step may and may not do.
   exactly (§11 q10).
 - **Step 5 — `/preview` from canonical semantics.** The generator's input is
   the canonical field set and nothing else, so it can be run on a stage as
-  well as in the importer. No value changes.
+  well as in the importer. No value changes. *Shipped 2026-09-25,* generating
+  values rather than connecting to the canonical inputs (§11 q12).
 - **Step 6 — `/mtlx` from canonical semantics.** The shipped unlit graph is
   re-pointed first with no value change; then lit glTF PBR through the same
   `gltf_pbr` terminal (§5.2.1); then portable MToon approximations — shade,
@@ -981,3 +983,4 @@ their own PRs:
 | ~~9~~ | ~~How does an animated canonical value reach a generated realization? `UsdShade` connects only `inputs:` / `outputs:` attributes, so a namespaced `vrm:mtoon:*` attribute cannot be a connection source: either the Material also exposes interface `inputs:` that each graph connects to, or the canonical attributes themselves are `inputs:`. Decided before any name is frozen, because it decides §6.4's namespace.~~ **The canonical attributes themselves are `inputs:`** — `inputs:vrm:*` (settled 2026-09-25, measured in Storm; §6.4.1). | — |
 | ~~10~~ | ~~Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6).~~ **UniVRM's own 0.x → 1.0 migration, exactly** (settled 2026-09-25), its two destructive choices included — a missing shade texture takes the lit texture, `rimLightingMixFactor` is always 1 — so a 0.x avatar and the 1.0 file UniVRM migrates it to carry the same canonical values. The one departure: an absent 0.x property takes the MToon 0.x shader default, not C#'s zero. Every row, with its fidelity class, is the [schema contract's 0.x table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields). | — |
 | 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |
+| 12 | Which realization inputs connect to the Material's canonical `inputs:vrm:*` (so an animated value reaches them without regeneration, §6.4.1) and which stay generated values? UsdPreviewSurface has no arithmetic node, so a folded value — factor × texture in `UsdUVTexture.scale`, occlusion and normal scale/bias, glTF alpha coverage — cannot be a connection; `/mtlx` can multiply. Step 5 ships generated values only. | Step 7 |
