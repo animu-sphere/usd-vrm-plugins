@@ -2,12 +2,42 @@
   "assets": [
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+      "attr": "/Asset/mtl/hair.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d1d8359af1e29d5e.png]",
+      "attr": "/Asset/mtl/hair.inputs:vrm:textureInfo:outlineWidthMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+      "attr": "/Asset/mtl/hair.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
       "attr": "/Asset/mtl/hair/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
       "attr": "/Asset/mtl/hair/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/huku_bake.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/f062a04f76e6a88f.png]",
+      "attr": "/Asset/mtl/huku_bake.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/huku_bake.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -22,12 +52,42 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_bake.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/345d86191a1d7ab1.png]",
+      "attr": "/Asset/mtl/body_bake.inputs:vrm:textureInfo:outlineWidthMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_bake.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/f906437a97f93846.png]",
+      "attr": "/Asset/mtl/body_bake.inputs:vrm:textureInfo:shadingShift:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_bake/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_bake/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -42,12 +102,27 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye_trans.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
       "attr": "/Asset/mtl/eye_trans/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
       "attr": "/Asset/mtl/eye_trans/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_mat.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_mat.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -62,6 +137,21 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_plastic.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/69254815aabc0eba.png]",
+      "attr": "/Asset/mtl/arm_plastic.inputs:vrm:textureInfo:matcap:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_plastic.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
       "attr": "/Asset/mtl/arm_plastic/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
@@ -72,7 +162,27 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/green_emit.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/green_emit/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_nm.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d3e93dea5153c74c.png]",
+      "attr": "/Asset/mtl/body_nm.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_nm.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -87,7 +197,27 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/wear_metal.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/wear_metal/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/armgear_plastic.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/69254815aabc0eba.png]",
+      "attr": "/Asset/mtl/armgear_plastic.inputs:vrm:textureInfo:matcap:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/armgear_plastic.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -102,12 +232,37 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face.inputs:vrm:textureInfo:emissive:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
       "attr": "/Asset/mtl/robo_face/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
       "attr": "/Asset/mtl/robo_face/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_metal.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_metal.inputs:vrm:textureInfo:normal:file",
       "resolved": true
     },
     {
@@ -122,12 +277,32 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_nm.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_nm.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/backpack_nm/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
       "attr": "/Asset/mtl/backpack_nm/preview/normalTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_plastic.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_plastic.inputs:vrm:textureInfo:normal:file",
       "resolved": true
     },
     {
@@ -3087,7 +3262,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:outlineWidthMultiply",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/hair",
       "type": "Material"
@@ -3179,7 +3359,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/huku_bake",
       "type": "Material"
@@ -3271,7 +3456,13 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:outlineWidthMultiply",
+        "VrmTextureInfoAPI:shadeMultiply",
+        "VrmTextureInfoAPI:shadingShift"
       ],
       "path": "/Asset/mtl/body_bake",
       "type": "Material"
@@ -3363,7 +3554,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/eye",
       "type": "Material"
@@ -3455,7 +3650,10 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor"
       ],
       "path": "/Asset/mtl/eye_trans",
       "type": "Material"
@@ -3547,7 +3745,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/arm_mat",
       "type": "Material"
@@ -3639,7 +3841,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:matcap",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/arm_plastic",
       "type": "Material"
@@ -3730,6 +3937,10 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor"
+      ],
       "path": "/Asset/mtl/green_emit",
       "type": "Material"
     },
@@ -3767,7 +3978,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/body_nm",
       "type": "Material"
@@ -3858,6 +4074,10 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor"
+      ],
       "path": "/Asset/mtl/wear_metal",
       "type": "Material"
     },
@@ -3895,7 +4115,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:matcap",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/armgear_plastic",
       "type": "Material"
@@ -3987,7 +4212,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:emissive",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/robo_face",
       "type": "Material"
@@ -4078,6 +4308,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/glass",
       "type": "Material"
     },
@@ -4093,6 +4326,11 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal"
+      ],
       "path": "/Asset/mtl/backpack_metal",
       "type": "Material"
     },
@@ -4143,6 +4381,11 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal"
+      ],
       "path": "/Asset/mtl/backpack_nm",
       "type": "Material"
     },
@@ -4193,6 +4436,11 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal"
+      ],
       "path": "/Asset/mtl/backpack_plastic",
       "type": "Material"
     },
@@ -4243,6 +4491,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/anim_logo",
       "type": "Material"
     },

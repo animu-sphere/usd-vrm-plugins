@@ -18,7 +18,9 @@
 #include "cgltf.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -104,6 +106,377 @@ int
 _AsInt(const JsValue* v, int fallback = -1)
 {
     return (v && v->IsInt()) ? v->GetInt() : fallback;
+}
+
+float
+_AsFloat(const JsValue* v, float fallback)
+{
+    if (v && v->IsReal())
+        return static_cast<float>(v->GetReal());
+    if (v && v->IsInt())
+        return static_cast<float>(v->GetInt());
+    return fallback;
+}
+
+bool
+_AsBool(const JsValue* v, bool fallback)
+{
+    return (v && v->IsBool()) ? v->GetBool() : fallback;
+}
+
+// The first `N` numbers of a JSON array; `fallback` unless the array has them all.
+template <size_t N>
+std::array<float, N>
+_AsFloats(const JsValue* v, const std::array<float, N>& fallback)
+{
+    const JsArray* a = _AsArray(v);
+    if (!a || a->size() < N)
+        return fallback;
+    std::array<float, N> out;
+    for (size_t i = 0; i < N; ++i)
+        out[i] = _AsFloat(&(*a)[i], fallback[i]);
+    return out;
+}
+
+GfVec3f
+_AsVec3(const JsValue* v, const GfVec3f& fallback)
+{
+    const auto a = _AsFloats<3>(v, {fallback[0], fallback[1], fallback[2]});
+    return GfVec3f(a[0], a[1], a[2]);
+}
+
+// ---------------------------------------------------------------------------
+// Canonical material semantics (material policy §6; P5 Step 4)
+// ---------------------------------------------------------------------------
+
+// Resolves a glTF texture index and an effective TEXCOORD set to a texture.
+using _TextureResolver = std::function<VrmTextureRef(int textureIndex, int texCoord)>;
+
+// A glTF textureInfo object written in JSON, as VRMC_materials_mtoon writes
+// its textures: index, texCoord, the contribution `scale` a shading-shift
+// texture carries, and KHR_texture_transform (whose texCoord overrides).
+VrmTextureRef
+_TextureInfoFromJson(const JsObject& info, const _TextureResolver& resolve)
+{
+    const JsObject* exts = _AsObject(_Find(info, "extensions"));
+    const JsObject* xf = exts ? _AsObject(_Find(*exts, "KHR_texture_transform")) : nullptr;
+    int texCoord = _AsInt(_Find(info, "texCoord"), 0);
+    if (xf)
+        texCoord = _AsInt(_Find(*xf, "texCoord"), texCoord);
+    VrmTextureRef ref = resolve(_AsInt(_Find(info, "index")), texCoord);
+    if (!ref.present)
+        return ref;
+    ref.scale = _AsFloat(_Find(info, "scale"), 1.0f);
+    if (xf)
+    {
+        const auto offset = _AsFloats<2>(_Find(*xf, "offset"), {0.0f, 0.0f});
+        const auto scale = _AsFloats<2>(_Find(*xf, "scale"), {1.0f, 1.0f});
+        ref.hasTransform = true;
+        ref.uvOffset = GfVec2f(offset[0], offset[1]);
+        ref.uvScale = GfVec2f(scale[0], scale[1]);
+        ref.uvRotation = _AsFloat(_Find(*xf, "rotation"), 0.0f);
+    }
+    return ref;
+}
+
+// The six VRMC_materials_mtoon textures: specification name -> texture role
+// (VrmTextureInfoAPI instance name, the name without `Texture`).
+const std::pair<const char*, const char*> _kMToonTextures[] = {
+    {"shadeMultiplyTexture", "shadeMultiply"},
+    {"shadingShiftTexture", "shadingShift"},
+    {"matcapTexture", "matcap"},
+    {"rimMultiplyTexture", "rimMultiply"},
+    {"outlineWidthMultiplyTexture", "outlineWidthMultiply"},
+    {"uvAnimationMaskTexture", "uvAnimationMask"},
+};
+
+// VRMC_materials_mtoon 1.0 -> canonical: a rename, field for field. An absent
+// field keeps the specification default VrmMToonSemantics starts from.
+void
+_ReadMToon1(const JsObject& ext, const _TextureResolver& resolve, VrmMaterialSemantics* sem)
+{
+    VrmMToonSemantics& t = sem->mtoon;
+    if (const JsValue* v = _Find(ext, "specVersion"); v && v->IsString())
+        t.specVersion = v->GetString();
+    t.transparentWithZWrite = _AsBool(_Find(ext, "transparentWithZWrite"), t.transparentWithZWrite);
+    t.renderQueueOffsetNumber =
+        _AsInt(_Find(ext, "renderQueueOffsetNumber"), t.renderQueueOffsetNumber);
+    t.shadeColorFactor = _AsVec3(_Find(ext, "shadeColorFactor"), t.shadeColorFactor);
+    t.shadingShiftFactor = _AsFloat(_Find(ext, "shadingShiftFactor"), t.shadingShiftFactor);
+    t.shadingToonyFactor = _AsFloat(_Find(ext, "shadingToonyFactor"), t.shadingToonyFactor);
+    t.giEqualizationFactor = _AsFloat(_Find(ext, "giEqualizationFactor"), t.giEqualizationFactor);
+    t.matcapFactor = _AsVec3(_Find(ext, "matcapFactor"), t.matcapFactor);
+    t.parametricRimColorFactor =
+        _AsVec3(_Find(ext, "parametricRimColorFactor"), t.parametricRimColorFactor);
+    t.parametricRimFresnelPowerFactor =
+        _AsFloat(_Find(ext, "parametricRimFresnelPowerFactor"), t.parametricRimFresnelPowerFactor);
+    t.parametricRimLiftFactor =
+        _AsFloat(_Find(ext, "parametricRimLiftFactor"), t.parametricRimLiftFactor);
+    t.rimLightingMixFactor = _AsFloat(_Find(ext, "rimLightingMixFactor"), t.rimLightingMixFactor);
+    if (const JsValue* v = _Find(ext, "outlineWidthMode"); v && v->IsString())
+        t.outlineWidthMode = v->GetString();
+    t.outlineWidthFactor = _AsFloat(_Find(ext, "outlineWidthFactor"), t.outlineWidthFactor);
+    t.outlineColorFactor = _AsVec3(_Find(ext, "outlineColorFactor"), t.outlineColorFactor);
+    t.outlineLightingMixFactor =
+        _AsFloat(_Find(ext, "outlineLightingMixFactor"), t.outlineLightingMixFactor);
+    t.uvAnimationScrollXSpeedFactor =
+        _AsFloat(_Find(ext, "uvAnimationScrollXSpeedFactor"), t.uvAnimationScrollXSpeedFactor);
+    t.uvAnimationScrollYSpeedFactor =
+        _AsFloat(_Find(ext, "uvAnimationScrollYSpeedFactor"), t.uvAnimationScrollYSpeedFactor);
+    t.uvAnimationRotationSpeedFactor =
+        _AsFloat(_Find(ext, "uvAnimationRotationSpeedFactor"), t.uvAnimationRotationSpeedFactor);
+
+    for (const auto& [key, role] : _kMToonTextures)
+    {
+        if (const JsObject* info = _AsObject(_Find(ext, key)))
+        {
+            VrmTextureRef ref = _TextureInfoFromJson(*info, resolve);
+            if (ref.present)
+                sem->textures[role] = std::move(ref);
+        }
+    }
+}
+
+// ---- VRM 0.x MToon ---------------------------------------------------------
+//
+// VRM 0.x MToon is `materialProperties[i]`: Unity shader property names in
+// three maps (floatProperties, vectorProperties, textureProperties) plus the
+// material's renderQueue. It is normalized into the 1.0 model exactly as
+// UniVRM's own migration does (Packages/VRM10/Runtime/Migration/Materials/
+// MigrationMToonMaterial.cs and MToon10Migrator.cs, vrm-c/UniVRM d3665db), so
+// a 0.x avatar and the 1.0 file UniVRM migrates it to author the same
+// canonical values. Every conversion that is not a rename, and the two
+// destructive ones UniVRM makes on purpose, are the schema contract's VRM 0.x
+// table, each with its fidelity class (material policy §11 q10). The one
+// departure: a property absent from the file takes the MToon 0.x shader's
+// default, where UniVRM would take C#'s zero.
+
+// `_BlendMode`.
+enum class _MToon0RenderMode
+{
+    Opaque = 0,
+    Cutout = 1,
+    Transparent = 2,
+    TransparentWithZWrite = 3,
+};
+
+// Unity's Color.linear, which UniVRM applies to every 0.x colour but emission:
+// the sRGB transfer function, per channel.
+float
+_SrgbToLinear(float c)
+{
+    return c <= 0.04045f ? c / 12.92f : std::pow((c + 0.055f) / 1.055f, 2.4f);
+}
+
+GfVec3f
+_SrgbToLinear(const GfVec3f& c)
+{
+    return GfVec3f(_SrgbToLinear(c[0]), _SrgbToLinear(c[1]), _SrgbToLinear(c[2]));
+}
+
+// Read access to one materialProperties entry, defaulting to the MToon 0.x
+// shader's own property defaults.
+struct _MToon0Props
+{
+    const JsObject* floats = nullptr;
+    const JsObject* vectors = nullptr;
+    const JsObject* textures = nullptr;
+
+    explicit _MToon0Props(const JsObject& mp)
+        : floats(_AsObject(_Find(mp, "floatProperties")))
+        , vectors(_AsObject(_Find(mp, "vectorProperties")))
+        , textures(_AsObject(_Find(mp, "textureProperties")))
+    {
+    }
+
+    float Float(const char* key, float fallback) const
+    {
+        return floats ? _AsFloat(_Find(*floats, key), fallback) : fallback;
+    }
+    GfVec4f Vec4(const char* key, const GfVec4f& fallback) const
+    {
+        const auto a = _AsFloats<4>(vectors ? _Find(*vectors, key) : nullptr,
+                                    {fallback[0], fallback[1], fallback[2], fallback[3]});
+        return GfVec4f(a[0], a[1], a[2], a[3]);
+    }
+    GfVec3f Rgb(const char* key, const GfVec3f& fallback) const
+    {
+        const GfVec4f v = Vec4(key, GfVec4f(fallback[0], fallback[1], fallback[2], 1.0f));
+        return GfVec3f(v[0], v[1], v[2]);
+    }
+    bool HasVec4(const char* key) const
+    {
+        const JsArray* a = vectors ? _AsArray(_Find(*vectors, key)) : nullptr;
+        return a && a->size() >= 4;
+    }
+    // The glTF texture index a property names, or -1.
+    int Texture(const char* key) const
+    {
+        return textures ? _AsInt(_Find(*textures, key)) : -1;
+    }
+    _MToon0RenderMode RenderMode() const
+    {
+        const int mode = static_cast<int>(Float("_BlendMode", 0.0f));
+        return (mode >= 1 && mode <= 3) ? static_cast<_MToon0RenderMode>(mode)
+                                        : _MToon0RenderMode::Opaque;
+    }
+};
+
+// The material's renderQueue relative to its render mode's default queue
+// (UniVRM's Vrm0XMToonValue). Only the two transparent modes use it, and only
+// for its order among the file's materials of the same mode.
+int
+_MToon0RawQueueOffset(const JsObject& mp, _MToon0RenderMode mode)
+{
+    const int defaultQueue = mode == _MToon0RenderMode::Transparent             ? 3000
+                             : mode == _MToon0RenderMode::TransparentWithZWrite ? 2501
+                             : mode == _MToon0RenderMode::Cutout                ? 2450
+                                                                                : 2000;
+    return _AsInt(_Find(mp, "renderQueue"), defaultQueue) - defaultQueue;
+}
+
+// One VRM 0.x MToon material -> the canonical semantics. `sem` arrives holding
+// the glTF core, which is kept wherever UniVRM keeps it (metallic, roughness,
+// emissive strength, the metallicRoughness and occlusion textures, and any core
+// texture the 0.x block does not name); `renderQueueOffsetNumber` is the
+// cross-material ranking the caller computed.
+void
+_ReadMToon0(const JsObject& mp, int renderQueueOffsetNumber, const _TextureResolver& resolve,
+            VrmMaterialSemantics* sem)
+{
+    const _MToon0Props p(mp);
+    VrmMToonSemantics& t = sem->mtoon;
+    sem->hasMToon = true;
+    t.specVersion = "1.0";
+
+    // Every texture but MatCap samples through _MainTex's tiling and offset
+    // (Unity's _ST, bottom-left origin), carried over as KHR_texture_transform.
+    const GfVec4f st = p.Vec4("_MainTex", GfVec4f(0.0f, 0.0f, 1.0f, 1.0f));
+    const bool hasSt = p.Texture("_MainTex") >= 0 && p.HasVec4("_MainTex");
+    auto texture = [&](const char* key, const char* role, bool applySt) -> bool
+    {
+        const int index = p.Texture(key);
+        if (index < 0)
+            return false;
+        VrmTextureRef ref = resolve(index, 0);
+        if (!ref.present)
+            return false;
+        if (applySt && hasSt)
+        {
+            ref.hasTransform = true;
+            ref.uvOffset = GfVec2f(st[0], 1.0f - st[1] - st[3]);
+            ref.uvScale = GfVec2f(st[2], st[3]);
+            ref.uvRotation = 0.0f;
+        }
+        sem->textures[role] = std::move(ref);
+        return true;
+    };
+
+    // Rendering.
+    switch (p.RenderMode())
+    {
+    case _MToon0RenderMode::Opaque:
+        sem->alphaMode = "OPAQUE";
+        sem->alphaCutoff = 0.5f;
+        t.transparentWithZWrite = false;
+        break;
+    case _MToon0RenderMode::Cutout:
+        sem->alphaMode = "MASK";
+        sem->alphaCutoff = p.Float("_Cutoff", 0.5f);
+        t.transparentWithZWrite = false;
+        break;
+    case _MToon0RenderMode::Transparent:
+        sem->alphaMode = "BLEND";
+        sem->alphaCutoff = 0.5f;
+        t.transparentWithZWrite = false;
+        break;
+    case _MToon0RenderMode::TransparentWithZWrite:
+        sem->alphaMode = "BLEND";
+        sem->alphaCutoff = 0.5f;
+        t.transparentWithZWrite = true;
+        break;
+    }
+    t.renderQueueOffsetNumber = renderQueueOffsetNumber;
+    // `_CullMode`: 0 Off, 1 Front, 2 Back. glTF has no front-face culling, so
+    // Front becomes double-sided.
+    const int cull = static_cast<int>(p.Float("_CullMode", 2.0f));
+    sem->doubleSided = cull == 0 || cull == 1;
+    // UniVRM's migration marks every MToon material KHR_materials_unlit.
+    sem->unlit = true;
+
+    // Lit colour.
+    const GfVec4f color = p.Vec4("_Color", GfVec4f(1.0f));
+    sem->baseColorFactor = _SrgbToLinear(GfVec3f(color[0], color[1], color[2]));
+    sem->baseColorAlphaFactor = color[3];
+    texture("_MainTex", "baseColor", true);
+
+    // Shade. A lit texture with no shade texture becomes the shade texture as
+    // well: destructive, and UniVRM's choice (MToon 0.x's GI let a missing
+    // shade texture pass unnoticed).
+    t.shadeColorFactor = _SrgbToLinear(p.Rgb("_ShadeColor", GfVec3f(0.97f, 0.81f, 0.86f)));
+    if (!texture("_ShadeTexture", "shadeMultiply", true))
+        texture("_MainTex", "shadeMultiply", true);
+
+    if (texture("_BumpMap", "normal", true))
+        sem->textures["normal"].scale = p.Float("_BumpScale", 1.0f);
+
+    // Shading shift / toony: 0.x states the lit-to-shade ramp as a shift and a
+    // toony that together bound it; 1.0 as the ramp's centre and its margin.
+    {
+        const float toony0 = p.Float("_ShadeToony", 0.9f);
+        const float shift0 = p.Float("_ShadeShift", 0.0f);
+        const float rangeMin = shift0;
+        const float rangeMax = 1.0f + (shift0 - 1.0f) * toony0; // lerp(1, shift0, toony0)
+        t.shadingToonyFactor = std::clamp((2.0f - (rangeMax - rangeMin)) * 0.5f, 0.0f, 1.0f);
+        t.shadingShiftFactor = std::clamp((rangeMax + rangeMin) * 0.5f * -1.0f, -1.0f, 1.0f);
+    }
+    t.giEqualizationFactor =
+        std::clamp(1.0f - p.Float("_IndirectLightIntensity", 0.1f), 0.0f, 1.0f);
+
+    // Emission: already linear (an HDR colour in Unity).
+    sem->emissiveFactor = p.Rgb("_EmissionColor", GfVec3f(0.0f));
+    texture("_EmissionMap", "emissive", true);
+
+    // MatCap: 0.x adds the sphere texture; 1.0 multiplies a factor into it, so
+    // the factor is white exactly when there is a texture. No _ST.
+    t.matcapFactor = texture("_SphereAdd", "matcap", false) ? GfVec3f(1.0f) : GfVec3f(0.0f);
+
+    // Rim. rimLightingMixFactor is 1 whatever `_RimLightingMix` said:
+    // destructive, and UniVRM's choice (1.0 merges rim with MatCap).
+    t.parametricRimColorFactor = _SrgbToLinear(p.Rgb("_RimColor", GfVec3f(0.0f)));
+    t.parametricRimFresnelPowerFactor = p.Float("_RimFresnelPower", 1.0f);
+    t.parametricRimLiftFactor = p.Float("_RimLift", 0.0f);
+    texture("_RimTexture", "rimMultiply", true);
+    t.rimLightingMixFactor = 1.0f;
+
+    // Outline. World width is in centimetres in 0.x and metres in 1.0; screen
+    // width is a percentage of half the screen height in 0.x and a fraction of
+    // the whole height in 1.0.
+    int widthMode = static_cast<int>(p.Float("_OutlineWidthMode", 0.0f));
+    if (widthMode < 0 || widthMode > 2)
+        widthMode = 0;
+    const float width0 = p.Float("_OutlineWidth", 0.5f);
+    t.outlineWidthMode = widthMode == 1 ? "worldCoordinates"
+                         : widthMode == 2 ? "screenCoordinates"
+                                          : "none";
+    t.outlineWidthFactor = widthMode == 1 ? width0 * 0.01f
+                           : widthMode == 2 ? width0 * 0.01f * 0.5f
+                                            : 0.0f;
+    texture("_OutlineWidthTexture", "outlineWidthMultiply", true);
+    t.outlineColorFactor = _SrgbToLinear(p.Rgb("_OutlineColor", GfVec3f(0.0f)));
+    // `_OutlineColorMode`: 0 FixedColor (no lighting), 1 MixedLighting.
+    t.outlineLightingMixFactor = static_cast<int>(p.Float("_OutlineColorMode", 0.0f)) == 1
+                                     ? p.Float("_OutlineLightingMix", 1.0f)
+                                     : 0.0f;
+
+    // UV animation. 0.x rotates in turns per second and scrolls V in Unity's
+    // bottom-up direction; 1.0 in radians per second and glTF's top-down V.
+    texture("_UvAnimMaskTexture", "uvAnimationMask", true);
+    t.uvAnimationScrollXSpeedFactor = p.Float("_UvAnimScrollX", 0.0f);
+    // Negated by subtraction: `x * -1` turns a still 0 into -0.
+    t.uvAnimationScrollYSpeedFactor = 0.0f - p.Float("_UvAnimScrollY", 0.0f);
+    t.uvAnimationRotationSpeedFactor =
+        p.Float("_UvAnimRotation", 0.0f) * 2.0f * 3.14159265358979f;
 }
 
 // ---------------------------------------------------------------------------
@@ -398,30 +771,42 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
         return result;
     };
 
-    auto makeTexRef = [&](const cgltf_texture_view& tv) -> VrmTextureRef
+    // One texture: its image, sampler and the UV set it samples. `texCoord` is
+    // the effective set, a KHR_texture_transform override already folded in.
+    auto texRefFromTexture = [&](const cgltf_texture* texture, int texCoord) -> VrmTextureRef
     {
         VrmTextureRef r;
-        if (!tv.texture || !tv.texture->image)
+        if (!texture || !texture->image)
             return r;
-        std::string path = extractImage(tv.texture->image);
+        std::string path = extractImage(texture->image);
         if (path.empty())
             return r;
         r.present = true;
         r.filePath = path;
-        r.uvSet = tv.texcoord;
-        r.scale = tv.scale;
-        if (tv.texcoord != 0)
+        r.uvSet = texCoord;
+        if (texCoord != 0)
         {
             outDoc->warnings.push_back(
                 VrmDiagMsg(VrmDiag::TextureTexcoordUnsupported,
-                           "texture uses TEXCOORD_" + std::to_string(tv.texcoord) +
+                           "texture uses TEXCOORD_" + std::to_string(texCoord) +
                                "; only UV set 0 is wired in Phase 2 (sampling may be wrong)"));
         }
-        if (tv.texture->sampler)
+        if (texture->sampler)
         {
-            r.wrapS = _WrapStr(tv.texture->sampler->wrap_s);
-            r.wrapT = _WrapStr(tv.texture->sampler->wrap_t);
+            r.wrapS = _WrapStr(texture->sampler->wrap_s);
+            r.wrapT = _WrapStr(texture->sampler->wrap_t);
         }
+        return r;
+    };
+
+    auto makeTexRef = [&](const cgltf_texture_view& tv) -> VrmTextureRef
+    {
+        const int texCoord =
+            (tv.has_transform && tv.transform.has_texcoord) ? tv.transform.texcoord : tv.texcoord;
+        VrmTextureRef r = texRefFromTexture(tv.texture, texCoord);
+        if (!r.present)
+            return r;
+        r.scale = tv.scale;
         if (tv.has_transform)
         {
             r.hasTransform = true;
@@ -430,6 +815,16 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
             r.uvRotation = tv.transform.rotation;
         }
         return r;
+    };
+
+    // A texture a VRM extension block names by glTF texture index -- a
+    // VRMC_materials_mtoon textureInfo, a VRM 0.x textureProperties entry --
+    // which cgltf does not resolve. An index out of range names no texture.
+    auto texRefFromIndex = [&](int textureIndex, int texCoord) -> VrmTextureRef
+    {
+        if (textureIndex < 0 || textureIndex >= static_cast<int>(data->textures_count))
+            return {};
+        return texRefFromTexture(&data->textures[textureIndex], texCoord);
     };
 
     // -----------------------------------------------------------------------
@@ -474,8 +869,32 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
                                                                   : "OPAQUE";
         vm.alphaCutoff = m.alpha_cutoff;
 
-        // MToon (VRM 1.0): preserved as metadata; the glTF PBR factors/textures
-        // above already give a UsdPreviewSurface approximation. (VRM 0.x MToon
+        // Canonical semantics start as the glTF core, for every material.
+        VrmMaterialSemantics& sem = vm.semantics;
+        sem.baseColorFactor = vm.baseColor;
+        sem.baseColorAlphaFactor = vm.opacity;
+        sem.metallicFactor = vm.metallic;
+        sem.roughnessFactor = vm.roughness;
+        sem.emissiveFactor = vm.emissiveColor;
+        if (m.has_emissive_strength)
+            sem.emissiveStrength = m.emissive_strength.emissive_strength;
+        sem.alphaMode = vm.alphaMode;
+        sem.alphaCutoff = vm.alphaCutoff;
+        sem.doubleSided = vm.doubleSided;
+        sem.unlit = vm.unlit;
+        const std::pair<const char*, const VrmTextureRef*> coreTextures[] = {
+            {"baseColor", &vm.baseColorTex}, {"metallicRoughness", &vm.metallicRoughnessTex},
+            {"normal", &vm.normalTex},       {"occlusion", &vm.occlusionTex},
+            {"emissive", &vm.emissiveTex},
+        };
+        for (const auto& [role, ref] : coreTextures)
+        {
+            if (ref->present)
+                sem.textures[role] = *ref;
+        }
+
+        // MToon (VRM 1.0): typed into the canonical semantics, and the block
+        // itself preserved verbatim as the lossless fallback. (VRM 0.x MToon
         // lives in VRM.materialProperties and is handled in the extension pass.)
         for (cgltf_size e = 0; e < m.extensions_count; ++e)
         {
@@ -484,7 +903,16 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
             {
                 vm.isMToon = true;
                 if (m.extensions[e].data)
+                {
                     vm.rawShaderJson = m.extensions[e].data;
+                    JsParseError perr;
+                    const JsValue ext = JsParseString(vm.rawShaderJson, &perr);
+                    if (const JsObject* obj = _AsObject(&ext))
+                    {
+                        sem.hasMToon = true;
+                        _ReadMToon1(*obj, texRefFromIndex, &sem);
+                    }
+                }
             }
         }
     }
@@ -1270,10 +1698,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
                     }
                 }
                 // materialProperties[]: VRM 0.x MToon, aligned with glTF
-                // materials by index. Preserved as metadata (the glTF PBR gives
-                // the UsdPreviewSurface approximation).
+                // materials by index. Typed into the canonical semantics (the
+                // same fields a VRM 1.0 material lands in) and preserved
+                // verbatim; the realizations still read the glTF core.
                 if (const JsArray* mprops = _AsArray(_Find(*rootObj, "materialProperties")))
                 {
+                    std::vector<const JsObject*> mtoon(outDoc->materials.size(), nullptr);
                     for (size_t i = 0; i < mprops->size() && i < outDoc->materials.size(); ++i)
                     {
                         const JsObject* mp = _AsObject(&(*mprops)[i]);
@@ -1283,11 +1713,52 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
                         if (shader && shader->IsString() &&
                             shader->GetString().find("MToon") != std::string::npos)
                         {
+                            mtoon[i] = mp;
                             outDoc->materials[i].isMToon = true;
                             // Only MToon blocks are surfaced (vrm:mtoon:raw); skip
                             // the serialization for Unlit/standard properties.
                             outDoc->materials[i].rawShaderJson = JsWriteToString(JsValue(*mp));
                         }
+                    }
+
+                    // 1.0 bounds renderQueueOffsetNumber to -9..0 (transparent)
+                    // and 0..+9 (with z-write) where 0.x had a free queue, so
+                    // the queues are ranked across the file's materials,
+                    // keeping their order, as UniVRM's migration does: the
+                    // highest transparent queue takes 0 and each lower one the
+                    // next offset down; the lowest z-write queue takes 0 and
+                    // each higher one the next offset up.
+                    std::set<int> transparentQueues, zWriteQueues;
+                    for (const JsObject* mp : mtoon)
+                    {
+                        if (!mp)
+                            continue;
+                        const _MToon0RenderMode mode = _MToon0Props(*mp).RenderMode();
+                        if (mode == _MToon0RenderMode::Transparent)
+                            transparentQueues.insert(_MToon0RawQueueOffset(*mp, mode));
+                        else if (mode == _MToon0RenderMode::TransparentWithZWrite)
+                            zWriteQueues.insert(_MToon0RawQueueOffset(*mp, mode));
+                    }
+                    std::map<int, int> transparentRank, zWriteRank;
+                    int rank = 0;
+                    for (auto it = transparentQueues.rbegin(); it != transparentQueues.rend(); ++it)
+                        transparentRank[*it] = std::clamp(rank--, -9, 0);
+                    rank = 0;
+                    for (int q : zWriteQueues)
+                        zWriteRank[q] = std::clamp(rank++, 0, 9);
+
+                    for (size_t i = 0; i < mtoon.size(); ++i)
+                    {
+                        if (!mtoon[i])
+                            continue;
+                        const _MToon0RenderMode mode = _MToon0Props(*mtoon[i]).RenderMode();
+                        int queueOffset = 0;
+                        if (mode == _MToon0RenderMode::Transparent)
+                            queueOffset = transparentRank[_MToon0RawQueueOffset(*mtoon[i], mode)];
+                        else if (mode == _MToon0RenderMode::TransparentWithZWrite)
+                            queueOffset = zWriteRank[_MToon0RawQueueOffset(*mtoon[i], mode)];
+                        _ReadMToon0(*mtoon[i], queueOffset, texRefFromIndex,
+                                    &outDoc->materials[i].semantics);
                     }
                 }
                 // firstPerson.lookAtTypeName ("Bone" | "BlendShape"). The 0.x

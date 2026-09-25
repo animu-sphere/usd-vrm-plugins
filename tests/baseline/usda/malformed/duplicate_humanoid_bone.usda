@@ -29,6 +29,7 @@ def SkelRoot "Asset" (
     def Scope "mtl"
     {
         def Material "Body_Mat" (
+            apiSchemas = ["VrmMaterialAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 0
@@ -36,6 +37,16 @@ def SkelRoot "Asset" (
             }
         )
         {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.8, 0.6, 0.5)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 0
             token outputs:surface.connect = </Asset/mtl/Body_Mat/preview.outputs:surface>
 
             def NodeGraph "preview"

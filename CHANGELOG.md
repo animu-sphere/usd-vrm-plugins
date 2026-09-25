@@ -15,6 +15,25 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Imported materials carry their canonical semantics** (Product P5 Step 4;
+  [material track](docs/roadmap/material-track.md)). Every material gets
+  `VrmMaterialAPI`, an MToon material `VrmMToonAPI`, and each texture it
+  samples a `VrmTextureInfoAPI:<role>` instance, every value authored. A VRM
+  0.x MToon material (`materialProperties`, Unity property names) lands in the
+  same fields as a VRM 1.0 one, converted exactly as UniVRM's own 0.x → 1.0
+  migration does — including its two destructive choices (a missing shade
+  texture takes the lit texture; `rimLightingMixFactor` is always 1) — so a
+  0.x avatar and its migrated 1.0 file import to the same values. For such a
+  material the 0.x block, not the glTF fallback beside it, is the source of
+  the base colour, alpha mode and culling. The per-field table and fidelity
+  classes are in the
+  [schema contract](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields)
+  (material policy §11 q10). `vrm:mtoon:raw` is byte-identical to before, and
+  `/preview` and `/mtlx` are unchanged: they still read the source material
+  until Steps 5–6. `package_vrm.py` packages a canonical texture file like a
+  realization's. New fixtures `mtoon_vrm0.vrm` / `mtoon_vrm1.vrm`; the
+  baseline diff is additive.
+
 - **The canonical material schemas: `VrmMaterialAPI`, `VrmMToonAPI`,
   `VrmTextureInfoAPI`** — Product P5 Step 3
   ([material track](docs/roadmap/material-track.md)), additive within schema
@@ -35,8 +54,8 @@ Current schema contract version: **1**.
   ([material policy §6.4.1](docs/design/MATERIAL_ARCHITECTURE_POLICY.md)).
   `tools/validate_vrm.py` gains `VRM223`–`VRM226` for the new schemas, and
   checks canonical texture assets under `VRM222`.
-  **The importer does not author them yet** (Step 4): an imported stage is
-  unchanged, and no baseline stage digest moved.
+  This step alone left an imported stage unchanged and moved no baseline stage
+  digest; the importer authors the schemas from Step 4 (above).
 
 - **The reference pipeline: three source categories, one downstream half**
   — `workspace_reference_pipeline`

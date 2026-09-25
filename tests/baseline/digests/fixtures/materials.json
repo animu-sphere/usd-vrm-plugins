@@ -2,12 +2,22 @@
   "assets": [
     {
       "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/UnlitCutout.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
       "attr": "/Asset/mtl/UnlitCutout/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
       "attr": "/Asset/mtl/UnlitCutout/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/UnlitPlaced.inputs:vrm:textureInfo:baseColor:file",
       "resolved": true
     },
     {
@@ -557,6 +567,9 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Glass",
       "type": "Material"
     },
@@ -572,6 +585,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Leaf",
       "type": "Material"
     },
@@ -588,7 +604,8 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI"
       ],
       "path": "/Asset/mtl/Unlit",
       "type": "Material"
@@ -617,7 +634,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor"
       ],
       "path": "/Asset/mtl/UnlitCutout",
       "type": "Material"
@@ -695,7 +714,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor"
       ],
       "path": "/Asset/mtl/UnlitPlaced",
       "type": "Material"

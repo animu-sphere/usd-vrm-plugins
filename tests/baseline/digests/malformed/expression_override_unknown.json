@@ -74,6 +74,9 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Face_Mat",
       "type": "Material"
     },

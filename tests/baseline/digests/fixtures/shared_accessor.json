@@ -78,6 +78,9 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Quad_Mat",
       "type": "Material"
     },

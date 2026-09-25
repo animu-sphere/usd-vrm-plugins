@@ -23,6 +23,11 @@ specific import behavior the smoke test then asserts:
                      unlit, unlit + texture + MASK, unlit + KHR_texture_transform
   constraints.vrm    a VRMC_node_constraint (roll) driving one node from another
   badext.vrm         semantically broken VRM humanoid (must warn, not crash)
+  mtoon_vrm0.vrm     VRM 0.x MToon materialProperties covering every 0.x -> 1.0
+                     conversion: render modes and queue ranking, shading ramp,
+                     outline units, UV animation, texture tiling, defaults
+  mtoon_vrm1.vrm     the same materials as UniVRM migrates them to VRM 1.0;
+                     both must author the same canonical material values
 
 Usage: python generate_fixtures.py [out_dir]   (default: ../tests/fixtures)
 """
@@ -619,6 +624,203 @@ def build_textures():
     return b.build(gltf)
 
 
+# The MToon pair: one set of materials written twice, as VRM 0.x
+# `materialProperties` (mtoon_vrm0.vrm) and as the VRM 1.0 file UniVRM's
+# migration turns that into (mtoon_vrm1.vrm). The importer must author the same
+# canonical values for both (material policy §6.6), so every 1.0 value below is
+# a literal worked out by hand from the 0.x one beside it -- never computed by
+# the code under test -- with the arithmetic in the comment.
+#
+# Eight solid images, one per MToon texture slot, so a texture landing in the
+# wrong role is a different file rather than the same one.
+_MTOON_IMAGES = [(200, 40, 40), (40, 200, 40), (128, 128, 255), (250, 250, 10),
+                 (10, 250, 250), (250, 10, 250), (90, 60, 30), (30, 60, 90)]
+_LIT, _SHADE, _BUMP, _EMIT, _SPHERE, _RIM, _OUTLINE, _UVMASK = range(8)
+
+
+def _mtoon_scene(b, materials, ext_name, ext, extra_used=()):
+    pos = b.add(FLOAT, "VEC3", TRI_POSITIONS, ARRAY_BUFFER, minmax=True)
+    uv = b.add(FLOAT, "VEC2", [(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)], ARRAY_BUFFER)
+    idx = _idx(b)
+    images = [{"name": f"img{i}", "bufferView": b.add_bytes(solid_png(*rgb)),
+               "mimeType": "image/png"} for i, rgb in enumerate(_MTOON_IMAGES)]
+    return {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0]}],
+        "nodes": [{"name": "Body", "mesh": 0}],
+        "meshes": [{"name": "Body", "primitives": [{
+            "attributes": {"POSITION": pos, "TEXCOORD_0": uv},
+            "indices": idx, "material": 0}]}],
+        "images": images,
+        "samplers": [{"wrapS": 10497, "wrapT": 33071}],  # repeat / clamp
+        "textures": [{"source": i, "sampler": 0} for i in range(len(images))],
+        "materials": materials,
+        "extensionsUsed": [ext_name, *extra_used],
+        "extensions": {ext_name: ext},
+    }
+
+
+def build_mtoon_vrm0():
+    """VRM 0.x MToon, every conversion the 0.x -> 1.0 table names."""
+    b = GlbBuilder()
+
+    def mtoon(name, render_queue, floats, vectors=None, textures=None):
+        return {"name": name, "shader": "VRM/MToon", "renderQueue": render_queue,
+                "floatProperties": floats, "vectorProperties": vectors or {},
+                "textureProperties": textures or {},
+                "keywordMap": {}, "tagMap": {}}
+
+    material_properties = [
+        # Every property stated, every texture slot filled.
+        mtoon("Hair", 2510, {
+            "_BlendMode": 3, "_CullMode": 0, "_Cutoff": 0.5, "_BumpScale": 0.8,
+            "_ShadeShift": -0.2, "_ShadeToony": 0.5,
+            "_IndirectLightIntensity": 0.25,
+            "_RimFresnelPower": 3.0, "_RimLift": 0.1, "_RimLightingMix": 0.4,
+            "_OutlineWidthMode": 1, "_OutlineWidth": 0.5,
+            "_OutlineColorMode": 1, "_OutlineLightingMix": 0.6,
+            "_UvAnimScrollX": 0.5, "_UvAnimScrollY": 0.25,
+            "_UvAnimRotation": 0.25,
+        }, {
+            "_Color": [0.5, 1.0, 0.25, 0.75],
+            "_ShadeColor": [0.5, 0.5, 0.5, 1.0],
+            "_RimColor": [1.0, 0.5, 0.0, 1.0],
+            "_OutlineColor": [0.25, 0.5, 1.0, 1.0],
+            "_EmissionColor": [0.1, 0.2, 0.3, 1.0],
+            "_MainTex": [0.25, 0.5, 2.0, 0.5],  # Unity offset.xy, scale.xy
+        }, {
+            "_MainTex": _LIT, "_ShadeTexture": _SHADE, "_BumpMap": _BUMP,
+            "_EmissionMap": _EMIT, "_SphereAdd": _SPHERE, "_RimTexture": _RIM,
+            "_OutlineWidthTexture": _OUTLINE, "_UvAnimMaskTexture": _UVMASK,
+        }),
+        # Cutout, screen-space outline with a fixed colour, no shade texture
+        # (the lit texture stands in), no sphere; shading, GI and shade colour
+        # left to the MToon 0.x shader defaults.
+        mtoon("Face", 2450, {
+            "_BlendMode": 1, "_CullMode": 2, "_Cutoff": 0.3,
+            "_OutlineWidthMode": 2, "_OutlineWidth": 1.0,
+            "_OutlineColorMode": 0, "_OutlineLightingMix": 0.8,
+        }, {"_Color": [1.0, 1.0, 1.0, 1.0], "_MainTex": [0.0, 0.0, 1.0, 1.0]},
+            {"_MainTex": _LIT}),
+        # Transparent queues 3000 and 2990: ranked 0 and -1.
+        mtoon("Veil", 3000, {"_BlendMode": 2}),
+        mtoon("Tear", 2990, {"_BlendMode": 2, "_CullMode": 1}),
+        # Transparent-with-z-write 2501 (and Hair's 2510): ranked 0 (and 1).
+        mtoon("Lashes", 2501, {"_BlendMode": 3}),
+        # Not MToon: the glTF core is the whole story.
+        {"name": "Plain", "shader": "VRM_USE_GLTFSHADER", "renderQueue": -1,
+         "floatProperties": {}, "vectorProperties": {}, "textureProperties": {},
+         "keywordMap": {}, "tagMap": {}},
+    ]
+    # The glTF core an old exporter wrote beside them: gamma colours, OPAQUE,
+    # single-sided, no unlit. The importer must read materialProperties for an
+    # MToon material, so none of this may reach its canonical values -- except
+    # metallic / roughness, which UniVRM keeps from here.
+    core = {"pbrMetallicRoughness": {"baseColorFactor": [0.5, 1.0, 0.25, 0.75],
+                                     "metallicFactor": 0.0, "roughnessFactor": 0.9}}
+    materials = [dict(name=mp["name"], **core) for mp in material_properties[:-1]]
+    materials.append({"name": "Plain", "alphaMode": "MASK", "alphaCutoff": 0.25,
+                      "pbrMetallicRoughness": {
+                          "baseColorFactor": [0.2, 0.3, 0.4, 1.0],
+                          "baseColorTexture": {"index": _LIT}}})
+    ext = vrm0_extension({})
+    ext["materialProperties"] = material_properties
+    return b.build(_mtoon_scene(b, materials, "VRM", ext))
+
+
+def build_mtoon_vrm1():
+    """mtoon_vrm0.vrm as UniVRM's migration writes it in VRM 1.0."""
+    b = GlbBuilder()
+    # _MainTex's Unity tiling (offset (0.25, 0.5), scale (2, 0.5), bottom-left
+    # origin) as KHR_texture_transform: offset.y = 1 - 0.5 - 0.5 = 0.
+    hair_xf = {"KHR_texture_transform": {"offset": [0.25, 0.0], "scale": [2.0, 0.5]}}
+    ident_xf = {"KHR_texture_transform": {"offset": [0.0, 0.0], "scale": [1.0, 1.0]}}
+    unlit = {"KHR_materials_unlit": {}}
+
+    def tex(index, xf=None, **extra):
+        t = {"index": index, **extra}
+        if xf:
+            t["extensions"] = xf
+        return t
+
+    def material(name, alpha_mode, double_sided, mtoon, base=(1.0, 1.0, 1.0, 1.0),
+                 cutoff=0.5, base_tex=None, **core):
+        pbr = {"baseColorFactor": list(base), "metallicFactor": 0.0,
+               "roughnessFactor": 0.9}
+        if base_tex:
+            pbr["baseColorTexture"] = base_tex
+        m = {"name": name, "alphaMode": alpha_mode, "alphaCutoff": cutoff,
+             "doubleSided": double_sided, "pbrMetallicRoughness": pbr,
+             "extensions": {**unlit, "VRMC_materials_mtoon": {
+                 "specVersion": "1.0", **mtoon}}}
+        m.update(core)
+        return m
+
+    # sRGB -> linear: 0.5 -> 0.21404114, 0.25 -> 0.05087609; the shader's
+    # default shade colour (0.97, 0.81, 0.86) -> (0.93310684, 0.62091586,
+    # 0.71056649).
+    default_shade = [0.93310684, 0.62091586, 0.71056649]
+    # Shading with the shader defaults toony 0.9, shift 0:
+    #   max = lerp(1, 0, 0.9) = 0.1, min = 0
+    #   toony = (2 - (0.1 - 0)) / 2 = 0.95, shift = -(0.1 + 0) / 2 = -0.05
+    default_shading = {"shadingShiftFactor": -0.05, "shadingToonyFactor": 0.95,
+                       "giEqualizationFactor": 0.9}  # 1 - 0.1
+    # Every MToon material: no sphere -> matcap black; rim lighting mix 1.
+    defaults = {"shadeColorFactor": default_shade, **default_shading,
+                "matcapFactor": [0.0, 0.0, 0.0], "rimLightingMixFactor": 1.0,
+                "parametricRimFresnelPowerFactor": 1.0,
+                "outlineWidthMode": "none", "outlineLightingMixFactor": 0.0}
+    materials = [
+        material("Hair", "BLEND", True, {
+            "transparentWithZWrite": True, "renderQueueOffsetNumber": 1,
+            "shadeColorFactor": [0.21404114] * 3,
+            "shadeMultiplyTexture": tex(_SHADE, hair_xf),
+            # max = lerp(1, -0.2, 0.5) = 0.4, min = -0.2
+            # toony = (2 - 0.6) / 2 = 0.7, shift = -(0.4 - 0.2) / 2 = -0.1
+            "shadingShiftFactor": -0.1, "shadingToonyFactor": 0.7,
+            "giEqualizationFactor": 0.75,                       # 1 - 0.25
+            "matcapFactor": [1.0, 1.0, 1.0], "matcapTexture": tex(_SPHERE),
+            "parametricRimColorFactor": [1.0, 0.21404114, 0.0],
+            "parametricRimFresnelPowerFactor": 3.0,
+            "parametricRimLiftFactor": 0.1,
+            "rimMultiplyTexture": tex(_RIM, hair_xf),
+            "rimLightingMixFactor": 1.0,                        # not 0.4
+            "outlineWidthMode": "worldCoordinates",
+            "outlineWidthFactor": 0.005,                        # 0.5 cm
+            "outlineWidthMultiplyTexture": tex(_OUTLINE, hair_xf),
+            "outlineColorFactor": [0.05087609, 0.21404114, 1.0],
+            "outlineLightingMixFactor": 0.6,
+            "uvAnimationMaskTexture": tex(_UVMASK, hair_xf),
+            "uvAnimationScrollXSpeedFactor": 0.5,
+            "uvAnimationScrollYSpeedFactor": -0.25,             # V flipped
+            "uvAnimationRotationSpeedFactor": 1.5707963,        # 0.25 turn/s
+        }, base=(0.21404114, 1.0, 0.05087609, 0.75),
+            base_tex=tex(_LIT, hair_xf),
+            normalTexture=tex(_BUMP, hair_xf, scale=0.8),
+            emissiveFactor=[0.1, 0.2, 0.3],
+            emissiveTexture=tex(_EMIT, hair_xf)),
+        material("Face", "MASK", False, {
+            **defaults,
+            "shadeMultiplyTexture": tex(_LIT, ident_xf),        # lit stands in
+            "outlineWidthMode": "screenCoordinates",
+            "outlineWidthFactor": 0.005,                        # 1.0 / 200
+            "outlineLightingMixFactor": 0.0,                    # fixed colour
+        }, cutoff=0.3, base_tex=tex(_LIT, ident_xf)),
+        material("Veil", "BLEND", False, {**defaults, "renderQueueOffsetNumber": 0}),
+        material("Tear", "BLEND", True, {**defaults, "renderQueueOffsetNumber": -1}),
+        material("Lashes", "BLEND", False, {
+            **defaults, "transparentWithZWrite": True,
+            "renderQueueOffsetNumber": 0}),
+        {"name": "Plain", "alphaMode": "MASK", "alphaCutoff": 0.25,
+         "pbrMetallicRoughness": {"baseColorFactor": [0.2, 0.3, 0.4, 1.0],
+                                  "baseColorTexture": {"index": _LIT}}},
+    ]
+    return b.build(_mtoon_scene(
+        b, materials, "VRMC_vrm", vrm1_extension({}),
+        extra_used=("VRMC_materials_mtoon", "KHR_materials_unlit",
+                    "KHR_texture_transform")))
+
+
 def build_animation():
     """A clip that rotates the spine 90 deg about Z over one second (LINEAR)."""
     b = GlbBuilder()
@@ -705,6 +907,8 @@ FIXTURES = {
     "materials.vrm": build_materials,
     "constraints.vrm": build_constraints,
     "badext.vrm": build_badext,
+    "mtoon_vrm0.vrm": build_mtoon_vrm0,
+    "mtoon_vrm1.vrm": build_mtoon_vrm1,
 }
 
 

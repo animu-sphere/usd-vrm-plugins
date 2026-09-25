@@ -37,7 +37,7 @@ build (`ctest --test-dir build/plain -R usdvrm_baseline`).
 
 | Artifact | Freezes | Plan §9 items covered |
 | --- | --- | --- |
-| `usda/fixtures/*.usda` | flattened, normalized stage per local `.vrm` fixture (16 positive) | USDA snapshot, stage topology, material binding, skeleton topology, animation output |
+| `usda/fixtures/*.usda` | flattened, normalized stage per local `.vrm` fixture (18 positive) | USDA snapshot, stage topology, material binding, skeleton topology, animation output |
 | `usda/malformed/*.usda` | stage output of the 5 recoverable malformed fixtures (warning paths) | USDA snapshot, diagnostics-adjacent authoring |
 | `digests/{fixtures,malformed,corpus}/*.json` | structural digest per input, incl. the vendored corpus models too large for text snapshots: prim topology + applied schemas, mesh/material/skeleton bindings, points/rest/bind hashes, time-sample tables, asset inventory with **resolved** flags, VRM custom data, warning codes; for read-fatal inputs the open failure + its codes. A material freezes its whole shader network (walked to any depth, since the network lives inside per-realization `UsdShadeNodeGraph` children) *plus* the boundary that makes it reachable — the material's terminals and each graph's connected outputs — so a terminal severed by a graph rewrite fails here and not only in the plugin's structural tests | stage topology, embedded texture resolution, diagnostics code, animation output |
 | `schema_contract.json` | schema types, properties, fallbacks, allowed tokens (from `generatedSchema.usda`, sha256-pinned) + registry visibility of the nine `Vrm*API` schemas | schema contract |

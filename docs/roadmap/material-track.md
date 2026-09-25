@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1, 2 (unlit) and 3 shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1, 2 (unlit), 3 and 4 shipped · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -42,12 +42,14 @@ The reasons are what Steps 1 and 2 left behind:
   §6, §6.4.1, §7.3). `VrmMaterialAPI`, `VrmMToonAPI` and
   `VrmTextureInfoAPI` exist in `vrmSchema`, as Material interface inputs
   (`inputs:vrm:*`).
-- **An imported stage is still MToon-raw.** The importer does not author the
-  Step 3 schemas yet (Step 4). A VRM 1.0 material keeps its
-  `VRMC_materials_mtoon` block and a VRM 0.x material its whole
-  `materialProperties` entry, Unity property names and all, at
-  `customData.vrm:mtoon:raw`, beside `vrm:shaderModel = "MToon"`
-  ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
+- ✅ **Step 4 — importer canonicalization** (2026-09-25; policy §6.6). Every
+  imported material carries the Step 3 schemas, VRM 0.x and 1.0 alike; the
+  raw block stays beside them, unchanged.
+- **The realizations still read the source material.** `/preview` and
+  `/mtlx` are generated from the importer's reading of the glTF core, not
+  from the canonical attributes, until Steps 5–6. For a VRM 0.x MToon
+  material the two can differ, since its canonical values come from
+  `materialProperties` (below).
 - **Expression colour binds already target a slot, not a shader input.** A
   VRM 1.0 `materialColorBinds` entry is typed on its expression prim as a
   relationship to the `UsdShadeMaterial` plus a VRM slot name (`color`,
@@ -105,7 +107,7 @@ Storm (policy §6.4.1). What Step 4 inherits from q9: a realization connected
 to an unauthored canonical input sees its own shader's default, not the
 schema fallback, so the importer authors every value a graph connects to.
 
-### Step 4 — importer canonicalization, VRM 0.x and 1.0 ⬜
+### Step 4 — importer canonicalization, VRM 0.x and 1.0 ✅
 
 The importer authors the Step 3 schemas on every material. Both source
 versions reach **the same** canonical fields: VRM 1.0 from the glTF material
@@ -123,6 +125,39 @@ the same material author the same canonical values; semantic tests cover
 source → attribute (policy §8.1); `vrm:mtoon:raw` is byte-identical to
 before; and the baseline diff is additive.
 
+**Shipped 2026-09-25.** q10 was decided as *UniVRM's migration, exactly*
+(user's call): the conversion is UniVRM's `MigrationMToonMaterial`, its two
+destructive choices included — a missing shade texture takes the lit texture,
+and `rimLightingMixFactor` is always 1 — so a 0.x avatar and its UniVRM-migrated
+1.0 file import to the same values. The per-field table, each row with its
+fidelity class, is the
+[schema contract's](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields).
+Each condition, and where it is shown:
+
+- *readable on the vendored corpus* — `usdvrm_corpus_smoke` compares every
+  material of both VRM 1.0 models (30, 23 of them MToon) with its source JSON,
+  field for field, through `tests/material_oracle.py`. The vendored corpus has
+  no VRM 0.x model; the 0.x half is the fixture pair below, and was also read
+  on a local AliciaSolid (not committable);
+- *same canonical values* — `mtoon_vrm0.vrm` is VRM 0.x `materialProperties`
+  exercising every row of the table (render modes and queue ranking, the
+  shading ramp, outline units, UV animation, tiling, shader defaults, a
+  non-MToon material, a glTF core that disagrees on purpose);
+  `mtoon_vrm1.vrm` is the same materials as UniVRM writes them in 1.0, every
+  value a hand-worked literal. `check_mtoon_vrm0_matches_vrm1` requires every
+  schema, attribute and texture to agree;
+- *source → attribute* — `check_material_semantics` runs the oracle on every
+  VRM 1.0 fixture. Mutating one 0.x conversion and one 1.0 rename each fails
+  its check at the mutated field;
+- *raw byte-identical* — all 36 `vrm:mtoon:raw` blocks (fixtures, corpus,
+  AliciaSolid) compared before and after: identical;
+- *additive* — the baseline diff adds `Vrm*API` entries to `apiSchemas`, the
+  `inputs:vrm:*` values and the canonical texture assets, and nothing else; no
+  `/preview` or `/mtlx` value moved.
+
+`package_vrm.py` now packages a canonical texture file like a realization's:
+it is what Steps 5–6 regenerate from, so it has to travel with the package.
+
 ### Step 5 — `/preview` generated from canonical semantics ⬜
 
 The PreviewSurface generator's input becomes exactly the canonical field set:
@@ -133,7 +168,10 @@ input is storage (policy §6.1), and MToon-only semantics are not squeezed in
 
 **Done when:** deleting `/preview` and regenerating it from the canonical
 attributes alone reproduces the imported graph; no generator reads source
-JSON or an extension block; and the baseline diff shows no value change.
+JSON or an extension block; and the baseline diff shows no value change —
+with one expected exception, which is the point: a VRM 0.x MToon material
+whose glTF core disagrees with its `materialProperties` (`mtoon_vrm0.vrm`, by
+construction) moves to the canonical value.
 
 ### Step 6 — `/mtlx` generated from canonical semantics ⬜
 

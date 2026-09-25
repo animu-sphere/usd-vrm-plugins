@@ -2,12 +2,37 @@
   "assets": [
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
+      "attr": "/Asset/mtl/Body_00_SKIN.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f3ae48c80e7b162d.png]",
+      "attr": "/Asset/mtl/Body_00_SKIN.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
+      "attr": "/Asset/mtl/Body_00_SKIN.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
       "attr": "/Asset/mtl/Body_00_SKIN/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
       "attr": "/Asset/mtl/Body_00_SKIN/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
+      "attr": "/Asset/mtl/Bottoms_01_CLOTH.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
+      "attr": "/Asset/mtl/Bottoms_01_CLOTH.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -22,12 +47,32 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
+      "attr": "/Asset/mtl/Shoes_01_CLOTH.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
+      "attr": "/Asset/mtl/Shoes_01_CLOTH.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
       "attr": "/Asset/mtl/Shoes_01_CLOTH/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
       "attr": "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
+      "attr": "/Asset/mtl/Tops_01_CLOTH.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
+      "attr": "/Asset/mtl/Tops_01_CLOTH.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -42,12 +87,37 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
+      "attr": "/Asset/mtl/HairBack_00_HAIR.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/749d2ca6dc229b30.png]",
+      "attr": "/Asset/mtl/HairBack_00_HAIR.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
+      "attr": "/Asset/mtl/HairBack_00_HAIR.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
       "attr": "/Asset/mtl/HairBack_00_HAIR/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
       "attr": "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
+      "attr": "/Asset/mtl/FaceMouth_00_FACE.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
+      "attr": "/Asset/mtl/FaceMouth_00_FACE.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -62,12 +132,37 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
+      "attr": "/Asset/mtl/EyeIris_00_EYE.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
+      "attr": "/Asset/mtl/EyeIris_00_EYE.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
       "attr": "/Asset/mtl/EyeIris_00_EYE/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
       "attr": "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
+      "attr": "/Asset/mtl/Face_00_SKIN.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/154ffdf8eabd4ced.png]",
+      "attr": "/Asset/mtl/Face_00_SKIN.inputs:vrm:textureInfo:outlineWidthMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
+      "attr": "/Asset/mtl/Face_00_SKIN.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -82,12 +177,32 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
+      "attr": "/Asset/mtl/EyeWhite_00_EYE.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
+      "attr": "/Asset/mtl/EyeWhite_00_EYE.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
       "attr": "/Asset/mtl/EyeWhite_00_EYE/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
       "attr": "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
+      "attr": "/Asset/mtl/FaceEyeline_00_FACE.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
+      "attr": "/Asset/mtl/FaceEyeline_00_FACE.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -102,6 +217,16 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
+      "attr": "/Asset/mtl/FaceBrow_00_FACE.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
+      "attr": "/Asset/mtl/FaceBrow_00_FACE.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
       "attr": "/Asset/mtl/FaceBrow_00_FACE/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
@@ -112,12 +237,42 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
+      "attr": "/Asset/mtl/EyeHighlight_00_EYE.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
+      "attr": "/Asset/mtl/EyeHighlight_00_EYE.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
       "attr": "/Asset/mtl/EyeHighlight_00_EYE/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
       "attr": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
+      "attr": "/Asset/mtl/Hair_00_HAIR.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/4d7427d45288a670.png]",
+      "attr": "/Asset/mtl/Hair_00_HAIR.inputs:vrm:textureInfo:emissive:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/022e2d930d5e6b47.png]",
+      "attr": "/Asset/mtl/Hair_00_HAIR.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
+      "attr": "/Asset/mtl/Hair_00_HAIR.inputs:vrm:textureInfo:shadeMultiply:file",
       "resolved": true
     },
     {
@@ -2697,7 +2852,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/Body_00_SKIN",
       "type": "Material"
@@ -2775,7 +2935,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/Bottoms_01_CLOTH",
       "type": "Material"
@@ -2853,7 +3017,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/Shoes_01_CLOTH",
       "type": "Material"
@@ -2931,7 +3099,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/Tops_01_CLOTH",
       "type": "Material"
@@ -3009,7 +3181,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/HairBack_00_HAIR",
       "type": "Material"
@@ -3087,7 +3264,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/FaceMouth_00_FACE",
       "type": "Material"
@@ -3165,7 +3346,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/EyeIris_00_EYE",
       "type": "Material"
@@ -3243,7 +3428,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:outlineWidthMultiply",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/Face_00_SKIN",
       "type": "Material"
@@ -3321,7 +3511,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/EyeWhite_00_EYE",
       "type": "Material"
@@ -3399,7 +3593,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/FaceEyeline_00_FACE",
       "type": "Material"
@@ -3477,7 +3675,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/FaceBrow_00_FACE",
       "type": "Material"
@@ -3555,7 +3757,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/EyeHighlight_00_EYE",
       "type": "Material"
@@ -3633,7 +3839,13 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI"
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:emissive",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:shadeMultiply"
       ],
       "path": "/Asset/mtl/Hair_00_HAIR",
       "type": "Material"

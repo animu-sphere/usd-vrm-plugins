@@ -149,6 +149,9 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Mat",
       "type": "Material"
     },
@@ -164,6 +167,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Mat_2",
       "type": "Material"
     },

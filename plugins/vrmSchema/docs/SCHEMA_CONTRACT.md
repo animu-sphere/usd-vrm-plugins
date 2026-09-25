@@ -234,11 +234,68 @@ block at `customData.vrm:mtoon:raw` stays the lossless fallback, and is never a
 runtime API — a value a consumer needs and cannot find in the typed schemas is
 a missing field, not a reason to parse JSON.
 
-**The importer does not author these schemas yet.** Step 3 defines the
-contract; the importer canonicalizes VRM 1.0 and 0.x materials into it in
-Step 4, and until then a material carries `vrm:shaderModel`, the raw block and
-the realizations exactly as before
+**The importer authors them on every material** (P5 Step 4, 2026-09-25):
+`VrmMaterialAPI` always, `VrmMToonAPI` on an MToon material, and one
+`VrmTextureInfoAPI` instance per texture the material samples, every value
+written, the specification defaults included. The realizations still read the
+source material until Steps 5–6 regenerate them from these attributes
 ([material track](../../../docs/roadmap/material-track.md)).
+
+### VRM 0.x MToon normalizes into the same fields
+
+A VRM 1.0 material is a rename: the glTF core into `VrmMaterialAPI`,
+`VRMC_materials_mtoon` field for field into `VrmMToonAPI`, each textureInfo
+into its role. A VRM 0.x MToon material (`shader` containing `MToon`) is
+`materialProperties[i]` — Unity shader property names — and lands in the
+**same** fields, with no version switch in the schema. The conversion is
+UniVRM's own 0.x → 1.0 migration
+([`MigrationMToonMaterial.cs`](https://github.com/vrm-c/UniVRM/blob/d3665db37d5c1e97f962d0a451a7b7938df3e30a/Packages/VRM10/Runtime/Migration/Materials/MigrationMToonMaterial.cs),
+[`MToon10Migrator.cs`](https://github.com/vrm-c/UniVRM/blob/d3665db37d5c1e97f962d0a451a7b7938df3e30a/Packages/VRM10/MToon10/Runtime/MToon10Migrator.cs)),
+destructive choices included, so a 0.x avatar and the 1.0 file UniVRM migrates
+it to carry the same canonical values (`mtoon_vrm0.vrm` / `mtoon_vrm1.vrm`
+prove it). For such a material the 0.x block is the source of the
+`VrmMaterialAPI` half too: the glTF core beside it is the exporter's fallback,
+and older exporters wrote its colours in the wrong space.
+
+Each row's fidelity class is DESIGN_POLICY §6's:
+
+| VRM 0.x | Canonical | Conversion | Fidelity |
+| --- | --- | --- | --- |
+| `_Color` | `material:baseColorFactor`, `baseColorAlphaFactor` | RGB sRGB → linear; alpha as-is | Normalized |
+| `_MainTex` | `textureInfo:baseColor` | — | Normalized |
+| `_MainTex` tiling `[ox, oy, sx, sy]` | every role's `transform:offset` = `(ox, 1 − oy − sy)`, `transform:scale` = `(sx, sy)`, except `matcap` | Unity's bottom-left origin to glTF's top-left | Normalized |
+| `_BlendMode` 0 / 1 / 2 / 3 | `material:alphaMode` `OPAQUE` / `MASK` / `BLEND` / `BLEND`; `mtoon:transparentWithZWrite` true for 3 only | — | Normalized |
+| `_Cutoff` | `material:alphaCutoff` | cutout only; otherwise 0.5 | Normalized |
+| `renderQueue` | `mtoon:renderQueueOffsetNumber` | ranked among the file's materials of the same mode: transparent, highest queue 0 then −1, −2 … (to −9); with z-write, lowest 0 then +1 … (to +9); opaque and cutout 0 | Approximate — order kept, spacing lost |
+| `_CullMode` 0 / 1 / 2 | `material:doubleSided` true / true / false | glTF cannot cull front faces | Normalized; Front is Approximate |
+| — | `material:unlit` = true | UniVRM marks every MToon material `KHR_materials_unlit` | Derived |
+| `_ShadeColor` | `mtoon:shadeColorFactor` | sRGB → linear | Normalized |
+| `_ShadeTexture` | `textureInfo:shadeMultiply` | **absent: `_MainTex` takes its place** (UniVRM's destructive choice — 0.x's GI hid a missing shade texture) | Normalized; the stand-in is Approximate |
+| `_BumpMap`, `_BumpScale` | `textureInfo:normal`, its `scale` | — | Normalized |
+| `_ShadeShift`, `_ShadeToony` | `mtoon:shadingShiftFactor`, `shadingToonyFactor` | with min = shift, max = lerp(1, shift, toony): shift′ = clamp(−(max + min)/2, −1, 1), toony′ = clamp((2 − (max − min))/2, 0, 1) | Normalized |
+| `_IndirectLightIntensity` | `mtoon:giEqualizationFactor` | clamp(1 − x, 0, 1) | Approximate — the GI models differ |
+| `_EmissionColor`, `_EmissionMap` | `material:emissiveFactor`, `textureInfo:emissive` | already linear | Normalized |
+| `_SphereAdd` | `textureInfo:matcap`; `mtoon:matcapFactor` white if present, black if not | no tiling | Approximate — 1.0's MatCap is not 0.x's |
+| `_RimColor`, `_RimFresnelPower`, `_RimLift`, `_RimTexture` | `mtoon:parametricRimColorFactor` (sRGB → linear), `parametricRimFresnelPowerFactor`, `parametricRimLiftFactor`, `textureInfo:rimMultiply` | — | Normalized |
+| `_RimLightingMix` | `mtoon:rimLightingMixFactor` = **1**, whatever the source says | UniVRM's destructive choice: 1.0 merges rim with MatCap | Approximate |
+| `_OutlineWidthMode` 0 / 1 / 2 (> 2 is 0) | `mtoon:outlineWidthMode` `none` / `worldCoordinates` / `screenCoordinates` | — | Normalized |
+| `_OutlineWidth` | `mtoon:outlineWidthFactor` | world: × 0.01 (cm → m); screen: × 0.005 (percent of half the height → fraction of the height); none: 0 | Normalized |
+| `_OutlineWidthTexture` | `textureInfo:outlineWidthMultiply` | — | Normalized |
+| `_OutlineColor` | `mtoon:outlineColorFactor` | sRGB → linear | Normalized |
+| `_OutlineColorMode`, `_OutlineLightingMix` | `mtoon:outlineLightingMixFactor` | the mix for MixedLighting (1); 0 for FixedColor (0) | Normalized |
+| `_UvAnimMaskTexture`, `_UvAnimScrollX`, `_UvAnimScrollY`, `_UvAnimRotation` | `textureInfo:uvAnimationMask`, `mtoon:uvAnimationScrollXSpeedFactor`, `uvAnimationScrollYSpeedFactor` (negated: V runs the other way), `uvAnimationRotationSpeedFactor` (× 2π: turns/s → rad/s) | — | Normalized |
+| `_LightColorAttenuation`, `_ReceiveShadowRate` / `_ReceiveShadowTexture`, `_ShadingGradeRate` / `_ShadingGradeTexture`, `_OutlineScaledMaxDistance`, `_OutlineCullMode`, and Unity's derived state (`_SrcBlend`, `_DstBlend`, `_ZWrite`, `_MToonVersion`, `_DebugMode`, `keywordMap`, `tagMap`) | not typed | no 1.0 field; UniVRM drops them too | Lossless in `vrm:mtoon:raw` only |
+
+Kept from the glTF core, as UniVRM keeps them: `metallicFactor`,
+`roughnessFactor`, `emissiveStrength`, the `metallicRoughness` and `occlusion`
+textures, and any core texture the 0.x block does not name. **The one
+departure from UniVRM:** a property absent from the 0.x block takes the MToon
+0.x shader's default (`_Color` white, `_ShadeColor` (0.97, 0.81, 0.86),
+`_ShadeToony` 0.9, `_IndirectLightIntensity` 0.1, `_RimFresnelPower` 1,
+`_OutlineWidth` 0.5, `_CullMode` Back, the rest 0), where UniVRM's migration
+would take C#'s zero — a black, transparent base colour for a missing
+`_Color`. A 0.x material that is not MToon (`VRM_USE_GLTFSHADER`, the legacy
+`VRM/Unlit*` shaders) carries its glTF core only and no `VrmMToonAPI`.
 
 ## Humanoid representation decision
 
@@ -284,8 +341,10 @@ the same index order as its relationship or `vrm:joints` token array.
 | VRM 1.0 `springBone` / VRM 0.x `secondaryAnimation` | `VrmSpringBoneAPI` and `VrmColliderAPI` | Raw spring-bone block at `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VRMC_node_constraint` | `VrmConstraintAPI` | Raw constraint block at each constraint prim's `customData.vrm:constraint:raw` |
 | VRM meta/license | `/Asset.customData.vrm:meta` | Same location as the readable source of truth |
-| MToon material extension | Defined: `VrmMToonAPI`, with `VrmMaterialAPI` and `VrmTextureInfoAPI` for the glTF core and textures. Authored by the importer from P5 Step 4; until then `vrm:shaderModel = "MToon"` plus the generated realizations | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` |
-| KHR texture transform | Defined: `VrmTextureInfoAPI:<role>`'s `transform:*` (P5 Step 4). Today: a node in each realization graph | Original material JSON remains under the raw VRM block |
+| glTF material core | `VrmMaterialAPI`, and `VrmTextureInfoAPI` for its five textures, on every material | none on the stage (the source file keeps what is not typed) |
+| VRM 1.0 `VRMC_materials_mtoon` | `VrmMToonAPI`, and `VrmTextureInfoAPI` for its six textures; `vrm:shaderModel = "MToon"` | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` (the extension block) |
+| VRM 0.x `materialProperties[i]` (MToon) | The same `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` fields, converted per [the 0.x table](#vrm-0x-mtoon-normalizes-into-the-same-fields); `vrm:shaderModel = "MToon"` | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` (the whole entry, Unity names and all) |
+| KHR texture transform | `VrmTextureInfoAPI:<role>`'s `transform:*`, as glTF states it; each realization graph also carries its own node | Original material JSON remains under the raw VRM block |
 
 ## Public validator rules
 

@@ -30,6 +30,7 @@ def Xform "Asset" (
     def Scope "mtl"
     {
         def Material "Mat" (
+            apiSchemas = ["VrmMaterialAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 0
@@ -37,6 +38,16 @@ def Xform "Asset" (
             }
         )
         {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.8, 0.6, 0.5)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.7
+            uniform bool inputs:vrm:material:unlit = 0
             token outputs:surface.connect = </Asset/mtl/Mat/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -57,6 +68,7 @@ def Xform "Asset" (
         }
 
         def Material "Mat_2" (
+            apiSchemas = ["VrmMaterialAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 1
@@ -64,6 +76,16 @@ def Xform "Asset" (
             }
         )
         {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.8, 0.6, 0.5)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.7
+            uniform bool inputs:vrm:material:unlit = 0
             token outputs:surface.connect = </Asset/mtl/Mat_2/preview.outputs:surface>
 
             def NodeGraph "preview"
