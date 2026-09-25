@@ -9,6 +9,11 @@
       "assetPath": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
       "attr": "/Asset/mtl/Skin/preview/baseColorTexture.inputs:file",
       "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Skin/mtlx/baseColorImage.inputs:file",
+      "resolved": true
     }
   ],
   "baselineSchemaVersion": 1,
@@ -17,6 +22,11 @@
   "materials": {
     "/Asset/mtl/Skin": {
       "graphs": {
+        "/Asset/mtl/Skin/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Skin/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Skin/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Skin/preview/surface.surface"
@@ -24,6 +34,86 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Skin/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              0.5,
+              0.25,
+              0.75,
+              0.600000024
+            ]
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 1.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/Skin/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -69,6 +159,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Skin/mtlx.surface",
         "surface": "/Asset/mtl/Skin/preview.surface"
       }
     }
@@ -105,7 +196,8 @@
       "appliedSchemas": [
         "VrmMaterialAPI",
         "VrmMToonAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Skin",
       "type": "Material"
@@ -133,6 +225,52 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Skin/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Skin/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {

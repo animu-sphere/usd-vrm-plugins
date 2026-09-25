@@ -30,7 +30,7 @@ def SkelRoot "Asset" (
     def Scope "mtl"
     {
         def Material "Body_Mat" (
-            apiSchemas = ["VrmMaterialAPI"]
+            apiSchemas = ["VrmMaterialAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 0
@@ -38,6 +38,7 @@ def SkelRoot "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "OPAQUE"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -48,6 +49,7 @@ def SkelRoot "Asset" (
             float inputs:vrm:material:metallicFactor = 0
             float inputs:vrm:material:roughnessFactor = 0.7
             uniform bool inputs:vrm:material:unlit = 0
+            token outputs:mtlx:surface.connect = </Asset/mtl/Body_Mat/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Body_Mat/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -61,6 +63,24 @@ def SkelRoot "Asset" (
                     color3f inputs:emissiveColor = (0, 0, 0)
                     float inputs:metallic = 0
                     float inputs:opacity = 1
+                    float inputs:roughness = 0.7
+                    token outputs:surface
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Body_Mat/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 0
+                    color3f inputs:base_color = (0.8, 0.6, 0.5)
+                    color3f inputs:emissive = (0, 0, 0)
+                    float inputs:emissive_strength = 1
+                    float inputs:metallic = 0
                     float inputs:roughness = 0.7
                     token outputs:surface
                 }

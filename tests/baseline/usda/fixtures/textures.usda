@@ -30,7 +30,7 @@ def Xform "Asset" (
     def Scope "mtl"
     {
         def Material "Skin" (
-            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -41,6 +41,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "OPAQUE"
             float inputs:vrm:material:baseColorAlphaFactor = 0.6
@@ -74,6 +75,7 @@ def Xform "Asset" (
             uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
             uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
+            token outputs:mtlx:surface.connect = </Asset/mtl/Skin/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Skin/preview.outputs:surface>
             custom uniform token vrm:shaderModel = "MToon"
 
@@ -114,6 +116,71 @@ def Xform "Asset" (
                     float outputs:g
                     float outputs:r
                     float3 outputs:rgb
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Skin/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 0
+                    color3f inputs:base_color.connect = </Asset/mtl/Skin/mtlx/baseColorRgb.outputs:out>
+                    color3f inputs:emissive = (0, 0, 0)
+                    float inputs:emissive_strength = 1
+                    float inputs:metallic = 1
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "st"
+                {
+                    uniform token info:id = "ND_texcoord_vector2"
+                    int inputs:index = 0
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorImage"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    color4f inputs:default = (0, 0, 0, 1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Skin/mtlx/st.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorFactor"
+                {
+                    uniform token info:id = "ND_multiply_color4"
+                    color4f inputs:in1.connect = </Asset/mtl/Skin/mtlx/baseColorImage.outputs:out>
+                    color4f inputs:in2 = (0.5, 0.25, 0.75, 0.6)
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorSplit"
+                {
+                    uniform token info:id = "ND_separate4_color4"
+                    color4f inputs:in.connect = </Asset/mtl/Skin/mtlx/baseColorFactor.outputs:out>
+                    float outputs:outa
+                    float outputs:outb
+                    float outputs:outg
+                    float outputs:outr
+                }
+
+                def Shader "baseColorRgb"
+                {
+                    uniform token info:id = "ND_combine3_color3"
+                    float inputs:in1.connect = </Asset/mtl/Skin/mtlx/baseColorSplit.outputs:outr>
+                    float inputs:in2.connect = </Asset/mtl/Skin/mtlx/baseColorSplit.outputs:outg>
+                    float inputs:in3.connect = </Asset/mtl/Skin/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
                 }
             }
         }

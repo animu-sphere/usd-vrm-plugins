@@ -79,6 +79,11 @@
       "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]",
       "attr": "/Asset/mtl/Plain/preview/baseColorTexture.inputs:file",
       "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Plain/mtlx/baseColorImage.inputs:file",
+      "resolved": true
     }
   ],
   "baselineSchemaVersion": 1,
@@ -509,6 +514,11 @@
     },
     "/Asset/mtl/Plain": {
       "graphs": {
+        "/Asset/mtl/Plain/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Plain/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Plain/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Plain/preview/surface.surface"
@@ -516,6 +526,89 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Plain/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              0.200000003,
+              0.300000012,
+              0.400000006,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/Plain/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Plain/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/Plain/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/Plain/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/Plain/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorSplit.outa"
+            },
+            "alpha_cutoff": 0.25,
+            "alpha_mode": 1,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Plain/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 1.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/Plain/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -564,6 +657,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Plain/mtlx.surface",
         "surface": "/Asset/mtl/Plain/preview.surface"
       }
     },
@@ -1006,7 +1100,8 @@
     {
       "appliedSchemas": [
         "VrmMaterialAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Plain",
       "type": "Material"
@@ -1034,6 +1129,52 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Plain/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Plain/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {

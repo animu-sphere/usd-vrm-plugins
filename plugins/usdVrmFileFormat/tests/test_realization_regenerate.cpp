@@ -161,8 +161,8 @@ main(int argc, char** argv)
 
     // Each generator reads its input: move a canonical value, regenerate, and
     // the realization follows. Glass is lit and untextured, so its base colour
-    // lands on /preview's diffuseColor as a value; Unlit is unlit and
-    // untextured, so its base colour lands on /mtlx's emissive as a value.
+    // lands on /preview's diffuseColor and /mtlx's base_color as a value;
+    // Unlit is unlit and untextured, so it lands on /mtlx's emissive.
     if (!mutationStage)
     {
         Fail("materials.vrm not found");
@@ -178,6 +178,7 @@ main(int argc, char** argv)
         const Mutation mutations[] = {
             {"Glass", kRealizations[0], "diffuseColor"},
             {"Unlit", kRealizations[1], "emissive"},
+            {"Glass", kRealizations[1], "base_color"},
         };
         const GfVec3f moved(0.25f, 0.5f, 0.75f);
         for (const Mutation& m : mutations)

@@ -171,6 +171,11 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/green_emit/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_nm.inputs:vrm:textureInfo:baseColor:file",
       "resolved": true
@@ -203,6 +208,11 @@
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/wear_metal/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/wear_metal/mtlx/baseColorImage.inputs:file",
       "resolved": true
     },
     {
@@ -277,6 +287,16 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_metal/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_metal/mtlx/normalImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/backpack_nm.inputs:vrm:textureInfo:baseColor:file",
       "resolved": true
     },
@@ -293,6 +313,16 @@
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
       "attr": "/Asset/mtl/backpack_nm/preview/normalTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_nm/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_nm/mtlx/normalImage.inputs:file",
       "resolved": true
     },
     {
@@ -314,6 +344,16 @@
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
       "attr": "/Asset/mtl/backpack_plastic/preview/normalTexture.inputs:file",
       "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_plastic/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_plastic/mtlx/normalImage.inputs:file",
+      "resolved": true
     }
   ],
   "baselineSchemaVersion": 1,
@@ -322,6 +362,11 @@
   "materials": {
     "/Asset/mtl/anim_logo": {
       "graphs": {
+        "/Asset/mtl/anim_logo/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/anim_logo/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/anim_logo/preview": {
           "outputs": {
             "surface": "/Asset/mtl/anim_logo/preview/surface.surface"
@@ -329,6 +374,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/anim_logo/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0189311951,
+              0.171282873,
+              0.278900445
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/anim_logo/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -349,6 +414,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/anim_logo/mtlx.surface",
         "surface": "/Asset/mtl/anim_logo/preview.surface"
       }
     },
@@ -885,6 +951,11 @@
     },
     "/Asset/mtl/backpack_metal": {
       "graphs": {
+        "/Asset/mtl/backpack_metal/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/backpack_metal/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/backpack_metal/preview": {
           "outputs": {
             "surface": "/Asset/mtl/backpack_metal/preview/surface.surface"
@@ -892,6 +963,146 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/backpack_metal/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/normalImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/normalPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/normalMap": {
+          "id": "ND_normalmap_float",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/normalImage.out"
+            },
+            "scale": 1.0
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/normalPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/backpack_metal/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 1.0,
+            "normal": {
+              "connectedTo": "/Asset/mtl/backpack_metal/mtlx/normalMap.out"
+            },
+            "roughness": 0.524999976
+          }
+        },
         "/Asset/mtl/backpack_metal/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1001,11 +1212,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/backpack_metal/mtlx.surface",
         "surface": "/Asset/mtl/backpack_metal/preview.surface"
       }
     },
     "/Asset/mtl/backpack_nm": {
       "graphs": {
+        "/Asset/mtl/backpack_nm/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/backpack_nm/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/backpack_nm/preview": {
           "outputs": {
             "surface": "/Asset/mtl/backpack_nm/preview/surface.surface"
@@ -1013,6 +1230,146 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/backpack_nm/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/normalImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/normalPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/normalMap": {
+          "id": "ND_normalmap_float",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/normalImage.out"
+            },
+            "scale": 1.0
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/normalPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/backpack_nm/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "normal": {
+              "connectedTo": "/Asset/mtl/backpack_nm/mtlx/normalMap.out"
+            },
+            "roughness": 0.657000005
+          }
+        },
         "/Asset/mtl/backpack_nm/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1122,11 +1479,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/backpack_nm/mtlx.surface",
         "surface": "/Asset/mtl/backpack_nm/preview.surface"
       }
     },
     "/Asset/mtl/backpack_plastic": {
       "graphs": {
+        "/Asset/mtl/backpack_plastic/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/backpack_plastic/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/backpack_plastic/preview": {
           "outputs": {
             "surface": "/Asset/mtl/backpack_plastic/preview/surface.surface"
@@ -1134,6 +1497,146 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/backpack_plastic/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/normalImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/normalPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/normalMap": {
+          "id": "ND_normalmap_float",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/normalImage.out"
+            },
+            "scale": 1.0
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/normalPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/backpack_plastic/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "normal": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/mtlx/normalMap.out"
+            },
+            "roughness": 0.544999957
+          }
+        },
         "/Asset/mtl/backpack_plastic/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1243,6 +1746,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/backpack_plastic/mtlx.surface",
         "surface": "/Asset/mtl/backpack_plastic/preview.surface"
       }
     },
@@ -1960,6 +2464,11 @@
     },
     "/Asset/mtl/glass": {
       "graphs": {
+        "/Asset/mtl/glass/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/glass/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/glass/preview": {
           "outputs": {
             "surface": "/Asset/mtl/glass/preview/surface.surface"
@@ -1967,6 +2476,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/glass/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 0.552941203,
+            "alpha_mode": 2,
+            "base_color": [
+              0.0355051458,
+              0.0355051458,
+              0.0355051458
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "roughness": 0.0
+          }
+        },
         "/Asset/mtl/glass/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -1987,11 +2516,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/glass/mtlx.surface",
         "surface": "/Asset/mtl/glass/preview.surface"
       }
     },
     "/Asset/mtl/green_emit": {
       "graphs": {
+        "/Asset/mtl/green_emit/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/green_emit/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/green_emit/preview": {
           "outputs": {
             "surface": "/Asset/mtl/green_emit/preview/surface.surface"
@@ -1999,6 +2534,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/green_emit/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/green_emit/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/green_emit/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/green_emit/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/green_emit/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/green_emit/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/green_emit/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/green_emit/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.178010464,
+              1.0,
+              0.188481659
+            ],
+            "emissive_strength": 1.30411887,
+            "metallic": 0.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/green_emit/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -2061,6 +2693,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/green_emit/mtlx.surface",
         "surface": "/Asset/mtl/green_emit/preview.surface"
       }
     },
@@ -2597,6 +3230,11 @@
     },
     "/Asset/mtl/wear_metal": {
       "graphs": {
+        "/Asset/mtl/wear_metal/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/wear_metal/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/wear_metal/preview": {
           "outputs": {
             "surface": "/Asset/mtl/wear_metal/preview/surface.surface"
@@ -2604,6 +3242,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/wear_metal/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/wear_metal/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/wear_metal/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/wear_metal/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/wear_metal/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/wear_metal/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/wear_metal/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/wear_metal/mtlx/baseColorRgb.out"
+            },
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 1.0,
+            "roughness": 0.638999999
+          }
+        },
         "/Asset/mtl/wear_metal/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -2666,6 +3401,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/wear_metal/mtlx.surface",
         "surface": "/Asset/mtl/wear_metal/preview.surface"
       }
     }
@@ -3939,7 +4675,8 @@
     {
       "appliedSchemas": [
         "VrmMaterialAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/green_emit",
       "type": "Material"
@@ -3974,6 +4711,59 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/green_emit/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/green_emit/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {
@@ -4076,7 +4866,8 @@
     {
       "appliedSchemas": [
         "VrmMaterialAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/wear_metal",
       "type": "Material"
@@ -4111,6 +4902,59 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/wear_metal/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/wear_metal/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {
@@ -4309,7 +5153,8 @@
     },
     {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/glass",
       "type": "Material"
@@ -4326,10 +5171,22 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/glass/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/glass/mtlx/surface",
+      "type": "Shader"
+    },
+    {
       "appliedSchemas": [
         "VrmMaterialAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:normal"
+        "VrmTextureInfoAPI:normal",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/backpack_metal",
       "type": "Material"
@@ -4381,10 +5238,85 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/backpack_metal/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/normalMap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/normalPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/mtlx/normalImage",
+      "type": "Shader"
+    },
+    {
       "appliedSchemas": [
         "VrmMaterialAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:normal"
+        "VrmTextureInfoAPI:normal",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/backpack_nm",
       "type": "Material"
@@ -4436,10 +5368,85 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/backpack_nm/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/normalMap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/normalPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/mtlx/normalImage",
+      "type": "Shader"
+    },
+    {
       "appliedSchemas": [
         "VrmMaterialAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:normal"
+        "VrmTextureInfoAPI:normal",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/backpack_plastic",
       "type": "Material"
@@ -4491,8 +5498,83 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/backpack_plastic/mtlx",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/normalMap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/normalPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/mtlx/normalImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/anim_logo",
       "type": "Material"
@@ -4506,6 +5588,17 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/anim_logo/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/anim_logo/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/anim_logo/mtlx/surface",
       "type": "Shader"
     },
     {

@@ -17,7 +17,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Define `material`/mtlx from `s`, connect the material's `mtlx` surface
 // terminal to it and declare the MaterialX version it was written against.
-// Unlit materials only, for now: a lit material is left without /mtlx.
+// Every material gets one: unlit materials as emission, lit ones as glTF
+// metallic-roughness PBR, both through `gltf_pbr` (policy §5.2.1).
 void UsdVrmAuthorMtlx(const UsdShadeMaterial& material, const VrmMaterialSemantics& s);
 
 PXR_NAMESPACE_CLOSE_SCOPE

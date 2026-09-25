@@ -39,6 +39,86 @@
       "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
       "attr": "/Asset/mtl/Glow/preview/emissiveTexture.inputs:file",
       "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Glow/mtlx/emissiveImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal.inputs:vrm:textureInfo:emissive:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal.inputs:vrm:textureInfo:metallicRoughness:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal.inputs:vrm:textureInfo:occlusion:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/preview/metallicRoughnessTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/preview/emissiveTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/preview/occlusionTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/preview/normalTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/mtlx/metallicRoughnessImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/mtlx/normalImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/mtlx/occlusionImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/Metal/mtlx/emissiveImage.inputs:file",
+      "resolved": true
     }
   ],
   "baselineSchemaVersion": 1,
@@ -47,6 +127,11 @@
   "materials": {
     "/Asset/mtl/Glass": {
       "graphs": {
+        "/Asset/mtl/Glass/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Glass/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Glass/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Glass/preview/surface.surface"
@@ -54,6 +139,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Glass/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 0.300000012,
+            "alpha_mode": 2,
+            "base_color": [
+              0.200000003,
+              0.400000006,
+              0.899999976
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 1.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/Glass/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -74,11 +179,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Glass/mtlx.surface",
         "surface": "/Asset/mtl/Glass/preview.surface"
       }
     },
     "/Asset/mtl/Glow": {
       "graphs": {
+        "/Asset/mtl/Glow/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Glow/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Glow/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Glow/preview/surface.surface"
@@ -86,6 +197,57 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Glow/mtlx/emissiveFactor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Glow/mtlx/emissiveImage.out"
+            },
+            "in2": [
+              0.5,
+              0.25,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/Glow/mtlx/emissiveImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Glow/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Glow/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/Glow/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.200000003,
+              0.200000003,
+              0.200000003
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Glow/mtlx/emissiveFactor.out"
+            },
+            "emissive_strength": 2.0,
+            "metallic": 1.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/Glow/preview/emissiveTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -131,11 +293,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Glow/mtlx.surface",
         "surface": "/Asset/mtl/Glow/preview.surface"
       }
     },
     "/Asset/mtl/Leaf": {
       "graphs": {
+        "/Asset/mtl/Leaf/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Leaf/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Leaf/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Leaf/preview/surface.surface"
@@ -143,6 +311,27 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Leaf/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_cutoff": 0.300000012,
+            "alpha_mode": 1,
+            "base_color": [
+              0.100000001,
+              0.800000012,
+              0.200000003
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 1.0,
+            "roughness": 1.0
+          }
+        },
         "/Asset/mtl/Leaf/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -164,7 +353,413 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Leaf/mtlx.surface",
         "surface": "/Asset/mtl/Leaf/preview.surface"
+      }
+    },
+    "/Asset/mtl/Metal": {
+      "graphs": {
+        "/Asset/mtl/Metal/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Metal/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/Metal/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Metal/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Metal/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              0.800000012,
+              0.600000024,
+              0.400000006,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/emissiveFactor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/emissiveImage.out"
+            },
+            "in2": [
+              0.100000001,
+              0.200000003,
+              0.300000012
+            ]
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/emissiveImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/metallic": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/metallicRoughnessSplit.outz"
+            },
+            "in2": 0.5
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/metallicRoughnessImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/metallicRoughnessSplit": {
+          "id": "ND_separate3_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/metallicRoughnessImage.out"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/normalImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/normalPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/normalMap": {
+          "id": "ND_normalmap_float",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/normalImage.out"
+            },
+            "scale": 0.5
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/normalPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              2.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              0.333333343,
+              0.333333343
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/occlusion": {
+          "id": "ND_mix_float",
+          "inputs": {
+            "bg": 1.0,
+            "fg": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/occlusionSplit.outx"
+            },
+            "mix": 0.25
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/occlusionImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/occlusionSplit": {
+          "id": "ND_separate3_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/occlusionImage.out"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/roughness": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/metallicRoughnessSplit.outy"
+            },
+            "in2": 0.75
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorRgb.out"
+            },
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/emissiveFactor.out"
+            },
+            "emissive_strength": 1.0,
+            "metallic": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/metallic.out"
+            },
+            "normal": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/normalMap.out"
+            },
+            "occlusion": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/occlusion.out"
+            },
+            "roughness": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/roughness.out"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/preview/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "scale": [
+              0.800000012,
+              0.600000024,
+              0.400000006,
+              1.0
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Metal/preview/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/preview/emissiveTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "scale": [
+              0.100000001,
+              0.200000003,
+              0.300000012,
+              1.0
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Metal/preview/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/preview/metallicRoughnessTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "raw",
+            "st": {
+              "connectedTo": "/Asset/mtl/Metal/preview/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/preview/normalTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "bias": [
+              -0.5,
+              -0.5,
+              -1.0,
+              -1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "scale": [
+              1.0,
+              1.0,
+              2.0,
+              2.0
+            ],
+            "sourceColorSpace": "raw",
+            "st": {
+              "connectedTo": "/Asset/mtl/Metal/preview/normalTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/preview/normalTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Metal/preview/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              3.0,
+              3.0
+            ],
+            "translation": [
+              0.0,
+              -2.0
+            ]
+          }
+        },
+        "/Asset/mtl/Metal/preview/occlusionTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "bias": [
+              0.75,
+              0.75,
+              0.75,
+              0.75
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "sourceColorSpace": "raw",
+            "st": {
+              "connectedTo": "/Asset/mtl/Metal/preview/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Metal/preview/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        },
+        "/Asset/mtl/Metal/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Metal/preview/baseColorTexture.rgb"
+            },
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Metal/preview/emissiveTexture.rgb"
+            },
+            "metallic": {
+              "connectedTo": "/Asset/mtl/Metal/preview/metallicRoughnessTexture.b"
+            },
+            "normal": {
+              "connectedTo": "/Asset/mtl/Metal/preview/normalTexture.rgb"
+            },
+            "occlusion": {
+              "connectedTo": "/Asset/mtl/Metal/preview/occlusionTexture.r"
+            },
+            "opacity": 1.0,
+            "roughness": {
+              "connectedTo": "/Asset/mtl/Metal/preview/metallicRoughnessTexture.g"
+            }
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/Metal/mtlx.surface",
+        "surface": "/Asset/mtl/Metal/preview.surface"
       }
     },
     "/Asset/mtl/Unlit": {
@@ -635,7 +1230,8 @@
     },
     {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Glass",
       "type": "Material"
@@ -652,8 +1248,20 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/Glass/mtlx",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Glass/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Leaf",
       "type": "Material"
@@ -667,6 +1275,17 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Leaf/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Leaf/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Leaf/mtlx/surface",
       "type": "Shader"
     },
     {
@@ -876,7 +1495,8 @@
     {
       "appliedSchemas": [
         "VrmMaterialAPI",
-        "VrmTextureInfoAPI:emissive"
+        "VrmTextureInfoAPI:emissive",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Glow",
       "type": "Material"
@@ -904,6 +1524,241 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Glow/preview/emissiveTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Glow/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Glow/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Glow/mtlx/emissiveFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Glow/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Glow/mtlx/emissiveImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:emissive",
+        "VrmTextureInfoAPI:metallicRoughness",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:occlusion",
+        "MaterialXConfigAPI"
+      ],
+      "path": "/Asset/mtl/Metal",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Metal/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/metallicRoughnessTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/emissiveTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/occlusionTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/normalTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/preview/normalTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Metal/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/metallicRoughnessSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/metallicRoughnessImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/metallic",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/roughness",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/normalMap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/normalPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/normalImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/occlusionSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/occlusionImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/occlusion",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/emissiveFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/emissiveImage",
       "type": "Shader"
     },
     {
