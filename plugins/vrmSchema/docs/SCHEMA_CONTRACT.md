@@ -237,9 +237,12 @@ a missing field, not a reason to parse JSON.
 **The importer authors them on every material** (P5 Step 4, 2026-09-25):
 `VrmMaterialAPI` always, `VrmMToonAPI` on an MToon material, and one
 `VrmTextureInfoAPI` instance per texture the material samples, every value
-written, the specification defaults included. The realizations still read the
-source material until Steps 5–6 regenerate them from these attributes
-([material track](../../../docs/roadmap/material-track.md)).
+written, the specification defaults included — except a texture's
+`transform:*`, written only when the source states a `KHR_texture_transform`
+(the fallback is the identity, so a reader sees the same mapping; a
+realization can tell whether the source said it). `/preview` is generated from
+these attributes alone (Step 5); `/mtlx` still reads the source material until
+Step 6 ([material track](../../../docs/roadmap/material-track.md)).
 
 ### VRM 0.x MToon normalizes into the same fields
 

@@ -15,6 +15,19 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`/preview` is generated from canonical material semantics** (Product P5
+  Step 5; [material track](docs/roadmap/material-track.md)). The
+  UsdPreviewSurface generator's only input is a material's
+  `VrmMaterialAPI` / `VrmTextureInfoAPI` attributes: the importer authors them,
+  reads them back from the stage and generates the graph from what it read, so
+  deleting `/preview` and regenerating it on any stage carrying the schemas
+  gives the same graph (`usdvrm_preview_regenerate`, 71 materials). No value
+  changed for any VRM 1.0 or glTF input. A VRM 0.x MToon material's `/preview`
+  now follows its `materialProperties` — base colour, alpha mode, culling,
+  `_MainTex` and its tiling — instead of the glTF fallback beside it. A
+  texture's canonical `transform:*` is now authored only when the source
+  states a `KHR_texture_transform`.
+
 - **Imported materials carry their canonical semantics** (Product P5 Step 4;
   [material track](docs/roadmap/material-track.md)). Every material gets
   `VrmMaterialAPI`, an MToon material `VrmMToonAPI`, and each texture it
@@ -473,6 +486,11 @@ Current schema contract version: **1**.
   ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Fixed
+
+- **`/preview` honours glTF's emissive factor and
+  `KHR_materials_emissive_strength`.** It ignored the strength, and on a lit
+  material with an emissive texture connected the texture alone, dropping the
+  factor. Seed-san's `green_emit` is the one corpus value that moves.
 
 - **Suites that load the consumed `execMotion` now set the loader path**
   (`USDVRM_EXEC_MOTION_ENV`,
