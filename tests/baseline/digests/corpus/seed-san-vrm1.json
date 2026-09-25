@@ -26,6 +26,11 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+      "attr": "/Asset/mtl/hair/mtlx/shadeMultiplyImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/huku_bake.inputs:vrm:textureInfo:baseColor:file",
       "resolved": true
@@ -46,8 +51,18 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/f062a04f76e6a88f.png]",
+      "attr": "/Asset/mtl/huku_bake/mtlx/normalImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/huku_bake/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/huku_bake/mtlx/shadeMultiplyImage.inputs:file",
       "resolved": true
     },
     {
@@ -76,8 +91,18 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/f906437a97f93846.png]",
+      "attr": "/Asset/mtl/body_bake/mtlx/shadingShiftImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_bake/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_bake/mtlx/shadeMultiplyImage.inputs:file",
       "resolved": true
     },
     {
@@ -98,6 +123,11 @@
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
       "attr": "/Asset/mtl/eye/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye/mtlx/shadeMultiplyImage.inputs:file",
       "resolved": true
     },
     {
@@ -137,6 +167,11 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_mat/mtlx/shadeMultiplyImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
       "attr": "/Asset/mtl/arm_plastic.inputs:vrm:textureInfo:baseColor:file",
       "resolved": true
     },
@@ -158,6 +193,16 @@
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
       "attr": "/Asset/mtl/arm_plastic/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/69254815aabc0eba.png]",
+      "attr": "/Asset/mtl/arm_plastic/mtlx/matcapImage.inputs:file",
       "resolved": true
     },
     {
@@ -196,8 +241,18 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d3e93dea5153c74c.png]",
+      "attr": "/Asset/mtl/body_nm/mtlx/normalImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_nm/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_nm/mtlx/shadeMultiplyImage.inputs:file",
       "resolved": true
     },
     {
@@ -241,6 +296,16 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/69254815aabc0eba.png]",
+      "attr": "/Asset/mtl/armgear_plastic/mtlx/matcapImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
       "attr": "/Asset/mtl/robo_face.inputs:vrm:textureInfo:baseColor:file",
       "resolved": true
@@ -263,6 +328,16 @@
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
       "attr": "/Asset/mtl/robo_face/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face/mtlx/shadeMultiplyImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face/mtlx/emissiveImage.inputs:file",
       "resolved": true
     },
     {
@@ -505,6 +580,134 @@
             }
           }
         },
+        "/Asset/mtl/arm_mat/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": [
+              0.0789699405,
+              0.0789699405,
+              0.0789699405
+            ],
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/rimFresnel.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/shading.out"
+            },
+            "in2": -0.100000024
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/rampOffset.out"
+            },
+            "in2": 4.99999905
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 4.30000019
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.18200004,
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.435269088,
+              0.397038192,
+              0.500747442
+            ]
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/nDotV.out"
+            },
+            "in2": -0.100000001
+          }
+        },
         "/Asset/mtl/arm_mat/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -522,11 +725,36 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/withRim.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/parametricRim.out"
+            }
           }
         },
         "/Asset/mtl/arm_mat/preview/baseColorTexture": {
@@ -682,6 +910,223 @@
             }
           }
         },
+        "/Asset/mtl/arm_plastic/mtlx/matcap": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcapImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/matcapImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/69254815aabc0eba.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcapUv.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/matcapU": {
+          "id": "ND_dotproduct_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewX.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/worldNormal.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/matcapUv": {
+          "id": "ND_add_vector2FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcapUvScale.out"
+            },
+            "in2": 0.5
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/matcapUvRaw": {
+          "id": "ND_combine2_vector2",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcapU.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcapV.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/matcapUvScale": {
+          "id": "ND_multiply_vector2FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcapUvRaw.out"
+            },
+            "in2": 0.495000005
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/matcapV": {
+          "id": "ND_dotproduct_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewY.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/worldNormal.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": [
+              0.345616162,
+              0.345616162,
+              0.345616162
+            ],
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/rimFresnel.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/shading.out"
+            },
+            "in2": -0.100000024
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/rampOffset.out"
+            },
+            "in2": 4.99999905
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/rim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/matcap.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/parametricRim.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 3.20000005
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.14999998,
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.342953056,
+              0.37243554,
+              0.432035774
+            ]
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/nDotV.out"
+            },
+            "in2": -0.100000001
+          }
+        },
         "/Asset/mtl/arm_plastic/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -699,11 +1144,103 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/withRim.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/view": {
+          "id": "ND_viewdirection_vector3",
+          "inputs": {}
+        },
+        "/Asset/mtl/arm_plastic/mtlx/viewNegX": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewSplit.outx"
+            },
+            "in2": -1.0
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/viewSplit": {
+          "id": "ND_separate3_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewToCamera.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/viewToCamera": {
+          "id": "ND_multiply_vector3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/view.out"
+            },
+            "in2": -1.0
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/viewX": {
+          "id": "ND_normalize_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewXRaw.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/viewXRaw": {
+          "id": "ND_combine3_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewSplit.outz"
+            },
+            "in2": 0.0,
+            "in3": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewNegX.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/viewY": {
+          "id": "ND_crossproduct_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewToCamera.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/viewX.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/rim.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/worldNormal": {
+          "id": "ND_normal_vector3",
+          "inputs": {
+            "space": "world"
           }
         },
         "/Asset/mtl/arm_plastic/preview/baseColorTexture": {
@@ -859,6 +1396,223 @@
             }
           }
         },
+        "/Asset/mtl/armgear_plastic/mtlx/matcap": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcapImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/matcapImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/69254815aabc0eba.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcapUv.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/matcapU": {
+          "id": "ND_dotproduct_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewX.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/worldNormal.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/matcapUv": {
+          "id": "ND_add_vector2FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcapUvScale.out"
+            },
+            "in2": 0.5
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/matcapUvRaw": {
+          "id": "ND_combine2_vector2",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcapU.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcapV.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/matcapUvScale": {
+          "id": "ND_multiply_vector2FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcapUvRaw.out"
+            },
+            "in2": 0.495000005
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/matcapV": {
+          "id": "ND_dotproduct_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewY.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/worldNormal.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": [
+              0.432035774,
+              0.432035774,
+              0.432035774
+            ],
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/rimFresnel.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/shading.out"
+            },
+            "in2": -0.100000024
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/rampOffset.out"
+            },
+            "in2": 4.99999905
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/rim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/matcap.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/parametricRim.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 7.9000001
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.153,
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.435269088,
+              0.397038192,
+              0.500747442
+            ]
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/nDotV.out"
+            },
+            "in2": -0.100000001
+          }
+        },
         "/Asset/mtl/armgear_plastic/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -876,11 +1630,103 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/withRim.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/view": {
+          "id": "ND_viewdirection_vector3",
+          "inputs": {}
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/viewNegX": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewSplit.outx"
+            },
+            "in2": -1.0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/viewSplit": {
+          "id": "ND_separate3_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewToCamera.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/viewToCamera": {
+          "id": "ND_multiply_vector3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/view.out"
+            },
+            "in2": -1.0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/viewX": {
+          "id": "ND_normalize_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewXRaw.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/viewXRaw": {
+          "id": "ND_combine3_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewSplit.outz"
+            },
+            "in2": 0.0,
+            "in3": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewNegX.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/viewY": {
+          "id": "ND_crossproduct_vector3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewToCamera.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/viewX.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/rim.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/worldNormal": {
+          "id": "ND_normal_vector3",
+          "inputs": {
+            "space": "world"
           }
         },
         "/Asset/mtl/armgear_plastic/preview/baseColorTexture": {
@@ -1837,6 +2683,152 @@
             }
           }
         },
+        "/Asset/mtl/body_bake/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shading.out"
+            },
+            "in2": -0.199999988
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/rampOffset.out"
+            },
+            "in2": 2.50000024
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              1.0,
+              0.613979936,
+              0.507945418
+            ]
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/nDotV.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadingShiftOffset.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadingShiftImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/f906437a97f93846.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadingShiftPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadingShiftOffset": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadingShiftScaled.out"
+            },
+            "in2": -0.200000003
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadingShiftPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadingShiftScaled": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadingShiftSplit.outx"
+            },
+            "in2": 1.0
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/shadingShiftSplit": {
+          "id": "ND_separate3_vector3",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadingShiftImage.out"
+            }
+          }
+        },
         "/Asset/mtl/body_bake/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -1854,11 +2846,25 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/toon.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/body_bake/preview/baseColorTexture": {
@@ -2014,6 +3020,136 @@
             }
           }
         },
+        "/Asset/mtl/body_nm/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false,
+            "normal": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/normalMap.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/normalImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d3e93dea5153c74c.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/normalPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/normalMap": {
+          "id": "ND_normalmap_float",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/normalImage.out"
+            },
+            "scale": 1.0
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/normalPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/shading.out"
+            },
+            "in2": -0.199999988
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/rampOffset.out"
+            },
+            "in2": 2.50000024
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.435269088,
+              0.397038192,
+              0.500747442
+            ]
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/nDotV.out"
+            },
+            "in2": -0.200000003
+          }
+        },
         "/Asset/mtl/body_nm/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -2031,11 +3167,25 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/toon.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/body_nm/preview/baseColorTexture": {
@@ -2191,6 +3341,93 @@
             }
           }
         },
+        "/Asset/mtl/eye/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/eye/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/eye/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/shading.out"
+            },
+            "in2": -0.199999988
+          }
+        },
+        "/Asset/mtl/eye/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/rampOffset.out"
+            },
+            "in2": 2.50000024
+          }
+        },
+        "/Asset/mtl/eye/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.435269088,
+              0.397038192,
+              0.500747442
+            ]
+          }
+        },
+        "/Asset/mtl/eye/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/eye/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/eye/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/nDotV.out"
+            },
+            "in2": -0.200000003
+          }
+        },
         "/Asset/mtl/eye/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -2208,11 +3445,25 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/eye/mtlx/toon.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/eye/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/eye/preview/baseColorTexture": {
@@ -2368,6 +3619,49 @@
             }
           }
         },
+        "/Asset/mtl/eye_trans/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/shading.out"
+            },
+            "in2": -0.199999988
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/rampOffset.out"
+            },
+            "in2": 2.50000024
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/nDotV.out"
+            },
+            "in2": -0.200000003
+          }
+        },
         "/Asset/mtl/eye_trans/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -2387,11 +3681,27 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/toon.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "fg": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/eye_trans/preview/baseColorTexture": {
@@ -2784,6 +4094,93 @@
             }
           }
         },
+        "/Asset/mtl/hair/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/hair/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/hair/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/shading.out"
+            },
+            "in2": -0.0500000119
+          }
+        },
+        "/Asset/mtl/hair/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/rampOffset.out"
+            },
+            "in2": 9.99999809
+          }
+        },
+        "/Asset/mtl/hair/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.301212043,
+              0.301212043,
+              0.301212043
+            ]
+          }
+        },
+        "/Asset/mtl/hair/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/hair/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/hair/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/nDotV.out"
+            },
+            "in2": -0.0500000007
+          }
+        },
         "/Asset/mtl/hair/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -2801,11 +4198,25 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/hair/mtlx/toon.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/hair/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/hair/preview/baseColorTexture": {
@@ -2961,6 +4372,136 @@
             }
           }
         },
+        "/Asset/mtl/huku_bake/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false,
+            "normal": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/normalMap.out"
+            }
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/normalImage": {
+          "id": "ND_image_vector3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/f062a04f76e6a88f.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/normalPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/normalMap": {
+          "id": "ND_normalmap_float",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/normalImage.out"
+            },
+            "scale": 1.0
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/normalPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/shading.out"
+            },
+            "in2": -0.100000024
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/rampOffset.out"
+            },
+            "in2": 4.99999905
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              0.20541285,
+              0.20541285,
+              0.20541285
+            ]
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/nDotV.out"
+            },
+            "in2": -0.100000001
+          }
+        },
         "/Asset/mtl/huku_bake/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -2978,11 +4519,25 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/toon.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/huku_bake/preview/baseColorTexture": {
@@ -3138,6 +4693,137 @@
             }
           }
         },
+        "/Asset/mtl/robo_face/mtlx/emissiveFactor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/emissiveImage.out"
+            },
+            "in2": [
+              0.0,
+              1.72079539,
+              0.513535798
+            ]
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/emissiveImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/emissivePlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/emissivePlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/shading.out"
+            },
+            "in2": -0.100000024
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/rampOffset.out"
+            },
+            "in2": 4.99999905
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/shadeColor": {
+          "id": "ND_multiply_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/shadeMultiplyImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/shadeMultiplyImage": {
+          "id": "ND_image_color3",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/shadeMultiplyPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/shadeMultiplyPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/nDotV.out"
+            },
+            "in2": -0.100000001
+          }
+        },
         "/Asset/mtl/robo_face/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -3155,11 +4841,36 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorRgb.out"
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/shadeColor.out"
+            },
+            "fg": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/emissiveFactor.out"
+            }
           }
         },
         "/Asset/mtl/robo_face/preview/baseColorTexture": {
@@ -4055,6 +5766,48 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/hair/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/toon",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/hair/mtlx/st",
       "type": "Shader"
     },
@@ -4091,6 +5844,27 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/hair/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/shadeMultiplyImage",
       "type": "Shader"
     },
     {
@@ -4152,7 +5926,70 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/huku_bake/mtlx/normalMap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/huku_bake/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/normalPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/normalImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/toon",
       "type": "Shader"
     },
     {
@@ -4188,6 +6025,27 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/huku_bake/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/shadeMultiplyImage",
       "type": "Shader"
     },
     {
@@ -4250,7 +6108,84 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/body_bake/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadingShiftSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/body_bake/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadingShiftPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadingShiftImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadingShiftScaled",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadingShiftOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/toon",
       "type": "Shader"
     },
     {
@@ -4286,6 +6221,27 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/body_bake/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/shadeMultiplyImage",
       "type": "Shader"
     },
     {
@@ -4346,6 +6302,48 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/eye/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/toon",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/eye/mtlx/st",
       "type": "Shader"
     },
@@ -4382,6 +6380,27 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/eye/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/shadeMultiplyImage",
       "type": "Shader"
     },
     {
@@ -4435,6 +6454,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/eye_trans/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/toon",
       "type": "Shader"
     },
     {
@@ -4537,6 +6598,48 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/arm_mat/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/toon",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/arm_mat/mtlx/st",
       "type": "Shader"
     },
@@ -4573,6 +6676,62 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/arm_mat/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/withRim",
       "type": "Shader"
     },
     {
@@ -4634,6 +6793,48 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/toon",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/arm_plastic/mtlx/st",
       "type": "Shader"
     },
@@ -4670,6 +6871,174 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/arm_plastic/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/view",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/viewToCamera",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/viewSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/viewNegX",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/viewXRaw",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/viewX",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/viewY",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/worldNormal",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcapU",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcapV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcapUvRaw",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcapUvScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcapUv",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/matcapImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/rim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/withRim",
       "type": "Shader"
     },
     {
@@ -4825,7 +7194,70 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/body_nm/mtlx/normalMap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/body_nm/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/normalPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/normalImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/toon",
       "type": "Shader"
     },
     {
@@ -4861,6 +7293,27 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/body_nm/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/shadeMultiplyImage",
       "type": "Shader"
     },
     {
@@ -5016,6 +7469,48 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/toon",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/armgear_plastic/mtlx/st",
       "type": "Shader"
     },
@@ -5052,6 +7547,174 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/armgear_plastic/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/view",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/viewToCamera",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/viewSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/viewNegX",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/viewXRaw",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/viewX",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/viewY",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/worldNormal",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcapU",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcapV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcapUvRaw",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcapUvScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcapUv",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcap",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/matcapImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/rim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/withRim",
       "type": "Shader"
     },
     {
@@ -5113,6 +7776,48 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/robo_face/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/toon",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/robo_face/mtlx/st",
       "type": "Shader"
     },
@@ -5149,6 +7854,55 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/robo_face/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/shadeColor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/shadeMultiplyPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/withEmission",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/emissiveFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/emissivePlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/emissiveImage",
       "type": "Shader"
     },
     {

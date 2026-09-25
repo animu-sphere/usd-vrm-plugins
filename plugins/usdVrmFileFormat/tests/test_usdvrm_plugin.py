@@ -11,6 +11,7 @@ when run by hand, do it inside `ost plugin run plugins/usdVrmFileFormat -- pytho
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 
@@ -43,6 +44,21 @@ def _graph_text(stage, path, package):
     out = Sdf.Layer.CreateAnonymous(".usda")
     assert Sdf.CopySpec(stage.GetRootLayer(), path, out, "/Graph"), path
     return out.ExportToString().replace(path, "/Graph").replace(package, "<package>")
+
+
+_NUMBER = re.compile(r"-?\d+\.?\d*(?:e-?\d+)?")
+
+
+def _same_graph(a, b, rel=1e-5):
+    """Two _graph_text results: the same text, except that numbers need only
+    agree to `rel` -- a value derived by a conversion and the same value
+    written as a literal differ in the last float bits."""
+    if a is None or b is None:
+        return a is b
+    if _NUMBER.sub("#", a) != _NUMBER.sub("#", b):
+        return False
+    return all(abs(float(x) - float(y)) <= rel * max(1.0, abs(float(x)))
+               for x, y in zip(_NUMBER.findall(a), _NUMBER.findall(b)))
 
 
 def check_minimal():
@@ -490,6 +506,21 @@ def check_material_hierarchy():
                     f"{fixture}: {prim.GetPath()} binds non-material {target}"
 
 
+def _mtlx_source(shader, name):
+    """The shader and output name a /mtlx input is connected to."""
+    src = shader.GetInput(name).GetConnectedSource()
+    assert src, f"{shader.GetPath()}.{name} is not connected"
+    return UsdShade.Shader(src[0].GetPrim()), src[1]
+
+
+def _mtlx_id(shader):
+    return shader.GetIdAttr().Get()
+
+
+def _mtlx_value(shader, name):
+    return shader.GetInput(name).Get()
+
+
 def check_mtlx_lit():
     """A lit material through MaterialX: every glTF core texture role reaches
     its gltf_pbr input with its glTF relation computed by a node, where
@@ -502,17 +533,7 @@ def check_mtlx_lit():
     surface = UsdShade.Shader(stage.GetPrimAtPath("/Asset/mtl/Metal/mtlx/surface"))
     assert surface, "expected a MaterialX realization on the lit Metal"
 
-    def source(shader, name):
-        """The shader and output name an input is connected to."""
-        src = shader.GetInput(name).GetConnectedSource()
-        assert src, f"{shader.GetPath()}.{name} is not connected"
-        return UsdShade.Shader(src[0].GetPrim()), src[1]
-
-    def node_id(shader):
-        return shader.GetIdAttr().Get()
-
-    def value(shader, name):
-        return shader.GetInput(name).Get()
+    source, node_id, value = _mtlx_source, _mtlx_id, _mtlx_value
 
     # Every texture chain starts at one shared texcoord node.
     texcoords = set()
@@ -587,6 +608,102 @@ def check_mtlx_lit():
     assert value(glow, "emissive_strength") == 2.0
     mul, _ = source(glow, "emissive")
     assert _vclose(value(mul, "in2"), (0.5, 0.25, 1.0))
+
+
+def check_mtlx_mtoon():
+    """An MToon material through MaterialX: the specification's lighting and
+    rim, lit by a headlight (P5 Step 6 item 3, material policy §11 q13), and
+    emitted with gltf_pbr's lit response off.
+
+    mtoon_vrm1.vrm's Hair states every MToon term the graph realizes: shade
+    texture and colour, a shading shift, toony, MatCap, a parametric rim with
+    lift and power, a rim mask and an emission. Each is followed from the
+    surface back to its canonical value.
+    """
+    source, node_id, value = _mtlx_source, _mtlx_id, _mtlx_value
+    stage = _open("mtoon_vrm1.vrm")
+    g = "/Asset/mtl/Hair/mtlx"
+    surface = UsdShade.Shader(stage.GetPrimAtPath(f"{g}/surface"))
+    assert value(surface, "base_color") == Gf.Vec3f(0, 0, 0)
+    assert value(surface, "specular") == 0.0
+
+    # emissive = toon colour + rim + glTF emission, in that order.
+    with_emission, _ = source(surface, "emissive")
+    assert node_id(with_emission) == "ND_add_color3"
+    emission, _ = source(with_emission, "in2")
+    assert _vclose(value(emission, "in2"), (0.1, 0.2, 0.3)), "emissive factor * strength"
+    with_rim, _ = source(with_emission, "in1")
+    toon, _ = source(with_rim, "in1")
+    masked, _ = source(with_rim, "in2")
+
+    # color = lerp(shade term, lit term, shading).
+    assert node_id(toon) == "ND_mix_color3"
+    lit, _ = source(toon, "fg")
+    assert lit.GetPath() == Sdf.Path(f"{g}/baseColorRgb"), lit.GetPath()
+    shade, _ = source(toon, "bg")
+    assert node_id(shade) == "ND_multiply_color3"
+    assert _vclose(value(shade, "in2"), (0.21404114,) * 3), "shadeColorFactor"
+    image, _ = source(shade, "in1")
+    assert node_id(image) == "ND_image_color3"
+    assert image.GetInput("file").GetAttr().GetColorSpace() == "srgb_texture"
+
+    # shading = linearstep(-1 + toony, 1 - toony, N.V + shift), toony 0.7 and
+    # shift -0.1: the step runs from -0.3 over a width of 0.6.
+    ramp, _ = source(toon, "mix")
+    assert node_id(ramp) == "ND_clamp_float"
+    scale, _ = source(ramp, "in")
+    assert abs(value(scale, "in2") - 1 / 0.6) < 1e-5, value(scale, "in2")
+    offset, _ = source(scale, "in1")
+    assert abs(value(offset, "in2") - (-0.3)) < 1e-6, value(offset, "in2")
+    shading, _ = source(offset, "in1")
+    assert abs(value(shading, "in2") - (-0.1)) < 1e-6, value(shading, "in2")
+    ndotv, _ = source(shading, "in1")
+    # The headlight: N.L is the facing ratio, signed, on the normal-mapped
+    # normal.
+    assert node_id(ndotv) == "ND_facingratio_float"
+    assert value(ndotv, "faceforward") is False
+    nmap, _ = source(ndotv, "normal")
+    assert node_id(nmap) == "ND_normalmap_float"
+
+    # rim = (MatCap + parametric rim) * rim mask.
+    assert node_id(masked) == "ND_multiply_color3"
+    mask, _ = source(masked, "in2")
+    assert node_id(mask) == "ND_image_color3"
+    rim, _ = source(masked, "in1")
+    assert node_id(rim) == "ND_add_color3"
+    matcap, _ = source(rim, "in1")
+    assert _vclose(value(matcap, "in2"), (1, 1, 1)), "matcapFactor"
+    matcap_image, _ = source(matcap, "in1")
+    # MatCap is addressed by the view-space normal, not the mesh's UVs.
+    matcap_uv, _ = source(matcap_image, "texcoord")
+    assert node_id(matcap_uv) == "ND_add_vector2FA", node_id(matcap_uv)
+    assert abs(value(matcap_uv, "in2") - 0.5) < 1e-6
+    uv_scale, _ = source(matcap_uv, "in1")
+    assert abs(value(uv_scale, "in2") - 0.495) < 1e-6
+    parametric, _ = source(rim, "in2")
+    assert node_id(parametric) == "ND_multiply_color3FA"
+    assert _vclose(value(parametric, "in1"), (1.0, 0.21404114, 0.0))
+    fresnel, _ = source(parametric, "in2")
+    assert node_id(fresnel) == "ND_power_float" and value(fresnel, "in2") == 3.0
+    clamp, _ = source(fresnel, "in1")
+    base, _ = source(clamp, "in")
+    assert abs(value(base, "in1") - 1.1) < 1e-6, "1 + parametricRimLiftFactor"
+    rim_ndotv, _ = source(base, "in2")
+    assert rim_ndotv.GetPath() == ndotv.GetPath(), "rim and shading share N.V"
+
+    # Face states no rim, no MatCap texture and no emission: the toon colour
+    # is the emission, and no rim node is authored.
+    face = UsdShade.Shader(stage.GetPrimAtPath("/Asset/mtl/Face/mtlx/surface"))
+    face_toon, _ = source(face, "emissive")
+    assert node_id(face_toon) == "ND_mix_color3", node_id(face_toon)
+    assert not stage.GetPrimAtPath("/Asset/mtl/Face/mtlx/rimFresnel")
+
+    # MToon decides the shading model wherever it is stated: textures.vrm's
+    # Skin is MToon on a lit glTF core, and still draws as toon.
+    textures = _open("textures.vrm")
+    skin = UsdShade.Shader(textures.GetPrimAtPath("/Asset/mtl/Skin/mtlx/surface"))
+    skin_toon, _ = source(skin, "emissive")
+    assert node_id(skin_toon) == "ND_mix_color3", node_id(skin_toon)
 
 
 def check_texture_transform():
@@ -902,8 +1019,8 @@ def check_mtoon_vrm0_matches_vrm1():
     for name in names:
         for graph in ("preview", "mtlx"):
             path = f"/Asset/mtl/{name}/{graph}"
-            assert (_graph_text(vrm0, path, "mtoon_vrm0.vrm")
-                    == _graph_text(vrm1, path, "mtoon_vrm1.vrm")), path
+            assert _same_graph(_graph_text(vrm0, path, "mtoon_vrm0.vrm"),
+                               _graph_text(vrm1, path, "mtoon_vrm1.vrm")), path
     assert vrm0.GetPrimAtPath("/Asset/mtl/Hair/mtlx"), "no /mtlx on a 0.x MToon"
     # The raw block is still the whole materialProperties entry.
     gltf, _ = material_oracle.read_glb(FIXTURES / "mtoon_vrm0.vrm")
@@ -1066,7 +1183,7 @@ def main() -> int:
                   check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
                   check_material_hierarchy, check_mtlx_textured_unlit,
-                  check_mtlx_lit,
+                  check_mtlx_lit, check_mtlx_mtoon,
                   check_texture_transform, check_mtlx_node_ids,
                   check_material_semantics, check_mtoon_vrm0_matches_vrm1,
                   check_constraints,

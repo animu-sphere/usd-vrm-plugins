@@ -190,11 +190,19 @@ def Xform "Asset" (
                     float inputs:alpha.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outa>
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive.connect = </Asset/mtl/Hair/mtlx/baseColorRgb.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Hair/mtlx/withEmission.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
                     token outputs:surface
+                }
+
+                def Shader "normalMap"
+                {
+                    uniform token info:id = "ND_normalmap_float"
+                    vector3f inputs:in.connect = </Asset/mtl/Hair/mtlx/normalImage.outputs:out>
+                    float inputs:scale = 0.8
+                    vector3f outputs:out
                 }
 
                 def Shader "st"
@@ -202,6 +210,76 @@ def Xform "Asset" (
                     uniform token info:id = "ND_texcoord_vector2"
                     int inputs:index = 0
                     float2 outputs:out
+                }
+
+                def Shader "normalPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0.25, -0.5)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (0.5, 2)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "normalImage"
+                {
+                    uniform token info:id = "ND_image_vector3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/2258d39c9f61a117.png]@
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/normalPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    vector3f outputs:out
+                }
+
+                def Shader "nDotV"
+                {
+                    uniform token info:id = "ND_facingratio_float"
+                    bool inputs:faceforward = 0
+                    vector3f inputs:normal.connect = </Asset/mtl/Hair/mtlx/normalMap.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "shading"
+                {
+                    uniform token info:id = "ND_add_float"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/nDotV.outputs:out>
+                    float inputs:in2 = -0.1
+                    float outputs:out
+                }
+
+                def Shader "rampOffset"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/shading.outputs:out>
+                    float inputs:in2 = -0.3
+                    float outputs:out
+                }
+
+                def Shader "rampScale"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/rampOffset.outputs:out>
+                    float inputs:in2 = 1.6666666
+                    float outputs:out
+                }
+
+                def Shader "ramp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Hair/mtlx/rampScale.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "toon"
+                {
+                    uniform token info:id = "ND_mix_color3"
+                    color3f inputs:bg.connect = </Asset/mtl/Hair/mtlx/shadeColor.outputs:out>
+                    color3f inputs:fg.connect = </Asset/mtl/Hair/mtlx/baseColorRgb.outputs:out>
+                    float inputs:mix.connect = </Asset/mtl/Hair/mtlx/ramp.outputs:out>
+                    color3f outputs:out
                 }
 
                 def Shader "baseColorPlace"
@@ -251,6 +329,267 @@ def Xform "Asset" (
                     float inputs:in1.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outr>
                     float inputs:in2.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outg>
                     float inputs:in3.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
+                }
+
+                def Shader "shadeColor"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/shadeMultiplyImage.outputs:out>
+                    color3f inputs:in2 = (0.21404114, 0.21404114, 0.21404114)
+                    color3f outputs:out
+                }
+
+                def Shader "shadeMultiplyPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0.25, -0.5)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (0.5, 2)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "shadeMultiplyImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/a124872abc5f74c0.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/shadeMultiplyPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color3f outputs:out
+                }
+
+                def Shader "view"
+                {
+                    uniform token info:id = "ND_viewdirection_vector3"
+                    vector3f outputs:out
+                }
+
+                def Shader "viewToCamera"
+                {
+                    uniform token info:id = "ND_multiply_vector3FA"
+                    vector3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/view.outputs:out>
+                    float inputs:in2 = -1
+                    vector3f outputs:out
+                }
+
+                def Shader "viewSplit"
+                {
+                    uniform token info:id = "ND_separate3_vector3"
+                    vector3f inputs:in.connect = </Asset/mtl/Hair/mtlx/viewToCamera.outputs:out>
+                    float outputs:outx
+                    float outputs:outz
+                }
+
+                def Shader "viewNegX"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/viewSplit.outputs:outx>
+                    float inputs:in2 = -1
+                    float outputs:out
+                }
+
+                def Shader "viewXRaw"
+                {
+                    uniform token info:id = "ND_combine3_vector3"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/viewSplit.outputs:outz>
+                    float inputs:in2 = 0
+                    float inputs:in3.connect = </Asset/mtl/Hair/mtlx/viewNegX.outputs:out>
+                    vector3f outputs:out
+                }
+
+                def Shader "viewX"
+                {
+                    uniform token info:id = "ND_normalize_vector3"
+                    vector3f inputs:in.connect = </Asset/mtl/Hair/mtlx/viewXRaw.outputs:out>
+                    vector3f outputs:out
+                }
+
+                def Shader "viewY"
+                {
+                    uniform token info:id = "ND_crossproduct_vector3"
+                    vector3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/viewToCamera.outputs:out>
+                    vector3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/viewX.outputs:out>
+                    vector3f outputs:out
+                }
+
+                def Shader "matcapU"
+                {
+                    uniform token info:id = "ND_dotproduct_vector3"
+                    vector3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/viewX.outputs:out>
+                    vector3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/normalMap.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "matcapV"
+                {
+                    uniform token info:id = "ND_dotproduct_vector3"
+                    vector3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/viewY.outputs:out>
+                    vector3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/normalMap.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "matcapUvRaw"
+                {
+                    uniform token info:id = "ND_combine2_vector2"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/matcapU.outputs:out>
+                    float inputs:in2.connect = </Asset/mtl/Hair/mtlx/matcapV.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "matcapUvScale"
+                {
+                    uniform token info:id = "ND_multiply_vector2FA"
+                    float2 inputs:in1.connect = </Asset/mtl/Hair/mtlx/matcapUvRaw.outputs:out>
+                    float inputs:in2 = 0.495
+                    float2 outputs:out
+                }
+
+                def Shader "matcapUv"
+                {
+                    uniform token info:id = "ND_add_vector2FA"
+                    float2 inputs:in1.connect = </Asset/mtl/Hair/mtlx/matcapUvScale.outputs:out>
+                    float inputs:in2 = 0.5
+                    float2 outputs:out
+                }
+
+                def Shader "matcap"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/matcapImage.outputs:out>
+                    color3f inputs:in2 = (1, 1, 1)
+                    color3f outputs:out
+                }
+
+                def Shader "matcapImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/fd309d4af37bc74f.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/matcapUv.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color3f outputs:out
+                }
+
+                def Shader "rimFresnelBase"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1 = 1.1
+                    float inputs:in2.connect = </Asset/mtl/Hair/mtlx/nDotV.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "rimFresnelClamp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Hair/mtlx/rimFresnelBase.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "rimFresnel"
+                {
+                    uniform token info:id = "ND_power_float"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/rimFresnelClamp.outputs:out>
+                    float inputs:in2 = 3
+                    float outputs:out
+                }
+
+                def Shader "parametricRim"
+                {
+                    uniform token info:id = "ND_multiply_color3FA"
+                    color3f inputs:in1 = (1, 0.21404114, 0)
+                    float inputs:in2.connect = </Asset/mtl/Hair/mtlx/rimFresnel.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "rim"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/matcap.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/parametricRim.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "rimMasked"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/rim.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/rimMultiplyImage.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "rimMultiplyPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0.25, -0.5)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (0.5, 2)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "rimMultiplyImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/fdab0e4c7c501b21.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/rimMultiplyPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color3f outputs:out
+                }
+
+                def Shader "withRim"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/toon.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/rimMasked.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withEmission"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/withRim.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx/emissiveFactor.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "emissiveFactor"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/emissiveImage.outputs:out>
+                    color3f inputs:in2 = (0.1, 0.2, 0.3)
+                    color3f outputs:out
+                }
+
+                def Shader "emissivePlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0.25, -0.5)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (0.5, 2)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "emissiveImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/d904a79dd4924496.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/emissivePlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
                     color3f outputs:out
                 }
             }
@@ -379,11 +718,60 @@ def Xform "Asset" (
                     float inputs:alpha_cutoff = 0.3
                     int inputs:alpha_mode = 1
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive.connect = </Asset/mtl/Face/mtlx/baseColorRgb.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Face/mtlx/toon.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
                     token outputs:surface
+                }
+
+                def Shader "nDotV"
+                {
+                    uniform token info:id = "ND_facingratio_float"
+                    bool inputs:faceforward = 0
+                    float outputs:out
+                }
+
+                def Shader "shading"
+                {
+                    uniform token info:id = "ND_add_float"
+                    float inputs:in1.connect = </Asset/mtl/Face/mtlx/nDotV.outputs:out>
+                    float inputs:in2 = -0.05
+                    float outputs:out
+                }
+
+                def Shader "rampOffset"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = </Asset/mtl/Face/mtlx/shading.outputs:out>
+                    float inputs:in2 = -0.050000012
+                    float outputs:out
+                }
+
+                def Shader "rampScale"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Face/mtlx/rampOffset.outputs:out>
+                    float inputs:in2 = 9.999998
+                    float outputs:out
+                }
+
+                def Shader "ramp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Face/mtlx/rampScale.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "toon"
+                {
+                    uniform token info:id = "ND_mix_color3"
+                    color3f inputs:bg.connect = </Asset/mtl/Face/mtlx/shadeColor.outputs:out>
+                    color3f inputs:fg.connect = </Asset/mtl/Face/mtlx/baseColorRgb.outputs:out>
+                    float inputs:mix.connect = </Asset/mtl/Face/mtlx/ramp.outputs:out>
+                    color3f outputs:out
                 }
 
                 def Shader "st"
@@ -440,6 +828,36 @@ def Xform "Asset" (
                     float inputs:in1.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outr>
                     float inputs:in2.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outg>
                     float inputs:in3.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
+                }
+
+                def Shader "shadeColor"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Face/mtlx/shadeMultiplyImage.outputs:out>
+                    color3f inputs:in2 = (0.93310684, 0.6209159, 0.71056646)
+                    color3f outputs:out
+                }
+
+                def Shader "shadeMultiplyPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0, -0)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (1, 1)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Face/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "shadeMultiplyImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Face/mtlx/shadeMultiplyPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
                     color3f outputs:out
                 }
             }
@@ -517,11 +935,60 @@ def Xform "Asset" (
                     float inputs:alpha = 1
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive = (1, 1, 1)
+                    color3f inputs:emissive.connect = </Asset/mtl/Veil/mtlx/toon.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
                     token outputs:surface
+                }
+
+                def Shader "nDotV"
+                {
+                    uniform token info:id = "ND_facingratio_float"
+                    bool inputs:faceforward = 0
+                    float outputs:out
+                }
+
+                def Shader "shading"
+                {
+                    uniform token info:id = "ND_add_float"
+                    float inputs:in1.connect = </Asset/mtl/Veil/mtlx/nDotV.outputs:out>
+                    float inputs:in2 = -0.05
+                    float outputs:out
+                }
+
+                def Shader "rampOffset"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = </Asset/mtl/Veil/mtlx/shading.outputs:out>
+                    float inputs:in2 = -0.050000012
+                    float outputs:out
+                }
+
+                def Shader "rampScale"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Veil/mtlx/rampOffset.outputs:out>
+                    float inputs:in2 = 9.999998
+                    float outputs:out
+                }
+
+                def Shader "ramp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Veil/mtlx/rampScale.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "toon"
+                {
+                    uniform token info:id = "ND_mix_color3"
+                    color3f inputs:bg = (0.93310684, 0.6209159, 0.71056646)
+                    color3f inputs:fg = (1, 1, 1)
+                    float inputs:mix.connect = </Asset/mtl/Veil/mtlx/ramp.outputs:out>
+                    color3f outputs:out
                 }
             }
         }
@@ -598,11 +1065,60 @@ def Xform "Asset" (
                     float inputs:alpha = 1
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive = (1, 1, 1)
+                    color3f inputs:emissive.connect = </Asset/mtl/Tear/mtlx/toon.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
                     token outputs:surface
+                }
+
+                def Shader "nDotV"
+                {
+                    uniform token info:id = "ND_facingratio_float"
+                    bool inputs:faceforward = 0
+                    float outputs:out
+                }
+
+                def Shader "shading"
+                {
+                    uniform token info:id = "ND_add_float"
+                    float inputs:in1.connect = </Asset/mtl/Tear/mtlx/nDotV.outputs:out>
+                    float inputs:in2 = -0.05
+                    float outputs:out
+                }
+
+                def Shader "rampOffset"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = </Asset/mtl/Tear/mtlx/shading.outputs:out>
+                    float inputs:in2 = -0.050000012
+                    float outputs:out
+                }
+
+                def Shader "rampScale"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Tear/mtlx/rampOffset.outputs:out>
+                    float inputs:in2 = 9.999998
+                    float outputs:out
+                }
+
+                def Shader "ramp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Tear/mtlx/rampScale.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "toon"
+                {
+                    uniform token info:id = "ND_mix_color3"
+                    color3f inputs:bg = (0.93310684, 0.6209159, 0.71056646)
+                    color3f inputs:fg = (1, 1, 1)
+                    float inputs:mix.connect = </Asset/mtl/Tear/mtlx/ramp.outputs:out>
+                    color3f outputs:out
                 }
             }
         }
@@ -679,11 +1195,60 @@ def Xform "Asset" (
                     float inputs:alpha = 1
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive = (1, 1, 1)
+                    color3f inputs:emissive.connect = </Asset/mtl/Lashes/mtlx/toon.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
                     token outputs:surface
+                }
+
+                def Shader "nDotV"
+                {
+                    uniform token info:id = "ND_facingratio_float"
+                    bool inputs:faceforward = 0
+                    float outputs:out
+                }
+
+                def Shader "shading"
+                {
+                    uniform token info:id = "ND_add_float"
+                    float inputs:in1.connect = </Asset/mtl/Lashes/mtlx/nDotV.outputs:out>
+                    float inputs:in2 = -0.05
+                    float outputs:out
+                }
+
+                def Shader "rampOffset"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = </Asset/mtl/Lashes/mtlx/shading.outputs:out>
+                    float inputs:in2 = -0.050000012
+                    float outputs:out
+                }
+
+                def Shader "rampScale"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Lashes/mtlx/rampOffset.outputs:out>
+                    float inputs:in2 = 9.999998
+                    float outputs:out
+                }
+
+                def Shader "ramp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Lashes/mtlx/rampScale.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "toon"
+                {
+                    uniform token info:id = "ND_mix_color3"
+                    color3f inputs:bg = (0.93310684, 0.6209159, 0.71056646)
+                    color3f inputs:fg = (1, 1, 1)
+                    float inputs:mix.connect = </Asset/mtl/Lashes/mtlx/ramp.outputs:out>
+                    color3f outputs:out
                 }
             }
         }

@@ -105,6 +105,11 @@ lives inside a realization graph
         /normalImage, /normalMap        ND_image_vector3, ND_normalmap_float     (lit)
         /occlusionImage, …Split, /occlusion  ND_image_vector3, ND_separate3_vector3, ND_mix_float (lit)
         /emissiveImage, /emissiveFactor ND_image_color3, ND_multiply_color3      (lit)
+        /nDotV                          ND_facingratio_float     (MToon: N·L under a headlight)
+        /shading, /rampOffset, /rampScale, /ramp, /toon          (MToon: linearstep, lerp)
+        /view…, /matcapUv…, /matcap     ND_viewdirection_vector3, …  (MToon, MatCap texture only)
+        /rimFresnel…, /parametricRim, /rim, /rimMasked           (MToon, rim colour not black)
+        /withRim, /withEmission         ND_add_color3            (MToon)
 ```
 
 Which *shading model* a material's `/mtlx` takes — unlit emission or lit glTF
@@ -354,6 +359,22 @@ error, no grey fallback, `alpha_mode` BLEND blending (a 0.3 alpha reads back
 as 77/255), and `ND_normalmap_float` compiles and shades with no authored
 tangents. Lit `/mtlx` and `/preview` do not produce the same image, and are
 not required to (§5.4).
+
+**MToon, measured 2026-09-25 (Step 6).** `nprlib`'s `facingratio` and
+`viewdirection` compile and draw in Storm, and the toon graph reproduces the
+specification's formulas to within 1.4/255 (material track, Step 6).
+
+**Skinned meshes need `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1`,
+measured 2026-09-25 (Step 6).** By default UsdSkelImaging blocks a skinned
+mesh's authored `primvars:normals` and Storm shades it with normals it
+derives after skinning, which come out **flat per triangle** — on
+AliciaSolid, whose hair shares its vertices (3904 points, 17487 indices) and
+carries smooth authored normals. Nothing that read only base colour showed
+it; the MToon approximation's N·V ramp does, as visible polygon edges. With
+the variable set, the authored normals are skinned and the shading is
+smooth. It is a viewing setting, not an authoring defect: the importer's
+normals are correct, and an unskinned copy of the same mesh draws smooth
+without it.
 
 ### 5.2.2 Colour space
 
@@ -873,7 +894,8 @@ each step may and may not do.
   `gltf_pbr` terminal (§5.2.1); then portable MToon approximations — shade,
   toon transition, rim, MatCap — in standard nodes (§5.2). Outline,
   screen-space width, render ordering and MToon transparency stay out.
-  *The first two shipped 2026-09-25;* the approximations wait on §11 q13.
+  *All three shipped 2026-09-25,* the approximations under a headlight
+  (§11 q13).
 - **Step 7 — expression material binds.** Resolved colours land on canonical
   slots through the contract's slot table (§6.7), and reach whichever
   realization is selected without being written into it.
@@ -939,8 +961,9 @@ must be isolated one at a time:
    remaining candidate.** The asset's hair carries `_ShadeTexture` and
    `_ShadeColor`, which no realization reads yet. Since Step 4 they are typed —
    `VrmTextureInfoAPI:shadeMultiply` and `inputs:vrm:mtoon:shadeColorFactor`,
-   through the 0.x half of §6.6 — so what is left is Step 6's MToon
-   approximations (§7.5), not an alpha or colour-space problem.
+   through the 0.x half of §6.6 — and since Step 6 `/mtlx` draws them (§7.5).
+   What is left is comparing the asset itself, which is not in the
+   repository.
 
 Do not assume `COLOR_0` must be multiplied into MToon appearance without checking
 the source material and the applicable VRM/MToon specification behavior. That
@@ -1000,4 +1023,4 @@ their own PRs:
 | ~~10~~ | ~~Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6).~~ **UniVRM's own 0.x → 1.0 migration, exactly** (settled 2026-09-25), its two destructive choices included — a missing shade texture takes the lit texture, `rimLightingMixFactor` is always 1 — so a 0.x avatar and the 1.0 file UniVRM migrates it to carry the same canonical values. The one departure: an absent 0.x property takes the MToon 0.x shader default, not C#'s zero. Every row, with its fidelity class, is the [schema contract's 0.x table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields). | — |
 | 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |
 | 12 | Which realization inputs connect to the Material's canonical `inputs:vrm:*` (so an animated value reaches them without regeneration, §6.4.1) and which stay generated values? UsdPreviewSurface has no arithmetic node, so a folded value — factor × texture in `UsdUVTexture.scale`, occlusion and normal scale/bias, glTF alpha coverage — cannot be a connection; `/mtlx` can multiply. Step 5 ships generated values only. | Step 7 |
-| 13 | What light does a portable toon transition read? MToon's lit/shade boundary is a ramp over N·L, but standard MaterialX nodes reach scene lights only inside a BSDF, so an emissive toon graph has no light to take a dot product with. Candidates: a fixed direction (the view vector — a headlight — or a stated world direction); `gltf_pbr`'s own lighting with shade colour folded in, which is not a ramp; or no transition, shade as a flat tint. Decided before any MToon approximation is authored. | Step 6 item 3 |
+| ~~13~~ | ~~What light does a portable toon transition read? MToon's lit/shade boundary is a ramp over N·L, but standard MaterialX nodes reach scene lights only inside a BSDF, so an emissive toon graph has no light to take a dot product with.~~ **A headlight** (settled 2026-09-25, the user's call): L is the direction to the camera, white at intensity 1, so N·L is `nprlib`'s signed `facingratio`. The shading follows the camera and ignores scene lights; parametric rim and MatCap read the same view vector, and `rimLightingMixFactor` has nothing to mix. | — |

@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1–5 shipped, Step 6 items 1–2 shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1–5 shipped, Step 6 items 1–3 shipped · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -47,13 +47,13 @@ The reasons are what Steps 1 and 2 left behind:
 - ✅ **Step 5 — `/preview` generated from canonical semantics** (2026-09-25;
   policy §6.5). It is a function of the Material's canonical attributes and
   nothing else, run by the importer on what it reads back from the stage.
-- 🚧 **Step 6 — `/mtlx` generated from canonical semantics** (items 1–2,
-  2026-09-25; policy §5.2.1). Every material carries both realizations, lit
-  ones as glTF PBR through the same `gltf_pbr` terminal, both generated from
-  the canonical attributes alone. Item 3 — portable MToon approximations —
-  is open, and waits on how a portable graph gets a light (policy §11 q13).
-  **MToon-specific shading is not rendered yet:** shade, rim and MatCap are
-  typed but no realization reads them.
+- 🚧 **Step 6 — `/mtlx` generated from canonical semantics** (items 1–3,
+  2026-09-25; policy §5.2.1). Every material carries both realizations, both
+  generated from the canonical attributes alone: lit materials as glTF PBR,
+  unlit ones as emission, MToon ones as a headlight-lit toon approximation —
+  shade, shading shift and toony, MatCap, parametric rim — through the same
+  `gltf_pbr` terminal (policy §11 q13). What is left is the visual comparison
+  on issue #119's asset, which is not in the repository.
 - **Expression colour binds already target a slot, not a shader input.** A
   VRM 1.0 `materialColorBinds` entry is typed on its expression prim as a
   relationship to the `UsdShadeMaterial` plus a VRM slot name (`color`,
@@ -275,9 +275,36 @@ fallback, blending included, and Seed-san's normal-mapped backpack renders
 `package_vrm.py` now packages MaterialX image files too; with `/mtlx` on
 every material, a lit textured stage references one.
 
-Still open: item 3, the focused visual regression on issue #119's asset,
-and — since item 3 needs a light no standard node exposes outside a BSDF —
-policy §11 q13 first.
+**Item 3 shipped 2026-09-25.** An MToon material's `/mtlx` realizes
+`VRMC_materials_mtoon` 1.0's lighting and rim as the specification's
+pseudocode states them, in standard nodes, emitted with `gltf_pbr`'s lit
+response off. The light is a headlight — the user's call on policy §11 q13,
+because standard MaterialX nodes reach scene lights only inside a BSDF — so
+N·L is `nprlib`'s signed `facingratio`. Left out, each with its reason in
+`MtlxRealization.cpp`: global illumination and `giEqualizationFactor`,
+`rimLightingMixFactor` (a no-op under a white unit light), outline, render
+queue, `transparentWithZWrite`, UV animation. MToon decides the shading
+model wherever it is stated. Shown by:
+
+- *the graph states the specification* — `check_mtlx_mtoon` follows
+  `mtoon_vrm1.vrm`'s Hair, which states every realized term, from the
+  surface back to each canonical value; `usdvrm_realization_regenerate`
+  moves a shade colour and requires the toon mix to follow;
+- *Storm draws what it states* — `usdrecord` renders compared with the
+  specification's formulas evaluated independently, under a far
+  orthographic camera where N·V is known per pixel: the toon ramp and
+  shade/lit mix to within 1/255 across a sphere; shade texture, MatCap,
+  parametric rim, rim mask and emission to within 1.4/255 along the
+  equator; and the MatCap's orientation on both axes, through a gradient
+  MatCap (a normal facing up reads the top of the image);
+- *nothing else moved* — the baseline diff is 34 MToon materials' `/mtlx`
+  and the image references those graphs add.
+
+Viewing a skinned avatar needs `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1`,
+or the toon ramp shows every triangle (policy §5.2.1).
+
+Still open: the comparison on issue #119's asset — the done-when's first
+target — which is not in the repository; the issue has only captures.
 
 ### Step 7 — expression material binds onto canonical slots ⬜
 

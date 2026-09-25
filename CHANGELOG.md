@@ -15,6 +15,17 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **MToon shading is approximated in MaterialX** (Product P5 Step 6, item 3;
+  [material track](docs/roadmap/material-track.md)). An MToon material's
+  `/mtlx` now draws `VRMC_materials_mtoon` 1.0's toon lighting — shade colour
+  and texture, shading shift, toony — plus MatCap, parametric rim and the rim
+  mask, in standard MaterialX nodes, **lit by a headlight**: the shading
+  follows the camera and ignores scene lights. Outline, GI equalization and
+  UV animation are not realized. In `usdview`, **set
+  `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1` for a skinned avatar**: by
+  default Storm shades skinned meshes with flat per-triangle normals, which
+  the toon ramp shows as polygon edges.
+
 - **Every material carries a MaterialX realization, generated from canonical
   semantics** (Product P5 Step 6, items 1–2;
   [material track](docs/roadmap/material-track.md)). `/mtlx`'s only input is

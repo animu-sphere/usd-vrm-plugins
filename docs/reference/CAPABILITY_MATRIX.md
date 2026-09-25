@@ -35,7 +35,7 @@ Aligned with the design policy's §11 fidelity vocabulary:
 | PBR material | supported | supported | `UsdShadeMaterial` + typed `VrmMaterialAPI`, realized as a `/preview` `UsdShadeNodeGraph` (`UsdPreviewSurface`) and a `/mtlx` one (MaterialX `gltf_pbr`), both generated from the typed attributes | Yes |
 | Textures (base/MR/normal/emissive/occlusion) | supported | supported | `VrmTextureInfoAPI`; `UsdUVTexture` / MaterialX `image` + wrap modes | Yes |
 | `KHR_texture_transform` | supported | supported | `VrmTextureInfoAPI` `transform:*`; `UsdTransform2d` / MaterialX `place2d` | Yes |
-| MToon shading | approximated | approximated | typed `VrmMToonAPI` / `VrmTextureInfoAPI` (0.x normalized into the 1.0 model) + `vrm:mtoon:raw`; both realizations generated from the typed schemas, drawing base colour, alpha and emission only — shade, rim, MatCap and outline are typed but not yet realized | Partial |
+| MToon shading | approximated | approximated | typed `VrmMToonAPI` / `VrmTextureInfoAPI` (0.x normalized into the 1.0 model) + `vrm:mtoon:raw`; both realizations generated from the typed schemas; `/mtlx` approximates MToon's toon shading, shade, MatCap and parametric rim under a headlight, `/preview` draws base colour, alpha and emission only; outline, GI equalization and UV animation are typed but not realized | Partial |
 | Skeletal animation (joint TRS) | supported | supported | `UsdSkelAnimation` | Yes |
 | Morph-weight (blend-shape) animation | unsupported | unsupported | — | n/a |
 | Front-direction normalization | repaired | supported | root transform + `customData` provenance | Yes |
@@ -56,10 +56,11 @@ simulates:
   retargeting only — the target rig, the humanoid map, rest-pose correction,
   one sample's retarget and its diagnostics — and none of these three yet;
   they follow on [the `ExecIr` track](../roadmap/execir-track.md).
-- MToon **shading** realization (shade, rim, MatCap — beyond the base colour
-  both realizations draw) is Product P5 Step 6
-  ([material track](../roadmap/material-track.md)); the full MToon renderer
-  is `hydra-toon`'s, another repository.
+- MToon **shading** is approximated in `/mtlx` under a headlight (Product P5
+  Step 6, [material track](../roadmap/material-track.md)); a skinned avatar
+  needs `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1` in Storm or the shading
+  shows every triangle. The full MToon renderer — scene lights, outline, UV
+  animation — is `hydra-toon`'s, another repository.
 
 This separation is deliberate: the importer stays a pure, deterministic
 data-authoring step so downstream runtimes can be swapped without changing it.

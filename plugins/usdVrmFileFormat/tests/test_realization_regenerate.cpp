@@ -19,6 +19,7 @@
 #include "usd/MtlxRealization.h"
 #include "usd/PreviewRealization.h"
 
+#include <vrmSchema/vrmMToonAPI.h>
 #include <vrmSchema/vrmMaterialAPI.h>
 
 #include "pxr/base/gf/vec3f.h"
@@ -121,7 +122,7 @@ int
 main(int argc, char** argv)
 {
     int stages = 0, materials = 0, mtlxGraphs = 0;
-    UsdStageRefPtr mutationStage;
+    UsdStageRefPtr mutationStage, mtoonStage;
 
     for (int a = 1; a < argc; ++a)
     {
@@ -156,6 +157,8 @@ main(int argc, char** argv)
             }
             if (entry.path().filename() == "materials.vrm")
                 mutationStage = stage;
+            if (entry.path().filename() == "mtoon_vrm1.vrm")
+                mtoonStage = stage;
         }
     }
 
@@ -197,6 +200,25 @@ main(int argc, char** argv)
                      " did not follow a changed baseColorFactor");
             }
         }
+    }
+
+    // ...and an MToon value reaches the MToon graph: Veil has no shade
+    // texture, so its shade colour lands on the toon mix as a value.
+    if (!mtoonStage)
+    {
+        Fail("mtoon_vrm1.vrm not found");
+    }
+    else
+    {
+        const SdfPath veilPath("/Asset/mtl/Veil");
+        const UsdShadeMaterial veil(mtoonStage->GetPrimAtPath(veilPath));
+        const GfVec3f moved(0.25f, 0.5f, 0.75f);
+        UsdVrmMToonAPI(veil.GetPrim()).GetShadeColorFactorAttr().Set(moved);
+        Regenerate(veil, kRealizations[1]);
+        GfVec3f shade(0.0f);
+        const UsdShadeShader toon(mtoonStage->GetPrimAtPath(veilPath.AppendPath(SdfPath("mtlx/toon"))));
+        if (!toon || !toon.GetInput(TfToken("bg")).Get(&shade) || shade != moved)
+            Fail("Veil: /mtlx did not follow a changed shadeColorFactor");
     }
 
     // Not a vacuous pass: the fixtures and the vendored corpus.

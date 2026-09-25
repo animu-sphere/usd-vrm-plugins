@@ -13,6 +13,8 @@
 #include "pxr/usd/usdShade/nodeGraph.h"
 #include "pxr/usd/usdShade/shader.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
@@ -75,11 +77,15 @@ public:
     // Sample `ref` for texture role `role`: an `ND_image_<type>` node fed by
     // the shared texcoord, through a place2d when the source states a
     // KHR_texture_transform. `srgb` declares the file's colour space; the
-    // data textures (vector3) have none.
+    // data textures (vector3) have none. A texture that is not addressed by
+    // the mesh's UVs (MToon's MatCap) passes its own `uv` and takes no
+    // transform.
     UsdShadeOutput Sample(const std::string& role, const VrmTextureRef& ref, const char* id,
-                          const SdfValueTypeName& type, bool srgb)
+                          const SdfValueTypeName& type, bool srgb, UsdShadeOutput uv = {})
     {
-        UsdShadeOutput uv = _Texcoord();
+        const bool meshUv = !uv;
+        if (meshUv)
+            uv = _Texcoord();
 
         // KHR_texture_transform. place2d is not UsdTransform2d spelled
         // differently: its SRT form computes rotate2d(uv / scale, rotate) -
@@ -87,7 +93,7 @@ public:
         // it adds, and not negating the rotation the way UsdTransform2d does.
         // The shared st-space map is therefore inverted into this node's
         // vocabulary rather than passed through.
-        if (ref.hasTransform)
+        if (meshUv && ref.hasTransform)
         {
             const VrmStTransform t = VrmGltfStTransform(ref);
             UsdShadeShader place = Node(role + "Place", "ND_place2d_vector2");
@@ -269,6 +275,45 @@ _AuthorScaledChannel(_Graph& g, UsdShadeInput input, float factor, const UsdShad
     input.ConnectToSource(mul.CreateOutput(TfToken("out"), SdfValueTypeNames->Float));
 }
 
+// glTF's normal texture as a world-space shading normal, or an invalid output
+// when the material has none. glTF's scale applies to X and Y only, which is
+// what `normalmap` does with its `scale`.
+UsdShadeOutput
+_AuthorNormalMap(_Graph& g, const VrmMaterialSemantics& s)
+{
+    const VrmTextureRef* tex = _Texture(s, "normal");
+    if (!tex)
+        return {};
+    UsdShadeShader map = g.Node("normalMap", "ND_normalmap_float");
+    map.CreateInput(TfToken("in"), SdfValueTypeNames->Vector3f)
+        .ConnectToSource(
+            g.Sample("normal", *tex, "ND_image_vector3", SdfValueTypeNames->Vector3f, false));
+    map.CreateInput(TfToken("scale"), SdfValueTypeNames->Float).Set(tex->scale);
+    return map.CreateOutput(TfToken("out"), SdfValueTypeNames->Vector3f);
+}
+
+// glTF emission onto `input`: emissiveFactor * emissiveTexture, the factor
+// scaled by `factorScale`.
+void
+_AuthorEmission(_Graph& g, UsdShadeInput input, const VrmMaterialSemantics& s,
+                float factorScale)
+{
+    const GfVec3f factor = s.emissiveFactor * factorScale;
+    if (const VrmTextureRef* tex = _Texture(s, "emissive"))
+    {
+        UsdShadeShader mul = g.Node("emissiveFactor", "ND_multiply_color3");
+        mul.CreateInput(TfToken("in1"), SdfValueTypeNames->Color3f)
+            .ConnectToSource(
+                g.Sample("emissive", *tex, "ND_image_color3", SdfValueTypeNames->Color3f, true));
+        mul.CreateInput(TfToken("in2"), SdfValueTypeNames->Color3f).Set(factor);
+        input.ConnectToSource(mul.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
+    }
+    else
+    {
+        input.Set(factor);
+    }
+}
+
 // The lit realization: glTF metallic-roughness PBR, through the glTF shading
 // model's own MaterialX node, one texture role to one input.
 //
@@ -301,15 +346,10 @@ _AuthorLit(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
     _AuthorScaledChannel(g, surface.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float),
                          s.roughnessFactor, roughnessChannel, "roughness");
 
-    if (const VrmTextureRef* tex = _Texture(s, "normal"))
+    if (const UsdShadeOutput normal = _AuthorNormalMap(g, s))
     {
-        UsdShadeShader map = g.Node("normalMap", "ND_normalmap_float");
-        map.CreateInput(TfToken("in"), SdfValueTypeNames->Vector3f)
-            .ConnectToSource(
-                g.Sample("normal", *tex, "ND_image_vector3", SdfValueTypeNames->Vector3f, false));
-        map.CreateInput(TfToken("scale"), SdfValueTypeNames->Float).Set(tex->scale);
         surface.CreateInput(TfToken("normal"), SdfValueTypeNames->Vector3f)
-            .ConnectToSource(map.CreateOutput(TfToken("out"), SdfValueTypeNames->Vector3f));
+            .ConnectToSource(normal);
     }
 
     // glTF occlusion: ao = 1 + strength * (sample.r - 1) = mix(1, sample.r, strength).
@@ -329,23 +369,271 @@ _AuthorLit(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
     }
 
     // glTF emission: emissiveFactor * emissiveTexture, times
-    // KHR_materials_emissive_strength.
-    UsdShadeInput emissive = surface.CreateInput(TfToken("emissive"), SdfValueTypeNames->Color3f);
-    if (const VrmTextureRef* tex = _Texture(s, "emissive"))
+    // KHR_materials_emissive_strength on gltf_pbr's own input.
+    _AuthorEmission(g, surface.CreateInput(TfToken("emissive"), SdfValueTypeNames->Color3f), s,
+                    1.0f);
+    surface.CreateInput(TfToken("emissive_strength"), SdfValueTypeNames->Float)
+        .Set(s.emissiveStrength);
+}
+// The MToon realization: VRMC_materials_mtoon 1.0's lighting and rim, as the
+// specification's pseudocode states them, approximated in standard MaterialX
+// nodes (material policy §5.2) and carried on `emissive` with the lit response
+// zeroed, as the unlit realization is.
+//
+// The light is a headlight (policy §11 q13): standard nodes reach scene lights
+// only inside a BSDF, so the graph has no light of its own, and it takes the
+// direction to the camera as the light direction, white at intensity 1. Then:
+//
+//   shading = linearstep(-1 + toony, 1 - toony,
+//                        N.V + shadingShiftFactor + shadingShiftTexture.r * scale)
+//   color   = lerp(shadeColorFactor * shadeMultiplyTexture,
+//                  baseColorFactor * baseColorTexture, shading)
+//   rim     = (matcapFactor * matcapTexture(matcapUv)
+//              + parametricRimColorFactor
+//                * pow(saturate(1 - N.V + parametricRimLiftFactor), max(power, eps)))
+//             * rimMultiplyTexture
+//   emissive = color + rim + glTF emission
+//
+// What the approximation leaves out, each for a stated reason:
+//   - global illumination, and with it giEqualizationFactor: the graph has no
+//     environment to equalize;
+//   - rimLightingMixFactor: it blends the rim towards the lighting, which is
+//     white at intensity 1 here, so every value gives the same rim;
+//   - outline, render-queue offset and transparentWithZWrite: canonical
+//     semantics no single-pass graph reproduces (§6.2, §5.3.2);
+//   - UV animation: a function of time, which a material graph is not given.
+//
+// A missing texture takes the value MToon's reference shader defaults it to:
+// white for the shade-multiply and rim-multiply textures (so the factor alone
+// applies), black for MatCap (so no MatCap), zero shift for shading shift.
+void
+_AuthorMToon(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
+{
+    const VrmMToonSemantics& m = s.mtoon;
+    auto in = [](UsdShadeShader n, const char* name, const SdfValueTypeName& type)
+    { return n.CreateInput(TfToken(name), type); };
+    auto out = [](UsdShadeShader n, const char* name, const SdfValueTypeName& type)
+    { return n.CreateOutput(TfToken(name), type); };
+
+    // No lit response, as for unlit: the toon colour is emitted.
+    surface.CreateInput(TfToken("base_color"), SdfValueTypeNames->Color3f).Set(GfVec3f(0.0f));
+    surface.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float).Set(0.0f);
+    surface.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float).Set(1.0f);
+    surface.CreateInput(TfToken("specular"), SdfValueTypeNames->Float).Set(0.0f);
+
+    const UsdShadeOutput normal = _AuthorNormalMap(g, s);
+
+    // N.L, with L the direction to the camera. facingratio is
+    // -dot(viewdirection, N), viewdirection pointing from the camera to the
+    // surface; with faceforward off it keeps the sign MToon's dot product has.
+    UsdShadeShader nDotV = g.Node("nDotV", "ND_facingratio_float");
+    in(nDotV, "faceforward", SdfValueTypeNames->Bool).Set(false);
+    if (normal)
+        in(nDotV, "normal", SdfValueTypeNames->Vector3f).ConnectToSource(normal);
+    const UsdShadeOutput nDotVOut = out(nDotV, "out", SdfValueTypeNames->Float);
+
+    // shading = N.L + shadingShiftFactor + shadingShiftTexture.r * scale.
+    UsdShadeShader shading = g.Node("shading", "ND_add_float");
+    in(shading, "in1", SdfValueTypeNames->Float).ConnectToSource(nDotVOut);
+    UsdShadeInput shift = in(shading, "in2", SdfValueTypeNames->Float);
+    if (const VrmTextureRef* tex = _Texture(s, "shadingShift"))
     {
-        UsdShadeShader factor = g.Node("emissiveFactor", "ND_multiply_color3");
-        factor.CreateInput(TfToken("in1"), SdfValueTypeNames->Color3f)
-            .ConnectToSource(
-                g.Sample("emissive", *tex, "ND_image_color3", SdfValueTypeNames->Color3f, true));
-        factor.CreateInput(TfToken("in2"), SdfValueTypeNames->Color3f).Set(s.emissiveFactor);
-        emissive.ConnectToSource(factor.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
+        UsdShadeShader split = g.Node("shadingShiftSplit", "ND_separate3_vector3");
+        in(split, "in", SdfValueTypeNames->Vector3f)
+            .ConnectToSource(g.Sample("shadingShift", *tex, "ND_image_vector3",
+                                      SdfValueTypeNames->Vector3f, false));
+        UsdShadeShader scaled = g.Node("shadingShiftScaled", "ND_multiply_float");
+        in(scaled, "in1", SdfValueTypeNames->Float)
+            .ConnectToSource(out(split, "outx", SdfValueTypeNames->Float));
+        in(scaled, "in2", SdfValueTypeNames->Float).Set(tex->scale);
+        UsdShadeShader offset = g.Node("shadingShiftOffset", "ND_add_float");
+        in(offset, "in1", SdfValueTypeNames->Float)
+            .ConnectToSource(out(scaled, "out", SdfValueTypeNames->Float));
+        in(offset, "in2", SdfValueTypeNames->Float).Set(m.shadingShiftFactor);
+        shift.ConnectToSource(out(offset, "out", SdfValueTypeNames->Float));
     }
     else
     {
-        emissive.Set(s.emissiveFactor);
+        shift.Set(m.shadingShiftFactor);
     }
-    surface.CreateInput(TfToken("emissive_strength"), SdfValueTypeNames->Float)
-        .Set(s.emissiveStrength);
+
+    // linearstep(a, b, t) = saturate((t - a) / (b - a)), a = -1 + toony and
+    // b = 1 - toony. At toony = 1 the width is zero and the specification
+    // divides by it; the step is kept a step by a minimum width instead.
+    const float low = -1.0f + m.shadingToonyFactor;
+    const float width = std::max(2.0f - 2.0f * m.shadingToonyFactor, 1e-5f);
+    UsdShadeShader rampOffset = g.Node("rampOffset", "ND_subtract_float");
+    in(rampOffset, "in1", SdfValueTypeNames->Float)
+        .ConnectToSource(out(shading, "out", SdfValueTypeNames->Float));
+    in(rampOffset, "in2", SdfValueTypeNames->Float).Set(low);
+    UsdShadeShader rampScale = g.Node("rampScale", "ND_multiply_float");
+    in(rampScale, "in1", SdfValueTypeNames->Float)
+        .ConnectToSource(out(rampOffset, "out", SdfValueTypeNames->Float));
+    in(rampScale, "in2", SdfValueTypeNames->Float).Set(1.0f / width);
+    UsdShadeShader ramp = g.Node("ramp", "ND_clamp_float");
+    in(ramp, "in", SdfValueTypeNames->Float)
+        .ConnectToSource(out(rampScale, "out", SdfValueTypeNames->Float));
+    in(ramp, "low", SdfValueTypeNames->Float).Set(0.0f);
+    in(ramp, "high", SdfValueTypeNames->Float).Set(1.0f);
+
+    // color = lerp(shade term, lit term, shading). The lit term is the base
+    // colour chain the other models use, alpha and coverage included.
+    UsdShadeShader toon = g.Node("toon", "ND_mix_color3");
+    _AuthorBaseColor(g, surface, in(toon, "fg", SdfValueTypeNames->Color3f), s);
+    UsdShadeInput shade = in(toon, "bg", SdfValueTypeNames->Color3f);
+    if (const VrmTextureRef* tex = _Texture(s, "shadeMultiply"))
+    {
+        UsdShadeShader mul = g.Node("shadeColor", "ND_multiply_color3");
+        in(mul, "in1", SdfValueTypeNames->Color3f)
+            .ConnectToSource(g.Sample("shadeMultiply", *tex, "ND_image_color3",
+                                      SdfValueTypeNames->Color3f, true));
+        in(mul, "in2", SdfValueTypeNames->Color3f).Set(m.shadeColorFactor);
+        shade.ConnectToSource(out(mul, "out", SdfValueTypeNames->Color3f));
+    }
+    else
+    {
+        shade.Set(m.shadeColorFactor);
+    }
+    in(toon, "mix", SdfValueTypeNames->Float)
+        .ConnectToSource(out(ramp, "out", SdfValueTypeNames->Float));
+    UsdShadeOutput color = out(toon, "out", SdfValueTypeNames->Color3f);
+
+    // Rim: MatCap, then parametric rim, then the rim-multiply mask.
+    UsdShadeOutput rim;
+    if (const VrmTextureRef* tex = _Texture(s, "matcap"))
+    {
+        // matcapUv = (dot(X, N), dot(Y, N)) * 0.495 + 0.5, with V the
+        // direction to the camera, X = normalize(V.z, 0, -V.x) and
+        // Y = cross(V, X). Sampled as is: MaterialX, like the reference
+        // shader, puts v = 1 at the top of the image, so a normal facing up
+        // reads the top of the MatCap.
+        UsdShadeShader view = g.Node("view", "ND_viewdirection_vector3");
+        UsdShadeShader toCamera = g.Node("viewToCamera", "ND_multiply_vector3FA");
+        in(toCamera, "in1", SdfValueTypeNames->Vector3f)
+            .ConnectToSource(out(view, "out", SdfValueTypeNames->Vector3f));
+        in(toCamera, "in2", SdfValueTypeNames->Float).Set(-1.0f);
+        const UsdShadeOutput v = out(toCamera, "out", SdfValueTypeNames->Vector3f);
+
+        UsdShadeShader split = g.Node("viewSplit", "ND_separate3_vector3");
+        in(split, "in", SdfValueTypeNames->Vector3f).ConnectToSource(v);
+        UsdShadeShader negX = g.Node("viewNegX", "ND_multiply_float");
+        in(negX, "in1", SdfValueTypeNames->Float)
+            .ConnectToSource(out(split, "outx", SdfValueTypeNames->Float));
+        in(negX, "in2", SdfValueTypeNames->Float).Set(-1.0f);
+        UsdShadeShader xRaw = g.Node("viewXRaw", "ND_combine3_vector3");
+        in(xRaw, "in1", SdfValueTypeNames->Float)
+            .ConnectToSource(out(split, "outz", SdfValueTypeNames->Float));
+        in(xRaw, "in2", SdfValueTypeNames->Float).Set(0.0f);
+        in(xRaw, "in3", SdfValueTypeNames->Float)
+            .ConnectToSource(out(negX, "out", SdfValueTypeNames->Float));
+        UsdShadeShader x = g.Node("viewX", "ND_normalize_vector3");
+        in(x, "in", SdfValueTypeNames->Vector3f)
+            .ConnectToSource(out(xRaw, "out", SdfValueTypeNames->Vector3f));
+        const UsdShadeOutput xOut = out(x, "out", SdfValueTypeNames->Vector3f);
+        UsdShadeShader y = g.Node("viewY", "ND_crossproduct_vector3");
+        in(y, "in1", SdfValueTypeNames->Vector3f).ConnectToSource(v);
+        in(y, "in2", SdfValueTypeNames->Vector3f).ConnectToSource(xOut);
+
+        UsdShadeOutput n = normal;
+        if (!n)
+        {
+            UsdShadeShader worldNormal = g.Node("worldNormal", "ND_normal_vector3");
+            in(worldNormal, "space", SdfValueTypeNames->String).Set(std::string("world"));
+            n = out(worldNormal, "out", SdfValueTypeNames->Vector3f);
+        }
+        UsdShadeShader u = g.Node("matcapU", "ND_dotproduct_vector3");
+        in(u, "in1", SdfValueTypeNames->Vector3f).ConnectToSource(xOut);
+        in(u, "in2", SdfValueTypeNames->Vector3f).ConnectToSource(n);
+        UsdShadeShader vv = g.Node("matcapV", "ND_dotproduct_vector3");
+        in(vv, "in1", SdfValueTypeNames->Vector3f)
+            .ConnectToSource(out(y, "out", SdfValueTypeNames->Vector3f));
+        in(vv, "in2", SdfValueTypeNames->Vector3f).ConnectToSource(n);
+        UsdShadeShader uvRaw = g.Node("matcapUvRaw", "ND_combine2_vector2");
+        in(uvRaw, "in1", SdfValueTypeNames->Float)
+            .ConnectToSource(out(u, "out", SdfValueTypeNames->Float));
+        in(uvRaw, "in2", SdfValueTypeNames->Float)
+            .ConnectToSource(out(vv, "out", SdfValueTypeNames->Float));
+        UsdShadeShader uvScale = g.Node("matcapUvScale", "ND_multiply_vector2FA");
+        in(uvScale, "in1", SdfValueTypeNames->Float2)
+            .ConnectToSource(out(uvRaw, "out", SdfValueTypeNames->Float2));
+        in(uvScale, "in2", SdfValueTypeNames->Float).Set(0.495f);
+        UsdShadeShader uv = g.Node("matcapUv", "ND_add_vector2FA");
+        in(uv, "in1", SdfValueTypeNames->Float2)
+            .ConnectToSource(out(uvScale, "out", SdfValueTypeNames->Float2));
+        in(uv, "in2", SdfValueTypeNames->Float).Set(0.5f);
+
+        UsdShadeShader matcap = g.Node("matcap", "ND_multiply_color3");
+        in(matcap, "in1", SdfValueTypeNames->Color3f)
+            .ConnectToSource(g.Sample("matcap", *tex, "ND_image_color3",
+                                      SdfValueTypeNames->Color3f, true,
+                                      out(uv, "out", SdfValueTypeNames->Float2)));
+        in(matcap, "in2", SdfValueTypeNames->Color3f).Set(m.matcapFactor);
+        rim = out(matcap, "out", SdfValueTypeNames->Color3f);
+    }
+
+    // A black parametric rim adds nothing, so none is authored.
+    if (m.parametricRimColorFactor != GfVec3f(0.0f))
+    {
+        UsdShadeShader base = g.Node("rimFresnelBase", "ND_subtract_float");
+        in(base, "in1", SdfValueTypeNames->Float).Set(1.0f + m.parametricRimLiftFactor);
+        in(base, "in2", SdfValueTypeNames->Float).ConnectToSource(nDotVOut);
+        UsdShadeShader sat = g.Node("rimFresnelClamp", "ND_clamp_float");
+        in(sat, "in", SdfValueTypeNames->Float)
+            .ConnectToSource(out(base, "out", SdfValueTypeNames->Float));
+        in(sat, "low", SdfValueTypeNames->Float).Set(0.0f);
+        in(sat, "high", SdfValueTypeNames->Float).Set(1.0f);
+        UsdShadeShader fresnel = g.Node("rimFresnel", "ND_power_float");
+        in(fresnel, "in1", SdfValueTypeNames->Float)
+            .ConnectToSource(out(sat, "out", SdfValueTypeNames->Float));
+        in(fresnel, "in2", SdfValueTypeNames->Float)
+            .Set(std::max(m.parametricRimFresnelPowerFactor, 1e-5f));
+        UsdShadeShader parametric = g.Node("parametricRim", "ND_multiply_color3FA");
+        in(parametric, "in1", SdfValueTypeNames->Color3f).Set(m.parametricRimColorFactor);
+        in(parametric, "in2", SdfValueTypeNames->Float)
+            .ConnectToSource(out(fresnel, "out", SdfValueTypeNames->Float));
+        const UsdShadeOutput p = out(parametric, "out", SdfValueTypeNames->Color3f);
+        if (rim)
+        {
+            UsdShadeShader sum = g.Node("rim", "ND_add_color3");
+            in(sum, "in1", SdfValueTypeNames->Color3f).ConnectToSource(rim);
+            in(sum, "in2", SdfValueTypeNames->Color3f).ConnectToSource(p);
+            rim = out(sum, "out", SdfValueTypeNames->Color3f);
+        }
+        else
+        {
+            rim = p;
+        }
+    }
+
+    if (rim)
+    {
+        if (const VrmTextureRef* tex = _Texture(s, "rimMultiply"))
+        {
+            UsdShadeShader mask = g.Node("rimMasked", "ND_multiply_color3");
+            in(mask, "in1", SdfValueTypeNames->Color3f).ConnectToSource(rim);
+            in(mask, "in2", SdfValueTypeNames->Color3f)
+                .ConnectToSource(g.Sample("rimMultiply", *tex, "ND_image_color3",
+                                          SdfValueTypeNames->Color3f, true));
+            rim = out(mask, "out", SdfValueTypeNames->Color3f);
+        }
+        UsdShadeShader withRim = g.Node("withRim", "ND_add_color3");
+        in(withRim, "in1", SdfValueTypeNames->Color3f).ConnectToSource(color);
+        in(withRim, "in2", SdfValueTypeNames->Color3f).ConnectToSource(rim);
+        color = out(withRim, "out", SdfValueTypeNames->Color3f);
+    }
+
+    // MToon adds glTF's emission. The strength is folded into the factor:
+    // `emissive_strength` would scale the toon colour on the same input too.
+    if (_Texture(s, "emissive") || s.emissiveFactor * s.emissiveStrength != GfVec3f(0.0f))
+    {
+        UsdShadeShader withEmission = g.Node("withEmission", "ND_add_color3");
+        in(withEmission, "in1", SdfValueTypeNames->Color3f).ConnectToSource(color);
+        _AuthorEmission(g, in(withEmission, "in2", SdfValueTypeNames->Color3f), s,
+                        s.emissiveStrength);
+        color = out(withEmission, "out", SdfValueTypeNames->Color3f);
+    }
+
+    surface.CreateInput(TfToken("emissive"), SdfValueTypeNames->Color3f).ConnectToSource(color);
 }
 
 } // namespace
@@ -358,9 +646,13 @@ UsdVrmAuthorMtlx(const UsdShadeMaterial& material, const VrmMaterialSemantics& s
     UsdShadeNodeGraph graph = UsdShadeNodeGraph::Define(stage, mtlxPath);
     _Graph g(stage, mtlxPath);
 
-    // Both shading models end in the glTF surface (material policy §5.2.1).
+    // Every shading model ends in the glTF surface (material policy §5.2.1).
+    // MToon is the material's shading model wherever it is stated, whatever
+    // the glTF core beside it says about unlit.
     UsdShadeShader surface = g.Node("surface", "ND_gltf_pbr_surfaceshader");
-    if (s.unlit)
+    if (s.hasMToon)
+        _AuthorMToon(g, surface, s);
+    else if (s.unlit)
         _AuthorUnlit(g, surface, s);
     else
         _AuthorLit(g, surface, s);
