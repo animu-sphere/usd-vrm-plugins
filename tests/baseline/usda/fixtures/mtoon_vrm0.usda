@@ -28,7 +28,7 @@ def Xform "Asset" (
     def Scope "mtl"
     {
         def Material "Hair" (
-            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:outlineWidthMultiply", "VrmTextureInfoAPI:rimMultiply", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:uvAnimationMask"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:outlineWidthMultiply", "VrmTextureInfoAPI:rimMultiply", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:uvAnimationMask", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -82,6 +82,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "BLEND"
             float inputs:vrm:material:baseColorAlphaFactor = 0.75
@@ -165,6 +166,7 @@ def Xform "Asset" (
             float2 inputs:vrm:textureInfo:uvAnimationMask:transform:scale = (2, 0.5)
             uniform token inputs:vrm:textureInfo:uvAnimationMask:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:uvAnimationMask:wrapT = "clampToEdge"
+            token outputs:mtlx:surface.connect = </Asset/mtl/Hair/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Hair/preview.outputs:surface>
             custom uniform token vrm:shaderModel = "MToon"
 
@@ -218,10 +220,85 @@ def Xform "Asset" (
                     float2 outputs:result
                 }
             }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Hair/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outa>
+                    int inputs:alpha_mode = 2
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive.connect = </Asset/mtl/Hair/mtlx/baseColorRgb.outputs:out>
+                    float inputs:metallic = 0
+                    float inputs:roughness = 1
+                    float inputs:specular = 0
+                    token outputs:surface
+                }
+
+                def Shader "st"
+                {
+                    uniform token info:id = "ND_texcoord_vector2"
+                    int inputs:index = 0
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0.25, -0.5)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (0.5, 2)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorImage"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    color4f inputs:default = (0, 0, 0, 1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Hair/mtlx/baseColorPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorFactor"
+                {
+                    uniform token info:id = "ND_multiply_color4"
+                    color4f inputs:in1.connect = </Asset/mtl/Hair/mtlx/baseColorImage.outputs:out>
+                    color4f inputs:in2 = (0.21404114, 1, 0.05087609, 0.75)
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorSplit"
+                {
+                    uniform token info:id = "ND_separate4_color4"
+                    color4f inputs:in.connect = </Asset/mtl/Hair/mtlx/baseColorFactor.outputs:out>
+                    float outputs:outa
+                    float outputs:outb
+                    float outputs:outg
+                    float outputs:outr
+                }
+
+                def Shader "baseColorRgb"
+                {
+                    uniform token info:id = "ND_combine3_color3"
+                    float inputs:in1.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outr>
+                    float inputs:in2.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outg>
+                    float inputs:in3.connect = </Asset/mtl/Hair/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
+                }
+            }
         }
 
         def Material "Face" (
-            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:shadeMultiply"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:shadeMultiply", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -254,6 +331,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.3
             uniform token inputs:vrm:material:alphaMode = "MASK"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -297,6 +375,7 @@ def Xform "Asset" (
             float2 inputs:vrm:textureInfo:shadeMultiply:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:shadeMultiply:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:shadeMultiply:wrapT = "clampToEdge"
+            token outputs:mtlx:surface.connect = </Asset/mtl/Face/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Face/preview.outputs:surface>
             custom uniform token vrm:shaderModel = "MToon"
 
@@ -351,10 +430,86 @@ def Xform "Asset" (
                     float2 outputs:result
                 }
             }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Face/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outa>
+                    float inputs:alpha_cutoff = 0.3
+                    int inputs:alpha_mode = 1
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive.connect = </Asset/mtl/Face/mtlx/baseColorRgb.outputs:out>
+                    float inputs:metallic = 0
+                    float inputs:roughness = 1
+                    float inputs:specular = 0
+                    token outputs:surface
+                }
+
+                def Shader "st"
+                {
+                    uniform token info:id = "ND_texcoord_vector2"
+                    int inputs:index = 0
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0, -0)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (1, 1)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Face/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorImage"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    color4f inputs:default = (0, 0, 0, 1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Face/mtlx/baseColorPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorFactor"
+                {
+                    uniform token info:id = "ND_multiply_color4"
+                    color4f inputs:in1.connect = </Asset/mtl/Face/mtlx/baseColorImage.outputs:out>
+                    color4f inputs:in2 = (1, 1, 1, 1)
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorSplit"
+                {
+                    uniform token info:id = "ND_separate4_color4"
+                    color4f inputs:in.connect = </Asset/mtl/Face/mtlx/baseColorFactor.outputs:out>
+                    float outputs:outa
+                    float outputs:outb
+                    float outputs:outg
+                    float outputs:outr
+                }
+
+                def Shader "baseColorRgb"
+                {
+                    uniform token info:id = "ND_combine3_color3"
+                    float inputs:in1.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outr>
+                    float inputs:in2.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outg>
+                    float inputs:in3.connect = </Asset/mtl/Face/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
+                }
+            }
         }
 
         def Material "Veil" (
-            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -376,6 +531,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "BLEND"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -405,6 +561,7 @@ def Xform "Asset" (
             float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
             float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
             float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            token outputs:mtlx:surface.connect = </Asset/mtl/Veil/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Veil/preview.outputs:surface>
             custom uniform token vrm:shaderModel = "MToon"
 
@@ -423,10 +580,28 @@ def Xform "Asset" (
                     token outputs:surface
                 }
             }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Veil/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 2
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive = (1, 1, 1)
+                    float inputs:metallic = 0
+                    float inputs:roughness = 1
+                    float inputs:specular = 0
+                    token outputs:surface
+                }
+            }
         }
 
         def Material "Tear" (
-            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -449,6 +624,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "BLEND"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -478,6 +654,7 @@ def Xform "Asset" (
             float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
             float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
             float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            token outputs:mtlx:surface.connect = </Asset/mtl/Tear/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Tear/preview.outputs:surface>
             custom uniform token vrm:shaderModel = "MToon"
 
@@ -496,10 +673,28 @@ def Xform "Asset" (
                     token outputs:surface
                 }
             }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Tear/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 2
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive = (1, 1, 1)
+                    float inputs:metallic = 0
+                    float inputs:roughness = 1
+                    float inputs:specular = 0
+                    token outputs:surface
+                }
+            }
         }
 
         def Material "Lashes" (
-            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -521,6 +716,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "BLEND"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -550,6 +746,7 @@ def Xform "Asset" (
             float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
             float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
             float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            token outputs:mtlx:surface.connect = </Asset/mtl/Lashes/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Lashes/preview.outputs:surface>
             custom uniform token vrm:shaderModel = "MToon"
 
@@ -565,6 +762,24 @@ def Xform "Asset" (
                     float inputs:metallic = 0
                     float inputs:opacity = 1
                     float inputs:roughness = 1
+                    token outputs:surface
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Lashes/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 2
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive = (1, 1, 1)
+                    float inputs:metallic = 0
+                    float inputs:roughness = 1
+                    float inputs:specular = 0
                     token outputs:surface
                 }
             }

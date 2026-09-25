@@ -77,6 +77,7 @@ add_library(${PLUGIN_NAME} SHARED
     src/io/cgltfImpl.cpp
     src/io/CgltfVrmDocumentReader.cpp
     src/usd/MaterialSemantics.cpp
+    src/usd/MtlxRealization.cpp
     src/usd/PreviewRealization.cpp
     src/usd/UsdVrmAuthorer.cpp
     src/util/PathUtil.cpp

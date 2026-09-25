@@ -35,6 +35,16 @@ def _vclose(a, b, eps=1e-5):
     return all(abs(a[i] - b[i]) < eps for i in range(len(a)))
 
 
+def _graph_text(stage, path, package):
+    """The subtree at `path` as usda, re-rooted at /Graph, with the material's
+    own path and the package it was read from spelled out of it."""
+    if not stage.GetPrimAtPath(path):
+        return None
+    out = Sdf.Layer.CreateAnonymous(".usda")
+    assert Sdf.CopySpec(stage.GetRootLayer(), path, out, "/Graph"), path
+    return out.ExportToString().replace(path, "/Graph").replace(package, "<package>")
+
+
 def check_minimal():
     """Skinned mesh + non-skinned node-placed accessory; IBM bind; humanoid."""
     stage = _open("minimal.vrm")
@@ -797,6 +807,14 @@ def check_mtoon_vrm0_matches_vrm1():
         tex.GetPath().AppendProperty("outputs:rgb")]
     assert surface.GetAttribute("inputs:opacity").GetConnections() == [
         tex.GetPath().AppendProperty("outputs:a")]
+    # Both realizations are generated from the canonical values (Steps 5-6),
+    # so the two stages carry the same graphs, bar the package they live in.
+    for name in names:
+        for graph in ("preview", "mtlx"):
+            path = f"/Asset/mtl/{name}/{graph}"
+            assert (_graph_text(vrm0, path, "mtoon_vrm0.vrm")
+                    == _graph_text(vrm1, path, "mtoon_vrm1.vrm")), path
+    assert vrm0.GetPrimAtPath("/Asset/mtl/Hair/mtlx"), "no /mtlx on a 0.x MToon"
     # The raw block is still the whole materialProperties entry.
     gltf, _ = material_oracle.read_glb(FIXTURES / "mtoon_vrm0.vrm")
     raw = hair.GetCustomData()["vrm"]["mtoon"]["raw"]
