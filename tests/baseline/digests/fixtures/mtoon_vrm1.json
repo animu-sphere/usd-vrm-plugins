@@ -714,7 +714,6 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
@@ -724,7 +723,8 @@
         "VrmTextureInfoAPI:outlineWidthMultiply",
         "VrmTextureInfoAPI:rimMultiply",
         "VrmTextureInfoAPI:shadeMultiply",
-        "VrmTextureInfoAPI:uvAnimationMask"
+        "VrmTextureInfoAPI:uvAnimationMask",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Hair",
       "type": "Material"
@@ -816,11 +816,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Face",
       "type": "Material"
@@ -912,9 +912,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
-        "VrmMToonAPI"
+        "VrmMToonAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Veil",
       "type": "Material"
@@ -943,9 +943,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
-        "VrmMToonAPI"
+        "VrmMToonAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Tear",
       "type": "Material"
@@ -974,9 +974,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
-        "VrmMToonAPI"
+        "VrmMToonAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Lashes",
       "type": "Material"

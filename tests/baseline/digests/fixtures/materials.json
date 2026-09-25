@@ -604,8 +604,8 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
-        "VrmMaterialAPI"
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Unlit",
       "type": "Material"
@@ -634,9 +634,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/UnlitCutout",
       "type": "Material"
@@ -714,9 +714,9 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
-        "VrmTextureInfoAPI:baseColor"
+        "VrmTextureInfoAPI:baseColor",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/UnlitPlaced",
       "type": "Material"

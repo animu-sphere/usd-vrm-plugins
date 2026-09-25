@@ -30,7 +30,7 @@ def Xform "Asset" (
     def Scope "mtl"
     {
         def Material "Hair" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:outlineWidthMultiply", "VrmTextureInfoAPI:rimMultiply", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:uvAnimationMask"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:outlineWidthMultiply", "VrmTextureInfoAPI:rimMultiply", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:uvAnimationMask", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -87,9 +87,6 @@ def Xform "Asset" (
             uniform token inputs:vrm:textureInfo:emissive:wrapT = "clampToEdge"
             asset inputs:vrm:textureInfo:matcap:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/fd309d4af37bc74f.png]@
             uniform int inputs:vrm:textureInfo:matcap:texCoord = 0
-            float2 inputs:vrm:textureInfo:matcap:transform:offset = (0, 0)
-            float inputs:vrm:textureInfo:matcap:transform:rotation = 0
-            float2 inputs:vrm:textureInfo:matcap:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:matcap:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:matcap:wrapT = "clampToEdge"
             asset inputs:vrm:textureInfo:normal:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/2258d39c9f61a117.png]@
@@ -260,7 +257,7 @@ def Xform "Asset" (
         }
 
         def Material "Face" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:shadeMultiply"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:shadeMultiply", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -449,7 +446,7 @@ def Xform "Asset" (
         }
 
         def Material "Veil" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmMToonAPI"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -530,7 +527,7 @@ def Xform "Asset" (
         }
 
         def Material "Tear" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmMToonAPI"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -611,7 +608,7 @@ def Xform "Asset" (
         }
 
         def Material "Lashes" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmMToonAPI"]
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     dictionary mtoon = {
@@ -712,9 +709,6 @@ def Xform "Asset" (
             uniform bool inputs:vrm:material:unlit = 0
             asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]@
             uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
-            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
             token outputs:surface.connect = </Asset/mtl/Plain/preview.outputs:surface>

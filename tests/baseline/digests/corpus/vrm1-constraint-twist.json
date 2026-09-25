@@ -2852,12 +2852,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:normal",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Body_00_SKIN",
       "type": "Material"
@@ -2935,11 +2935,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Bottoms_01_CLOTH",
       "type": "Material"
@@ -3017,11 +3017,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Shoes_01_CLOTH",
       "type": "Material"
@@ -3099,11 +3099,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Tops_01_CLOTH",
       "type": "Material"
@@ -3181,12 +3181,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:normal",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/HairBack_00_HAIR",
       "type": "Material"
@@ -3264,11 +3264,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/FaceMouth_00_FACE",
       "type": "Material"
@@ -3346,11 +3346,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/EyeIris_00_EYE",
       "type": "Material"
@@ -3428,12 +3428,12 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:outlineWidthMultiply",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Face_00_SKIN",
       "type": "Material"
@@ -3511,11 +3511,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/EyeWhite_00_EYE",
       "type": "Material"
@@ -3593,11 +3593,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/FaceEyeline_00_FACE",
       "type": "Material"
@@ -3675,11 +3675,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/FaceBrow_00_FACE",
       "type": "Material"
@@ -3757,11 +3757,11 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/EyeHighlight_00_EYE",
       "type": "Material"
@@ -3839,13 +3839,13 @@
     },
     {
       "appliedSchemas": [
-        "MaterialXConfigAPI",
         "VrmMaterialAPI",
         "VrmMToonAPI",
         "VrmTextureInfoAPI:baseColor",
         "VrmTextureInfoAPI:emissive",
         "VrmTextureInfoAPI:normal",
-        "VrmTextureInfoAPI:shadeMultiply"
+        "VrmTextureInfoAPI:shadeMultiply",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Hair_00_HAIR",
       "type": "Material"

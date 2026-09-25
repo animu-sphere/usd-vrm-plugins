@@ -127,9 +127,6 @@ def Xform "Asset" (
             uniform token inputs:vrm:textureInfo:emissive:wrapT = "clampToEdge"
             asset inputs:vrm:textureInfo:matcap:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/fd309d4af37bc74f.png]@
             uniform int inputs:vrm:textureInfo:matcap:texCoord = 0
-            float2 inputs:vrm:textureInfo:matcap:transform:offset = (0, 0)
-            float inputs:vrm:textureInfo:matcap:transform:rotation = 0
-            float2 inputs:vrm:textureInfo:matcap:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:matcap:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:matcap:wrapT = "clampToEdge"
             asset inputs:vrm:textureInfo:normal:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/2258d39c9f61a117.png]@
@@ -178,12 +175,47 @@ def Xform "Asset" (
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (0.21404114, 1, 0.05087609)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Hair/preview/baseColorTexture.outputs:rgb>
                     float inputs:metallic = 0
-                    float inputs:opacity = 1
-                    float inputs:roughness = 0.9
+                    float inputs:opacity = 0.75
+                    float inputs:opacity.connect = </Asset/mtl/Hair/preview/baseColorTexture.outputs:a>
+                    float inputs:roughness = 1
                     token outputs:surface
+                }
+
+                def Shader "stReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+
+                def Shader "baseColorTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+                    float4 inputs:scale = (0.21404114, 1, 0.05087609, 0.75)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/Hair/preview/baseColorTexture_xf.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "baseColorTexture_xf"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </Asset/mtl/Hair/preview/stReader.outputs:result>
+                    float inputs:rotation = 0
+                    float2 inputs:scale = (2, 0.5)
+                    float2 inputs:translation = (0.25, 0.5)
+                    float2 outputs:result
                 }
             }
         }
@@ -275,12 +307,48 @@ def Xform "Asset" (
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (1, 1, 1)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Face/preview/baseColorTexture.outputs:rgb>
                     float inputs:metallic = 0
                     float inputs:opacity = 1
-                    float inputs:roughness = 0.9
+                    float inputs:opacity.connect = </Asset/mtl/Face/preview/baseColorTexture.outputs:a>
+                    float inputs:opacityThreshold = 0.3
+                    float inputs:roughness = 1
                     token outputs:surface
+                }
+
+                def Shader "stReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+
+                def Shader "baseColorTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+                    float4 inputs:scale = (1, 1, 1, 1)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/Face/preview/baseColorTexture_xf.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "baseColorTexture_xf"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </Asset/mtl/Face/preview/stReader.outputs:result>
+                    float inputs:rotation = 0
+                    float2 inputs:scale = (1, 1)
+                    float2 inputs:translation = (0, 0)
+                    float2 outputs:result
                 }
             }
         }
@@ -347,11 +415,11 @@ def Xform "Asset" (
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (1, 1, 1)
                     float inputs:metallic = 0
                     float inputs:opacity = 1
-                    float inputs:roughness = 0.9
+                    float inputs:roughness = 1
                     token outputs:surface
                 }
             }
@@ -420,11 +488,11 @@ def Xform "Asset" (
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (1, 1, 1)
                     float inputs:metallic = 0
                     float inputs:opacity = 1
-                    float inputs:roughness = 0.9
+                    float inputs:roughness = 1
                     token outputs:surface
                 }
             }
@@ -492,11 +560,11 @@ def Xform "Asset" (
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (1, 1, 1)
                     float inputs:metallic = 0
                     float inputs:opacity = 1
-                    float inputs:roughness = 0.9
+                    float inputs:roughness = 1
                     token outputs:surface
                 }
             }
@@ -523,9 +591,6 @@ def Xform "Asset" (
             uniform bool inputs:vrm:material:unlit = 0
             asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
             uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
-            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
             token outputs:surface.connect = </Asset/mtl/Plain/preview.outputs:surface>

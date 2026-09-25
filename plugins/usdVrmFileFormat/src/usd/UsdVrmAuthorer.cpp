@@ -2,6 +2,9 @@
 #include "usd/UsdVrmAuthorer.h"
 
 #include "model/VrmDiagnostics.h"
+#include "usd/MaterialSemantics.h"
+#include "usd/PreviewRealization.h"
+#include "usd/UvTransform.h"
 #include "util/PathUtil.h"
 
 // Typed VRM API schemas, consumed from the installed vrmSchema bundle
@@ -11,10 +14,7 @@
 #include <vrmSchema/vrmExpressionAPI.h>
 #include <vrmSchema/vrmHumanoidAPI.h>
 #include <vrmSchema/vrmLookAtAPI.h>
-#include <vrmSchema/vrmMToonAPI.h>
-#include <vrmSchema/vrmMaterialAPI.h>
 #include <vrmSchema/vrmSpringBoneAPI.h>
-#include <vrmSchema/vrmTextureInfoAPI.h>
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -116,56 +116,13 @@ _MtlxAddressMode(const std::string& wrap)
 // The base colour factor's alpha, under glTF's alpha-coverage rule: OPAQUE
 // "the alpha value is ignored and the rendered output is fully opaque", so a
 // material with alphaMode OPAQUE and a factor alpha of 0.3 is opaque, not 30%
-// transparent. Shared by both realizations because MaterialX's gltf_pbr
-// enforces it inside its own graph — leaving /preview to apply the factor
-// would make the two disagree about the same source material.
+// transparent. MaterialX's gltf_pbr enforces it inside its own graph, and
+// /preview applies the same rule (PreviewRealization.cpp) -- leaving either to
+// pass the factor through would make the two disagree about one material.
 float
 _GltfOpacity(const VrmMaterial& vm)
 {
     return vm.alphaMode == "OPAQUE" ? 1.0f : vm.opacity;
-}
-
-// KHR_texture_transform, resolved into the UV space USD actually samples.
-//
-// Two changes of variable sit between glTF's statement of the transform and
-// what either realization should author, and neither is visible on an identity
-// transform — which is every transform in the corpus, so regenerating baselines
-// proves nothing about this:
-//
-//   * The importer already flipped V (`VrmConvertUv`), so a transform glTF
-//     defines against its own top-left-origin UVs has to be conjugated by that
-//     flip before it applies to `st`.
-//   * glTF states the rotation in radians; both `UsdTransform2d.rotation` and
-//     MaterialX's `place2d.rotate` are declared in degrees.
-//
-// Conjugating glTF's T*R*S by (u, v) -> (u, 1-v) leaves the scale alone, flips
-// the sense of the rotation, and lands the translation on the value below. What
-// comes out is one affine map in st space, written with MaterialX's `rotate2d`
-// (which turns clockwise and takes degrees — both realizations are built on it):
-//
-//     st' = rotate2d(scale * st, -rotationDegrees) + translation
-//
-// Each realization then spells that in its own vocabulary, and the two spellings
-// share nothing but this: UsdTransform2d multiplies by its scale, adds its
-// translation and negates its rotation, while place2d divides, subtracts and
-// does not negate. Deriving the map once is what stops them drifting apart --
-// verified against glTF's own matrix in check_texture_transform, since on an
-// identity transform (which is every transform in the corpus) every wrong
-// answer coincides with the right one.
-struct _UvTransform
-{
-    GfVec2f scale;
-    float rotationDegrees;
-    GfVec2f translation;
-};
-
-_UvTransform
-_GltfUvTransform(const VrmTextureRef& ref)
-{
-    const float r = ref.uvRotation; // radians, per KHR_texture_transform
-    return {ref.uvScale, static_cast<float>(GfRadiansToDegrees(r)),
-            GfVec2f(ref.uvOffset[0] + ref.uvScale[1] * std::sin(r),
-                    1.0f - ref.uvOffset[1] - ref.uvScale[1] * std::cos(r))};
 }
 
 // Author /Asset/mtl/<name>/mtlx: the MaterialX realization of an unlit VRM
@@ -256,7 +213,7 @@ _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat, const Vr
         // vocabulary rather than passed through.
         if (ref.hasTransform)
         {
-            const _UvTransform t = _GltfUvTransform(ref);
+            const VrmStTransform t = VrmGltfStTransform(ref);
             UsdShadeShader place = node("baseColorPlace", "ND_place2d_vector2");
             place.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2).ConnectToSource(uv);
             place.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
@@ -340,88 +297,6 @@ _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat, const Vr
             .CreateAttribute(TfToken("config:mtlx:version"), SdfValueTypeNames->String,
                              /*custom=*/false)
             .Set(std::string(_kMtlxVersion));
-    }
-}
-
-// The model keeps a sampler wrap in UsdUVTexture's words, which /preview
-// authors as-is; the canonical attribute is glTF's word (schema contract).
-const char*
-_GltfWrap(const std::string& wrap)
-{
-    if (wrap == "clamp")
-        return "clampToEdge";
-    if (wrap == "mirror")
-        return "mirroredRepeat";
-    return "repeat";
-}
-
-// Author a material's canonical semantics on the Material itself (material
-// policy §6; P5 Step 4): VrmMaterialAPI on every material, VrmMToonAPI on an
-// MToon one, and one VrmTextureInfoAPI instance per texture role it samples.
-//
-// Every value is authored, the specification defaults included. A reader would
-// get a default from the schema fallback, but a realization connected to a
-// canonical input would not -- UsdShade resolves an interface connection to an
-// authored value only (§6.4.1) -- and Steps 5-6 connect to all of them.
-void
-_AuthorMaterialSemantics(const UsdShadeMaterial& mat, const VrmMaterialSemantics& s)
-{
-    const UsdPrim prim = mat.GetPrim();
-
-    UsdVrmMaterialAPI core = UsdVrmMaterialAPI::Apply(prim);
-    core.CreateBaseColorFactorAttr().Set(s.baseColorFactor);
-    core.CreateBaseColorAlphaFactorAttr().Set(s.baseColorAlphaFactor);
-    core.CreateMetallicFactorAttr().Set(s.metallicFactor);
-    core.CreateRoughnessFactorAttr().Set(s.roughnessFactor);
-    core.CreateEmissiveFactorAttr().Set(s.emissiveFactor);
-    core.CreateEmissiveStrengthAttr().Set(s.emissiveStrength);
-    core.CreateAlphaModeAttr().Set(TfToken(s.alphaMode));
-    core.CreateAlphaCutoffAttr().Set(s.alphaCutoff);
-    core.CreateDoubleSidedAttr().Set(s.doubleSided);
-    core.CreateUnlitAttr().Set(s.unlit);
-
-    if (s.hasMToon)
-    {
-        const VrmMToonSemantics& t = s.mtoon;
-        UsdVrmMToonAPI mtoon = UsdVrmMToonAPI::Apply(prim);
-        mtoon.CreateSpecVersionAttr().Set(TfToken(t.specVersion));
-        mtoon.CreateTransparentWithZWriteAttr().Set(t.transparentWithZWrite);
-        mtoon.CreateRenderQueueOffsetNumberAttr().Set(t.renderQueueOffsetNumber);
-        mtoon.CreateShadeColorFactorAttr().Set(t.shadeColorFactor);
-        mtoon.CreateShadingShiftFactorAttr().Set(t.shadingShiftFactor);
-        mtoon.CreateShadingToonyFactorAttr().Set(t.shadingToonyFactor);
-        mtoon.CreateGiEqualizationFactorAttr().Set(t.giEqualizationFactor);
-        mtoon.CreateMatcapFactorAttr().Set(t.matcapFactor);
-        mtoon.CreateParametricRimColorFactorAttr().Set(t.parametricRimColorFactor);
-        mtoon.CreateParametricRimFresnelPowerFactorAttr().Set(t.parametricRimFresnelPowerFactor);
-        mtoon.CreateParametricRimLiftFactorAttr().Set(t.parametricRimLiftFactor);
-        mtoon.CreateRimLightingMixFactorAttr().Set(t.rimLightingMixFactor);
-        mtoon.CreateOutlineWidthModeAttr().Set(TfToken(t.outlineWidthMode));
-        mtoon.CreateOutlineWidthFactorAttr().Set(t.outlineWidthFactor);
-        mtoon.CreateOutlineColorFactorAttr().Set(t.outlineColorFactor);
-        mtoon.CreateOutlineLightingMixFactorAttr().Set(t.outlineLightingMixFactor);
-        mtoon.CreateUvAnimationScrollXSpeedFactorAttr().Set(t.uvAnimationScrollXSpeedFactor);
-        mtoon.CreateUvAnimationScrollYSpeedFactorAttr().Set(t.uvAnimationScrollYSpeedFactor);
-        mtoon.CreateUvAnimationRotationSpeedFactorAttr().Set(t.uvAnimationRotationSpeedFactor);
-    }
-
-    for (const auto& [role, ref] : s.textures)
-    {
-        UsdVrmTextureInfoAPI info = UsdVrmTextureInfoAPI::Apply(prim, TfToken(role));
-        info.CreateFileAttr().Set(SdfAssetPath(ref.filePath));
-        info.CreateTexCoordAttr().Set(ref.uvSet);
-        info.CreateWrapSAttr().Set(TfToken(_GltfWrap(ref.wrapS)));
-        info.CreateWrapTAttr().Set(TfToken(_GltfWrap(ref.wrapT)));
-        // The contribution scalar, on the roles that have one: glTF's normal
-        // scale and MToon's shading-shift scale are `scale`, glTF's occlusion
-        // strength is `strength`. The model carries all three in one field.
-        if (role == "normal" || role == "shadingShift")
-            info.CreateScaleAttr().Set(ref.scale);
-        else if (role == "occlusion")
-            info.CreateStrengthAttr().Set(ref.scale);
-        info.CreateTransformOffsetAttr().Set(ref.uvOffset);
-        info.CreateTransformRotationAttr().Set(ref.uvRotation);
-        info.CreateTransformScaleAttr().Set(ref.uvScale);
     }
 }
 
@@ -598,181 +473,25 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outU
 
         UsdShadeMaterial mat = UsdShadeMaterial::Define(stage, matPath);
 
-        // Material policy §4: the Material prim is identity, binding and (from
-        // P5 step 3) canonical VRM semantics; each rendering realization is one
-        // material-local UsdShadeNodeGraph. `preview` holds the UsdPreviewSurface
-        // fallback. The graph name and its surface output are the authored
-        // contract; the node names *inside* it are realization-local and are
-        // deliberately not (§4.3), so the graph can be rewritten without a
-        // fixture migration.
-        const SdfPath previewPath = matPath.AppendChild(TfToken("preview"));
-        UsdShadeNodeGraph preview = UsdShadeNodeGraph::Define(stage, previewPath);
-
-        UsdShadeShader shader =
-            UsdShadeShader::Define(stage, previewPath.AppendChild(TfToken("surface")));
-        shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
-        // VRM materials are unlit (KHR_materials_unlit) / toon. Render unlit as
-        // base color through emissive with no lit response, so scene lights
-        // don't carve facets into the low-poly surface (the "polygonal" look).
-        const bool unlit = vm.unlit;
-        shader.CreateInput(TfToken("diffuseColor"), SdfValueTypeNames->Color3f)
-            .Set(unlit ? GfVec3f(0.0f) : vm.baseColor);
-        shader.CreateInput(TfToken("emissiveColor"), SdfValueTypeNames->Color3f)
-            .Set(unlit ? vm.baseColor : vm.emissiveColor);
-        shader.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float)
-            .Set(unlit ? 0.0f : vm.metallic);
-        shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
-            .Set(unlit ? 1.0f : vm.roughness);
-        shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float).Set(_GltfOpacity(vm));
-        if (vm.alphaMode == "MASK")
-        {
-            shader.CreateInput(TfToken("opacityThreshold"), SdfValueTypeNames->Float)
-                .Set(vm.alphaCutoff);
-        }
-        // Terminals connect material -> graph -> internal shader, never material
-        // -> an internal shader (material policy §4.1). Material *bindings* keep
-        // targeting the material prim and nothing below it.
-        UsdShadeOutput surfaceOut =
-            shader.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
-        UsdShadeOutput previewOut =
-            preview.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
-        previewOut.ConnectToSource(surfaceOut);
-        mat.CreateSurfaceOutput().ConnectToSource(previewOut);
-
-        // Textures. A single UsdPrimvarReader_float2 feeds every UsdUVTexture's
-        // st; each glTF texture slot becomes one UsdUVTexture wired into the
-        // matching UsdPreviewSurface input. (glTF's factor*texture multiply is
-        // approximated by the texture alone — a follow-up may insert multiplies.)
-        bool anyTex = vm.baseColorTex.present || vm.metallicRoughnessTex.present ||
-                      vm.normalTex.present || vm.emissiveTex.present || vm.occlusionTex.present;
-        UsdShadeShader stReader;
-        if (anyTex)
-        {
-            stReader = UsdShadeShader::Define(stage, previewPath.AppendChild(TfToken("stReader")));
-            stReader.CreateIdAttr(VtValue(TfToken("UsdPrimvarReader_float2")));
-            stReader.CreateInput(TfToken("varname"), SdfValueTypeNames->Token).Set(TfToken("st"));
-            stReader.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2);
-        }
-
-        auto makeTexture = [&](const VrmTextureRef& ref, const char* nodeName,
-                               bool color) -> UsdShadeShader
-        {
-            UsdShadeShader tex =
-                UsdShadeShader::Define(stage, previewPath.AppendChild(TfToken(nodeName)));
-            tex.CreateIdAttr(VtValue(TfToken("UsdUVTexture")));
-            tex.CreateInput(TfToken("file"), SdfValueTypeNames->Asset)
-                .Set(SdfAssetPath(ref.filePath));
-            tex.CreateInput(TfToken("wrapS"), SdfValueTypeNames->Token).Set(TfToken(ref.wrapS));
-            tex.CreateInput(TfToken("wrapT"), SdfValueTypeNames->Token).Set(TfToken(ref.wrapT));
-            tex.CreateInput(TfToken("sourceColorSpace"), SdfValueTypeNames->Token)
-                .Set(TfToken(color ? "sRGB" : "raw"));
-            UsdShadeInput st = tex.CreateInput(TfToken("st"), SdfValueTypeNames->Float2);
-            // KHR_texture_transform -> UsdTransform2d between the reader and st.
-            // The node computes rotate2d(in * scale, -rotation) + translation,
-            // and rotate2d turns clockwise, so the two negations cancel and the
-            // shared st-space rotation is authored as-is.
-            if (ref.hasTransform)
-            {
-                const _UvTransform uv = _GltfUvTransform(ref);
-                UsdShadeShader xf = UsdShadeShader::Define(
-                    stage, previewPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
-                xf.CreateIdAttr(VtValue(TfToken("UsdTransform2d")));
-                xf.CreateInput(TfToken("in"), SdfValueTypeNames->Float2)
-                    .ConnectToSource(stReader.GetOutput(TfToken("result")));
-                xf.CreateInput(TfToken("translation"), SdfValueTypeNames->Float2)
-                    .Set(uv.translation);
-                xf.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2).Set(uv.scale);
-                xf.CreateInput(TfToken("rotation"), SdfValueTypeNames->Float)
-                    .Set(uv.rotationDegrees);
-                st.ConnectToSource(xf.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2));
-            }
-            else
-            {
-                st.ConnectToSource(stReader.GetOutput(TfToken("result")));
-            }
-            tex.CreateOutput(TfToken("rgb"), SdfValueTypeNames->Float3);
-            tex.CreateOutput(TfToken("r"), SdfValueTypeNames->Float);
-            tex.CreateOutput(TfToken("g"), SdfValueTypeNames->Float);
-            tex.CreateOutput(TfToken("b"), SdfValueTypeNames->Float);
-            tex.CreateOutput(TfToken("a"), SdfValueTypeNames->Float);
-            return tex;
-        };
-
-        if (vm.baseColorTex.present)
-        {
-            UsdShadeShader t = makeTexture(vm.baseColorTex, "baseColorTexture", true);
-            // glTF defines base color as factor * texture. UsdUVTexture's
-            // scale input preserves that relation without an extra shader node.
-            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2], vm.opacity));
-            // Unlit routes base color to emissive (flat); lit routes to diffuse.
-            shader.GetInput(TfToken(unlit ? "emissiveColor" : "diffuseColor"))
-                .ConnectToSource(t.GetOutput(TfToken("rgb")));
-            if (vm.alphaMode != "OPAQUE")
-            {
-                shader.GetInput(TfToken("opacity")).ConnectToSource(t.GetOutput(TfToken("a")));
-            }
-        }
-        // Lit-only slots (metallicRoughness / emissive / occlusion / normal) are
-        // ignored by KHR_materials_unlit, so skip them on an unlit surface. This
-        // also keeps the emissive texture from clobbering the base-color->emissive
-        // connection authored above (a single UsdShade input takes one source).
-        if (!unlit && vm.metallicRoughnessTex.present)
-        {
-            UsdShadeShader t =
-                makeTexture(vm.metallicRoughnessTex, "metallicRoughnessTexture", false);
-            // glTF packs roughness in G, metalness in B.
-            shader.GetInput(TfToken("roughness")).ConnectToSource(t.GetOutput(TfToken("g")));
-            shader.GetInput(TfToken("metallic")).ConnectToSource(t.GetOutput(TfToken("b")));
-        }
-        if (!unlit && vm.emissiveTex.present)
-        {
-            UsdShadeShader t = makeTexture(vm.emissiveTex, "emissiveTexture", true);
-            shader.GetInput(TfToken("emissiveColor")).ConnectToSource(t.GetOutput(TfToken("rgb")));
-        }
-        if (!unlit && vm.occlusionTex.present)
-        {
-            UsdShadeShader t = makeTexture(vm.occlusionTex, "occlusionTexture", false);
-            // glTF occlusion strength: ao = 1 + strength * (sampled - 1), i.e.
-            // out.r = sampled*strength + (1 - strength). Fold into the texture
-            // scale/bias so the strength is honored, not dropped.
-            const float os = vm.occlusionTex.scale;
-            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4).Set(GfVec4f(os, os, os, os));
-            t.CreateInput(TfToken("bias"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(1.0f - os, 1.0f - os, 1.0f - os, 1.0f - os));
-            shader.CreateInput(TfToken("occlusion"), SdfValueTypeNames->Float)
-                .ConnectToSource(t.GetOutput(TfToken("r")));
-        }
-        if (!unlit && vm.normalTex.present)
-        {
-            UsdShadeShader t = makeTexture(vm.normalTex, "normalTexture", false);
-            // Decode tangent-space normals ([0,1] -> [-1,1]) and fold in glTF's
-            // normalTexture.scale, which scales only the X/Y components:
-            //   x,y = (2c - 1) * scale ;  z = 2c - 1
-            const float ns = vm.normalTex.scale;
-            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(2.0f * ns, 2.0f * ns, 2.0f, 2.0f));
-            t.CreateInput(TfToken("bias"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(-ns, -ns, -1.0f, -1.0f));
-            shader.CreateInput(TfToken("normal"), SdfValueTypeNames->Normal3f)
-                .ConnectToSource(t.GetOutput(TfToken("rgb")));
-        }
+        // Canonical semantics first, on the Material (material policy §6). The
+        // PreviewSurface realization is then generated from what the stage
+        // now carries -- read back, not handed over -- so it is a function of
+        // the canonical attributes and of nothing the importer knows besides
+        // (P5 Step 5), and regenerating it on any stage gives the same graph.
+        UsdVrmAuthorMaterialSemantics(mat, vm.semantics);
+        UsdVrmAuthorPreview(mat, UsdVrmReadMaterialSemantics(mat));
 
         // -------------------------------------------------------------------
         // MaterialX realization (material policy §5.2, P5 step 2).
         //
-        // The portable approximation, generated from the same source material
-        // as /preview and never from /preview itself (§3). Unlit only for now:
-        // that is where MaterialX says something PreviewSurface cannot, and
-        // where every VRM character material lands.
+        // The portable approximation, never generated from /preview (§3).
+        // Still read from the source material rather than the canonical
+        // semantics until Step 6. Unlit only for now: that is where MaterialX
+        // says something PreviewSurface cannot, and where every VRM character
+        // material lands.
         // -------------------------------------------------------------------
-        if (unlit)
+        if (vm.unlit)
             _AuthorMtlxUnlit(stage, mat, vm);
-
-        // Canonical semantics, on the Material (material policy §6). Both
-        // realizations above still read the source material, not these, until
-        // Steps 5-6 regenerate them from here.
-        _AuthorMaterialSemantics(mat, vm.semantics);
 
         // MToon: tag the shader model, which VrmMToonAPI must agree with
         // (VRM226), and preserve the raw extension block as the lossless

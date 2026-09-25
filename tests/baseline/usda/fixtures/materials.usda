@@ -107,7 +107,7 @@ def Xform "Asset" (
         }
 
         def Material "Unlit" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI"]
+            apiSchemas = ["VrmMaterialAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 2
@@ -165,7 +165,7 @@ def Xform "Asset" (
         }
 
         def Material "UnlitCutout" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmTextureInfoAPI:baseColor"]
+            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:baseColor", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 3
@@ -186,9 +186,6 @@ def Xform "Asset" (
             uniform bool inputs:vrm:material:unlit = 1
             asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
             uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
-            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
-            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
             uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
             token outputs:mtlx:surface.connect = </Asset/mtl/UnlitCutout/mtlx.outputs:surface>
@@ -304,7 +301,7 @@ def Xform "Asset" (
         }
 
         def Material "UnlitPlaced" (
-            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmTextureInfoAPI:baseColor"]
+            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:baseColor", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 4

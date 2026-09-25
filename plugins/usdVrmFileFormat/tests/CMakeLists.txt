@@ -149,6 +149,47 @@ add_test(
 set_tests_properties(usdvrm_validate PROPERTIES
     ENVIRONMENT_MODIFICATION "${_smoke_env}")
 
+# /preview regenerated from canonical attributes alone reproduces the imported
+# graph (material policy §6.5, P5 Step 5). Compiles the two TUs it exercises
+# directly, like the unit tests above, and opens the .vrm inputs through the
+# built plugin, so it takes the smoke test's environment.
+add_executable(test_preview_regenerate
+    test_preview_regenerate.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/usd/MaterialSemantics.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/usd/PreviewRealization.cpp")
+target_compile_features(test_preview_regenerate PRIVATE cxx_std_17)
+target_include_directories(test_preview_regenerate PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(test_preview_regenerate PRIVATE vrmSchema::vrmSchema)
+if(TARGET usd_ms)
+    target_link_libraries(test_preview_regenerate PRIVATE usd_ms)
+else()
+    set(_regen_pxr_targets)
+    foreach(_t IN ITEMS arch tf gf vt ar sdf usd usdShade)
+        if(TARGET ${_t})
+            list(APPEND _regen_pxr_targets ${_t})
+        elseif(TARGET pxr::${_t})
+            list(APPEND _regen_pxr_targets pxr::${_t})
+        endif()
+    endforeach()
+    if(_regen_pxr_targets)
+        target_link_libraries(test_preview_regenerate PRIVATE ${_regen_pxr_targets})
+    else()
+        target_link_libraries(test_preview_regenerate PRIVATE ${PXR_LIBRARIES})
+    endif()
+endif()
+if(MSVC)
+    target_compile_definitions(test_preview_regenerate PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(test_preview_regenerate PRIVATE /utf-8)
+endif()
+add_test(NAME usdvrm_preview_regenerate
+    COMMAND test_preview_regenerate
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+            "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
+set_tests_properties(usdvrm_preview_regenerate PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_smoke_env}")
+
 # Phase 0 workspace-split regression gate: current behavior must match the
 # committed baseline evidence under <repo>/tests/baseline (stage snapshots,
 # structural digests, schema contract, discovery, diagnostics, symbols). Any
