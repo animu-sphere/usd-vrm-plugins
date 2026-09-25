@@ -69,15 +69,17 @@ It maps one-to-one onto the three layers DESIGN_POLICY §9 already names:
 
 ## 2. Current state
 
-**Steps 1 and 2 have landed (2026-08-13, 2026-08-14).** Every shader node lives
-inside a realization graph, and unlit materials carry a second one
-([UsdVrmAuthorer.cpp](../../plugins/usdVrmFileFormat/src/usd/UsdVrmAuthorer.cpp)):
+**Steps 1 and 2 have landed (2026-08-13, 2026-08-14), and since Step 6
+(2026-09-25) every material carries both realizations.** Every shader node
+lives inside a realization graph
+([PreviewRealization.cpp](../../plugins/usdVrmFileFormat/src/usd/PreviewRealization.cpp),
+[MtlxRealization.cpp](../../plugins/usdVrmFileFormat/src/usd/MtlxRealization.cpp)):
 
 ```text
 /Asset/mtl/<Name>                       UsdShadeMaterial
     outputs:surface       → preview.outputs:surface
-    outputs:mtlx:surface  → mtlx.outputs:surface        (unlit materials only)
-    + MaterialXConfigAPI, config:mtlx:version = "1.39"  (with /mtlx)
+    outputs:mtlx:surface  → mtlx.outputs:surface
+    + MaterialXConfigAPI, config:mtlx:version = "1.39"
     /preview                            UsdShadeNodeGraph
         outputs:surface  → surface.outputs:surface
         /surface                        UsdPreviewSurface
@@ -97,14 +99,21 @@ inside a realization graph, and unlit materials carry a second one
         /baseColorFactor                ND_multiply_color4       (textured only)
         /baseColorSplit                 ND_separate4_color4      (textured only)
         /baseColorRgb                   ND_combine3_color3       (textured only)
+        /<role>Place                    ND_place2d_vector2       (per role, KHR_texture_transform only)
+        /metallicRoughnessImage, …Split ND_image_vector3, ND_separate3_vector3   (lit)
+        /metallic, /roughness           ND_multiply_float        (lit, textured)
+        /normalImage, /normalMap        ND_image_vector3, ND_normalmap_float     (lit)
+        /occlusionImage, …Split, /occlusion  ND_image_vector3, ND_separate3_vector3, ND_mix_float (lit)
+        /emissiveImage, /emissiveFactor ND_image_color3, ND_multiply_color3      (lit)
 ```
 
-Which materials get a `/mtlx` graph is decided by `KHR_materials_unlit`, the
-same flag `/preview`'s unlit branch reads, so the two realizations never
-disagree about what "unlit" means. On the vendored corpus that is 13 of 13
-materials for one avatar and 10 of 17 for the other — the remaining 7 are
-ordinary glTF PBR accessories (a backpack, glass, a logo), which is the lit
-follow-up — once §7.2's, now Step 6's (§7.5) — not an oversight.
+Which *shading model* a material's `/mtlx` takes — unlit emission or lit glTF
+PBR — is decided by the canonical `unlit`, the same value `/preview`'s unlit
+branch reads, so the two realizations never disagree about what "unlit"
+means. Until Step 6 only unlit materials had `/mtlx` at all: on the vendored
+corpus 13 of 13 materials for one avatar and 10 of 17 for the other, the
+remaining 7 being ordinary glTF PBR accessories (a backpack, glass, a logo).
+They carry the lit graph now.
 
 The behavior below is what the restructure had to leave unchanged, and did —
 the baseline diff is a path move (§7.1). It is still the behavior any later
@@ -130,9 +139,8 @@ read a shading-shift factor without re-parsing JSON, which is precisely the
 "typed data first, raw as fallback" rule that every other `Vrm*API` already
 follows. Step 1 moved nodes; it did not make MToon queryable. Step 3 defined
 the schemas that do, and since Step 4 (both 2026-09-25) every imported
-material carries them — VRM 0.x and 1.0 in the same fields. Since Step 5
-`/preview` is generated from them alone; `/mtlx` still reads the source
-material until Step 6.
+material carries them — VRM 0.x and 1.0 in the same fields. Since Steps 5
+and 6 both realizations are generated from them alone.
 
 **Shader prim paths are load-bearing for the baseline.**
 `tests/baseline/digests/**` keys materials by shader path (now
@@ -339,6 +347,13 @@ lit follow-up wants the same terminal.
 Revisit this table when the runtime moves. If a later OpenUSD renders
 `surface_unlit`, that is the better statement of intent and the graph should
 change — which §4.3 already makes cheap.
+
+**Lit materials, measured 2026-09-25 (Step 6).** The same terminal with the
+lit response left on renders in Storm on the same runtime: no shader-compile
+error, no grey fallback, `alpha_mode` BLEND blending (a 0.3 alpha reads back
+as 77/255), and `ND_normalmap_float` compiles and shades with no authored
+tangents. Lit `/mtlx` and `/preview` do not produce the same image, and are
+not required to (§5.4).
 
 ### 5.2.2 Colour space
 
@@ -664,7 +679,7 @@ generator to re-point later, and the next consumers — expression colour binds
 | Step | What | Where |
 | --- | --- | --- |
 | 1 | `/preview` hierarchy | §7.1 — shipped |
-| 2 | `/mtlx` for unlit materials | §7.2 — shipped; the lit half moves to Step 6 |
+| 2 | `/mtlx` for unlit materials | §7.2 — shipped; the lit half shipped with Step 6 |
 | 3 | the canonical schema contract | §7.3 |
 | 4 | importer canonicalization, VRM 0.x and 1.0 | §7.5 — shipped |
 | 5 | `/preview` generated from canonical semantics | §7.5 |
@@ -858,6 +873,7 @@ each step may and may not do.
   `gltf_pbr` terminal (§5.2.1); then portable MToon approximations — shade,
   toon transition, rim, MatCap — in standard nodes (§5.2). Outline,
   screen-space width, render ordering and MToon transparency stay out.
+  *The first two shipped 2026-09-25;* the approximations wait on §11 q13.
 - **Step 7 — expression material binds.** Resolved colours land on canonical
   slots through the contract's slot table (§6.7), and reach whichever
   realization is selected without being written into it.
@@ -963,7 +979,7 @@ their own PRs:
 | ✅ The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | ✅ The VRM 0.x MToon row: `materialProperties` lands in the same typed schemas (§6.6), with the per-field conversion table | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields) | Step 4 |
 | The slot → canonical attribute table for expression material binds (§6.7), on the `VrmExpressionAPI` row; VRM 0.x `materialValues` typed onto the same slots, narrowing `VRM150` | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 7 |
-| The MToon rows restated as typed-and-realized once both generators read canonical semantics | [CAPABILITY_MATRIX.md](../reference/CAPABILITY_MATRIX.md) | Steps 5–6 |
+| ✅ The MToon rows restated as typed-and-realized once both generators read canonical semantics | [CAPABILITY_MATRIX.md](../reference/CAPABILITY_MATRIX.md) | Steps 5–6 |
 
 ---
 
@@ -984,3 +1000,4 @@ their own PRs:
 | ~~10~~ | ~~Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6).~~ **UniVRM's own 0.x → 1.0 migration, exactly** (settled 2026-09-25), its two destructive choices included — a missing shade texture takes the lit texture, `rimLightingMixFactor` is always 1 — so a 0.x avatar and the 1.0 file UniVRM migrates it to carry the same canonical values. The one departure: an absent 0.x property takes the MToon 0.x shader default, not C#'s zero. Every row, with its fidelity class, is the [schema contract's 0.x table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields). | — |
 | 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |
 | 12 | Which realization inputs connect to the Material's canonical `inputs:vrm:*` (so an animated value reaches them without regeneration, §6.4.1) and which stay generated values? UsdPreviewSurface has no arithmetic node, so a folded value — factor × texture in `UsdUVTexture.scale`, occlusion and normal scale/bias, glTF alpha coverage — cannot be a connection; `/mtlx` can multiply. Step 5 ships generated values only. | Step 7 |
+| 13 | What light does a portable toon transition read? MToon's lit/shade boundary is a ramp over N·L, but standard MaterialX nodes reach scene lights only inside a BSDF, so an emissive toon graph has no light to take a dot product with. Candidates: a fixed direction (the view vector — a headlight — or a stated world direction); `gltf_pbr`'s own lighting with shade colour folded in, which is not a ramp; or no transition, shade as a flat tint. Decided before any MToon approximation is authored. | Step 6 item 3 |
