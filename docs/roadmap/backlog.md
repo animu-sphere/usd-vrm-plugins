@@ -107,8 +107,11 @@ repository.
   schemas ([track §3](material-track.md#3-steps))
 - ✅ **Step 5** — `/preview` generated from canonical semantics
   ([track §3](material-track.md#3-steps))
-- ⬜ **Steps 6–7** — `/mtlx` generated from canonical semantics, expression
-  material binds onto canonical slots ([track §3](material-track.md#3-steps))
+- 🚧 **Step 6** — `/mtlx` generated from canonical semantics: unlit and lit
+  shipped, portable MToon approximations open
+  ([track §3](material-track.md#3-steps))
+- ⬜ **Step 7** — expression material binds onto canonical slots
+  ([track §3](material-track.md#3-steps))
 
 ## Product P6 — round-trip / exporter research
 

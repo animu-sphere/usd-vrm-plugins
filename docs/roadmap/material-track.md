@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1, 2 (unlit), 3, 4 and 5 shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1–5 shipped, Step 6 items 1–2 shipped · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -36,8 +36,7 @@ The reasons are what Steps 1 and 2 left behind:
 
 - ✅ **Step 1 — PreviewSurface below `/preview`** (2026-08-13; policy §7.1).
 - ✅ **Step 2 — `/mtlx` for unlit materials** (2026-08-14; policy §7.2 and
-  §5.2.1). Lit materials carry `/preview` only; that half is now part of
-  Step 6.
+  §5.2.1). Its lit half shipped with Step 6.
 - ✅ **Step 3 — the canonical material schema contract** (2026-09-25; policy
   §6, §6.4.1, §7.3). `VrmMaterialAPI`, `VrmMToonAPI` and
   `VrmTextureInfoAPI` exist in `vrmSchema`, as Material interface inputs
@@ -48,10 +47,13 @@ The reasons are what Steps 1 and 2 left behind:
 - ✅ **Step 5 — `/preview` generated from canonical semantics** (2026-09-25;
   policy §6.5). It is a function of the Material's canonical attributes and
   nothing else, run by the importer on what it reads back from the stage.
-- **`/mtlx` still reads the source material** — the importer's reading of
-  the glTF core — until Step 6. For a VRM 0.x MToon material the two
-  realizations can therefore disagree: `/preview` follows
-  `materialProperties`, `/mtlx` the glTF fallback beside it.
+- 🚧 **Step 6 — `/mtlx` generated from canonical semantics** (items 1–2,
+  2026-09-25; policy §5.2.1). Every material carries both realizations, lit
+  ones as glTF PBR through the same `gltf_pbr` terminal, both generated from
+  the canonical attributes alone. Item 3 — portable MToon approximations —
+  is open, and waits on how a portable graph gets a light (policy §11 q13).
+  **MToon-specific shading is not rendered yet:** shade, rim and MatCap are
+  typed but no realization reads them.
 - **Expression colour binds already target a slot, not a shader input.** A
   VRM 1.0 `materialColorBinds` entry is typed on its expression prim as a
   relationship to the `UsdShadeMaterial` plus a VRM slot name (`color`,
@@ -180,7 +182,8 @@ construction) moves to the canonical value.
 attributes, reads them back from the stage (`MaterialSemantics.cpp`) and
 generates `/preview` from what it read. Each condition, and where it is shown:
 
-- *regenerating reproduces the graph* — `usdvrm_preview_regenerate` flattens
+- *regenerating reproduces the graph* — `usdvrm_preview_regenerate` (since
+  Step 6 `usdvrm_realization_regenerate`, which covers `/mtlx` too) flattens
   every fixture and corpus stage, so no source file, file format or importer
   state is reachable, deletes each `/preview`, regenerates it from the
   canonical attributes and requires the original back: 27 stages, 71
@@ -210,7 +213,7 @@ UsdPreviewSurface has no arithmetic node, so anything folded — factor ×
 texture, occlusion and normal scale/bias, glTF alpha coverage — can only be
 a generated value.
 
-### Step 6 — `/mtlx` generated from canonical semantics ⬜
+### Step 6 — `/mtlx` generated from canonical semantics 🚧
 
 The same re-pointing for MaterialX, and the realization's growth, in this
 order:
@@ -233,6 +236,48 @@ and a focused visual regression covers MToon hair with its shade texture —
 issue #119's asset is the first target — plus rim and MatCap once
 implemented. PreviewSurface and MaterialX are held to separate fidelity
 criteria and never to each other (§5.4).
+
+**Items 1 and 2 shipped 2026-09-25.** The generator (`MtlxRealization.cpp`)
+takes a `VrmMaterialSemantics` and nothing else, and the importer calls it
+with the same read-back that feeds `/preview`. The conditions met so far, and
+where each is shown:
+
+- *every material carries `/mtlx`* — `check_material_hierarchy` requires both
+  graphs on every material, and `usdvrm_realization_regenerate` counts 72 of
+  72 materials with `/mtlx` across the fixtures and the corpus;
+- *regenerating reproduces it* — the same test deletes each `/mtlx`,
+  regenerates it from the canonical attributes of a flattened stage and
+  requires the original back, and moves one canonical value per realization
+  and shading model (unlit `emissive`, lit `base_color`) and requires the
+  graph to follow;
+- *every `info:id` resolves in Sdr* — `check_mtlx_node_ids`, now over lit
+  graphs too.
+
+Item 1 moved one fixture on purpose, as Step 5 did: `mtoon_vrm0.vrm`'s MToon
+materials are unlit in the canonical semantics while the glTF core beside
+`materialProperties` says lit, so they carry `/mtlx` where they carried none —
+each graph identical to `mtoon_vrm1.vrm`'s, which `check_mtoon_vrm0_matches_vrm1`
+now requires of both realizations.
+
+Item 2's lit graph keeps each glTF relation as a node where `/preview` has to
+fold it into `UsdUVTexture`'s scale and bias: factor × texture for base
+colour, metallic (B), roughness (G) and emission; occlusion as
+`mix(1, sample.r, strength)`; the normal scale on X and Y through
+`normalmap`'s own `scale`; emissive strength on `gltf_pbr`'s
+`emissive_strength`. `materials.vrm` gained `Metal`, lit with every core
+role, because the corpus has no metallic-roughness or occlusion texture;
+`check_mtlx_lit` follows each input back to its texture and factor. The
+baseline diff is additive — no `/preview`, canonical or prim value moved.
+In Storm, lit `/mtlx` draws with no shader-compile error and no grey
+fallback, blending included, and Seed-san's normal-mapped backpack renders
+(policy §5.2.1).
+
+`package_vrm.py` now packages MaterialX image files too; with `/mtlx` on
+every material, a lit textured stage references one.
+
+Still open: item 3, the focused visual regression on issue #119's asset,
+and — since item 3 needs a light no standard node exposes outside a BSDF —
+policy §11 q13 first.
 
 ### Step 7 — expression material binds onto canonical slots ⬜
 

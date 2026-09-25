@@ -6,6 +6,11 @@
   "materials": {
     "/Asset/mtl/Quad_Mat": {
       "graphs": {
+        "/Asset/mtl/Quad_Mat/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Quad_Mat/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Quad_Mat/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Quad_Mat/preview/surface.surface"
@@ -13,6 +18,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Quad_Mat/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "roughness": 0.699999988
+          }
+        },
         "/Asset/mtl/Quad_Mat/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -33,6 +58,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Quad_Mat/mtlx.surface",
         "surface": "/Asset/mtl/Quad_Mat/preview.surface"
       }
     }
@@ -79,7 +105,8 @@
     },
     {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Quad_Mat",
       "type": "Material"
@@ -93,6 +120,17 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Quad_Mat/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Quad_Mat/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Quad_Mat/mtlx/surface",
       "type": "Shader"
     },
     {

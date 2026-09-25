@@ -30,7 +30,7 @@ def Xform "Asset" (
     def Scope "mtl"
     {
         def Material "Glass" (
-            apiSchemas = ["VrmMaterialAPI"]
+            apiSchemas = ["VrmMaterialAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 0
@@ -38,6 +38,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "BLEND"
             float inputs:vrm:material:baseColorAlphaFactor = 0.3
@@ -48,6 +49,7 @@ def Xform "Asset" (
             float inputs:vrm:material:metallicFactor = 1
             float inputs:vrm:material:roughnessFactor = 1
             uniform bool inputs:vrm:material:unlit = 0
+            token outputs:mtlx:surface.connect = </Asset/mtl/Glass/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Glass/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -65,10 +67,28 @@ def Xform "Asset" (
                     token outputs:surface
                 }
             }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Glass/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 0.3
+                    int inputs:alpha_mode = 2
+                    color3f inputs:base_color = (0.2, 0.4, 0.9)
+                    color3f inputs:emissive = (0, 0, 0)
+                    float inputs:emissive_strength = 1
+                    float inputs:metallic = 1
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+            }
         }
 
         def Material "Leaf" (
-            apiSchemas = ["VrmMaterialAPI"]
+            apiSchemas = ["VrmMaterialAPI", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 1
@@ -76,6 +96,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.3
             uniform token inputs:vrm:material:alphaMode = "MASK"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -86,6 +107,7 @@ def Xform "Asset" (
             float inputs:vrm:material:metallicFactor = 1
             float inputs:vrm:material:roughnessFactor = 1
             uniform bool inputs:vrm:material:unlit = 0
+            token outputs:mtlx:surface.connect = </Asset/mtl/Leaf/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Leaf/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -100,6 +122,25 @@ def Xform "Asset" (
                     float inputs:metallic = 1
                     float inputs:opacity = 1
                     float inputs:opacityThreshold = 0.3
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Leaf/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    float inputs:alpha_cutoff = 0.3
+                    int inputs:alpha_mode = 1
+                    color3f inputs:base_color = (0.1, 0.8, 0.2)
+                    color3f inputs:emissive = (0, 0, 0)
+                    float inputs:emissive_strength = 1
+                    float inputs:metallic = 1
                     float inputs:roughness = 1
                     token outputs:surface
                 }
@@ -457,7 +498,7 @@ def Xform "Asset" (
         }
 
         def Material "Glow" (
-            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:emissive"]
+            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:emissive", "MaterialXConfigAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 5
@@ -465,6 +506,7 @@ def Xform "Asset" (
             }
         )
         {
+            string config:mtlx:version = "1.39"
             float inputs:vrm:material:alphaCutoff = 0.5
             uniform token inputs:vrm:material:alphaMode = "OPAQUE"
             float inputs:vrm:material:baseColorAlphaFactor = 1
@@ -479,6 +521,7 @@ def Xform "Asset" (
             uniform int inputs:vrm:textureInfo:emissive:texCoord = 0
             uniform token inputs:vrm:textureInfo:emissive:wrapS = "repeat"
             uniform token inputs:vrm:textureInfo:emissive:wrapT = "clampToEdge"
+            token outputs:mtlx:surface.connect = </Asset/mtl/Glow/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Glow/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -518,6 +561,395 @@ def Xform "Asset" (
                     float outputs:g
                     float outputs:r
                     float3 outputs:rgb
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Glow/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 0
+                    color3f inputs:base_color = (0.2, 0.2, 0.2)
+                    color3f inputs:emissive.connect = </Asset/mtl/Glow/mtlx/emissiveFactor.outputs:out>
+                    float inputs:emissive_strength = 2
+                    float inputs:metallic = 1
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "emissiveFactor"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Glow/mtlx/emissiveImage.outputs:out>
+                    color3f inputs:in2 = (0.5, 0.25, 1)
+                    color3f outputs:out
+                }
+
+                def Shader "st"
+                {
+                    uniform token info:id = "ND_texcoord_vector2"
+                    int inputs:index = 0
+                    float2 outputs:out
+                }
+
+                def Shader "emissiveImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Glow/mtlx/st.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color3f outputs:out
+                }
+            }
+        }
+
+        def Material "Metal" (
+            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:metallicRoughness", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:occlusion", "MaterialXConfigAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 6
+                }
+            }
+        )
+        {
+            string config:mtlx:version = "1.39"
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.8, 0.6, 0.4)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0.1, 0.2, 0.3)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0.5
+            float inputs:vrm:material:roughnessFactor = 0.75
+            uniform bool inputs:vrm:material:unlit = 0
+            asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:emissive:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            uniform int inputs:vrm:textureInfo:emissive:texCoord = 0
+            uniform token inputs:vrm:textureInfo:emissive:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:emissive:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:metallicRoughness:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            uniform int inputs:vrm:textureInfo:metallicRoughness:texCoord = 0
+            uniform token inputs:vrm:textureInfo:metallicRoughness:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:metallicRoughness:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:normal:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            float inputs:vrm:textureInfo:normal:scale = 0.5
+            uniform int inputs:vrm:textureInfo:normal:texCoord = 0
+            float2 inputs:vrm:textureInfo:normal:transform:offset = (0, 0)
+            float inputs:vrm:textureInfo:normal:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:normal:transform:scale = (3, 3)
+            uniform token inputs:vrm:textureInfo:normal:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:normal:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:occlusion:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            float inputs:vrm:textureInfo:occlusion:strength = 0.25
+            uniform int inputs:vrm:textureInfo:occlusion:texCoord = 0
+            uniform token inputs:vrm:textureInfo:occlusion:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:occlusion:wrapT = "clampToEdge"
+            token outputs:mtlx:surface.connect = </Asset/mtl/Metal/mtlx.outputs:surface>
+            token outputs:surface.connect = </Asset/mtl/Metal/preview.outputs:surface>
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Metal/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.8, 0.6, 0.4)
+                    color3f inputs:diffuseColor.connect = </Asset/mtl/Metal/preview/baseColorTexture.outputs:rgb>
+                    color3f inputs:emissiveColor = (0.1, 0.2, 0.3)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Metal/preview/emissiveTexture.outputs:rgb>
+                    float inputs:metallic = 0.5
+                    float inputs:metallic.connect = </Asset/mtl/Metal/preview/metallicRoughnessTexture.outputs:b>
+                    normal3f inputs:normal.connect = </Asset/mtl/Metal/preview/normalTexture.outputs:rgb>
+                    float inputs:occlusion.connect = </Asset/mtl/Metal/preview/occlusionTexture.outputs:r>
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.75
+                    float inputs:roughness.connect = </Asset/mtl/Metal/preview/metallicRoughnessTexture.outputs:g>
+                    token outputs:surface
+                }
+
+                def Shader "stReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+
+                def Shader "baseColorTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float4 inputs:scale = (0.8, 0.6, 0.4, 1)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/Metal/preview/stReader.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "metallicRoughnessTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    token inputs:sourceColorSpace = "raw"
+                    float2 inputs:st.connect = </Asset/mtl/Metal/preview/stReader.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "emissiveTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float4 inputs:scale = (0.1, 0.2, 0.3, 1)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/Metal/preview/stReader.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "occlusionTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    float4 inputs:bias = (0.75, 0.75, 0.75, 0.75)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float4 inputs:scale = (0.25, 0.25, 0.25, 0.25)
+                    token inputs:sourceColorSpace = "raw"
+                    float2 inputs:st.connect = </Asset/mtl/Metal/preview/stReader.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "normalTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    float4 inputs:bias = (-0.5, -0.5, -1, -1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float4 inputs:scale = (1, 1, 2, 2)
+                    token inputs:sourceColorSpace = "raw"
+                    float2 inputs:st.connect = </Asset/mtl/Metal/preview/normalTexture_xf.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "normalTexture_xf"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </Asset/mtl/Metal/preview/stReader.outputs:result>
+                    float inputs:rotation = 0
+                    float2 inputs:scale = (3, 3)
+                    float2 inputs:translation = (0, -2)
+                    float2 outputs:result
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/Metal/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 0
+                    color3f inputs:base_color.connect = </Asset/mtl/Metal/mtlx/baseColorRgb.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Metal/mtlx/emissiveFactor.outputs:out>
+                    float inputs:emissive_strength = 1
+                    float inputs:metallic.connect = </Asset/mtl/Metal/mtlx/metallic.outputs:out>
+                    vector3f inputs:normal.connect = </Asset/mtl/Metal/mtlx/normalMap.outputs:out>
+                    float inputs:occlusion.connect = </Asset/mtl/Metal/mtlx/occlusion.outputs:out>
+                    float inputs:roughness.connect = </Asset/mtl/Metal/mtlx/roughness.outputs:out>
+                    token outputs:surface
+                }
+
+                def Shader "st"
+                {
+                    uniform token info:id = "ND_texcoord_vector2"
+                    int inputs:index = 0
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorImage"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    color4f inputs:default = (0, 0, 0, 1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Metal/mtlx/st.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorFactor"
+                {
+                    uniform token info:id = "ND_multiply_color4"
+                    color4f inputs:in1.connect = </Asset/mtl/Metal/mtlx/baseColorImage.outputs:out>
+                    color4f inputs:in2 = (0.8, 0.6, 0.4, 1)
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorSplit"
+                {
+                    uniform token info:id = "ND_separate4_color4"
+                    color4f inputs:in.connect = </Asset/mtl/Metal/mtlx/baseColorFactor.outputs:out>
+                    float outputs:outa
+                    float outputs:outb
+                    float outputs:outg
+                    float outputs:outr
+                }
+
+                def Shader "baseColorRgb"
+                {
+                    uniform token info:id = "ND_combine3_color3"
+                    float inputs:in1.connect = </Asset/mtl/Metal/mtlx/baseColorSplit.outputs:outr>
+                    float inputs:in2.connect = </Asset/mtl/Metal/mtlx/baseColorSplit.outputs:outg>
+                    float inputs:in3.connect = </Asset/mtl/Metal/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
+                }
+
+                def Shader "metallicRoughnessSplit"
+                {
+                    uniform token info:id = "ND_separate3_vector3"
+                    vector3f inputs:in.connect = </Asset/mtl/Metal/mtlx/metallicRoughnessImage.outputs:out>
+                    float outputs:outy
+                    float outputs:outz
+                }
+
+                def Shader "metallicRoughnessImage"
+                {
+                    uniform token info:id = "ND_image_vector3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float2 inputs:texcoord.connect = </Asset/mtl/Metal/mtlx/st.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    vector3f outputs:out
+                }
+
+                def Shader "metallic"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Metal/mtlx/metallicRoughnessSplit.outputs:outz>
+                    float inputs:in2 = 0.5
+                    float outputs:out
+                }
+
+                def Shader "roughness"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Metal/mtlx/metallicRoughnessSplit.outputs:outy>
+                    float inputs:in2 = 0.75
+                    float outputs:out
+                }
+
+                def Shader "normalMap"
+                {
+                    uniform token info:id = "ND_normalmap_float"
+                    vector3f inputs:in.connect = </Asset/mtl/Metal/mtlx/normalImage.outputs:out>
+                    float inputs:scale = 0.5
+                    vector3f outputs:out
+                }
+
+                def Shader "normalPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-0, 2)
+                    float inputs:rotate = -0
+                    float2 inputs:scale = (0.33333334, 0.33333334)
+                    float2 inputs:texcoord.connect = </Asset/mtl/Metal/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "normalImage"
+                {
+                    uniform token info:id = "ND_image_vector3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float2 inputs:texcoord.connect = </Asset/mtl/Metal/mtlx/normalPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    vector3f outputs:out
+                }
+
+                def Shader "occlusionSplit"
+                {
+                    uniform token info:id = "ND_separate3_vector3"
+                    vector3f inputs:in.connect = </Asset/mtl/Metal/mtlx/occlusionImage.outputs:out>
+                    float outputs:outx
+                }
+
+                def Shader "occlusionImage"
+                {
+                    uniform token info:id = "ND_image_vector3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float2 inputs:texcoord.connect = </Asset/mtl/Metal/mtlx/st.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    vector3f outputs:out
+                }
+
+                def Shader "occlusion"
+                {
+                    uniform token info:id = "ND_mix_float"
+                    float inputs:bg = 1
+                    float inputs:fg.connect = </Asset/mtl/Metal/mtlx/occlusionSplit.outputs:outx>
+                    float inputs:mix = 0.25
+                    float outputs:out
+                }
+
+                def Shader "emissiveFactor"
+                {
+                    uniform token info:id = "ND_multiply_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Metal/mtlx/emissiveImage.outputs:out>
+                    color3f inputs:in2 = (0.1, 0.2, 0.3)
+                    color3f outputs:out
+                }
+
+                def Shader "emissiveImage"
+                {
+                    uniform token info:id = "ND_image_color3"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/Metal/mtlx/st.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color3f outputs:out
                 }
             }
         }

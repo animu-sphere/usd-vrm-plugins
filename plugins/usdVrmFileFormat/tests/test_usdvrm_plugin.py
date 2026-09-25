@@ -35,6 +35,16 @@ def _vclose(a, b, eps=1e-5):
     return all(abs(a[i] - b[i]) < eps for i in range(len(a)))
 
 
+def _graph_text(stage, path, package):
+    """The subtree at `path` as usda, re-rooted at /Graph, with the material's
+    own path and the package it was read from spelled out of it."""
+    if not stage.GetPrimAtPath(path):
+        return None
+    out = Sdf.Layer.CreateAnonymous(".usda")
+    assert Sdf.CopySpec(stage.GetRootLayer(), path, out, "/Graph"), path
+    return out.ExportToString().replace(path, "/Graph").replace(package, "<package>")
+
+
 def check_minimal():
     """Skinned mesh + non-skinned node-placed accessory; IBM bind; humanoid."""
     stage = _open("minimal.vrm")
@@ -324,9 +334,18 @@ def check_materials():
         "unlit colour must match the /preview realization"
     assert mx.GetAttribute("inputs:alpha_mode").Get() == 0, "Unlit is OPAQUE"
 
-    # Lit materials carry no MaterialX realization yet (step 2 is unlit-first),
-    # so they resolve through the universal terminal.
-    assert not stage.GetPrimAtPath("/Asset/mtl/Glass/mtlx").IsValid()
+    # A lit material carries MaterialX too (P5 Step 6), through the same
+    # terminal with the lit response left on: glTF's base colour, alpha and
+    # coverage, and metallic / roughness at their factors.
+    mx = stage.GetPrimAtPath("/Asset/mtl/Glass/mtlx/surface")
+    assert mx.GetAttribute("info:id").Get() == "ND_gltf_pbr_surfaceshader"
+    assert _vclose(mx.GetAttribute("inputs:base_color").Get(), (0.2, 0.4, 0.9))
+    assert abs(mx.GetAttribute("inputs:alpha").Get() - 0.3) < 1e-6
+    assert mx.GetAttribute("inputs:alpha_mode").Get() == 2, "Glass is BLEND"
+    assert mx.GetAttribute("inputs:metallic").Get() == 1.0
+    assert mx.GetAttribute("inputs:roughness").Get() == 1.0
+    assert not mx.GetAttribute("inputs:specular").HasAuthoredValue(), \
+        "a lit material keeps glTF's specular"
 
     # Lit emission through a texture: factor * strength folded into the
     # texture's scale, since glTF emission is factor * texture * strength.
@@ -409,25 +428,10 @@ def check_material_hierarchy():
 
             # Only realization graphs directly below the material: an authored
             # Shader here would be an implementation detail leaking into the
-            # material's public shape. /mtlx is present on unlit materials only
-            # (P5 step 2 scope), so the set is one of two.
+            # material's public shape. Every material carries both (P5 Step 6).
             kids = {c.GetName(): c.GetTypeName() for c in prim.GetChildren()}
-            assert kids in ({"preview": "NodeGraph"},
-                            {"preview": "NodeGraph", "mtlx": "NodeGraph"}), \
+            assert kids == {"preview": "NodeGraph", "mtlx": "NodeGraph"}, \
                 f"{where}: children {kids}"
-
-            # ...and which of the two it is has to follow from the material, or
-            # the assertion above degrades into "either shape is fine" and the
-            # unlit-only scope stops being tested at all. /preview's unlit
-            # branch is the readable witness: diffuse killed, base colour moved
-            # to emissive, no lit response.
-            preview_surface = prim.GetPrimAtPath("preview/surface")
-            unlit = (preview_surface.GetAttribute("inputs:diffuseColor").Get()
-                     == Gf.Vec3f(0, 0, 0)
-                     and preview_surface.GetAttribute("inputs:metallic").Get() == 0.0
-                     and preview_surface.GetAttribute("inputs:roughness").Get() == 1.0)
-            assert ("mtlx" in kids) == unlit, \
-                f"{where}: /mtlx present={'mtlx' in kids} but unlit={unlit}"
 
             preview = UsdShade.NodeGraph(prim.GetChild("preview"))
             src = mat.GetSurfaceOutput().GetConnectedSource()
@@ -448,9 +452,6 @@ def check_material_hierarchy():
                 f"{where}: surface source resolves to {shader and shader.GetPath()}"
             assert shader.GetIdAttr().Get() == "UsdPreviewSurface", where
             assert name == "surface", f"{where}: surface source name {name}"
-
-            if "mtlx" not in kids:
-                continue
 
             # The MaterialX realization: same boundary shape, reached through
             # the mtlx render context rather than the universal terminal. A
@@ -487,6 +488,105 @@ def check_material_hierarchy():
                     prim).GetDirectBindingRel().GetTargets():
                 assert UsdShade.Material(stage.GetPrimAtPath(target)), \
                     f"{fixture}: {prim.GetPath()} binds non-material {target}"
+
+
+def check_mtlx_lit():
+    """A lit material through MaterialX: every glTF core texture role reaches
+    its gltf_pbr input with its glTF relation computed by a node, where
+    /preview can only fold it into UsdUVTexture's scale and bias (P5 Step 6).
+
+    Metal states every role, every factor and scalar away from its default,
+    and a KHR_texture_transform on the normal texture only.
+    """
+    stage = _open("materials.vrm")
+    surface = UsdShade.Shader(stage.GetPrimAtPath("/Asset/mtl/Metal/mtlx/surface"))
+    assert surface, "expected a MaterialX realization on the lit Metal"
+
+    def source(shader, name):
+        """The shader and output name an input is connected to."""
+        src = shader.GetInput(name).GetConnectedSource()
+        assert src, f"{shader.GetPath()}.{name} is not connected"
+        return UsdShade.Shader(src[0].GetPrim()), src[1]
+
+    def node_id(shader):
+        return shader.GetIdAttr().Get()
+
+    def value(shader, name):
+        return shader.GetInput(name).Get()
+
+    # Every texture chain starts at one shared texcoord node.
+    texcoords = set()
+
+    def sample(shader, want_id, srgb):
+        """Follow an image node back to the texcoord it samples."""
+        assert node_id(shader) == want_id, f"{shader.GetPath()}: {node_id(shader)}"
+        space = shader.GetInput("file").GetAttr().GetColorSpace()
+        assert space == ("srgb_texture" if srgb else ""), \
+            f"{shader.GetPath()}: colour space {space!r}"
+        uv, _ = source(shader, "texcoord")
+        place = None
+        if node_id(uv) == "ND_place2d_vector2":
+            place = uv
+            uv, _ = source(place, "texcoord")
+        assert node_id(uv) == "ND_texcoord_vector2", uv.GetPath()
+        texcoords.add(uv.GetPath())
+        return place
+
+    # Base colour: factor * texture, as on the unlit path, onto base_color --
+    # and no transform, since only the normal texture states one.
+    rgb, _ = source(surface, "base_color")
+    split, _ = source(rgb, "in1")
+    factor, _ = source(split, "in")
+    assert _vclose(value(factor, "in2"), (0.8, 0.6, 0.4, 1.0))
+    image, _ = source(factor, "in1")
+    assert sample(image, "ND_image_color4", srgb=True) is None
+    assert value(surface, "alpha") == 1.0 and value(surface, "alpha_mode") == 0
+
+    # Metallic from B, roughness from G, each times its factor.
+    for name, channel, want in (("metallic", "outz", 0.5), ("roughness", "outy", 0.75)):
+        mul, _ = source(surface, name)
+        assert node_id(mul) == "ND_multiply_float", name
+        assert abs(value(mul, "in2") - want) < 1e-6, f"{name} factor"
+        sep, out = source(mul, "in1")
+        assert node_id(sep) == "ND_separate3_vector3" and out == channel, (name, out)
+        img, _ = source(sep, "in")
+        assert sample(img, "ND_image_vector3", srgb=False) is None
+
+    # Normal: glTF's scale on X and Y only, which is normalmap's `scale`; this
+    # role alone is placed, scale 3 inverted into place2d's divide.
+    nmap, _ = source(surface, "normal")
+    assert node_id(nmap) == "ND_normalmap_float"
+    assert abs(value(nmap, "scale") - 0.5) < 1e-6
+    img, _ = source(nmap, "in")
+    place = sample(img, "ND_image_vector3", srgb=False)
+    assert place is not None, "the normal texture's transform was dropped"
+    assert _vclose(value(place, "scale"), (1 / 3, 1 / 3))
+
+    # Occlusion: ao = mix(1, sample.r, strength).
+    mix, _ = source(surface, "occlusion")
+    assert node_id(mix) == "ND_mix_float"
+    assert value(mix, "bg") == 1.0 and abs(value(mix, "mix") - 0.25) < 1e-6
+    sep, out = source(mix, "fg")
+    assert node_id(sep) == "ND_separate3_vector3" and out == "outx", out
+    img, _ = source(sep, "in")
+    sample(img, "ND_image_vector3", srgb=False)
+
+    # Emission: factor * sRGB texture, strength on gltf_pbr's own input.
+    mul, _ = source(surface, "emissive")
+    assert node_id(mul) == "ND_multiply_color3"
+    assert _vclose(value(mul, "in2"), (0.1, 0.2, 0.3))
+    img, _ = source(mul, "in1")
+    sample(img, "ND_image_color3", srgb=True)
+    assert value(surface, "emissive_strength") == 1.0
+
+    assert len(texcoords) == 1, f"texcoord nodes: {sorted(map(str, texcoords))}"
+
+    # ...and Glow's strength of 2 is not folded into its factor, as /preview
+    # has to: gltf_pbr takes it as stated.
+    glow = UsdShade.Shader(stage.GetPrimAtPath("/Asset/mtl/Glow/mtlx/surface"))
+    assert value(glow, "emissive_strength") == 2.0
+    mul, _ = source(glow, "emissive")
+    assert _vclose(value(mul, "in2"), (0.5, 0.25, 1.0))
 
 
 def check_texture_transform():
@@ -797,6 +897,14 @@ def check_mtoon_vrm0_matches_vrm1():
         tex.GetPath().AppendProperty("outputs:rgb")]
     assert surface.GetAttribute("inputs:opacity").GetConnections() == [
         tex.GetPath().AppendProperty("outputs:a")]
+    # Both realizations are generated from the canonical values (Steps 5-6),
+    # so the two stages carry the same graphs, bar the package they live in.
+    for name in names:
+        for graph in ("preview", "mtlx"):
+            path = f"/Asset/mtl/{name}/{graph}"
+            assert (_graph_text(vrm0, path, "mtoon_vrm0.vrm")
+                    == _graph_text(vrm1, path, "mtoon_vrm1.vrm")), path
+    assert vrm0.GetPrimAtPath("/Asset/mtl/Hair/mtlx"), "no /mtlx on a 0.x MToon"
     # The raw block is still the whole materialProperties entry.
     gltf, _ = material_oracle.read_glb(FIXTURES / "mtoon_vrm0.vrm")
     raw = hair.GetCustomData()["vrm"]["mtoon"]["raw"]
@@ -824,9 +932,9 @@ def check_portable_package():
         package_dir = pathlib.Path(tmp) / "textures_package"
         report = package_stage(FIXTURES / "textures.vrm", package_dir)
 
-        # One image, referenced twice: by /preview's UsdUVTexture and by the
-        # Material's canonical baseColor texture role.
-        assert report["summary"]["texturesPackaged"] == 2, report
+        # One image, referenced three times: by /preview's UsdUVTexture, by
+        # /mtlx's image node and by the Material's canonical baseColor role.
+        assert report["summary"]["texturesPackaged"] == 3, report
         assert report["summary"]["missingAssets"] == 0, report
         assert report["pathPolicy"]["textureAssetPaths"] == "relative-to-package-root"
 
@@ -847,6 +955,11 @@ def check_portable_package():
         canonical = packaged_stage.GetPrimAtPath("/Asset/mtl/Skin").GetAttribute(
             "inputs:vrm:textureInfo:baseColor:file").Get()
         assert canonical.path == asset.path, (canonical, asset)
+        mtlx = packaged_stage.GetPrimAtPath(
+            "/Asset/mtl/Skin/mtlx/baseColorImage").GetAttribute("inputs:file")
+        assert mtlx.Get().path == asset.path, (mtlx.Get(), asset)
+        # Rewriting the path must keep the colour space the image is read in.
+        assert mtlx.GetColorSpace() == "srgb_texture", mtlx.GetColorSpace()
         assert len(list((package_dir / "textures").iterdir())) == 1
 
         for entry in report["assets"]:
@@ -953,6 +1066,7 @@ def main() -> int:
                   check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
                   check_material_hierarchy, check_mtlx_textured_unlit,
+                  check_mtlx_lit,
                   check_texture_transform, check_mtlx_node_ids,
                   check_material_semantics, check_mtoon_vrm0_matches_vrm1,
                   check_constraints,

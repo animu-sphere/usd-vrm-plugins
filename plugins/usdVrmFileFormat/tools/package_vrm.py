@@ -68,6 +68,11 @@ def _asset_kind(prim: Usd.Prim, attr: Usd.Attribute) -> str:
     name = attr.GetName()
     if name == "inputs:file" and _shader_id(prim) == "UsdUVTexture":
         return "texture"
+    # The MaterialX realization's image nodes (ND_image_color4, _color3,
+    # _vector3, ...): every material carries /mtlx, and it is the network a
+    # MaterialX-aware renderer draws, so its images travel too.
+    if name == "inputs:file" and _shader_id(prim).startswith("ND_image_"):
+        return "texture"
     # A canonical texture role on the Material (VrmTextureInfoAPI, material
     # policy §6.3): the image every realization is generated from, so it
     # travels with the package like the realization's own copy of the path.

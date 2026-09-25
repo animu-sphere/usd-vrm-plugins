@@ -6,6 +6,11 @@
   "materials": {
     "/Asset/mtl/Mat": {
       "graphs": {
+        "/Asset/mtl/Mat/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Mat/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Mat/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Mat/preview/surface.surface"
@@ -13,6 +18,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Mat/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "roughness": 0.699999988
+          }
+        },
         "/Asset/mtl/Mat/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -33,11 +58,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Mat/mtlx.surface",
         "surface": "/Asset/mtl/Mat/preview.surface"
       }
     },
     "/Asset/mtl/Mat_2": {
       "graphs": {
+        "/Asset/mtl/Mat_2/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Mat_2/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Mat_2/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Mat_2/preview/surface.surface"
@@ -45,6 +76,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Mat_2/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissive": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive_strength": 1.0,
+            "metallic": 0.0,
+            "roughness": 0.699999988
+          }
+        },
         "/Asset/mtl/Mat_2/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -65,6 +116,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Mat_2/mtlx.surface",
         "surface": "/Asset/mtl/Mat_2/preview.surface"
       }
     }
@@ -150,7 +202,8 @@
     },
     {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Mat",
       "type": "Material"
@@ -167,8 +220,20 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/Mat/mtlx",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
-        "VrmMaterialAPI"
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Mat/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "MaterialXConfigAPI"
       ],
       "path": "/Asset/mtl/Mat_2",
       "type": "Material"
@@ -182,6 +247,17 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Mat_2/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Mat_2/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Mat_2/mtlx/surface",
       "type": "Shader"
     },
     {

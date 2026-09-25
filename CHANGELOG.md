@@ -15,13 +15,29 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Every material carries a MaterialX realization, generated from canonical
+  semantics** (Product P5 Step 6, items 1–2;
+  [material track](docs/roadmap/material-track.md)). `/mtlx`'s only input is
+  a material's `VrmMaterialAPI` / `VrmTextureInfoAPI` attributes, as
+  `/preview`'s has been since Step 5, and it is no longer unlit-only: a lit
+  material gets glTF metallic-roughness PBR through the same `gltf_pbr`
+  terminal, with base colour, metallic-roughness, normal, occlusion and
+  emissive textures, each factor, strength and `KHR_texture_transform`
+  applied by a node. Because Storm draws the `mtlx` render context in
+  preference to the universal one, **lit materials now draw through
+  MaterialX in `usdview`**; `/preview` is unchanged for every material. A
+  VRM 0.x MToon material's `/mtlx` follows its `materialProperties`, like its
+  `/preview`. `usdvrm_preview_regenerate` is now
+  `usdvrm_realization_regenerate` and covers both graphs.
+
 - **`/preview` is generated from canonical material semantics** (Product P5
   Step 5; [material track](docs/roadmap/material-track.md)). The
   UsdPreviewSurface generator's only input is a material's
   `VrmMaterialAPI` / `VrmTextureInfoAPI` attributes: the importer authors them,
   reads them back from the stage and generates the graph from what it read, so
   deleting `/preview` and regenerating it on any stage carrying the schemas
-  gives the same graph (`usdvrm_preview_regenerate`, 71 materials). No value
+  gives the same graph (`usdvrm_preview_regenerate`, 71 materials; now
+  `usdvrm_realization_regenerate`). No value
   changed for any VRM 1.0 or glTF input. A VRM 0.x MToon material's `/preview`
   now follows its `materialProperties` — base colour, alpha mode, culling,
   `_MainTex` and its tiling — instead of the glTF fallback beside it. A
@@ -486,6 +502,10 @@ Current schema contract version: **1**.
   ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Fixed
+
+- **`package_vrm.py` packages MaterialX image files.** It classified an
+  `ND_image_*` node's `file` as "not a texture asset" and left it pointing at
+  the source `.vrm`, so a packaged stage's `/mtlx` lost its textures.
 
 - **`/preview` honours glTF's emissive factor and
   `KHR_materials_emissive_strength`.** It ignored the strength, and on a lit

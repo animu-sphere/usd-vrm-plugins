@@ -333,6 +333,25 @@ def build_materials():
              "emissiveTexture": {"index": 0},
              "extensions": {"KHR_materials_emissive_strength": {
                  "emissiveStrength": 2.0}}},
+            # Lit, with every glTF core texture role, each factor and scalar
+            # away from its default, and a transform on one role only: the
+            # /mtlx lit graph builds one chain per role, and nothing in the
+            # corpus has a metallic-roughness or occlusion texture.
+            {"name": "Metal",
+             "pbrMetallicRoughness": {
+                 "baseColorFactor": [0.8, 0.6, 0.4, 1.0],
+                 "baseColorTexture": {"index": 0},
+                 "metallicFactor": 0.5,
+                 "roughnessFactor": 0.75,
+                 "metallicRoughnessTexture": {"index": 0},
+             },
+             "normalTexture": {
+                 "index": 0, "scale": 0.5,
+                 "extensions": {"KHR_texture_transform": {"scale": [3.0, 3.0]}},
+             },
+             "occlusionTexture": {"index": 0, "strength": 0.25},
+             "emissiveFactor": [0.1, 0.2, 0.3],
+             "emissiveTexture": {"index": 0}},
         ],
         "extensionsUsed": ["VRMC_vrm", "KHR_materials_unlit",
                            "KHR_texture_transform",
