@@ -2050,9 +2050,9 @@
               "connectedTo": "/Asset/mtl/green_emit/preview/baseColorTexture.rgb"
             },
             "emissiveColor": [
-              0.178010464,
-              1.0,
-              0.188481659
+              0.2321468,
+              1.30411887,
+              0.245802492
             ],
             "metallic": 0.0,
             "opacity": 1.0,

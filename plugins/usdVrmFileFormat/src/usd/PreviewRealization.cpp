@@ -47,10 +47,13 @@ UsdVrmAuthorPreview(const UsdShadeMaterial& material, const VrmMaterialSemantics
     // base color through emissive with no lit response, so scene lights
     // don't carve facets into the low-poly surface (the "polygonal" look).
     const bool unlit = s.unlit;
+    // glTF emission is emissiveFactor * emissiveTexture, scaled by
+    // KHR_materials_emissive_strength.
+    const GfVec3f emissive = s.emissiveFactor * s.emissiveStrength;
     shader.CreateInput(TfToken("diffuseColor"), SdfValueTypeNames->Color3f)
         .Set(unlit ? GfVec3f(0.0f) : s.baseColorFactor);
     shader.CreateInput(TfToken("emissiveColor"), SdfValueTypeNames->Color3f)
-        .Set(unlit ? s.baseColorFactor : s.emissiveFactor);
+        .Set(unlit ? s.baseColorFactor : emissive);
     shader.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float)
         .Set(unlit ? 0.0f : s.metallicFactor);
     shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
@@ -163,6 +166,14 @@ UsdVrmAuthorPreview(const UsdShadeMaterial& material, const VrmMaterialSemantics
     if (!unlit && emissiveTex)
     {
         UsdShadeShader t = makeTexture(*emissiveTex, "emissiveTexture", true);
+        // The factor (and strength) multiply the texture, folded into its
+        // scale as for base colour. Left unauthored at UsdUVTexture's own
+        // default, (1, 1, 1, 1), which is what a factor of white means.
+        if (emissive != GfVec3f(1.0f))
+        {
+            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
+                .Set(GfVec4f(emissive[0], emissive[1], emissive[2], 1.0f));
+        }
         shader.GetInput(TfToken("emissiveColor")).ConnectToSource(t.GetOutput(TfToken("rgb")));
     }
     if (!unlit && occlusionTex)

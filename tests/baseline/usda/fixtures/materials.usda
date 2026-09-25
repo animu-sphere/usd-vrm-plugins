@@ -455,6 +455,72 @@ def Xform "Asset" (
                 }
             }
         }
+
+        def Material "Glow" (
+            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:emissive"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 5
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.2, 0.2, 0.2)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0.5, 0.25, 1)
+            float inputs:vrm:material:emissiveStrength = 2
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 0
+            asset inputs:vrm:textureInfo:emissive:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            uniform int inputs:vrm:textureInfo:emissive:texCoord = 0
+            uniform token inputs:vrm:textureInfo:emissive:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:emissive:wrapT = "clampToEdge"
+            token outputs:surface.connect = </Asset/mtl/Glow/preview.outputs:surface>
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Glow/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.2, 0.2, 0.2)
+                    color3f inputs:emissiveColor = (1, 0.5, 2)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Glow/preview/emissiveTexture.outputs:rgb>
+                    float inputs:metallic = 1
+                    float inputs:opacity = 1
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "stReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+
+                def Shader "emissiveTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float4 inputs:scale = (1, 0.5, 2, 1)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/Glow/preview/stReader.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+            }
+        }
     }
 
     def Scope "geo"

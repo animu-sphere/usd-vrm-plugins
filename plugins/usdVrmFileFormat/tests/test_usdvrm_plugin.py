@@ -328,6 +328,14 @@ def check_materials():
     # so they resolve through the universal terminal.
     assert not stage.GetPrimAtPath("/Asset/mtl/Glass/mtlx").IsValid()
 
+    # Lit emission through a texture: factor * strength folded into the
+    # texture's scale, since glTF emission is factor * texture * strength.
+    glow = stage.GetPrimAtPath("/Asset/mtl/Glow/preview/emissiveTexture")
+    assert _vclose(glow.GetAttribute("inputs:scale").Get(), (1.0, 0.5, 2.0, 1.0))
+    assert stage.GetPrimAtPath("/Asset/mtl/Glow/preview/surface").GetAttribute(
+        "inputs:emissiveColor").GetConnections() == [
+            glow.GetPath().AppendProperty("outputs:rgb")]
+
 
 def check_mtlx_textured_unlit():
     """The unlit + textured + alpha-masked path, which is what a VRM avatar is
