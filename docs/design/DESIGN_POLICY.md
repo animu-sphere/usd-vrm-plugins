@@ -965,6 +965,10 @@ Provide, as far as feasible:
 
 ### P6: Round-trip / exporter research
 
+> Exporting **to** `.vrm`. Writing an imported `.vrm` as native USD —
+> `.usda`, `.usdc`, `.usdz` — is the other direction and a different tool,
+> `vrm_export` ([export policy](VRM_EXPORT_POLICY.md) §3.3).
+
 **Work**
 
 - Reverse mapping from USD to the canonical model
