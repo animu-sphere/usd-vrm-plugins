@@ -65,7 +65,13 @@ def _shader_id(prim: Usd.Prim) -> str:
 
 
 def _asset_kind(prim: Usd.Prim, attr: Usd.Attribute) -> str:
-    if attr.GetName() == "inputs:file" and _shader_id(prim) == "UsdUVTexture":
+    name = attr.GetName()
+    if name == "inputs:file" and _shader_id(prim) == "UsdUVTexture":
+        return "texture"
+    # A canonical texture role on the Material (VrmTextureInfoAPI, material
+    # policy §6.3): the image every realization is generated from, so it
+    # travels with the package like the realization's own copy of the path.
+    if name.startswith("inputs:vrm:textureInfo:") and name.endswith(":file"):
         return "texture"
     return "asset"
 

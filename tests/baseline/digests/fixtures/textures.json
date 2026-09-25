@@ -2,6 +2,11 @@
   "assets": [
     {
       "assetPath": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Skin.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
       "attr": "/Asset/mtl/Skin/preview/baseColorTexture.inputs:file",
       "resolved": true
     }
@@ -97,6 +102,11 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor"
+      ],
       "path": "/Asset/mtl/Skin",
       "type": "Material"
     },

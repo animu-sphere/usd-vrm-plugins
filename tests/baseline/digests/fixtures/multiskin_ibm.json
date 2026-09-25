@@ -90,6 +90,9 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "VrmMaterialAPI"
+      ],
       "path": "/Asset/mtl/Body_Mat",
       "type": "Material"
     },

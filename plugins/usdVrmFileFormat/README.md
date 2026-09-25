@@ -133,7 +133,9 @@ project
 Implemented: GLB read, version detection, meshes
 (points/normals/UV/indices), `UsdPreviewSurface` materials with **textures**
 (base color, metallic-roughness, normal, emissive, occlusion; wrap modes,
-`KHR_texture_transform`), **MToon metadata** (`vrm:shaderModel` + `vrm:mtoon:raw`),
+`KHR_texture_transform`), **canonical material semantics** (`VrmMaterialAPI`,
+`VrmMToonAPI`, `VrmTextureInfoAPI` on every material, VRM 0.x MToon normalized
+into the 1.0 model) plus `vrm:shaderModel` and the lossless `vrm:mtoon:raw`,
 unified skeleton (bind from inverse bind matrices, topologically ordered) +
 skinning binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
 expressions** (`/Asset/rig/Expressions`, morph-target bindings), **glTF skeletal
@@ -146,8 +148,9 @@ warnings on unsupported data.
 VRM constraints, LookAt, and SpringBone are authored as typed schema **data** only —
 their **evaluation/simulation** is a separate runtime layer (`execVrm`, roadmap P4),
 never run by this file-format plugin. Not yet: morph-weight (blend-shape) animation
-(only joint TRS clips are authored today), full MToon **shading** (roadmap P5; only
-approximated via `UsdPreviewSurface` + `vrm:mtoon:raw` metadata today), and KTX2/WebP
+(only joint TRS clips are authored today), full MToon **shading** (roadmap P5; the
+semantics are typed, the rendering only approximated via `UsdPreviewSurface`
+today), and KTX2/WebP
 image decode.
 
 ### Textures

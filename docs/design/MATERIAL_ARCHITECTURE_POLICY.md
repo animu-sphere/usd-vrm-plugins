@@ -129,7 +129,9 @@ Two facts about this state shape everything below.
 read a shading-shift factor without re-parsing JSON, which is precisely the
 "typed data first, raw as fallback" rule that every other `Vrm*API` already
 follows. Step 1 moved nodes; it did not make MToon queryable. Step 3 defined
-the schemas that will (2026-09-25); an imported stage carries them from Step 4.
+the schemas that do, and since Step 4 (both 2026-09-25) every imported
+material carries them — VRM 0.x and 1.0 in the same fields. The realizations
+below still read the source material until Steps 5–6.
 
 **Shader prim paths are load-bearing for the baseline.**
 `tests/baseline/digests/**` keys materials by shader path (now
@@ -663,7 +665,7 @@ generator to re-point later, and the next consumers — expression colour binds
 | 1 | `/preview` hierarchy | §7.1 — shipped |
 | 2 | `/mtlx` for unlit materials | §7.2 — shipped; the lit half moves to Step 6 |
 | 3 | the canonical schema contract | §7.3 |
-| 4 | importer canonicalization, VRM 0.x and 1.0 | §7.5 |
+| 4 | importer canonicalization, VRM 0.x and 1.0 | §7.5 — shipped |
 | 5 | `/preview` generated from canonical semantics | §7.5 |
 | 6 | `/mtlx` generated from canonical semantics, lit and MToon approximations | §7.5 |
 | 7 | expression material binds onto canonical slots | §7.5 |
@@ -760,8 +762,8 @@ acceptance criteria.
 > and validator codes `VRM223`–`VRM226`. A hand-authored stage is read through
 > the generated C++ API (`vrmschema_material_api`). Additive within v1: the
 > baseline diff is the schema, discovery, symbol and diagnostic catalogues, and
-> no stage digest moved. The importer does not author the schemas yet — that
-> is Step 4.
+> no stage digest moved. The importer authors the schemas since Step 4
+> (2026-09-25).
 
 **Objective.** Move source semantics out of the realizations into
 `VrmMaterialAPI`, `VrmMToonAPI`, and `VrmTextureInfoAPI:<slot>`.
@@ -780,7 +782,7 @@ acceptance criteria.
   attributes.
 - Define texture slot instance names and texture transform semantics.
 - Author the schemas in the importer; consume them in readers and exporters.
-  *(Step 4.)*
+  *(Step 4 — shipped.)*
 - Re-point **both** generators at canonical semantics. *(Steps 5 and 6.)*
 - Add schema round-trip tests, plus validation of allowed values and slot names.
 
@@ -844,7 +846,8 @@ each step may and may not do.
 
 - **Step 4 — importer canonicalization.** Both source versions author the same
   canonical fields (§6.6). The raw block is untouched; the baseline diff is
-  additive.
+  additive. *Shipped 2026-09-25:* the 0.x conversion is UniVRM's migration,
+  exactly (§11 q10).
 - **Step 5 — `/preview` from canonical semantics.** The generator's input is
   the canonical field set and nothing else, so it can be run on a stage as
   well as in the importer. No value changes.
@@ -916,10 +919,10 @@ must be isolated one at a time:
    now understood rather than suspected (§5.5);
 5. asset-specific source data actually consumed by the VRM renderer — **the
    remaining candidate.** The asset's hair carries `_ShadeTexture` and
-   `_ShadeColor`, which no realization reads yet; that is Steps 3–4 and then
-   Step 6's MToon approximations (§7.5), not an alpha or colour-space problem.
-   Those are Unity property names — a VRM 0.x source — so Step 4's 0.x half
-   (§6.6) is on this target's path, not only the 1.0 one.
+   `_ShadeColor`, which no realization reads yet. Since Step 4 they are typed —
+   `VrmTextureInfoAPI:shadeMultiply` and `inputs:vrm:mtoon:shadeColorFactor`,
+   through the 0.x half of §6.6 — so what is left is Step 6's MToon
+   approximations (§7.5), not an alpha or colour-space problem.
 
 Do not assume `COLOR_0` must be multiplied into MToon appearance without checking
 the source material and the applicable VRM/MToon specification behavior. That
@@ -956,7 +959,7 @@ their own PRs:
 | ✅ Confirm whether moving shader prims under `/preview` requires a schema contract bump — **it does not**, and the contract now says so rather than leaving it inferable (§11 q3) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 1 |
 | ✅ `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI` added to the typed API table, with their raw fallbacks | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | ✅ The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
-| The VRM 0.x MToon row: `materialProperties` lands in the same typed schemas (§6.6) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 4 |
+| ✅ The VRM 0.x MToon row: `materialProperties` lands in the same typed schemas (§6.6), with the per-field conversion table | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields) | Step 4 |
 | The slot → canonical attribute table for expression material binds (§6.7), on the `VrmExpressionAPI` row; VRM 0.x `materialValues` typed onto the same slots, narrowing `VRM150` | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 7 |
 | The MToon rows restated as typed-and-realized once both generators read canonical semantics | [CAPABILITY_MATRIX.md](../reference/CAPABILITY_MATRIX.md) | Steps 5–6 |
 
@@ -976,5 +979,5 @@ their own PRs:
 | 7 | Is `/Asset/mtl/_shared` ever needed, or do per-material graphs suffice? | deferred |
 | ~~8~~ | ~~Does `COLOR_0` participate in MToon appearance for the issue #119 asset?~~ **No** — the asset has no `COLOR_0` on any primitive (settled on the issue, 2026-08-12). Kept as a question for other assets, not this one. | — |
 | ~~9~~ | ~~How does an animated canonical value reach a generated realization? `UsdShade` connects only `inputs:` / `outputs:` attributes, so a namespaced `vrm:mtoon:*` attribute cannot be a connection source: either the Material also exposes interface `inputs:` that each graph connects to, or the canonical attributes themselves are `inputs:`. Decided before any name is frozen, because it decides §6.4's namespace.~~ **The canonical attributes themselves are `inputs:`** — `inputs:vrm:*` (settled 2026-09-25, measured in Storm; §6.4.1). | — |
-| 10 | Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6). | Step 4 |
+| ~~10~~ | ~~Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6).~~ **UniVRM's own 0.x → 1.0 migration, exactly** (settled 2026-09-25), its two destructive choices included — a missing shade texture takes the lit texture, `rimLightingMixFactor` is always 1 — so a 0.x avatar and the 1.0 file UniVRM migrates it to carry the same canonical values. The one departure: an absent 0.x property takes the MToon 0.x shader default, not C#'s zero. Every row, with its fidelity class, is the [schema contract's 0.x table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields). | — |
 | 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |

@@ -101,11 +101,13 @@ P5's open steps are their own document, the
 realization work, and the full MToon renderer is `hydra-toon`'s, another
 repository.
 
-- ⬜ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as
+- ✅ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as
   the schema contract ([track §3](material-track.md#3-steps))
-- ⬜ **Steps 4–7** — importer canonicalization of VRM 0.x and 1.0, `/preview`
-  and `/mtlx` generated from canonical semantics, expression material binds
-  onto canonical slots ([track §3](material-track.md#3-steps))
+- ✅ **Step 4** — importer canonicalization of VRM 0.x and 1.0 into those
+  schemas ([track §3](material-track.md#3-steps))
+- ⬜ **Steps 5–7** — `/preview` and `/mtlx` generated from canonical
+  semantics, expression material binds onto canonical slots
+  ([track §3](material-track.md#3-steps))
 
 ## Product P6 — round-trip / exporter research
 

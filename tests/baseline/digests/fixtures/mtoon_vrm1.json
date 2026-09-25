@@ -1,0 +1,1072 @@
+{
+  "assets": [
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/d904a79dd4924496.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:emissive:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/fd309d4af37bc74f.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:matcap:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/2258d39c9f61a117.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:normal:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/42beb8cbf9a5d572.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:outlineWidthMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/fdab0e4c7c501b21.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:rimMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/a124872abc5f74c0.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/a4ea333dfeea9ecc.png]",
+      "attr": "/Asset/mtl/Hair.inputs:vrm:textureInfo:uvAnimationMask:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Hair/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Hair/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Face.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Face.inputs:vrm:textureInfo:shadeMultiply:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Face/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Face/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Plain.inputs:vrm:textureInfo:baseColor:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+      "attr": "/Asset/mtl/Plain/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    }
+  ],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/Face": {
+      "graphs": {
+        "/Asset/mtl/Face/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Face/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/Face/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Face/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Face/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/Face/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Face/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/Face/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/Face/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/Face/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/Face/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorSplit.outa"
+            },
+            "alpha_cutoff": 0.300000012,
+            "alpha_mode": 1,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Face/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/Face/preview/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Face/preview/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Face/preview/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Face/preview/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/Face/preview/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        },
+        "/Asset/mtl/Face/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Face/preview/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/Face/preview/baseColorTexture.a"
+            },
+            "opacityThreshold": 0.300000012,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/Face/mtlx.surface",
+        "surface": "/Asset/mtl/Face/preview.surface"
+      }
+    },
+    "/Asset/mtl/Hair": {
+      "graphs": {
+        "/Asset/mtl/Hair/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Hair/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/Hair/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Hair/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Hair/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              0.214041144,
+              1.0,
+              0.0508760884,
+              0.75
+            ]
+          }
+        },
+        "/Asset/mtl/Hair/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/Hair/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.25,
+              -0.5
+            ],
+            "rotate": -0.0,
+            "scale": [
+              0.5,
+              2.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/Hair/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/Hair/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/Hair/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/Hair/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorSplit.outa"
+            },
+            "alpha_mode": 2,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Hair/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/Hair/preview/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "scale": [
+              0.214041144,
+              1.0,
+              0.0508760884,
+              0.75
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Hair/preview/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Hair/preview/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/Hair/preview/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              2.0,
+              0.5
+            ],
+            "translation": [
+              0.25,
+              0.5
+            ]
+          }
+        },
+        "/Asset/mtl/Hair/preview/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        },
+        "/Asset/mtl/Hair/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Hair/preview/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/Hair/preview/baseColorTexture.a"
+            },
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/Hair/mtlx.surface",
+        "surface": "/Asset/mtl/Hair/preview.surface"
+      }
+    },
+    "/Asset/mtl/Lashes": {
+      "graphs": {
+        "/Asset/mtl/Lashes/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Lashes/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/Lashes/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Lashes/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Lashes/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 2,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/Lashes/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/Lashes/mtlx.surface",
+        "surface": "/Asset/mtl/Lashes/preview.surface"
+      }
+    },
+    "/Asset/mtl/Plain": {
+      "graphs": {
+        "/Asset/mtl/Plain/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Plain/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Plain/preview/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm[images/0198c0f73fbeb889.png]",
+              "resolved": true
+            },
+            "scale": [
+              0.200000003,
+              0.300000012,
+              0.400000006,
+              1.0
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Plain/preview/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/Plain/preview/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        },
+        "/Asset/mtl/Plain/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Plain/preview/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 1.0,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/Plain/preview/baseColorTexture.a"
+            },
+            "opacityThreshold": 0.25,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Plain/preview.surface"
+      }
+    },
+    "/Asset/mtl/Tear": {
+      "graphs": {
+        "/Asset/mtl/Tear/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Tear/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/Tear/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Tear/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Tear/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 2,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/Tear/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/Tear/mtlx.surface",
+        "surface": "/Asset/mtl/Tear/preview.surface"
+      }
+    },
+    "/Asset/mtl/Veil": {
+      "graphs": {
+        "/Asset/mtl/Veil/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Veil/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/Veil/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Veil/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Veil/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 2,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/Veil/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/Veil/mtlx.surface",
+        "surface": "/Asset/mtl/Veil/preview.surface"
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Body": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Hair"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:st"
+      ],
+      "skeleton": []
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "Xform"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:emissive",
+        "VrmTextureInfoAPI:matcap",
+        "VrmTextureInfoAPI:normal",
+        "VrmTextureInfoAPI:outlineWidthMultiply",
+        "VrmTextureInfoAPI:rimMultiply",
+        "VrmTextureInfoAPI:shadeMultiply",
+        "VrmTextureInfoAPI:uvAnimationMask"
+      ],
+      "path": "/Asset/mtl/Hair",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Hair/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/preview/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Hair/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI",
+        "VrmTextureInfoAPI:baseColor",
+        "VrmTextureInfoAPI:shadeMultiply"
+      ],
+      "path": "/Asset/mtl/Face",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Face/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/preview/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Face/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI"
+      ],
+      "path": "/Asset/mtl/Veil",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Veil/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Veil/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Veil/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Veil/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI"
+      ],
+      "path": "/Asset/mtl/Tear",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Tear/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tear/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Tear/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tear/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI",
+        "VrmMaterialAPI",
+        "VrmMToonAPI"
+      ],
+      "path": "/Asset/mtl/Lashes",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Lashes/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Lashes/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Lashes/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Lashes/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "VrmMaterialAPI",
+        "VrmTextureInfoAPI:baseColor"
+      ],
+      "path": "/Asset/mtl/Plain",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/Plain/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/preview/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Plain/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Body",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {},
+  "source": "${BUNDLE}/tests/fixtures/mtoon_vrm1.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": false,
+    "metaName": "usdVrm Fixture",
+    "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
+    "rawExtensionSha256": "914d217985b21303df2dc775cfe0f5765de8659ae1c02ac2be8c988f5e9f5acf",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [],
+    "warningCount": 0
+  }
+}

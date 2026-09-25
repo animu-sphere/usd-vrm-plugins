@@ -1,0 +1,609 @@
+#usda 1.0
+(
+    defaultPrim = "Asset"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Asset" (
+    customData = {
+        dictionary vrm = {
+            bool frontAxisNormalized = 1
+            string meta = '''{
+    "author": "usd-vrm-plugins",
+    "licenseName": "Redistribution_Prohibited",
+    "title": "usdVrm 0.x Fixture"
+}'''
+            string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm 0.x Fixture","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[]},"materialProperties":[{"name":"Hair","shader":"VRM/MToon","renderQueue":2510,"floatProperties":{"_BlendMode":3,"_CullMode":0,"_Cutoff":0.5,"_BumpScale":0.8,"_ShadeShift":-0.2,"_ShadeToony":0.5,"_IndirectLightIntensity":0.25,"_RimFresnelPower":3.0,"_RimLift":0.1,"_RimLightingMix":0.4,"_OutlineWidthMode":1,"_OutlineWidth":0.5,"_OutlineColorMode":1,"_OutlineLightingMix":0.6,"_UvAnimScrollX":0.5,"_UvAnimScrollY":0.25,"_UvAnimRotation":0.25},"vectorProperties":{"_Color":[0.5,1.0,0.25,0.75],"_ShadeColor":[0.5,0.5,0.5,1.0],"_RimColor":[1.0,0.5,0.0,1.0],"_OutlineColor":[0.25,0.5,1.0,1.0],"_EmissionColor":[0.1,0.2,0.3,1.0],"_MainTex":[0.25,0.5,2.0,0.5]},"textureProperties":{"_MainTex":0,"_ShadeTexture":1,"_BumpMap":2,"_EmissionMap":3,"_SphereAdd":4,"_RimTexture":5,"_OutlineWidthTexture":6,"_UvAnimMaskTexture":7},"keywordMap":{},"tagMap":{}},{"name":"Face","shader":"VRM/MToon","renderQueue":2450,"floatProperties":{"_BlendMode":1,"_CullMode":2,"_Cutoff":0.3,"_OutlineWidthMode":2,"_OutlineWidth":1.0,"_OutlineColorMode":0,"_OutlineLightingMix":0.8},"vectorProperties":{"_Color":[1.0,1.0,1.0,1.0],"_MainTex":[0.0,0.0,1.0,1.0]},"textureProperties":{"_MainTex":0},"keywordMap":{},"tagMap":{}},{"name":"Veil","shader":"VRM/MToon","renderQueue":3000,"floatProperties":{"_BlendMode":2},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Tear","shader":"VRM/MToon","renderQueue":2990,"floatProperties":{"_BlendMode":2,"_CullMode":1},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Lashes","shader":"VRM/MToon","renderQueue":2501,"floatProperties":{"_BlendMode":3},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Plain","shader":"VRM_USE_GLTFSHADER","renderQueue":-1,"floatProperties":{},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}}]}'
+            int schemaContractVersion = 1
+            string sourceFormat = "VRM"
+            string sourceFrontAxis = "-Z"
+            string sourceVersion = "0.x"
+            string specVersion = "0.0"
+        }
+    }
+    kind = "component"
+)
+{
+    def Scope "mtl"
+    {
+        def Material "Hair" (
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:outlineWidthMultiply", "VrmTextureInfoAPI:rimMultiply", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:uvAnimationMask"]
+            customData = {
+                dictionary vrm = {
+                    dictionary mtoon = {
+                        string raw = '''{
+    "floatProperties": {
+        "_BlendMode": 3,
+        "_BumpScale": 0.8,
+        "_CullMode": 0,
+        "_Cutoff": 0.5,
+        "_IndirectLightIntensity": 0.25,
+        "_OutlineColorMode": 1,
+        "_OutlineLightingMix": 0.6,
+        "_OutlineWidth": 0.5,
+        "_OutlineWidthMode": 1,
+        "_RimFresnelPower": 3.0,
+        "_RimLift": 0.1,
+        "_RimLightingMix": 0.4,
+        "_ShadeShift": -0.2,
+        "_ShadeToony": 0.5,
+        "_UvAnimRotation": 0.25,
+        "_UvAnimScrollX": 0.5,
+        "_UvAnimScrollY": 0.25
+    },
+    "keywordMap": {},
+    "name": "Hair",
+    "renderQueue": 2510,
+    "shader": "VRM/MToon",
+    "tagMap": {},
+    "textureProperties": {
+        "_BumpMap": 2,
+        "_EmissionMap": 3,
+        "_MainTex": 0,
+        "_OutlineWidthTexture": 6,
+        "_RimTexture": 5,
+        "_ShadeTexture": 1,
+        "_SphereAdd": 4,
+        "_UvAnimMaskTexture": 7
+    },
+    "vectorProperties": {
+        "_Color": [0.5, 1.0, 0.25, 0.75],
+        "_EmissionColor": [0.1, 0.2, 0.3, 1.0],
+        "_MainTex": [0.25, 0.5, 2.0, 0.5],
+        "_OutlineColor": [0.25, 0.5, 1.0, 1.0],
+        "_RimColor": [1.0, 0.5, 0.0, 1.0],
+        "_ShadeColor": [0.5, 0.5, 0.5, 1.0]
+    }
+}'''
+                    }
+                    int sourceMaterialIndex = 0
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "BLEND"
+            float inputs:vrm:material:baseColorAlphaFactor = 0.75
+            color3f inputs:vrm:material:baseColorFactor = (0.21404114, 1, 0.05087609)
+            uniform bool inputs:vrm:material:doubleSided = 1
+            color3f inputs:vrm:material:emissiveFactor = (0.1, 0.2, 0.3)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.9
+            uniform bool inputs:vrm:material:unlit = 1
+            float inputs:vrm:mtoon:giEqualizationFactor = 0.75
+            color3f inputs:vrm:mtoon:matcapFactor = (1, 1, 1)
+            color3f inputs:vrm:mtoon:outlineColorFactor = (0.05087609, 0.21404114, 1)
+            float inputs:vrm:mtoon:outlineLightingMixFactor = 0.6
+            float inputs:vrm:mtoon:outlineWidthFactor = 0.005
+            uniform token inputs:vrm:mtoon:outlineWidthMode = "worldCoordinates"
+            color3f inputs:vrm:mtoon:parametricRimColorFactor = (1, 0.21404114, 0)
+            float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 3
+            float inputs:vrm:mtoon:parametricRimLiftFactor = 0.1
+            uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = 1
+            float inputs:vrm:mtoon:rimLightingMixFactor = 1
+            color3f inputs:vrm:mtoon:shadeColorFactor = (0.21404114, 0.21404114, 0.21404114)
+            float inputs:vrm:mtoon:shadingShiftFactor = -0.09999999
+            float inputs:vrm:mtoon:shadingToonyFactor = 0.70000005
+            uniform token inputs:vrm:mtoon:specVersion = "1.0"
+            uniform bool inputs:vrm:mtoon:transparentWithZWrite = 1
+            float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 1.5707964
+            float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0.5
+            float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = -0.25
+            asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:emissive:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/d904a79dd4924496.png]@
+            uniform int inputs:vrm:textureInfo:emissive:texCoord = 0
+            float2 inputs:vrm:textureInfo:emissive:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:emissive:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:emissive:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:emissive:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:emissive:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:matcap:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/fd309d4af37bc74f.png]@
+            uniform int inputs:vrm:textureInfo:matcap:texCoord = 0
+            float2 inputs:vrm:textureInfo:matcap:transform:offset = (0, 0)
+            float inputs:vrm:textureInfo:matcap:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:matcap:transform:scale = (1, 1)
+            uniform token inputs:vrm:textureInfo:matcap:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:matcap:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:normal:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/2258d39c9f61a117.png]@
+            float inputs:vrm:textureInfo:normal:scale = 0.8
+            uniform int inputs:vrm:textureInfo:normal:texCoord = 0
+            float2 inputs:vrm:textureInfo:normal:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:normal:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:normal:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:normal:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:normal:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:outlineWidthMultiply:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/42beb8cbf9a5d572.png]@
+            uniform int inputs:vrm:textureInfo:outlineWidthMultiply:texCoord = 0
+            float2 inputs:vrm:textureInfo:outlineWidthMultiply:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:outlineWidthMultiply:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:outlineWidthMultiply:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:outlineWidthMultiply:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:outlineWidthMultiply:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:rimMultiply:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/fdab0e4c7c501b21.png]@
+            uniform int inputs:vrm:textureInfo:rimMultiply:texCoord = 0
+            float2 inputs:vrm:textureInfo:rimMultiply:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:rimMultiply:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:rimMultiply:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:rimMultiply:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:rimMultiply:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:shadeMultiply:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/a124872abc5f74c0.png]@
+            uniform int inputs:vrm:textureInfo:shadeMultiply:texCoord = 0
+            float2 inputs:vrm:textureInfo:shadeMultiply:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:shadeMultiply:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:shadeMultiply:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:shadeMultiply:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:shadeMultiply:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:uvAnimationMask:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/a4ea333dfeea9ecc.png]@
+            uniform int inputs:vrm:textureInfo:uvAnimationMask:texCoord = 0
+            float2 inputs:vrm:textureInfo:uvAnimationMask:transform:offset = (0.25, 0)
+            float inputs:vrm:textureInfo:uvAnimationMask:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:uvAnimationMask:transform:scale = (2, 0.5)
+            uniform token inputs:vrm:textureInfo:uvAnimationMask:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:uvAnimationMask:wrapT = "clampToEdge"
+            token outputs:surface.connect = </Asset/mtl/Hair/preview.outputs:surface>
+            custom uniform token vrm:shaderModel = "MToon"
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Hair/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.9
+                    token outputs:surface
+                }
+            }
+        }
+
+        def Material "Face" (
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:shadeMultiply"]
+            customData = {
+                dictionary vrm = {
+                    dictionary mtoon = {
+                        string raw = '''{
+    "floatProperties": {
+        "_BlendMode": 1,
+        "_CullMode": 2,
+        "_Cutoff": 0.3,
+        "_OutlineColorMode": 0,
+        "_OutlineLightingMix": 0.8,
+        "_OutlineWidth": 1.0,
+        "_OutlineWidthMode": 2
+    },
+    "keywordMap": {},
+    "name": "Face",
+    "renderQueue": 2450,
+    "shader": "VRM/MToon",
+    "tagMap": {},
+    "textureProperties": {
+        "_MainTex": 0
+    },
+    "vectorProperties": {
+        "_Color": [1.0, 1.0, 1.0, 1.0],
+        "_MainTex": [0.0, 0.0, 1.0, 1.0]
+    }
+}'''
+                    }
+                    int sourceMaterialIndex = 1
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.3
+            uniform token inputs:vrm:material:alphaMode = "MASK"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.9
+            uniform bool inputs:vrm:material:unlit = 1
+            float inputs:vrm:mtoon:giEqualizationFactor = 0.9
+            color3f inputs:vrm:mtoon:matcapFactor = (0, 0, 0)
+            color3f inputs:vrm:mtoon:outlineColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:outlineLightingMixFactor = 0
+            float inputs:vrm:mtoon:outlineWidthFactor = 0.005
+            uniform token inputs:vrm:mtoon:outlineWidthMode = "screenCoordinates"
+            color3f inputs:vrm:mtoon:parametricRimColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 1
+            float inputs:vrm:mtoon:parametricRimLiftFactor = 0
+            uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = 0
+            float inputs:vrm:mtoon:rimLightingMixFactor = 1
+            color3f inputs:vrm:mtoon:shadeColorFactor = (0.9331069, 0.62091595, 0.71056664)
+            float inputs:vrm:mtoon:shadingShiftFactor = -0.050000012
+            float inputs:vrm:mtoon:shadingToonyFactor = 0.95
+            uniform token inputs:vrm:mtoon:specVersion = "1.0"
+            uniform bool inputs:vrm:mtoon:transparentWithZWrite = 0
+            float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
+            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
+            uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
+            asset inputs:vrm:textureInfo:shadeMultiply:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+            uniform int inputs:vrm:textureInfo:shadeMultiply:texCoord = 0
+            float2 inputs:vrm:textureInfo:shadeMultiply:transform:offset = (0, 0)
+            float inputs:vrm:textureInfo:shadeMultiply:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:shadeMultiply:transform:scale = (1, 1)
+            uniform token inputs:vrm:textureInfo:shadeMultiply:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:shadeMultiply:wrapT = "clampToEdge"
+            token outputs:surface.connect = </Asset/mtl/Face/preview.outputs:surface>
+            custom uniform token vrm:shaderModel = "MToon"
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Face/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.9
+                    token outputs:surface
+                }
+            }
+        }
+
+        def Material "Veil" (
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+            customData = {
+                dictionary vrm = {
+                    dictionary mtoon = {
+                        string raw = '''{
+    "floatProperties": {
+        "_BlendMode": 2
+    },
+    "keywordMap": {},
+    "name": "Veil",
+    "renderQueue": 3000,
+    "shader": "VRM/MToon",
+    "tagMap": {},
+    "textureProperties": {},
+    "vectorProperties": {}
+}'''
+                    }
+                    int sourceMaterialIndex = 2
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "BLEND"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.9
+            uniform bool inputs:vrm:material:unlit = 1
+            float inputs:vrm:mtoon:giEqualizationFactor = 0.9
+            color3f inputs:vrm:mtoon:matcapFactor = (0, 0, 0)
+            color3f inputs:vrm:mtoon:outlineColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:outlineLightingMixFactor = 0
+            float inputs:vrm:mtoon:outlineWidthFactor = 0
+            uniform token inputs:vrm:mtoon:outlineWidthMode = "none"
+            color3f inputs:vrm:mtoon:parametricRimColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 1
+            float inputs:vrm:mtoon:parametricRimLiftFactor = 0
+            uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = 0
+            float inputs:vrm:mtoon:rimLightingMixFactor = 1
+            color3f inputs:vrm:mtoon:shadeColorFactor = (0.9331069, 0.62091595, 0.71056664)
+            float inputs:vrm:mtoon:shadingShiftFactor = -0.050000012
+            float inputs:vrm:mtoon:shadingToonyFactor = 0.95
+            uniform token inputs:vrm:mtoon:specVersion = "1.0"
+            uniform bool inputs:vrm:mtoon:transparentWithZWrite = 0
+            float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            token outputs:surface.connect = </Asset/mtl/Veil/preview.outputs:surface>
+            custom uniform token vrm:shaderModel = "MToon"
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Veil/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.9
+                    token outputs:surface
+                }
+            }
+        }
+
+        def Material "Tear" (
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+            customData = {
+                dictionary vrm = {
+                    dictionary mtoon = {
+                        string raw = '''{
+    "floatProperties": {
+        "_BlendMode": 2,
+        "_CullMode": 1
+    },
+    "keywordMap": {},
+    "name": "Tear",
+    "renderQueue": 2990,
+    "shader": "VRM/MToon",
+    "tagMap": {},
+    "textureProperties": {},
+    "vectorProperties": {}
+}'''
+                    }
+                    int sourceMaterialIndex = 3
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "BLEND"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)
+            uniform bool inputs:vrm:material:doubleSided = 1
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.9
+            uniform bool inputs:vrm:material:unlit = 1
+            float inputs:vrm:mtoon:giEqualizationFactor = 0.9
+            color3f inputs:vrm:mtoon:matcapFactor = (0, 0, 0)
+            color3f inputs:vrm:mtoon:outlineColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:outlineLightingMixFactor = 0
+            float inputs:vrm:mtoon:outlineWidthFactor = 0
+            uniform token inputs:vrm:mtoon:outlineWidthMode = "none"
+            color3f inputs:vrm:mtoon:parametricRimColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 1
+            float inputs:vrm:mtoon:parametricRimLiftFactor = 0
+            uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = -1
+            float inputs:vrm:mtoon:rimLightingMixFactor = 1
+            color3f inputs:vrm:mtoon:shadeColorFactor = (0.9331069, 0.62091595, 0.71056664)
+            float inputs:vrm:mtoon:shadingShiftFactor = -0.050000012
+            float inputs:vrm:mtoon:shadingToonyFactor = 0.95
+            uniform token inputs:vrm:mtoon:specVersion = "1.0"
+            uniform bool inputs:vrm:mtoon:transparentWithZWrite = 0
+            float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            token outputs:surface.connect = </Asset/mtl/Tear/preview.outputs:surface>
+            custom uniform token vrm:shaderModel = "MToon"
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Tear/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.9
+                    token outputs:surface
+                }
+            }
+        }
+
+        def Material "Lashes" (
+            apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+            customData = {
+                dictionary vrm = {
+                    dictionary mtoon = {
+                        string raw = '''{
+    "floatProperties": {
+        "_BlendMode": 3
+    },
+    "keywordMap": {},
+    "name": "Lashes",
+    "renderQueue": 2501,
+    "shader": "VRM/MToon",
+    "tagMap": {},
+    "textureProperties": {},
+    "vectorProperties": {}
+}'''
+                    }
+                    int sourceMaterialIndex = 4
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "BLEND"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 0
+            float inputs:vrm:material:roughnessFactor = 0.9
+            uniform bool inputs:vrm:material:unlit = 1
+            float inputs:vrm:mtoon:giEqualizationFactor = 0.9
+            color3f inputs:vrm:mtoon:matcapFactor = (0, 0, 0)
+            color3f inputs:vrm:mtoon:outlineColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:outlineLightingMixFactor = 0
+            float inputs:vrm:mtoon:outlineWidthFactor = 0
+            uniform token inputs:vrm:mtoon:outlineWidthMode = "none"
+            color3f inputs:vrm:mtoon:parametricRimColorFactor = (0, 0, 0)
+            float inputs:vrm:mtoon:parametricRimFresnelPowerFactor = 1
+            float inputs:vrm:mtoon:parametricRimLiftFactor = 0
+            uniform int inputs:vrm:mtoon:renderQueueOffsetNumber = 0
+            float inputs:vrm:mtoon:rimLightingMixFactor = 1
+            color3f inputs:vrm:mtoon:shadeColorFactor = (0.9331069, 0.62091595, 0.71056664)
+            float inputs:vrm:mtoon:shadingShiftFactor = -0.050000012
+            float inputs:vrm:mtoon:shadingToonyFactor = 0.95
+            uniform token inputs:vrm:mtoon:specVersion = "1.0"
+            uniform bool inputs:vrm:mtoon:transparentWithZWrite = 1
+            float inputs:vrm:mtoon:uvAnimationRotationSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollXSpeedFactor = 0
+            float inputs:vrm:mtoon:uvAnimationScrollYSpeedFactor = 0
+            token outputs:surface.connect = </Asset/mtl/Lashes/preview.outputs:surface>
+            custom uniform token vrm:shaderModel = "MToon"
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Lashes/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.5, 1, 0.25)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.9
+                    token outputs:surface
+                }
+            }
+        }
+
+        def Material "Plain" (
+            apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:baseColor"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 5
+                }
+            }
+        )
+        {
+            float inputs:vrm:material:alphaCutoff = 0.25
+            uniform token inputs:vrm:material:alphaMode = "MASK"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.2, 0.3, 0.4)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 0
+            asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
+            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
+            uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
+            token outputs:surface.connect = </Asset/mtl/Plain/preview.outputs:surface>
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/Plain/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.2, 0.3, 0.4)
+                    color3f inputs:diffuseColor.connect = </Asset/mtl/Plain/preview/baseColorTexture.outputs:rgb>
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 1
+                    float inputs:opacity = 1
+                    float inputs:opacity.connect = </Asset/mtl/Plain/preview/baseColorTexture.outputs:a>
+                    float inputs:opacityThreshold = 0.25
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "stReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+
+                def Shader "baseColorTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/mtoon_vrm0.vrm[images/0198c0f73fbeb889.png]@
+                    float4 inputs:scale = (0.2, 0.3, 0.4, 1)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/Plain/preview/stReader.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+            }
+        }
+    }
+
+    def Scope "geo"
+    {
+        def Mesh "Body" (
+            apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 0
+                    int sourceNodeIndex = 0
+                    string sourceNodeName = "Body"
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/Hair>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            texCoord2f[] primvars:st = [(0, 1), (1, 1), (0.5, 0)] (
+                interpolation = "vertex"
+            )
+            uniform token subdivisionScheme = "none"
+            matrix4d xformOp:transform = ( (-1, 0, -1.2246467991473532e-16, 0), (0, 1, 0, 0), (1.2246467991473532e-16, 0, -1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+
+    def Scope "rig"
+    {
+    }
+}
+

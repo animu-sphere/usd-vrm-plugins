@@ -11,7 +11,10 @@
 #include <vrmSchema/vrmExpressionAPI.h>
 #include <vrmSchema/vrmHumanoidAPI.h>
 #include <vrmSchema/vrmLookAtAPI.h>
+#include <vrmSchema/vrmMToonAPI.h>
+#include <vrmSchema/vrmMaterialAPI.h>
 #include <vrmSchema/vrmSpringBoneAPI.h>
+#include <vrmSchema/vrmTextureInfoAPI.h>
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -337,6 +340,88 @@ _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat, const Vr
             .CreateAttribute(TfToken("config:mtlx:version"), SdfValueTypeNames->String,
                              /*custom=*/false)
             .Set(std::string(_kMtlxVersion));
+    }
+}
+
+// The model keeps a sampler wrap in UsdUVTexture's words, which /preview
+// authors as-is; the canonical attribute is glTF's word (schema contract).
+const char*
+_GltfWrap(const std::string& wrap)
+{
+    if (wrap == "clamp")
+        return "clampToEdge";
+    if (wrap == "mirror")
+        return "mirroredRepeat";
+    return "repeat";
+}
+
+// Author a material's canonical semantics on the Material itself (material
+// policy §6; P5 Step 4): VrmMaterialAPI on every material, VrmMToonAPI on an
+// MToon one, and one VrmTextureInfoAPI instance per texture role it samples.
+//
+// Every value is authored, the specification defaults included. A reader would
+// get a default from the schema fallback, but a realization connected to a
+// canonical input would not -- UsdShade resolves an interface connection to an
+// authored value only (§6.4.1) -- and Steps 5-6 connect to all of them.
+void
+_AuthorMaterialSemantics(const UsdShadeMaterial& mat, const VrmMaterialSemantics& s)
+{
+    const UsdPrim prim = mat.GetPrim();
+
+    UsdVrmMaterialAPI core = UsdVrmMaterialAPI::Apply(prim);
+    core.CreateBaseColorFactorAttr().Set(s.baseColorFactor);
+    core.CreateBaseColorAlphaFactorAttr().Set(s.baseColorAlphaFactor);
+    core.CreateMetallicFactorAttr().Set(s.metallicFactor);
+    core.CreateRoughnessFactorAttr().Set(s.roughnessFactor);
+    core.CreateEmissiveFactorAttr().Set(s.emissiveFactor);
+    core.CreateEmissiveStrengthAttr().Set(s.emissiveStrength);
+    core.CreateAlphaModeAttr().Set(TfToken(s.alphaMode));
+    core.CreateAlphaCutoffAttr().Set(s.alphaCutoff);
+    core.CreateDoubleSidedAttr().Set(s.doubleSided);
+    core.CreateUnlitAttr().Set(s.unlit);
+
+    if (s.hasMToon)
+    {
+        const VrmMToonSemantics& t = s.mtoon;
+        UsdVrmMToonAPI mtoon = UsdVrmMToonAPI::Apply(prim);
+        mtoon.CreateSpecVersionAttr().Set(TfToken(t.specVersion));
+        mtoon.CreateTransparentWithZWriteAttr().Set(t.transparentWithZWrite);
+        mtoon.CreateRenderQueueOffsetNumberAttr().Set(t.renderQueueOffsetNumber);
+        mtoon.CreateShadeColorFactorAttr().Set(t.shadeColorFactor);
+        mtoon.CreateShadingShiftFactorAttr().Set(t.shadingShiftFactor);
+        mtoon.CreateShadingToonyFactorAttr().Set(t.shadingToonyFactor);
+        mtoon.CreateGiEqualizationFactorAttr().Set(t.giEqualizationFactor);
+        mtoon.CreateMatcapFactorAttr().Set(t.matcapFactor);
+        mtoon.CreateParametricRimColorFactorAttr().Set(t.parametricRimColorFactor);
+        mtoon.CreateParametricRimFresnelPowerFactorAttr().Set(t.parametricRimFresnelPowerFactor);
+        mtoon.CreateParametricRimLiftFactorAttr().Set(t.parametricRimLiftFactor);
+        mtoon.CreateRimLightingMixFactorAttr().Set(t.rimLightingMixFactor);
+        mtoon.CreateOutlineWidthModeAttr().Set(TfToken(t.outlineWidthMode));
+        mtoon.CreateOutlineWidthFactorAttr().Set(t.outlineWidthFactor);
+        mtoon.CreateOutlineColorFactorAttr().Set(t.outlineColorFactor);
+        mtoon.CreateOutlineLightingMixFactorAttr().Set(t.outlineLightingMixFactor);
+        mtoon.CreateUvAnimationScrollXSpeedFactorAttr().Set(t.uvAnimationScrollXSpeedFactor);
+        mtoon.CreateUvAnimationScrollYSpeedFactorAttr().Set(t.uvAnimationScrollYSpeedFactor);
+        mtoon.CreateUvAnimationRotationSpeedFactorAttr().Set(t.uvAnimationRotationSpeedFactor);
+    }
+
+    for (const auto& [role, ref] : s.textures)
+    {
+        UsdVrmTextureInfoAPI info = UsdVrmTextureInfoAPI::Apply(prim, TfToken(role));
+        info.CreateFileAttr().Set(SdfAssetPath(ref.filePath));
+        info.CreateTexCoordAttr().Set(ref.uvSet);
+        info.CreateWrapSAttr().Set(TfToken(_GltfWrap(ref.wrapS)));
+        info.CreateWrapTAttr().Set(TfToken(_GltfWrap(ref.wrapT)));
+        // The contribution scalar, on the roles that have one: glTF's normal
+        // scale and MToon's shading-shift scale are `scale`, glTF's occlusion
+        // strength is `strength`. The model carries all three in one field.
+        if (role == "normal" || role == "shadingShift")
+            info.CreateScaleAttr().Set(ref.scale);
+        else if (role == "occlusion")
+            info.CreateStrengthAttr().Set(ref.scale);
+        info.CreateTransformOffsetAttr().Set(ref.uvOffset);
+        info.CreateTransformRotationAttr().Set(ref.uvRotation);
+        info.CreateTransformScaleAttr().Set(ref.uvScale);
     }
 }
 
@@ -684,9 +769,14 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outU
         if (unlit)
             _AuthorMtlxUnlit(stage, mat, vm);
 
-        // MToon: keep the glTF/UsdPreviewSurface approximation, tag the shader
-        // model, and preserve the raw extension block for a later MaterialX /
-        // dedicated shader-graph pass.
+        // Canonical semantics, on the Material (material policy §6). Both
+        // realizations above still read the source material, not these, until
+        // Steps 5-6 regenerate them from here.
+        _AuthorMaterialSemantics(mat, vm.semantics);
+
+        // MToon: tag the shader model, which VrmMToonAPI must agree with
+        // (VRM226), and preserve the raw extension block as the lossless
+        // fallback (§6.5).
         if (vm.isMToon)
         {
             mat.GetPrim()

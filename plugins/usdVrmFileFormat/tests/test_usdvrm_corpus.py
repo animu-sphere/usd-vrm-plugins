@@ -14,7 +14,11 @@ a manifest edit, not a code change. For each model it asserts:
   round-trips onto `/Asset.customData.vrm:meta`, matching the vendored LICENSE.md,
 - the **diagnostic contract**: observed diagnostic *codes* are a subset of
   `expectedDiagnostics`, and the max observed severity is within
-  `expectedMaxSeverity` (we test codes/severity, not message text).
+  `expectedMaxSeverity` (we test codes/severity, not message text),
+- **canonical material semantics** (material policy §6, P5 Step 4): every
+  material of a VRM 1.0 model carries exactly the VrmMaterialAPI /
+  VrmMToonAPI / VrmTextureInfoAPI values its source JSON states
+  (`material_oracle`), MToon fields included.
 
 Run by hand inside the runtime + plugin env:
     ost plugin run plugins/usdVrmFileFormat -- python tests/test_usdvrm_corpus.py
@@ -32,6 +36,7 @@ CORPUS = HERE / "corpus"
 MANIFEST = CORPUS / "manifest.json"
 sys.path.insert(0, str(HERE.parent / "tools"))
 import vrm_diagnostics as diag  # noqa: E402
+import material_oracle  # noqa: E402
 
 SEVERITY_ORDER = ["NONE", "INFO", "WARNING", "ERROR", "FATAL"]
 _CODE_RE = re.compile(r"\[(VRM\d+)\]")
@@ -104,6 +109,19 @@ def check_model(model: dict) -> None:
     assert len(meshes) >= exp.get("minMeshes", 0), f"{rel}: {len(meshes)} meshes"
     assert len(mats) >= exp.get("minMaterials", 0), f"{rel}: {len(mats)} materials"
 
+    # Canonical material semantics, field for field against the source JSON.
+    # VRM 0.x models are not restated here: their conversion is proved by the
+    # mtoon_vrm0 / mtoon_vrm1 fixture pair.
+    mtoon_count = 0
+    if model["vrmVersion"].startswith("1"):
+        gltf, binary = material_oracle.read_glb(path)
+        for prim in mats:
+            index = prim.GetCustomData().get("vrm", {}).get("sourceMaterialIndex")
+            material_oracle.assert_same(
+                material_oracle.expected(gltf, binary, index),
+                material_oracle.actual(prim), f"{rel}:{prim.GetPath()}")
+            mtoon_count += "VrmMToonAPI" in prim.GetAppliedSchemas()
+
     # Typed humanoid control prim is applied.
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")
     assert humanoid.IsValid(), f"{rel}: missing /Asset/rig/Humanoid"
@@ -135,7 +153,8 @@ def check_model(model: dict) -> None:
         f"{rel}: max severity {max_obs} exceeds declared ceiling {ceiling}"
 
     print(f"  {model['id']}: OK "
-          f"({len(meshes)} meshes, {len(mats)} materials, {len(joints)} joints, "
+          f"({len(meshes)} meshes, {len(mats)} materials ({mtoon_count} MToon), "
+          f"{len(joints)} joints, "
           f"diagnostics={sorted(set(codes)) or 'none'} <= {ceiling})")
 
 

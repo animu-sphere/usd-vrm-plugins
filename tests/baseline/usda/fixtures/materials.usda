@@ -30,6 +30,7 @@ def Xform "Asset" (
     def Scope "mtl"
     {
         def Material "Glass" (
+            apiSchemas = ["VrmMaterialAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 0
@@ -37,6 +38,16 @@ def Xform "Asset" (
             }
         )
         {
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "BLEND"
+            float inputs:vrm:material:baseColorAlphaFactor = 0.3
+            color3f inputs:vrm:material:baseColorFactor = (0.2, 0.4, 0.9)
+            uniform bool inputs:vrm:material:doubleSided = 1
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 0
             token outputs:surface.connect = </Asset/mtl/Glass/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -57,6 +68,7 @@ def Xform "Asset" (
         }
 
         def Material "Leaf" (
+            apiSchemas = ["VrmMaterialAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 1
@@ -64,6 +76,16 @@ def Xform "Asset" (
             }
         )
         {
+            float inputs:vrm:material:alphaCutoff = 0.3
+            uniform token inputs:vrm:material:alphaMode = "MASK"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.1, 0.8, 0.2)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 0
             token outputs:surface.connect = </Asset/mtl/Leaf/preview.outputs:surface>
 
             def NodeGraph "preview"
@@ -85,7 +107,7 @@ def Xform "Asset" (
         }
 
         def Material "Unlit" (
-            apiSchemas = ["MaterialXConfigAPI"]
+            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 2
@@ -94,6 +116,16 @@ def Xform "Asset" (
         )
         {
             string config:mtlx:version = "1.39"
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (0.9, 0.1, 0.1)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 1
             token outputs:mtlx:surface.connect = </Asset/mtl/Unlit/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/Unlit/preview.outputs:surface>
 
@@ -133,7 +165,7 @@ def Xform "Asset" (
         }
 
         def Material "UnlitCutout" (
-            apiSchemas = ["MaterialXConfigAPI"]
+            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmTextureInfoAPI:baseColor"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 3
@@ -142,6 +174,23 @@ def Xform "Asset" (
         )
         {
             string config:mtlx:version = "1.39"
+            float inputs:vrm:material:alphaCutoff = 0.4
+            uniform token inputs:vrm:material:alphaMode = "MASK"
+            float inputs:vrm:material:baseColorAlphaFactor = 0.8
+            color3f inputs:vrm:material:baseColorFactor = (0.3, 0.6, 0.9)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 1
+            asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0, 0)
+            float inputs:vrm:textureInfo:baseColor:transform:rotation = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (1, 1)
+            uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
             token outputs:mtlx:surface.connect = </Asset/mtl/UnlitCutout/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/UnlitCutout/preview.outputs:surface>
 
@@ -255,7 +304,7 @@ def Xform "Asset" (
         }
 
         def Material "UnlitPlaced" (
-            apiSchemas = ["MaterialXConfigAPI"]
+            apiSchemas = ["MaterialXConfigAPI", "VrmMaterialAPI", "VrmTextureInfoAPI:baseColor"]
             customData = {
                 dictionary vrm = {
                     int sourceMaterialIndex = 4
@@ -264,6 +313,23 @@ def Xform "Asset" (
         )
         {
             string config:mtlx:version = "1.39"
+            float inputs:vrm:material:alphaCutoff = 0.5
+            uniform token inputs:vrm:material:alphaMode = "OPAQUE"
+            float inputs:vrm:material:baseColorAlphaFactor = 1
+            color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)
+            uniform bool inputs:vrm:material:doubleSided = 0
+            color3f inputs:vrm:material:emissiveFactor = (0, 0, 0)
+            float inputs:vrm:material:emissiveStrength = 1
+            float inputs:vrm:material:metallicFactor = 1
+            float inputs:vrm:material:roughnessFactor = 1
+            uniform bool inputs:vrm:material:unlit = 1
+            asset inputs:vrm:textureInfo:baseColor:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+            uniform int inputs:vrm:textureInfo:baseColor:texCoord = 0
+            float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0.25, 0.125)
+            float inputs:vrm:textureInfo:baseColor:transform:rotation = 1.5707963
+            float2 inputs:vrm:textureInfo:baseColor:transform:scale = (2, 4)
+            uniform token inputs:vrm:textureInfo:baseColor:wrapS = "repeat"
+            uniform token inputs:vrm:textureInfo:baseColor:wrapT = "clampToEdge"
             token outputs:mtlx:surface.connect = </Asset/mtl/UnlitPlaced/mtlx.outputs:surface>
             token outputs:surface.connect = </Asset/mtl/UnlitPlaced/preview.outputs:surface>
 

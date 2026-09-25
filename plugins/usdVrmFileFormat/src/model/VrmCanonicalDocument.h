@@ -88,6 +88,66 @@ struct VrmTextureRef
     float uvRotation = 0.0f;
 };
 
+// VRMC_materials_mtoon 1.0, as data: the non-texture fields of VrmMToonAPI,
+// spelled as the specification spells them and defaulted to its defaults. A
+// VRM 0.x MToon material lands here too, converted by the reader (material
+// policy §6.6); nothing below says which version a value came from.
+struct VrmMToonSemantics
+{
+    std::string specVersion = "1.0";
+    bool transparentWithZWrite = false;
+    int renderQueueOffsetNumber = 0;
+    GfVec3f shadeColorFactor = GfVec3f(1.0f);
+    float shadingShiftFactor = 0.0f;
+    float shadingToonyFactor = 0.9f;
+    float giEqualizationFactor = 0.9f;
+    GfVec3f matcapFactor = GfVec3f(1.0f);
+    GfVec3f parametricRimColorFactor = GfVec3f(0.0f);
+    float parametricRimFresnelPowerFactor = 5.0f;
+    float parametricRimLiftFactor = 0.0f;
+    float rimLightingMixFactor = 1.0f;
+    std::string outlineWidthMode = "none"; // none | worldCoordinates | screenCoordinates
+    float outlineWidthFactor = 0.0f;
+    GfVec3f outlineColorFactor = GfVec3f(0.0f);
+    float outlineLightingMixFactor = 1.0f;
+    float uvAnimationScrollXSpeedFactor = 0.0f;
+    float uvAnimationScrollYSpeedFactor = 0.0f;
+    float uvAnimationRotationSpeedFactor = 0.0f;
+};
+
+// A material's canonical semantics (material policy §6): exactly what the
+// importer authors as VrmMaterialAPI, VrmMToonAPI and VrmTextureInfoAPI on the
+// UsdShadeMaterial. Colours are linear.
+//
+// For a glTF material, and for every VRM 1.0 material, the core half is the
+// glTF core read above it in VrmMaterial. A VRM 0.x MToon material is the
+// exception: its source of truth is `materialProperties`, and the glTF core
+// beside it is only the exporter's fallback (and, for older exporters, not even
+// in the same colour space), so the reader rebuilds the core half from the
+// 0.x block as UniVRM's migration does. That is why this is a separate copy
+// rather than the fields above: until the realizations are regenerated from it
+// (P5 Steps 5-6), /preview and /mtlx still read the fields above, unchanged.
+struct VrmMaterialSemantics
+{
+    GfVec3f baseColorFactor = GfVec3f(1.0f);
+    float baseColorAlphaFactor = 1.0f;
+    float metallicFactor = 1.0f;
+    float roughnessFactor = 1.0f;
+    GfVec3f emissiveFactor = GfVec3f(0.0f);
+    float emissiveStrength = 1.0f;
+    std::string alphaMode = "OPAQUE"; // OPAQUE | MASK | BLEND
+    float alphaCutoff = 0.5f;
+    bool doubleSided = false;
+    bool unlit = false;
+
+    bool hasMToon = false;
+    VrmMToonSemantics mtoon;
+
+    // Texture role -> texture. The roles are VrmTextureInfoAPI's eleven
+    // instance names; a role that is absent has no texture.
+    std::map<std::string, VrmTextureRef> textures;
+};
+
 // glTF PBR metallic-roughness, normalized to what UsdPreviewSurface needs.
 struct VrmMaterial
 {
@@ -113,6 +173,8 @@ struct VrmMaterial
     // MToon / VRM shader metadata is preserved verbatim as JSON for later phases.
     bool isMToon = false;
     std::string rawShaderJson; // VRM material extension JSON, if any
+
+    VrmMaterialSemantics semantics;
 };
 
 // One joint in the skeleton, in glTF skin joint order.

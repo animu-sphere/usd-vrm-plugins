@@ -35,7 +35,7 @@ Aligned with the design policy's §11 fidelity vocabulary:
 | PBR material | supported | supported | `UsdShadeMaterial` + a `/preview` `UsdShadeNodeGraph` holding the `UsdPreviewSurface` network | Yes |
 | Textures (base/MR/normal/emissive/occlusion) | supported | supported | `UsdUVTexture` + wrap modes | Yes |
 | `KHR_texture_transform` | supported | supported | `UsdTransform2d` | Yes |
-| MToon shading | approximated | approximated | `UsdPreviewSurface` fallback + `vrm:mtoon:raw` | Partial |
+| MToon shading | approximated | approximated | typed `VrmMToonAPI` / `VrmTextureInfoAPI` (0.x normalized into the 1.0 model) + `vrm:mtoon:raw`; rendered through the `UsdPreviewSurface` fallback | Partial |
 | Skeletal animation (joint TRS) | supported | supported | `UsdSkelAnimation` | Yes |
 | Morph-weight (blend-shape) animation | unsupported | unsupported | — | n/a |
 | Front-direction normalization | repaired | supported | root transform + `customData` provenance | Yes |
