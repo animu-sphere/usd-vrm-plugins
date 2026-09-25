@@ -128,12 +128,61 @@ def Xform "Asset" (
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
                     float inputs:alpha = 1
                     int inputs:alpha_mode = 0
-                    color3f inputs:base_color.connect = </Asset/mtl/Skin/mtlx/baseColorRgb.outputs:out>
-                    color3f inputs:emissive = (0, 0, 0)
-                    float inputs:emissive_strength = 1
-                    float inputs:metallic = 1
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive.connect = </Asset/mtl/Skin/mtlx/toon.outputs:out>
+                    float inputs:metallic = 0
                     float inputs:roughness = 1
+                    float inputs:specular = 0
                     token outputs:surface
+                }
+
+                def Shader "nDotV"
+                {
+                    uniform token info:id = "ND_facingratio_float"
+                    bool inputs:faceforward = 0
+                    float outputs:out
+                }
+
+                def Shader "shading"
+                {
+                    uniform token info:id = "ND_add_float"
+                    float inputs:in1.connect = </Asset/mtl/Skin/mtlx/nDotV.outputs:out>
+                    float inputs:in2 = 0
+                    float outputs:out
+                }
+
+                def Shader "rampOffset"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1.connect = </Asset/mtl/Skin/mtlx/shading.outputs:out>
+                    float inputs:in2 = -0.100000024
+                    float outputs:out
+                }
+
+                def Shader "rampScale"
+                {
+                    uniform token info:id = "ND_multiply_float"
+                    float inputs:in1.connect = </Asset/mtl/Skin/mtlx/rampOffset.outputs:out>
+                    float inputs:in2 = 4.999999
+                    float outputs:out
+                }
+
+                def Shader "ramp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Skin/mtlx/rampScale.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "toon"
+                {
+                    uniform token info:id = "ND_mix_color3"
+                    color3f inputs:bg = (0.5, 0.2, 0.2)
+                    color3f inputs:fg.connect = </Asset/mtl/Skin/mtlx/baseColorRgb.outputs:out>
+                    float inputs:mix.connect = </Asset/mtl/Skin/mtlx/ramp.outputs:out>
+                    color3f outputs:out
                 }
 
                 def Shader "st"

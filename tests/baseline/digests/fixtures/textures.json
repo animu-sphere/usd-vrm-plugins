@@ -90,6 +90,49 @@
             }
           }
         },
+        "/Asset/mtl/Skin/mtlx/nDotV": {
+          "id": "ND_facingratio_float",
+          "inputs": {
+            "faceforward": false
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/ramp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/rampScale.out"
+            },
+            "low": 0.0
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/rampOffset": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/shading.out"
+            },
+            "in2": -0.100000024
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/rampScale": {
+          "id": "ND_multiply_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/rampOffset.out"
+            },
+            "in2": 4.99999905
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/shading": {
+          "id": "ND_add_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/nDotV.out"
+            },
+            "in2": 0.0
+          }
+        },
         "/Asset/mtl/Skin/mtlx/st": {
           "id": "ND_texcoord_vector2",
           "inputs": {
@@ -101,17 +144,33 @@
           "inputs": {
             "alpha": 1.0,
             "alpha_mode": 0,
-            "base_color": {
-              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorRgb.out"
-            },
-            "emissive": [
+            "base_color": [
               0.0,
               0.0,
               0.0
             ],
-            "emissive_strength": 1.0,
-            "metallic": 1.0,
-            "roughness": 1.0
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/toon.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/toon": {
+          "id": "ND_mix_color3",
+          "inputs": {
+            "bg": [
+              0.5,
+              0.200000003,
+              0.200000003
+            ],
+            "fg": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorRgb.out"
+            },
+            "mix": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/ramp.out"
+            }
           }
         },
         "/Asset/mtl/Skin/preview/baseColorTexture": {
@@ -236,6 +295,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Skin/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/nDotV",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/shading",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/rampOffset",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/rampScale",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/ramp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/toon",
       "type": "Shader"
     },
     {
