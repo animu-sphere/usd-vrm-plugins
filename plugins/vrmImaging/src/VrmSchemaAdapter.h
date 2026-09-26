@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// What every vrmImaging adapter does, given a single-apply canonical schema
-// and the namespace group its attributes live under: the schema's attributes
-// as a Hydra data-source contribution to the material prim they are authored
-// on, and a changed attribute as the one locator it feeds
+// What every vrmImaging adapter does, given a canonical schema and the
+// namespace group its attributes live under: the schema's attributes as a
+// Hydra data-source contribution to the material prim they are authored on,
+// and a changed attribute as the one locator it feeds
 // (VRM_IMAGING_POLICY.md §5, §9, §28).
 //
 // The Hydra names are derived, never listed: `inputs:vrm:<group>:<field>` of
-// the registered definition is `vrm/<group>/<field>` (policy §7, §28). A
-// concrete adapter names its schema and its group and nothing else.
+// the registered definition is `vrm/<group>/<field>`, and a multiple-apply
+// schema's `inputs:vrm:<group>:<instance>:<field>` is
+// `vrm/<group>/<instance>/<field>`. A namespaced field nests, one locator
+// element per namespace element (policy §7, §28). A concrete adapter names its
+// schema and its group and nothing else.
 #ifndef USD_VRM_IMAGING_SCHEMA_ADAPTER_H
 #define USD_VRM_IMAGING_SCHEMA_ADAPTER_H
 

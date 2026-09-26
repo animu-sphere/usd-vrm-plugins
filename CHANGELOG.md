@@ -15,6 +15,19 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vrmImaging`: `VrmTextureInfoAPI` as Hydra data, one role at a time**
+  ([imaging track](docs/roadmap/imaging-track.md) Step I2;
+  [imaging policy](docs/design/VRM_IMAGING_POLICY.md) §29). Every applied
+  texture role reaches a Hydra consumer under
+  `vrm/textureInfo/<role>/<field>`, with `transform:*` nested under
+  `transform`. `file` is an asset path carrying both the authored and the
+  resolved path, and no image is read. Each of the eleven roles the schema
+  allows is exposed under its own name, and a role it does not allow is not
+  exposed. An edit or a time move dirties that role's one field. An
+  unauthored `file` is absent rather than empty, because the schema gives it
+  no fallback. Every canonical material value, textures included, is now
+  readable from Hydra.
+
 - **`vrmImaging` is a bundle and a member of the product**
   ([imaging track](docs/roadmap/imaging-track.md) Step I5;
   [ost report 51](docs/reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)). It has an

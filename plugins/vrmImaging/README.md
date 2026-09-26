@@ -10,15 +10,15 @@ It describes what a VRM material says. How that is drawn is a renderer's
 decision — `hydra-toon`'s for MToon — and nothing here is shader code, a GPU
 resource, an image loader or a pipeline choice.
 
-## What exists: Steps I0–I1
+## What exists: Steps I0–I2
 
 | Adapter | Applied schema | Contribution on the material prim |
 | --- | --- | --- |
 | `UsdVrmImagingMaterialAPIAdapter` | `VrmMaterialAPI` | `vrm/material/<field>`: one sampled data source per field |
 | `UsdVrmImagingMToonAPIAdapter` | `VrmMToonAPI` | `vrm/mtoon/<field>`: one sampled data source per field |
+| `UsdVrmImagingTextureInfoAPIAdapter` | `VrmTextureInfoAPI:<role>` | `vrm/textureInfo/<role>/<field>`: one per applied role, `transform:*` nested under `transform` |
 
-Both are `UsdVrmImagingSchemaAdapter` given a schema name and a group.
-`VrmTextureInfoAPI` is Step I2.
+All three are `UsdVrmImagingSchemaAdapter` given a schema name and a group.
 
 - **Field names are the schema's.** Every property of the registered
   definition named `inputs:vrm:<group>:<field>` becomes `vrm/<group>/<field>`
@@ -29,7 +29,15 @@ Both are `UsdVrmImagingSchemaAdapter` given a schema name and a group.
 - **Values are resolved.** An unauthored field carries its schema fallback, so
   a consumer never restates the schema's defaults. `alphaMode`, which the
   schema cannot give a fallback, reads as its documented `OPAQUE`
-  (policy §28.2).
+  (policy §28.2). A texture's unauthored `file`, which has neither, is
+  absent rather than empty (policy §29).
+- **Roles are the schema's.** A multiple-apply schema contributes once per
+  applied role, and only for a role its schema allows, asked of the schema
+  registry. A disallowed role such as `VrmTextureInfoAPI:bogus` composes in
+  USD, but it never reaches Hydra.
+- **An image is an asset path.** `file` carries the authored path and the
+  resolved path. Nothing here opens, decodes or uploads an image
+  (policy §11).
 - **Values are sampled, not copied.** A time-sampled attribute follows the
   scene index's time, and moving the time dirties that field alone.
 - **Invalidation is per field.** An edit of `inputs:vrm:mtoon:<field>` dirties
@@ -87,6 +95,7 @@ dirty, is proved by the suites below, against the build tree only.
 | --- | --- |
 | `vrmImaging_mtoon` | discovery; authored and fallback values under `vrm/mtoon`; the field set equal to the schema's; per-field invalidation; a time-sampled field following time |
 | `vrmImaging_mtoon_without_schema` | no contribution in a session without `vrmSchema` |
+| `vrmImaging_texture_info` | every allowed role under its own name, the schema's list checked; every field of a role, `file` as authored and resolved asset path or absent; a disallowed role not exposed; per-role, per-field invalidation, nested fields and a `file` appearing included; a time-sampled UV rotation |
 | `vrmImaging_material` | `vrm/material` beside `vrm/mtoon` in one container; authored, fallback and documented-default values; per-field invalidation; time never dirtying the whole `material`, with and without a network reading the input |
 
 The suites open hand-authored stages (`tests/fixtures/*.usda`) and never a
