@@ -19,6 +19,12 @@
                             "UsdImagingAPISchemaAdapter"
                         ],
                         "apiSchemaName": "VrmMToonAPI"
+                    },
+                    "UsdVrmImagingTextureInfoAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "apiSchemaName": "VrmTextureInfoAPI"
                     }
                 }
             }

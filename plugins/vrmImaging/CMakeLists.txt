@@ -6,8 +6,8 @@
 # mapping a changed USD property to the locator it feeds. No renderer, no
 # shader, no image loading: what a VRM material says, not how it is drawn.
 #
-# Steps I0-I1: `VrmMaterialAPI` and `VrmMToonAPI`, under the `vrm` locator
-# hierarchy frozen in the policy's §28. `VrmTextureInfoAPI` is Step I2.
+# Steps I0-I2: `VrmMaterialAPI`, `VrmMToonAPI` and `VrmTextureInfoAPI:<role>`,
+# under the `vrm` locator hierarchy frozen in the policy's §28.
 #
 # An `ost` `usd-imaging` bundle (openstrata.plugin.yaml) since `ost` 0.23.10
 # let the `usd` profile select that kind (ost report 51), and a member of the
@@ -54,7 +54,8 @@ set(PLUGIN_NAME VrmImaging)
 add_library(${PLUGIN_NAME} SHARED
     src/VrmSchemaAdapter.cpp
     src/VrmMaterialAPIAdapter.cpp
-    src/VrmMToonAPIAdapter.cpp)
+    src/VrmMToonAPIAdapter.cpp
+    src/VrmTextureInfoAPIAdapter.cpp)
 
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
 target_include_directories(${PLUGIN_NAME} PRIVATE

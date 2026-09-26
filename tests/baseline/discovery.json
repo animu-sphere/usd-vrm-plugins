@@ -91,6 +91,12 @@
         "UsdImagingAPISchemaAdapter"
       ]
     },
+    "UsdVrmImagingTextureInfoAPIAdapter": {
+      "apiSchemaName": "VrmTextureInfoAPI",
+      "bases": [
+        "UsdImagingAPISchemaAdapter"
+      ]
+    },
     "UsdVrmLookAtAPI": {
       "alias": {
         "UsdSchemaBase": "VrmLookAtAPI"

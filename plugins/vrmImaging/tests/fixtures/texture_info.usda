@@ -1,0 +1,91 @@
+#usda 1.0
+(
+    """vrmImaging Step I2 fixture: hand-authored VrmTextureInfoAPI semantics on
+    UsdShadeMaterials, with no .vrm importer involved (VRM_IMAGING_POLICY.md
+    sections 17.2, 17.5, 17.6).
+
+    Authored values differ from the schema fallbacks on purpose, so a test can
+    tell the attribute from the definition. Only textures/base.png exists: an
+    asset path that resolves and one that does not are both canonical data,
+    and neither is read."""
+    startTimeCode = 0
+    endTimeCode = 10
+)
+
+def Scope "mtl"
+{
+    # Several roles on one prim (section 17.6), each field of the schema
+    # authored off its fallback on baseColor, and one role with no image.
+    def Material "Textured" (
+        prepend apiSchemas = ["VrmMaterialAPI", "VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:occlusion"]
+    )
+    {
+        asset inputs:vrm:textureInfo:baseColor:file = @./textures/base.png@
+        uniform int inputs:vrm:textureInfo:baseColor:texCoord = 1
+        uniform token inputs:vrm:textureInfo:baseColor:wrapS = "clampToEdge"
+        uniform token inputs:vrm:textureInfo:baseColor:wrapT = "mirroredRepeat"
+        float2 inputs:vrm:textureInfo:baseColor:transform:offset = (0.25, 0.125)
+        float inputs:vrm:textureInfo:baseColor:transform:rotation = 1.5
+        float2 inputs:vrm:textureInfo:baseColor:transform:scale = (2, 4)
+
+        # The contribution scale, apart from the UV scale above.
+        asset inputs:vrm:textureInfo:normal:file = @./textures/base.png@
+        float inputs:vrm:textureInfo:normal:scale = 0.5
+
+        # An image and nothing else: every other field is the schema's.
+        asset inputs:vrm:textureInfo:shadeMultiply:file = @./textures/base.png@
+
+        # An image that does not resolve.
+        asset inputs:vrm:textureInfo:matcap:file = @./textures/missing.png@
+
+        # No image: `file` has no fallback, so it is absent rather than empty.
+        float inputs:vrm:textureInfo:occlusion:strength = 0.75
+    }
+
+    # All eleven allowed roles, each naming its own image, so a role read
+    # under another's name shows.
+    def Material "AllRoles" (
+        prepend apiSchemas = ["VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:metallicRoughness", "VrmTextureInfoAPI:normal", "VrmTextureInfoAPI:occlusion", "VrmTextureInfoAPI:emissive", "VrmTextureInfoAPI:shadeMultiply", "VrmTextureInfoAPI:shadingShift", "VrmTextureInfoAPI:matcap", "VrmTextureInfoAPI:rimMultiply", "VrmTextureInfoAPI:outlineWidthMultiply", "VrmTextureInfoAPI:uvAnimationMask"]
+    )
+    {
+        asset inputs:vrm:textureInfo:baseColor:file = @./textures/baseColor.png@
+        asset inputs:vrm:textureInfo:metallicRoughness:file = @./textures/metallicRoughness.png@
+        asset inputs:vrm:textureInfo:normal:file = @./textures/normal.png@
+        asset inputs:vrm:textureInfo:occlusion:file = @./textures/occlusion.png@
+        asset inputs:vrm:textureInfo:emissive:file = @./textures/emissive.png@
+        asset inputs:vrm:textureInfo:shadeMultiply:file = @./textures/shadeMultiply.png@
+        asset inputs:vrm:textureInfo:shadingShift:file = @./textures/shadingShift.png@
+        asset inputs:vrm:textureInfo:matcap:file = @./textures/matcap.png@
+        asset inputs:vrm:textureInfo:rimMultiply:file = @./textures/rimMultiply.png@
+        asset inputs:vrm:textureInfo:outlineWidthMultiply:file = @./textures/outlineWidthMultiply.png@
+        asset inputs:vrm:textureInfo:uvAnimationMask:file = @./textures/uvAnimationMask.png@
+    }
+
+    # A role the schema does not allow, beside one it does.
+    def Material "Disallowed" (
+        prepend apiSchemas = ["VrmTextureInfoAPI:baseColor", "VrmTextureInfoAPI:bogus"]
+    )
+    {
+        asset inputs:vrm:textureInfo:baseColor:file = @./textures/base.png@
+        asset inputs:vrm:textureInfo:bogus:file = @./textures/base.png@
+    }
+
+    # A time-sampled UV rotation: the one texture field an animation drives.
+    def Material "Animated" (
+        prepend apiSchemas = ["VrmTextureInfoAPI:uvAnimationMask"]
+    )
+    {
+        asset inputs:vrm:textureInfo:uvAnimationMask:file = @./textures/base.png@
+        float inputs:vrm:textureInfo:uvAnimationMask:transform:rotation.timeSamples = {
+            0: 0,
+            10: 3,
+        }
+    }
+
+    # No texture at all.
+    def Material "Untextured" (
+        prepend apiSchemas = ["VrmMaterialAPI"]
+    )
+    {
+    }
+}

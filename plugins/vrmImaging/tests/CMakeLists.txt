@@ -20,7 +20,7 @@ foreach(_t IN ITEMS arch tf gf vt plug sdf usd hd usdImaging)
     endif()
 endforeach()
 
-foreach(_suite IN ITEMS mtoon material)
+foreach(_suite IN ITEMS mtoon material texture_info)
     set(_exe vrmImaging_${_suite}_tests)
     add_executable(${_exe} test_vrm_imaging_${_suite}.cpp)
     target_include_directories(${_exe} PRIVATE ${PXR_INCLUDE_DIRS})
@@ -54,6 +54,10 @@ add_test(NAME vrmImaging_material
     COMMAND vrmImaging_material_tests
         "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/material_core.usda")
 
+add_test(NAME vrmImaging_texture_info
+    COMMAND vrmImaging_texture_info_tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/texture_info.usda")
+
 # ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
@@ -78,7 +82,7 @@ set(_vrm_imaging_path_env
     "PATH=path_list_prepend:${_bundle_dir}/lib"
     "PATH=path_list_prepend:${_vrm_schema_bundle}/lib")
 
-set_tests_properties(vrmImaging_mtoon vrmImaging_material PROPERTIES
+set_tests_properties(vrmImaging_mtoon vrmImaging_material vrmImaging_texture_info PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_vrm_imaging_path_env};PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
@@ -90,4 +94,5 @@ set_tests_properties(vrmImaging_mtoon_without_schema PROPERTIES
 
 set_tests_properties(
     vrmImaging_mtoon vrmImaging_mtoon_without_schema vrmImaging_material
+    vrmImaging_texture_info
     PROPERTIES LABELS "material.imaging")
