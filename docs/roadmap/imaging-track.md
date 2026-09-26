@@ -1,6 +1,6 @@
 # The Hydra imaging track
 
-**Status:** ⬜ not started · **Target:** unscheduled
+**Status:** 🚧 in progress — Step I0 shipped · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
 
@@ -16,9 +16,14 @@ internal order, not a phase sequence.
 - The schemas it reads shipped with Product P5 Steps 3–4
   ([material track](material-track.md)): every imported material carries
   them, VRM 0.x and 1.0 alike, as Material interface inputs `inputs:vrm:*`.
-- Nothing exposes them to Hydra. A Hydra renderer sees the `/preview` or
-  `/mtlx` network UsdImaging builds from what a surface terminal connects to,
-  and no realization connects to a canonical input.
+- `VrmMToonAPI` reaches Hydra (Step I0): every field under
+  `vrm/mtoon/<field>` of the material prim, with per-field invalidation.
+  `VrmMaterialAPI` and `VrmTextureInfoAPI` do not yet. Without them a Hydra
+  renderer sees only the `/preview` or `/mtlx` network, and no realization
+  connects to a canonical input.
+- On every canonical edit UsdImaging also dirties the material's whole
+  network, whatever reads it (policy §27 item 6). That is outside this
+  plugin and open for Step I4.
 - `hydra-toon` has not chosen its read path: its MAT-Q1 (Renderer Phase 1)
   lists an API-schema adapter per schema as a candidate, and `usd-mmd-plugins`
   has fixed that shape for its own schemas (planned `mmdImaging`).
@@ -28,25 +33,48 @@ internal order, not a phase sequence.
 
 ## 2. Steps
 
-### Step I0 — contract experiment ⬜
+### Step I0 — contract experiment ✅
 
-- ⬜ `plugins/vrmImaging/`: one UsdImaging API-schema adapter, for
+- ✅ `plugins/vrmImaging/`: one UsdImaging API-schema adapter, for
   `VrmMToonAPI`, registered through `plugInfo.json` (policy §5, §16).
-- ⬜ A hand-authored stage, no `.vrm`: a `VrmMToonAPI` value read by a test
+- ✅ A hand-authored stage, no `.vrm`: a `VrmMToonAPI` value read by a test
   consumer through `UsdImagingStageSceneIndex`, never by a stage query
   (policy §25).
-- ⬜ An attribute edit dirties only the expected locator (policy §9).
-- ⬜ The resulting scene-index prim inspected on OpenUSD 26.08 before any
-  Hydra-facing name is frozen (policy §6.1).
+- ✅ An attribute edit dirties only the expected locator of this plugin's
+  contribution (policy §9); UsdImaging's own `material` locator beside it is
+  not this plugin's (policy §27 item 6).
+- ✅ The resulting scene-index prim inspected on OpenUSD 26.08 before any
+  Hydra-facing name is frozen (policy §6.1, §27).
 
 **Done when** `VrmMToonAPI.shadingToonyFactor` reaches the test consumer
 through Hydra with no direct stage query, and an edit of it is observed as the
 one locator it feeds.
 
+**Shipped 2026-09-26.** Each condition, and where it is shown:
+
+- *reaches the consumer through Hydra* — `vrmImaging_mtoon` reads
+  `shadingToonyFactor` and every other field from the stage scene index's
+  prim: authored values of each type the schema uses, fallbacks for the
+  rest, and a field set equal to the schema's (19 fields);
+- *an edit is the one locator* — three edits, each observed as its own
+  `vrm/mtoon/<field>`. A mutation that dirties `vrm/mtoon` instead fails;
+- *time* — a time-sampled field follows the scene index's time and is the
+  only locator the time move dirties. A mutation that drops the time-varying
+  locator fails;
+- *the requirement* — `vrmImaging_mtoon_without_schema`: no contribution in
+  a session without `vrmSchema`.
+
+It went further than the done-when on purpose, and only in ways that cost no
+frozen name: every `VrmMToonAPI` field rather than one, because the field set
+is derived from the schema rather than listed. The Hydra path `hydra-toon`
+reads is not measured, because it has none yet (Step I3).
+
 ### Step I1 — material core ⬜
 
-- ⬜ `VrmMaterialAPI` and `VrmMToonAPI`: every scalar, vector, token and bool
-  field, with per-field invalidation (policy §6.2, §9).
+- ⬜ `VrmMaterialAPI`: every field, with per-field invalidation (policy §6.2,
+  §9). `VrmMToonAPI`'s fields already reach Hydra (Step I0).
+- ⬜ An answer to UsdImaging dirtying the whole network on every canonical
+  edit (policy §27 item 6), or a recorded decision to live with it.
 - ⬜ The `vrm` locator hierarchy frozen, from what Step I0 measured.
 
 **Done when** every non-texture canonical value has Hydra coverage.

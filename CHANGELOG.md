@@ -15,6 +15,18 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vrmImaging`: `VrmMToonAPI` as Hydra data on the material prim**
+  ([imaging track](docs/roadmap/imaging-track.md) Step I0;
+  [imaging policy](docs/design/VRM_IMAGING_POLICY.md)). A UsdImaging
+  API-schema adapter: a Hydra consumer of `UsdImagingStageSceneIndex` reads
+  every `VrmMToonAPI` field under `vrm/mtoon/<field>` of the material prim —
+  authored value or schema fallback, following time when time-sampled — and
+  an edit of one canonical attribute dirties that field's locator. The
+  `/preview` and `/mtlx` networks reach Hydra unchanged beside it. It links
+  OpenUSD alone and needs `vrmSchema` registered. It is an experiment: the
+  `vrm` locator names are not frozen, and it is built and tested but in no
+  package, because `ost` has no plugin kind for a UsdImaging adapter.
+
 - **`vrm_export`: an imported `.vrm` as native `.usda`, `.usdc` or `.usdz`**
   ([export track](docs/roadmap/export-track.md) Step 1;
   [export policy](docs/design/VRM_EXPORT_POLICY.md)). A new CLI in the

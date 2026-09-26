@@ -25,6 +25,12 @@ owner: usd-vrm-plugins
 > internal order of one track, not a sequence beside Product P0–P6 and
 > Workspace Phase 0–8 ([roadmap](../roadmap/README.md#sequences)). The open
 > steps are the [imaging track](../roadmap/imaging-track.md).
+>
+> **Step I0 implemented 2026-09-26** (`plugins/vrmImaging`). What it measured
+> on OpenUSD 26.08 is §27; one finding bounds §9 from outside this plugin —
+> UsdImaging dirties a Material's whole network whenever any interface input
+> changes, so every canonical edit dirties `material` as well as its own
+> `vrm/…` locator.
 
 ---
 
@@ -1105,9 +1111,12 @@ def Material "Hair" (
     prepend apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
 )
 {
-    float inputs:vrm:mtoon:shadingToonyFactor = 0.9
+    float inputs:vrm:mtoon:shadingToonyFactor = 0.35
 }
 ```
+
+(Not 0.9, which is the schema's fallback for the field: a test reading 0.9
+cannot tell the attribute from the definition. §27.)
 
 Then prove:
 
@@ -1167,3 +1176,77 @@ Adding `vrmImaging` makes the responsibility boundary explicit:
 
 That boundary keeps the format plugin reusable, the renderer independent, and
 the MToon semantics stable across Vulkan, WebGPU, and future Hydra consumers.
+
+---
+
+## 27. Measured in Step I0
+
+Step I0 (`plugins/vrmImaging`, 2026-09-26) built the `VrmMToonAPI` adapter on
+OpenUSD 26.08 and read it through `UsdImagingStageSceneIndex` from a test
+consumer, on a hand-authored stage (`vrmImaging_mtoon`). What it settled, and
+what it found:
+
+1. **The shape holds.** The adapter's container overlays the material prim
+   beside UsdImaging's `material` container, which is untouched; a material
+   without the schema has no `vrm` container. The adapter is registered
+   through `plugInfo.json` (`Types`, `bases: UsdImagingAPISchemaAdapter`,
+   `apiSchemaName: VrmMToonAPI`) and loaded by UsdImaging's adapter registry
+   the first time a prim carrying the schema is populated. No application
+   code registers anything (§16).
+2. **Names are mechanical (§7).** The adapter names no field. The field set
+   is every `inputs:vrm:mtoon:<field>` property of the registered
+   definition, read from the schema registry by the schema's name. So
+   `vrmSchema` is needed in the session and not linked, and a property
+   authored under the prefix that the schema does not define is never
+   exposed.
+3. **Values are resolved, not only authored.** An unauthored field carries
+   its schema fallback, so a consumer never restates the schema's defaults.
+   Decided here, because the material network does the opposite: UsdShade
+   resolves an interface connection to authored values only (material policy
+   §6.4.1).
+4. **Sampled, not copied (§10).** Each field is a
+   `UsdImagingDataSourceAttribute`. Moving the scene index's time dirties a
+   time-sampled field's own locator and nothing else, and its value follows.
+   UsdImaging records a field as time-varying when its data source is
+   **built**, so a field no consumer has read is never dirtied by time. A
+   renderer reads what it draws first, so this costs nothing, but a test has
+   to read before it moves the time.
+5. **This plugin's invalidation is per field (§9).** An edit of
+   `inputs:vrm:mtoon:<field>` dirties `vrm/mtoon/<field>` and nothing else of
+   the contribution. A mutation that dirties `vrm/mtoon` instead fails the
+   suite.
+6. **UsdImaging's is not.** On every canonical edit, OpenUSD 26.08 also
+   dirties the whole `material` locator, whether or not any network reads
+   the input: `UsdImagingDataSourceMaterialPrim::Invalidate` dirties the
+   network on any interface-input change ("TODO, invalidate specifically
+   connected node parameters. FOR NOW: just dirty the whole material"). Every
+   canonical attribute is an interface input (material policy §6.4.1, q9).
+   A consumer therefore cannot tell a value edit from a network edit by the
+   `material` locator. It sees both locators and has to decide from the
+   `vrm` one. This bears on Step I4's high-frequency expression colours, is
+   outside this plugin, and is pinned by the suite so a runtime that narrows
+   it is noticed. Candidate answers, not taken yet: an upstream fix of that
+   TODO, or a filtering scene index downstream. Moving the canonical
+   attributes out of `inputs:` is excluded, because q9 decided the namespace
+   so an animated value can reach a realization.
+7. **Scene index only (§15).** UsdImaging consults API-schema adapters only
+   when it populates through the stage scene index. The legacy
+   `UsdImagingDelegate` never does. A host on the legacy path sees no `vrm`
+   data at all.
+8. **Two ways to be silently absent.** With no `vrmSchema` registered, no
+   prim's definition includes `VrmMToonAPI` and the adapter is never asked
+   (`vrmImaging_mtoon_without_schema`). With `USDIMAGING_ENABLE_PLUGINS=0`,
+   UsdImaging drops every adapter not marked internal, this one included.
+   Neither raises anything; diagnostics are §18's business.
+9. **`ost` has no plugin kind for a UsdImaging adapter** (0.23.8 knows
+   file formats, asset and package resolvers, exec, schemas and usdview
+   plugins). So `vrmImaging` has no descriptor. The root build adds it by
+   name, builds it and tests it, and no package carries it. §19's packaging
+   waits on that kind (Step I5).
+10. **The §25 fixture could not tell authored from fallback.** Its 0.9 is
+    `shadingToonyFactor`'s schema fallback. The fixture and §25 use 0.35.
+
+Not measured: the Hydra path `hydra-toon` will read (§20 Step I0's last
+item). `hydra-toon` has no material path yet — its MAT-Q1 is Renderer
+Phase 1 — so the test consumer stands in for it, and the handshake is
+Step I3.
