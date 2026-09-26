@@ -25,7 +25,9 @@ Current schema contract version: **1**.
   `/preview` and `/mtlx` networks reach Hydra unchanged beside it. It links
   OpenUSD alone and needs `vrmSchema` registered. It is an experiment: the
   `vrm` locator names are not frozen, and it is built and tested but in no
-  package, because `ost` has no plugin kind for a UsdImaging adapter.
+  package. `ost` 0.23.9 adds a `usd-imaging` plugin kind, but the kind requires
+  a profile that no published runtime has, so the plugin is not yet a bundle
+  (ost report 50).
 
 - **`vrm_export`: an imported `.vrm` as native `.usda`, `.usdc` or `.usdz`**
   ([export track](docs/roadmap/export-track.md) Step 1;

@@ -27,9 +27,10 @@ internal order, not a phase sequence.
 - `hydra-toon` has not chosen its read path: its MAT-Q1 (Renderer Phase 1)
   lists an API-schema adapter per schema as a candidate, and `usd-mmd-plugins`
   has fixed that shape for its own schemas (planned `mmdImaging`).
-- `ost` 0.23.8 has no plugin kind for a UsdImaging adapter, so the plugin can
-  be built and tested by the root build but not packaged as a bundle (policy
-  §19; Step I5).
+- `ost` 0.23.9 has a `usd-imaging` plugin kind, but the kind requires the
+  `lookdev` profile, and this workspace and every published runtime are
+  `usd`. So the plugin can be built and tested by the root build but not
+  packaged as a bundle (policy §19; Step I5).
 
 ## 2. Steps
 
@@ -114,9 +115,13 @@ slot without rebuilding geometry or shader pipelines.
 - ⬜ Plugin discovery in CI, an OpenUSD compatibility statement, invalidation
   regression tests and a representative `.vrm` integration fixture
   (policy §17.3).
-- ⬜ An `ost` plugin kind for a UsdImaging adapter — asked in
-  [ost report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md) — then a descriptor,
-  `release_members` and the product (policy §19).
+- ✅ An `ost` plugin kind for a UsdImaging adapter: asked in
+  [ost report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md),
+  delivered in `ost` 0.23.9 as `usd-imaging`.
+- ⬜ A `usd`-profile runtime that can select that kind: asked in
+  [ost report 50](../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md) (P1).
+  Then a descriptor, `release_members`, the product (policy §19), and
+  `usdvrm_baseline`'s session and frozen types (report 50 §4).
 - ⬜ Diagnostics, numbered under the repository's policy (policy §18).
 
 ## 3. Non-goals

@@ -62,7 +62,7 @@ The canonical material schemas made visible to Hydra
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `vrmImaging` | UsdImaging plugin (`plugins/vrmImaging`, [imaging track](../roadmap/imaging-track.md) Step I0); no `ost` descriptor, because `ost` has no plugin kind for one | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session. Built and tested by the root build; not packaged until it has an `ost` kind (Step I5). |
+| `vrmImaging` | UsdImaging plugin (`plugins/vrmImaging`, [imaging track](../roadmap/imaging-track.md) Step I0); no `ost` descriptor: `ost` 0.23.9's `usd-imaging` kind requires a `lookdev` profile no published runtime has ([ost report 50](../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md)) | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session. Built and tested by the root build; not packaged until that kind can be selected (Step I5). |
 
 **What this workspace consumes is not listed here.** An identity in these
 tables is one this workspace builds. The shared motion packages are
@@ -376,8 +376,9 @@ carries it ([PACKAGE_CONTRACT.md §4.1](PACKAGE_CONTRACT.md)).
 
 **The product is declared, not discovered.** `openstrata.toml`'s
 `release_members` names the aggregate: the five bundles, `motion_retarget` and
-`vrm_export`. `vrmImaging` is not among them and has no artifact: with no
-`ost` plugin kind it has no descriptor to package, and it joins the product at
+`vrm_export`. `vrmImaging` is not among them and has no artifact. It has no
+descriptor to package, because `ost`'s `usd-imaging` kind requires a `lookdev`
+profile that no published runtime has (ost report 50). It joins the product at
 imaging track Step I5.
 Packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH` when the discovered
 bundle and tool ids minus `release_exclude` are not exactly that list.
