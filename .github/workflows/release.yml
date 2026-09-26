@@ -251,12 +251,25 @@ jobs:
           # that gates the PRs feeding it.
           ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust local --require-sbom --require-provenance
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
-          ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > /dev/null
       - name: Set up host Python for schema tooling
         if: ${{ matrix.host_python != '' }}
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.host_python }}
+      # After the host Python, as the PR lanes order it, not straight after the
+      # pull. Since the 0.23.x pins, `runtime validate` includes
+      # `consumer-link`, which RUNS a consumer executable, and the runtime's
+      # USD libraries import the host interpreter's library (python313.dll on
+      # Windows). Run before setup-python, it failed on Windows and Linux in the
+      # first dry run under 0.23.10, with its output sent to /dev/null; the
+      # Windows failure reproduces locally as consumer-link 0xC0000135 with no
+      # Python on PATH (ost report 51 section 5). The output is kept now.
+      - name: Validate the materialized runtime (runnable tools)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci
+          ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/runtime-validate.json
       # The release ships the whole workspace, not just the importer: since the
       # Phase 1 schema split an `usdVrmFileFormat` package alone registers the
       # `.vrm` format but cannot open a stage (ost stages a dependency bundle's
