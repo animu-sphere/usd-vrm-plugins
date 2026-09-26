@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    """vrmImaging Phase I0 fixture: hand-authored canonical MToon semantics on
+    UsdShadeMaterials, with no .vrm importer involved, so what reaches Hydra is
+    the schema contract and nothing else (VRM_IMAGING_POLICY.md section 17.2).
+
+    Authored values differ from the schema fallbacks on purpose: the
+    shadingToonyFactor fallback is 0.9, and a test reading 0.9 could not tell
+    the attribute from the definition."""
+    startTimeCode = 0
+    endTimeCode = 10
+)
+
+def Scope "mtl"
+{
+    # The case the policy names (section 25), with a portable realization
+    # beside it that connects to no canonical input.
+    def Material "Hair" (
+        prepend apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+    )
+    {
+        float inputs:vrm:mtoon:shadingToonyFactor = 0.35
+        color3f inputs:vrm:mtoon:shadeColorFactor = (0.6, 0.5, 0.55)
+        uniform token inputs:vrm:mtoon:outlineWidthMode = "worldCoordinates"
+        # Not a field of the schema: authored under its prefix, never exposed.
+        float inputs:vrm:mtoon:notASchemaField = 1
+        token outputs:surface.connect = </mtl/Hair/preview.outputs:surface>
+
+        def NodeGraph "preview"
+        {
+            token outputs:surface.connect = </mtl/Hair/preview/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.9, 0.8, 0.7)
+                token outputs:surface
+            }
+        }
+    }
+
+    # A time-sampled canonical value (policy section 10).
+    def Material "Animated" (
+        prepend apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+    )
+    {
+        float inputs:vrm:mtoon:shadingShiftFactor.timeSamples = {
+            0: -0.2,
+            10: 0.4,
+        }
+    }
+
+    # No VRM semantics: nothing under `vrm`.
+    def Material "Plain"
+    {
+        token outputs:surface.connect = </mtl/Plain/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            token outputs:surface
+        }
+    }
+}

@@ -122,6 +122,7 @@ ALLOWED: dict[str, frozenset[str]] = {
         {"motionCore", "motionRetarget", "motionSampling", "motionUsd"}),
     "tests/parity": frozenset({"motionCore", "motionRetarget", "motionSampling"}),
     "tools/vrmExport": frozenset(),
+    "plugins/vrmImaging": frozenset(),
 }
 
 # Workspace libraries a member may not reach, and why. The importers read a
@@ -139,6 +140,11 @@ FORBIDDEN_WORKSPACE: dict[str, tuple[frozenset[str], str]] = {
     "tools/vrmExport": (
         frozenset({"vrmRig", "vrmContainer", "vrmSchema"}),
         "vrm_export opens a .vrm through the plugin registry and links no VRM identity"),
+    # The stage is the boundary (VRM_IMAGING_POLICY.md §12): what the importer
+    # authors reaches the adapter as schema data, never as code.
+    "plugins/vrmImaging": (
+        frozenset({"vrmRig", "vrmContainer", "vrmSchema"}),
+        "vrmImaging reads the composed stage's schemas and links no VRM identity"),
 }
 
 MEMBER_GLOBS = ("libs/*/CMakeLists.txt", "plugins/*/CMakeLists.txt",
