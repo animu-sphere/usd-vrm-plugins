@@ -217,9 +217,17 @@ jobs:
           if [ "$version" != "ost 0.23.10" ]; then
             echo "::error title=ost bootstrap::expected 'ost 0.23.10', got '$version'" ; exit 1
           fi
+      # Restore and save are split, as the PR lanes do, so the cache holds the
+      # verified runtime and nothing this job adds to the registry after it.
+      # With `actions/cache`'s end-of-job save, a successful run cached the
+      # workspace packages the clean-install smoke had imported. The next dry
+      # run on the same branch restored them, and importing the same vrmSchema
+      # archive from a different commit failed with ARTIFACT_IDENTITY_CONFLICT
+      # (runs 36229916537 then 36230497491, macOS).
       - name: Restore the artifact registry cache (speed only, never correctness)
+        id: runtime-cache-restore
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
           key: ost-registry-0.23.10-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
@@ -251,6 +259,16 @@ jobs:
           # that gates the PRs feeding it.
           ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust local --require-sbom --require-provenance
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
+      - name: Remove resumable transfer state before caching
+        if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' && steps.runtime-cache-restore.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: rm -rf .ost-ci-home/artifacts/.partial-blobs
+      - name: Save the verified artifact registry cache
+        if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' && steps.runtime-cache-restore.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ost-ci-home/artifacts
+          key: ost-registry-0.23.10-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Set up host Python for schema tooling
         if: ${{ matrix.host_python != '' }}
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
