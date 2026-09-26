@@ -162,6 +162,13 @@ foreach(_bundle ${_schema_bundles} ${_other_bundles})
     add_subdirectory("plugins/${_bundle}")
 endforeach()
 
+# vrmImaging, the canonical material schemas made visible to Hydra
+# (docs/design/VRM_IMAGING_POLICY.md), is named rather than discovered: it has
+# no openstrata.plugin.yaml, because `ost` has no plugin kind for a UsdImaging
+# adapter, so the glob above cannot see it. It is built and tested here and
+# packaged nowhere until it has one (policy Phase I5).
+add_subdirectory("plugins/vrmImaging")
+
 # The motion layer's CLI tools. They are executables, not bundles: they have no
 # plugInfo.json and register nothing with OpenUSD -- they open stages the
 # plugins above already know how to read. Added last so their end-to-end tests

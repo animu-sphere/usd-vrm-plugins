@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "VrmImaging",
+            "Root": ".",
+            "LibraryPath": "../../../lib/libVrmImaging.dll",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmImagingMToonAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "apiSchemaName": "VrmMToonAPI"
+                    }
+                }
+            }
+        }
+    ]
+}

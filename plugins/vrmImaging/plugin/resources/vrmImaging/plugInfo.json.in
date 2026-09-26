@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "VrmImaging",
+            "Root": ".",
+            "LibraryPath": "../../../lib/@OPENSTRATA_PLUGIN_LIBRARY_PREFIX@VrmImaging@CMAKE_SHARED_LIBRARY_SUFFIX@",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmImagingMToonAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "apiSchemaName": "VrmMToonAPI"
+                    }
+                }
+            }
+        }
+    ]
+}
