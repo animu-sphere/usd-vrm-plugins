@@ -31,6 +31,7 @@ contract wins — structural changes go there first, in their own PR.
 | How VRM and VRMA use motion: `.vrma` import, composition, the VRM rig binding, expressions, look-at, the bake, `execVrm`, `ExecIr` | [design/VRM_MOTION_POLICY.md](design/VRM_MOTION_POLICY.md) |
 | The `/Asset/mtl` hierarchy and MToon | [design/MATERIAL_ARCHITECTURE_POLICY.md](design/MATERIAL_ARCHITECTURE_POLICY.md) |
 | Writing an imported `.vrm` as a native `.usda` / `.usdc` / `.usdz` (`vrm_export`) | [design/VRM_EXPORT_POLICY.md](design/VRM_EXPORT_POLICY.md) |
+| Exposing the canonical material schemas to Hydra (`vrmImaging`) | [design/VRM_IMAGING_POLICY.md](design/VRM_IMAGING_POLICY.md) |
 | Workspace identities, dependency directions, artifact naming, Workspace Phase 0–8 | [architecture/WORKSPACE.md](architecture/WORKSPACE.md) |
 | What a consumer writes to use an installed package | [architecture/PACKAGE_CONTRACT.md](architecture/PACKAGE_CONTRACT.md) |
 | The VRM schemas | [plugins/vrmSchema/docs/SCHEMA_CONTRACT.md](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) |

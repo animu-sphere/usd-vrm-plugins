@@ -61,7 +61,10 @@ The reasons are what Steps 1 and 2 left behind:
   `motion_retarget` warns and writes nothing, because the slot has no
   canonical attribute to land on. VRM 0.x `materialValues` binds are raw only
   (diagnostic `VRM150`), and VRM 1.0 `textureTransformBinds` raw only.
-- **No renderer reads MToon.** `hydra-toon` does not exist yet.
+- **No renderer reads MToon.** [`hydra-toon`](https://github.com/animu-sphere/hydra-toon) exists (its Renderer
+  Phase 0 draws meshes); its material path is Renderer Phase 1, and it reads
+  the schemas through Hydra once the [imaging track](imaging-track.md)
+  exposes them there.
 
 ## 3. Steps
 
@@ -335,16 +338,16 @@ written" warning is gone.
 
 ### Step 8 — `hydra-toon` consumes the contract (owned elsewhere)
 
-`hydra-toon`, a planned sibling repository not yet created, reads
-`VrmMToonAPI` and `VrmTextureInfoAPI` directly and owns the full
-realization: toon lighting, rim, MatCap, outline, UV animation, MToon
+[`hydra-toon`](https://github.com/animu-sphere/hydra-toon), a sibling repository, reads `VrmMToonAPI` and
+`VrmTextureInfoAPI` through Hydra — as `vrmImaging` exposes them, the
+[imaging track](imaging-track.md) — and owns the full realization: toon lighting, rim, MatCap, outline, UV animation, MToon
 transparency and render ordering, first on Vulkan and WebGPU (policy §5.3).
 The contract between the two repositories is the USD schema and nothing
 else; neither links the other.
 
-This repository's part is keeping Steps 3–4's contract stable. The work
-itself leaves this roadmap once `hydra-toon` exists; it is listed so the
-boundary is stated where the steps are. Per-renderer conformance images and
+This repository's part is keeping Steps 3–4's contract stable and the
+imaging track's Hydra view of it. The rendering work is `hydra-toon`'s
+roadmap; it is listed so the boundary is stated where the steps are. Per-renderer conformance images and
 transparent-sorting behaviour go with it.
 
 ## 4. Contract changes this track requires

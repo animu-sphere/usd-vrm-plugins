@@ -204,7 +204,8 @@ Targets:
 - `VrmSpringBoneAPI`
 - `VrmColliderAPI`
 - `VrmConstraintAPI`
-- A future `VrmMToonAPI`
+- `VrmMaterialAPI`, `VrmMToonAPI` and `VrmTextureInfoAPI` (shipped 2026-09-25;
+  [material policy](MATERIAL_ARCHITECTURE_POLICY.md) §6)
 - A `VrmMetaAPI` as needed
 
 ### Principles

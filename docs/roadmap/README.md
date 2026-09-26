@@ -18,6 +18,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked
 | [current.md](current.md) | The next release's open conditions, and work carried out of shipped releases. |
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the product tracks, VRM motion open questions, cross-cutting items, non-goals. |
 | [execir-track.md](execir-track.md) | The `ExecIr` invertible VRM humanoid rig, expression and look-at computations, and skinned display — the OpenExec work this repository still owns. |
+| [imaging-track.md](imaging-track.md) | `vrmImaging`: the canonical material schemas exposed to Hydra as data on the material prim, with per-field invalidation, for `hydra-toon` and any other Hydra consumer. |
 | [export-track.md](export-track.md) | `vrm_export`: an imported `.vrm` written as a native `.usda`, `.usdc` or `.usdz` that opens with no VRM plugin installed. |
 | [material-track.md](material-track.md) | Product P5's open steps: the canonical MToon schemas first, then importer canonicalization, both realizations generated from them, expression material binds, and the `hydra-toon` boundary. |
 
@@ -52,6 +53,7 @@ table.
 | `ExecIr` invertible VRM humanoid rig | Planned | unscheduled |
 | MToon canonical semantics (Product P5) | In progress | unscheduled |
 | Native USD export (`vrm_export`) | In progress | unscheduled |
+| Hydra imaging (`vrmImaging`) | Planned | unscheduled |
 
 How the motion tracks were ordered before they left this repository is
 [archive/motion-split/roadmap-orderings.md](../archive/motion-split/roadmap-orderings.md).
