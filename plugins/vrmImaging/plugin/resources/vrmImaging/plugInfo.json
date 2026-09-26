@@ -8,6 +8,12 @@
             "ResourcePath": ".",
             "Info": {
                 "Types": {
+                    "UsdVrmImagingMaterialAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "apiSchemaName": "VrmMaterialAPI"
+                    },
                     "UsdVrmImagingMToonAPIAdapter": {
                         "bases": [
                             "UsdImagingAPISchemaAdapter"

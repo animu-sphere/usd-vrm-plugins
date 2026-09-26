@@ -6,8 +6,8 @@
 # mapping a changed USD property to the locator it feeds. No renderer, no
 # shader, no image loading: what a VRM material says, not how it is drawn.
 #
-# Phase I0: `VrmMToonAPI` alone, as the contract experiment the policy (§20,
-# §25) asks for before any Hydra-facing name is frozen.
+# Steps I0-I1: `VrmMaterialAPI` and `VrmMToonAPI`, under the `vrm` locator
+# hierarchy frozen in the policy's §28. `VrmTextureInfoAPI` is Step I2.
 #
 # Not an `ost` plugin bundle yet. `ost` 0.23.9 has a `usd-imaging` kind, but it
 # requires `hydra-preview`, a capability only the `lookdev` profile promises,
@@ -55,6 +55,8 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 # importer is reachable either (policy §12): the stage is the boundary.
 set(PLUGIN_NAME VrmImaging)
 add_library(${PLUGIN_NAME} SHARED
+    src/VrmSchemaAdapter.cpp
+    src/VrmMaterialAPIAdapter.cpp
     src/VrmMToonAPIAdapter.cpp)
 
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
