@@ -55,6 +55,7 @@ VRMA and the VRM side of motion (Workspace Phase 6–8; motion policy §2, §14)
 | `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the OpenExec plan's five P0-5 nodes, and two it needed; expression, look-at and avatar apply do not exist yet.** It declares `UsdSkelSkeleton`, `UsdSkelBindingAPI` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). `execMotion` is `usd-motion-plugins`' published bundle, pinned by digest in `requires.bundles`. |
 | `vrmRig` | plain static CMake library (`libs/vrmRig/`; `vrmRetarget` until 2026-09-23) | What a VRM rig adds to a retarget, and none of it retargets: VRM 1.0's required-bone set, which every caller hands the retarget, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). Links `motionCore` and nothing else of `usd-motion-plugins` (§9.5). |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig off a stage, and the semantic clip through `motionUsd` plus the clip's `vrm:` tracks, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
+| `vrm_export` | CLI executable (`tools/vrmExport`, [export track](../roadmap/export-track.md) Step 1) | Writes an imported `.vrm` as a native `.usda`, `.usdc` or `.usdz` that opens with no VRM plugin: the root layer materialized, every texture localized, `.usdz` packaged by OpenUSD ([VRM_EXPORT_POLICY.md](../design/VRM_EXPORT_POLICY.md)). Links OpenUSD alone and opens a `.vrm` through the plugin registry. Its export operation is a target inside the tool, not a library identity, until a second consumer exists ([scope policy §3](../design/INTEGRATION_SCOPE_POLICY.md#3-the-test-for-a-new-identity)). Not a bundle. |
 
 **What this workspace consumes is not listed here.** An identity in these
 tables is one this workspace builds. The shared motion packages are
@@ -121,6 +122,10 @@ execVrm               -> execMotion  (runtime only: `vrm.computeBoundPose`
 execVrm               =: the Vrm*API applied schemas, UsdSkelSkeleton,
                          UsdSkelBindingAPI
 tests/parity          -> motionCore, motionRetarget, motionSampling
+vrm_export            -> OpenUSD only (usd, usdUtils, usdValidation, sdf, ar)
+vrm_export            ~> usdVrmFileFormat, usdVrmPackageResolver, vrmSchema
+                         (runtime only, through the plugin registry; nothing
+                         is linked)
 ```
 
 Every `motion*` name above is a package `usd-motion-plugins` publishes, and
@@ -160,6 +165,10 @@ vrmRig                -> motionRetarget, and every other usd-motion-plugins
                          from the generic half, §9.5)
 usdVrmaFileFormat     -> live receiver, generator, motionRetarget, vrmRig, a
                          target VRM
+vrm_export            -> usdVrmFileFormat, vrmContainer, vrmSchema, vrmRig at
+                         link time, the importer's canonical model, a GLB
+                         parser of its own (it reaches a .vrm through
+                         UsdStage::Open and reads the result as data)
 any member            -> motion-connectors, a live transport, a protocol
                          decoder, a vendor SDK
 any member            -> a copy of a usd-motion-plugins or motion-connectors
@@ -346,7 +355,8 @@ usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 carries it ([PACKAGE_CONTRACT.md §4.1](PACKAGE_CONTRACT.md)).
 
 **The product is declared, not discovered.** `openstrata.toml`'s
-`release_members` names the aggregate: the five bundles and `motion_retarget`.
+`release_members` names the aggregate: the five bundles, `motion_retarget` and
+`vrm_export`.
 Packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH` when the discovered
 bundle and tool ids minus `release_exclude` are not exactly that list.
 `release_exclude` has been empty since MIG-4 took the three adapter CLIs it
