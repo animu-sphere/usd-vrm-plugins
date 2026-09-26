@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.23.9, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.23.10, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,8 +17,12 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 50 is the
-one to read first: 0.23.9 delivers report 49's `usd-imaging` kind, and it works
+The current `ost` ask list is always in the **newest** report. Report 51 is the
+one to read first: 0.23.10 delivers report 50's P1, so `usd-imaging` no longer
+needs a viewer profile, and `vrmImaging` becomes a bundle and a product member
+on the `usd` profile. Every release-lane step passes locally, and the report
+opens no new ask. It also records a fixture path of ours that only the release
+lane read, which #233 had moved. Report 50 is next: 0.23.9 delivers report 49's `usd-imaging` kind, and it works
 under a `lookdev` runtime, but the kind requires `hydra-preview`, which only the
 `lookdev` profile promises. Every published runtime is a `usd` runtime, so
 `vrmImaging` still cannot be a bundle here (a P1). Report 49 is next: `ost` had
@@ -95,6 +99,7 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 51 | 2026-09-26 | [`vrmImaging` joins the product](51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md) | 0.23.10 | The repin from 0.23.6, and adopting `usd-imaging` now that report 50's P1 is delivered: the kind checks the resolved runtime's usdImaging SDK instead of requiring `hydra-preview`. `vrmImaging` gets a descriptor providing both adapters and joins `members` and `release_members`. Under `usd`, it passes L0–L4 from the build tree and from its package (L2 constructs both adapters), and the eight-member product is digest-reproducible over two runs. Every other release-lane step passes, and `usdvrm_baseline` freezes the two adapter types. An explicit `hydra-preview` is still refused, and `USDIMAGING_ENABLE_PLUGINS=0` still fails L2. Ours: `artifact_only_exec_smoke.py` read a design-fixture path that #233 had moved, and only `release.yml` runs it. **No new ask** |
 | 50 | 2026-09-26 | [The imaging kind arrives, and the `usd` profile cannot select it](50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md) | 0.23.9 | Adopting report 49's P2 for `vrmImaging`. The kind is delivered: the descriptor passes L0 (`imaging.metadata`), the graph accepts it, and under `--profile lookdev` the plugin passes L0–L4, with the native `imaging.registration` L2 constructing the adapter and failing as asked under `USDIMAGING_ENABLE_PLUGINS=0`. It cannot be adopted: the kind requires `hydra-preview`, only `lookdev` promises it, and every published leaf is `usd`, including the `gl`/`metal` ones whose usdImaging SDK `vrmImaging` has built against since #245. Under `usd`, `plugin build`, `plugin test` and `plugin test --workspace` refuse (`PROFILE_CAPABILITY_UNSATISFIED`). Under `lookdev`, `plugin package` refuses (`PACKAGE_RUNTIME_LOCK_MISMATCH`). Nothing is adopted and the pin stays 0.23.6. **One P1** |
 | 49 | 2026-09-26 | [No plugin kind for a UsdImaging adapter](49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md) | 0.23.8 | `vrmImaging`, UsdImaging API-schema adapters for the VRM material schemas, cannot be a bundle: `ost` knows six plugin kinds and refuses `usd-imaging` at parse time, and either placement of such a descriptor stops the whole workspace graph (`WORKSPACE_DESCRIPTOR_NOT_DECLARED` undeclared, `PARSE_FAILED` declared). So it has no descriptor, the root adds it by name, and nothing packages it. Asks for the kind, with `provides` keyed by the adapted schema and refused on duplicates (UsdImaging silently lets the last adapter for a schema name win), an imaging runtime requirement, and an L2 on `HasAPISchemaAdapter`. Also notes that OpenUSD 26.08's `hd/retainedDataSource.h` does not compile as C++20 under GCC 13. **One P2, one P3** |
 | 48 | 2026-09-24 | [The product packages again, and a published library names its producer's disk](48-2026-09-24-v0.23.6-the-product-packages-again.md) | 0.23.6 | The repin to 0.23.6. Report 47's P1 is delivered: a workspace-installed bundle's build record and its package stage are now the same install stage, so `vrmSchema` no longer claims `lib/vrmSchema.exp`. `ost plugin package --workspace --product` succeeds and is digest-reproducible over two runs, and every later `release.yml` step passes locally on Windows (library check, clean-install smoke, artifact-only exec smoke, VRMA `--from-package`). New: the published `libExecMotion.so`'s `RUNPATH` is its producer's hosted-runner checkout, so it opens only when `LD_LIBRARY_PATH` names OpenUSD. `ost test` sets that variable and a plain CTest run did not, so two suites failed on Linux. **One P3** |

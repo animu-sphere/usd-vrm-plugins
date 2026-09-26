@@ -67,16 +67,19 @@ the edit case is noticed.
 - **External UsdImaging plugins enabled.** `USDIMAGING_ENABLE_PLUGINS=0` drops
   every adapter not marked internal, this one included.
 
-## Not an `ost` bundle yet
+## Packaging
 
-There is no `openstrata.plugin.yaml`: the root `CMakeLists.txt` adds this
-directory by name, the root build compiles and tests it, and no package carries
-it. `ost` 0.23.9 added the `usd-imaging` kind that
-[report 49](../../docs/reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md)
-asked for, and the plugin passes its checks under a `lookdev` runtime. The kind
-requires `hydra-preview`, though, which only the `lookdev` profile promises, and
-this workspace and every published runtime are `usd`. Packaging is Step I5 and
-waits on [report 50](../../docs/reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md)'s P1.
+An `ost` bundle of kind `usd-imaging`, and a member of the product. Its
+`provides` names one key per adapter, `usd-imaging:VrmMaterialAPI` and
+`usd-imaging:VrmMToonAPI`, and `ost` holds that list to `plugInfo.json` (L0).
+It requires `vrmSchema` as a bundle and the usdImaging SDK of the runtime
+(L1). Its L2 builds a native checker that registers the plugin and constructs
+both adapters, from the build tree and from the package alike. It needs no
+viewer profile: `ost` 0.23.10 lets the `usd` profile select the kind
+([report 51](../../docs/reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)).
+
+L2 proves the packaged adapters construct. What they contribute, and what they
+dirty, is proved by the suites below, against the build tree only.
 
 ## Tests
 

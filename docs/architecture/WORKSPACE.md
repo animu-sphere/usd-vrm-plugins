@@ -62,7 +62,7 @@ The canonical material schemas made visible to Hydra
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `vrmImaging` | UsdImaging plugin (`plugins/vrmImaging`, [imaging track](../roadmap/imaging-track.md) Step I0); no `ost` descriptor: `ost` 0.23.9's `usd-imaging` kind requires a `lookdev` profile no published runtime has ([ost report 50](../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md)) | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session. Built and tested by the root build; not packaged until that kind can be selected (Step I5). |
+| `vrmImaging` | plugin bundle (`usd-imaging`, [imaging track](../roadmap/imaging-track.md) Steps I0–I1; a bundle since `ost` 0.23.10, [ost report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)) | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session, which its descriptor declares as a bundle edge. A product member. |
 
 **What this workspace consumes is not listed here.** An identity in these
 tables is one this workspace builds. The shared motion packages are
@@ -318,8 +318,7 @@ requires:
 The root owns composition, not implementation:
 
 - bundle discovery and workspace-wide configuration. A bundle is discovered
-  by its `openstrata.plugin.yaml`; `vrmImaging`, which has none (§1), is the
-  one plugin directory the root adds by name
+  by its `openstrata.plugin.yaml`, and no plugin directory is added by name
 - integration tests (`tests/integration/`): schema+format, format+resolver,
   full composition, clean-install, aggregate packaging
 - the CI matrix (`openstrata.ci.yaml`) and generated lanes
@@ -366,6 +365,7 @@ usdVrmFileFormat-<version>-<target>.tar.zst
 usdVrmPackageResolver-<version>-<target>.tar.zst
 usdVrmaFileFormat-<version>-<target>.tar.zst
 execVrm-<version>-<target>.tar.zst
+vrmImaging-<version>-<target>.tar.zst
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
 
@@ -375,11 +375,9 @@ usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 carries it ([PACKAGE_CONTRACT.md §4.1](PACKAGE_CONTRACT.md)).
 
 **The product is declared, not discovered.** `openstrata.toml`'s
-`release_members` names the aggregate: the five bundles, `motion_retarget` and
-`vrm_export`. `vrmImaging` is not among them and has no artifact. It has no
-descriptor to package, because `ost`'s `usd-imaging` kind requires a `lookdev`
-profile that no published runtime has (ost report 50). It joins the product at
-imaging track Step I5.
+`release_members` names the aggregate: the six bundles, `motion_retarget` and
+`vrm_export`. `vrmImaging` joined it with `ost` 0.23.10, the first version whose
+`usd-imaging` kind the `usd` profile can select (ost report 51).
 Packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH` when the discovered
 bundle and tool ids minus `release_exclude` are not exactly that list.
 `release_exclude` has been empty since MIG-4 took the three adapter CLIs it

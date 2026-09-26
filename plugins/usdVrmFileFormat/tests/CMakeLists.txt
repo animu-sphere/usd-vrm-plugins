@@ -230,8 +230,15 @@ if(USDVRM_COMPOSED_BUILD)
     # does everywhere the bundle is composed with what it requires.
     set(_exec_vrm_bundle "${_bundle_dir}/../execVrm")
     set(_exec_vrm_resources "${_exec_vrm_bundle}/plugin/resources/execVrm")
+    # vrmImaging joins once it has a descriptor (ost 0.23.10): it registers two
+    # USD types, its adapters, so the frozen union includes them and the
+    # generator refuses a session without the bundle (ost report 50 §4). It
+    # loads nothing at registration; its library is on PATH for the day a
+    # check constructs an adapter.
+    set(_imaging_bundle "${_bundle_dir}/../vrmImaging")
+    set(_imaging_resources "${_imaging_bundle}/plugin/resources/vrmImaging")
     set(_baseline_env
-        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_vrm_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_vrm_resources};${USDVRM_EXEC_MOTION_ENV}")
+        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_vrm_bundle}/lib;PATH=path_list_prepend:${_imaging_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_vrm_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_imaging_resources};${USDVRM_EXEC_MOTION_ENV}")
 
     add_test(
         NAME usdvrm_baseline

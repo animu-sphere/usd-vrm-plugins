@@ -1248,6 +1248,9 @@ what it found:
    `hydra-preview`, which only the `lookdev` profile promises. This workspace
    and every published runtime are `usd`, so it still cannot be adopted
    ([report 50](../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md)).
+   `ost` 0.23.10 dropped that requirement for the runtime's usdImaging SDK,
+   and `vrmImaging` became a bundle and a product member
+   ([report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)).
 10. **The §25 fixture could not tell authored from fallback.** Its 0.9 is
     `shadingToonyFactor`'s schema fallback. The fixture and §25 use 0.35.
 11. **`hd/retainedDataSource.h` does not compile as C++20 under GCC 13.**
