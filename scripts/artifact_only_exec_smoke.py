@@ -245,8 +245,8 @@ def run_case(case: str, prefix: pathlib.Path, env: dict,
         "--retarget", str(tools / "motion_retarget" / "bin"
                           / f"motion_retarget{suffix()}"),
         "--fixtures", str(REPO_ROOT / "tests" / "motion" / "fixtures"),
-        "--design-fixtures", str(REPO_ROOT / "docs" / "design" / "fixtures"
-                                 / "motion"),
+        "--design-fixtures", str(REPO_ROOT / "tests" / "motion" / "fixtures"
+                                 / "design_triplet"),
         "--design-map", str(REPO_ROOT / DESIGN_MAP),
         "--parity-fixtures", str(REPO_ROOT / "tests" / "parity" / "fixtures"),
         "--real-avatar", str(REPO_ROOT / REAL_AVATAR),

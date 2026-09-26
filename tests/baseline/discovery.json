@@ -79,6 +79,18 @@
       "schemaIdentifier": "VrmHumanoidAPI",
       "schemaKind": "singleApplyAPI"
     },
+    "UsdVrmImagingMToonAPIAdapter": {
+      "apiSchemaName": "VrmMToonAPI",
+      "bases": [
+        "UsdImagingAPISchemaAdapter"
+      ]
+    },
+    "UsdVrmImagingMaterialAPIAdapter": {
+      "apiSchemaName": "VrmMaterialAPI",
+      "bases": [
+        "UsdImagingAPISchemaAdapter"
+      ]
+    },
     "UsdVrmLookAtAPI": {
       "alias": {
         "UsdSchemaBase": "VrmLookAtAPI"

@@ -15,6 +15,17 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vrmImaging` is a bundle and a member of the product**
+  ([imaging track](docs/roadmap/imaging-track.md) Step I5;
+  [ost report 51](docs/reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)). It has an
+  `ost` descriptor of kind `usd-imaging` that provides both adapters, and it is
+  named in `members` and `release_members`. The product has eight members, and
+  a new `vrmImaging-<version>-<target>` package embeds the `vrmSchema` it
+  requires. `ost` checks that the runtime has the usdImaging SDK (L1), and it
+  constructs both adapters from the build tree and from the package (L2).
+  `usdvrm_baseline` freezes the two adapter types the bundle registers. The
+  root `CMakeLists.txt` no longer adds the directory by name.
+
 - **`vrmImaging`: `VrmMaterialAPI` as Hydra data, and the `vrm` locator
   hierarchy frozen** ([imaging track](docs/roadmap/imaging-track.md) Step I1;
   [imaging policy](docs/design/VRM_IMAGING_POLICY.md) §28). Every
@@ -25,7 +36,7 @@ Current schema contract version: **1**.
   canonical schemas: `inputs:vrm:<group>:<name>` is `vrm/<group>/<name>`.
   UsdImaging still dirties a material's whole network on every authored
   canonical edit. The suite shows that a time move never does, and the policy
-  records the decision to live with it. The plugin is still in no package.
+  records the decision to live with it.
 
 - **`vrmImaging`: `VrmMToonAPI` as Hydra data on the material prim**
   ([imaging track](docs/roadmap/imaging-track.md) Step I0;
@@ -39,7 +50,7 @@ Current schema contract version: **1**.
   `vrm` locator names are not frozen, and it is built and tested but in no
   package. `ost` 0.23.9 adds a `usd-imaging` plugin kind, but the kind requires
   a profile that no published runtime has, so the plugin is not yet a bundle
-  (ost report 50).
+  (ost report 50; it became one with `ost` 0.23.10, above).
 
 - **`vrm_export`: an imported `.vrm` as native `.usda`, `.usdc` or `.usdz`**
   ([export track](docs/roadmap/export-track.md) Step 1;
@@ -248,6 +259,15 @@ Current schema contract version: **1**.
   0.23.5 packages from does not carry that file. This reproduces from a clean
   tree and does not happen under 0.23.4. Until `ost` fixes it, `release.yml`
   cannot package.
+- **The `ost` pin is 0.23.10**, whose `usd-imaging` kind the `usd` profile
+  can select: it checks the runtime's usdImaging SDK and no longer requires
+  the `lookdev`-only `hydra-preview`. The pin, the regenerated
+  `ost-source-ci.yml` and `release.yml`'s six mirrors change as before, and
+  `release.yml` builds `vrmImaging` among the bundles. The release lane's
+  sequence was re-run locally on Windows: the product packages, two runs
+  give identical digests, and every later step passes. The hosted release
+  cell and the Linux and macOS products were not run.
+
 - **The `ost` pin is 0.23.6**, which fixes that regression. A workspace-installed
   bundle's build record and its package stage are now the same install stage,
   so `vrmSchema` no longer claims `lib/vrmSchema.exp` as an output. The change
@@ -553,6 +573,13 @@ Current schema contract version: **1**.
   ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Fixed
+
+- **The release lane's artifact-only exec smoke finds the design triplet.**
+  `scripts/artifact_only_exec_smoke.py` still read
+  `docs/design/fixtures/motion/` after the documentation consolidation moved
+  the triplet to `tests/motion/fixtures/design_triplet/`. So two of its five
+  parity cases would have failed on the next tag. Only `release.yml` runs the
+  script, so no pull request showed it.
 
 - **`package_vrm.py` packages MaterialX image files.** It classified an
   `ND_image_*` node's `file` as "not a texture asset" and left it pointing at

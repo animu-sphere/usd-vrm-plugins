@@ -1,0 +1,43 @@
+# OpenStrata plugin bundle manifest.
+# A plugin is a self-describing bundle, not a bare shared library: this file is
+# the contract `ost plugin inspect|build|doctor|test` resolve against.
+manifest:
+  schema: openstrata.plugin/v1alpha1
+plugin:
+  name: vrmImaging
+  version: 0.9.0
+  # A UsdImaging API-schema adapter per canonical material schema
+  # (docs/design/VRM_IMAGING_POLICY.md). The kind arrived in `ost` 0.23.9 and
+  # became selectable from the `usd` profile in 0.23.10 (ost reports 49-51).
+  kind: usd-imaging
+license: Apache-2.0
+runtime:
+  # The one OpenUSD version this plugin supports; see usdVrmFileFormat's
+  # manifest for why the tolerated range was retired in v0.6.0.
+  openusd: "==26.08"
+  cxx_abi: inherit
+provides:
+  # One key per adapter in plugInfo.json, which L0 `imaging.metadata` holds to
+  # exactly this list. A session admits one owner per API schema, so these
+  # names are this bundle's.
+  - usd-imaging:VrmMaterialAPI
+  - usd-imaging:VrmMToonAPI
+requires:
+  # Not `hydra-preview`: that is a viewer capability, and nothing here opens a
+  # viewer. What an adapter needs of the runtime is its usdImaging SDK, which
+  # the kind itself makes `ost` check (L1 `runtime.usd_imaging`).
+  capabilities: [usd-stage-read]
+  # The schemas each adapter is named for. Not linked: the adapter reads the
+  # field set from the registered definition (policy §12), so what it needs is
+  # vrmSchema's plugInfo.json in the session. Without it there is no
+  # contribution at all (`vrmImaging_mtoon_without_schema`).
+  bundles:
+    - id: vrmSchema
+      version: ">=0.9,<0.10"
+      contract: 1
+usd:
+  plug_info: plugin/resources/vrmImaging/plugInfo.json
+tests:
+  smoke:
+    - tests/fixtures/material_core.usda
+    - tests/fixtures/mtoon_materials.usda

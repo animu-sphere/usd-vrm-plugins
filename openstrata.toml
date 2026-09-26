@@ -46,6 +46,7 @@ members = [
   "plugins/usdVrmFileFormat",
   "plugins/usdVrmaFileFormat",
   "plugins/usdVrmPackageResolver",
+  "plugins/vrmImaging",
   "plugins/vrmSchema",
   "libs/vrmContainer",
   "libs/vrmRig",
@@ -58,6 +59,7 @@ release_members = [
   "usdVrmFileFormat",
   "usdVrmaFileFormat",
   "usdVrmPackageResolver",
+  "vrmImaging",
   "motion_retarget",
   "vrm_export",
 ]

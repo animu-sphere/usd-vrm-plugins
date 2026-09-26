@@ -9,12 +9,9 @@
 # Steps I0-I1: `VrmMaterialAPI` and `VrmMToonAPI`, under the `vrm` locator
 # hierarchy frozen in the policy's §28. `VrmTextureInfoAPI` is Step I2.
 #
-# Not an `ost` plugin bundle yet. `ost` 0.23.9 has a `usd-imaging` kind, but it
-# requires `hydra-preview`, a capability only the `lookdev` profile promises,
-# and this workspace and every published runtime are `usd` (ost report 50). So
-# there is no descriptor and the root CMakeLists.txt adds this directory by
-# name. It is built and tested by the root build and not packaged (policy §19,
-# Step I5).
+# An `ost` `usd-imaging` bundle (openstrata.plugin.yaml) since `ost` 0.23.10
+# let the `usd` profile select that kind (ost report 51), and a member of the
+# product. The root CMakeLists.txt discovers it like every other bundle.
 cmake_minimum_required(VERSION 3.22)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
