@@ -587,6 +587,19 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **The release lane validates the runtime after the host Python.** Since
+  the `ost` 0.23.1 pin, `runtime validate` runs a consumer executable, and
+  `release.yml` ran it before `setup-python`. The first dry run failed on
+  Windows and Linux, and the lane could not have passed since 2026-09-20.
+  It now validates in its own step, as the PR lanes do, and keeps the
+  output ([ost report 52](docs/reports/ost/52-2026-09-26-v0.23.10-the-release-lane-dry-run.md) §2).
+
+- **The release lane caches only the verified runtime.** Its end-of-job
+  cache saved the workspace packages the clean-install smoke imports. The
+  next run restored them and failed with `ARTIFACT_IDENTITY_CONFLICT`.
+  Restore and save are now separate, with the save straight after the
+  runtime pull (report 52 §3).
+
 - **The release lane's artifact-only exec smoke finds the design triplet.**
   `scripts/artifact_only_exec_smoke.py` still read
   `docs/design/fixtures/motion/` after the documentation consolidation moved

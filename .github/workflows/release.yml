@@ -223,7 +223,7 @@ jobs:
       # workspace packages the clean-install smoke had imported. The next dry
       # run on the same branch restored them, and importing the same vrmSchema
       # archive from a different commit failed with ARTIFACT_IDENTITY_CONFLICT
-      # (runs 36229916537 then 36230497491, macOS).
+      # (runs 36229916537 then 36230497491, macOS; ost report 52 section 3).
       - name: Restore the artifact registry cache (speed only, never correctness)
         id: runtime-cache-restore
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
@@ -281,7 +281,7 @@ jobs:
       # Windows). Run before setup-python, it failed on Windows and Linux in the
       # first dry run under 0.23.10, with its output sent to /dev/null; the
       # Windows failure reproduces locally as consumer-link 0xC0000135 with no
-      # Python on PATH (ost report 51 section 5). The output is kept now.
+      # Python on PATH (ost report 52 section 2). The output is kept now.
       - name: Validate the materialized runtime (runnable tools)
         shell: bash
         run: |
