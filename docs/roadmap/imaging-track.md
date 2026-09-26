@@ -114,7 +114,8 @@ slot without rebuilding geometry or shader pipelines.
 - ⬜ Plugin discovery in CI, an OpenUSD compatibility statement, invalidation
   regression tests and a representative `.vrm` integration fixture
   (policy §17.3).
-- ⬜ An `ost` plugin kind for a UsdImaging adapter, then a descriptor,
+- ⬜ An `ost` plugin kind for a UsdImaging adapter — asked in
+  [ost report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md) — then a descriptor,
   `release_members` and the product (policy §19).
 - ⬜ Diagnostics, numbered under the repository's policy (policy §18).
 

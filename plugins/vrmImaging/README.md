@@ -60,7 +60,8 @@ so a runtime that narrows it is noticed.
 `ost` 0.23.8 has no plugin kind for a UsdImaging adapter, so there is no
 `openstrata.plugin.yaml`: the root `CMakeLists.txt` adds this directory by name,
 the root build compiles and tests it, and no package carries it. Packaging is
-Step I5 and waits on that kind.
+Step I5 and waits on that kind, asked of `ost` in
+[report 49](../../docs/reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md).
 
 ## Tests
 

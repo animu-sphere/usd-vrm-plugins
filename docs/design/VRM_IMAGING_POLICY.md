@@ -1242,7 +1242,8 @@ what it found:
    file formats, asset and package resolvers, exec, schemas and usdview
    plugins). So `vrmImaging` has no descriptor. The root build adds it by
    name, builds it and tests it, and no package carries it. §19's packaging
-   waits on that kind (Step I5).
+   waits on that kind (Step I5), asked of `ost` in
+   [report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md).
 10. **The §25 fixture could not tell authored from fallback.** Its 0.9 is
     `shadingToonyFactor`'s schema fallback. The fixture and §25 use 0.35.
 11. **`hd/retainedDataSource.h` does not compile as C++20 under GCC 13.**
