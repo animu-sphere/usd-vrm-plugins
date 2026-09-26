@@ -965,6 +965,10 @@ ToonMaterial::MToon
 
 works and the renderer contains no VRM raw-JSON path.
 
+On a classic render delegate the consumer reads structural changes in the
+material Sprim's `Sync`, and value-only changes by observing the terminal
+scene index, which no `Sync` follows (§28.3 item 3).
+
 ### Step I4 — animated material semantics
 
 Verify time-varying canonical properties and expression-driven values.
@@ -1263,10 +1267,25 @@ what it found:
     containers with a private one-child container. Reproduced with GCC 13.3
     `-std=c++20` against the Linux leaf.
 
-Not measured: the Hydra path `hydra-toon` will read (§20 Step I0's last
-item). `hydra-toon` has no material path yet — its MAT-Q1 is Renderer
-Phase 1 — so the test consumer stands in for it, and the handshake is
-Step I3.
+Not measured here: the Hydra path `hydra-toon` reads (§20 Step I0's last
+item). The test consumer stood in for it. `hydra-toon` has measured it since,
+on OpenUSD 26.08
+([renderer report 02](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/02-2026-09-26-mat-q1-material-inputs.md);
+[issue #252](https://github.com/animu-sphere/usd-vrm-plugins/issues/252)), with `vrmSchema` and `vrmImaging` registered only through
+`PXR_PLUGINPATH_NAME`, through `UsdImagingCreateSceneIndices` and scene
+index emulation to a classic `HdMaterial`:
+
+- `Sync` reads `vrm/material` and `vrm/mtoon` from the render index's
+  terminal scene index, authored and resolved values alike. Nothing of this
+  repository is linked, and the module built against the `usd` runtime
+  loaded unchanged into another OpenUSD 26.08 runtime.
+- Neither the material network nor `Get()` carries a canonical value, in
+  any session (§6.1, seen from the consumer).
+- An authored edit dirties `material` and `vrm/mtoon/<field>`, so `Sync`
+  runs with every bit dirty (item 6).
+- A value-only change never reaches `Sync`. See §28.3 item 3.
+
+The handshake itself is Step I3.
 
 ---
 
@@ -1349,6 +1368,17 @@ runtime:
    downstream of UsdImaging, and neither produces a change notice. If Step I4
    can deliver them only as per-frame authored edits, this decision is
    reopened.
+   The same property means that a classic render delegate never gets these
+   values through `Sync`. For a material Sprim,
+   `HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits` maps only locators
+   under `material`, so a dirtied `vrm/...` locator on its own yields no
+   dirty bit, and emulation calls no `Sync` (measured by `hydra-toon`, §27).
+   Such a delegate sees them only by observing the terminal scene index
+   (`HdRenderDelegate::SetTerminalSceneIndex`). `hydra-toon` does, and
+   re-reads the prim's `vrm` locators in `Update()`, before any Sprim sync
+   ([renderer report 04](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/04-2026-09-26-material-value-route.md)).
+   Nothing changes here. Any other renderer on the classic API has to do the
+   same.
 4. **A filter was rejected.** A scene index downstream sees locators, not
    properties. It cannot tell a canonical-only edit from a change batch that
    also edited a non-canonical interface input of the same prim, so dropping
