@@ -28,7 +28,7 @@
 # an omission. WORKSPACE.md §5 keeps every adapter out of the aggregate product.
 # Under the 0.21.0 pin this workflow used to carry, that exclusion held only
 # because `ost` did not discover `adapters/<group>/<name>/tools/<tool>/` at all;
-# 0.22.x does discover them, and the bootstrap pin below is 0.23.10 now. What
+# 0.22.x does discover them, and the bootstrap pin below is 0.23.13 now. What
 # keeps the adapter CLIs out of the product is therefore no longer the
 # toolchain version but `[workspace].release_exclude` in openstrata.toml, which
 # named the three of them and made `ost` itself fail with
@@ -172,7 +172,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.23.10 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -185,7 +185,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.10"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.13"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -214,8 +214,8 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.23.10" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.23.10', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.23.13" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.23.13', got '$version'" ; exit 1
           fi
       # Restore and save are split, as the PR lanes do, so the cache holds the
       # verified runtime and nothing this job adds to the registry after it.
@@ -230,7 +230,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.23.10-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.23.13-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
@@ -268,7 +268,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.23.10-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.23.13-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Set up host Python for schema tooling
         if: ${{ matrix.host_python != '' }}
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
