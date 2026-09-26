@@ -57,6 +57,13 @@ VRMA and the VRM side of motion (Workspace Phase 6–8; motion policy §2, §14)
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig off a stage, and the semantic clip through `motionUsd` plus the clip's `vrm:` tracks, drives `motionRetarget` and `vrmRig` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `vrm_export` | CLI executable (`tools/vrmExport`, [export track](../roadmap/export-track.md) Step 1) | Writes an imported `.vrm` as a native `.usda`, `.usdc` or `.usdz` that opens with no VRM plugin: the root layer materialized, every texture localized, `.usdz` packaged by OpenUSD ([VRM_EXPORT_POLICY.md](../design/VRM_EXPORT_POLICY.md)). Links OpenUSD alone and opens a `.vrm` through the plugin registry. Its export operation is a target inside the tool, not a library identity, until a second consumer exists ([scope policy §3](../design/INTEGRATION_SCOPE_POLICY.md#3-the-test-for-a-new-identity)). Not a bundle. |
 
+The canonical material schemas made visible to Hydra
+([VRM_IMAGING_POLICY.md](../design/VRM_IMAGING_POLICY.md)):
+
+| Identity | Kind | Role |
+| --- | --- | --- |
+| `vrmImaging` | UsdImaging plugin (`plugins/vrmImaging`, [imaging track](../roadmap/imaging-track.md) Step I0); no `ost` descriptor, because `ost` has no plugin kind for one | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session. Built and tested by the root build; not packaged until it has an `ost` kind (Step I5). |
+
 **What this workspace consumes is not listed here.** An identity in these
 tables is one this workspace builds. The shared motion packages are
 `usd-motion-plugins`': `motionCore`, `motionSampling`, `motionRetarget`,
@@ -126,6 +133,11 @@ vrm_export            -> OpenUSD only (usd, usdUtils, usdValidation, sdf, ar)
 vrm_export            ~> usdVrmFileFormat, usdVrmPackageResolver, vrmSchema
                          (runtime only, through the plugin registry; nothing
                          is linked)
+vrmImaging            -> OpenUSD only (usd, sdf, tf, vt, hd, usdImaging)
+vrmImaging            ~> vrmSchema   (runtime only: UsdImaging asks an adapter
+                         only about schemas a prim's definition includes, and
+                         the field set is read from the schema registry by
+                         name; nothing is linked)
 ```
 
 Every `motion*` name above is a package `usd-motion-plugins` publishes, and
@@ -169,6 +181,12 @@ vrm_export            -> usdVrmFileFormat, vrmContainer, vrmSchema, vrmRig at
                          link time, the importer's canonical model, a GLB
                          parser of its own (it reaches a .vrm through
                          UsdStage::Open and reads the result as data)
+vrmImaging            -> usdVrmFileFormat, vrmContainer, vrmSchema, vrmRig at
+                         link time, the importer's canonical model, raw VRM
+                         JSON (`vrm:*:raw`), an image decoder, a renderer or
+                         GPU API (hydra-toon, Vulkan, WebGPU, Slang)
+usdVrmFileFormat      -> vrmImaging  (the importer works in a session with no
+                         imaging plugin; imaging policy §19)
 any member            -> motion-connectors, a live transport, a protocol
                          decoder, a vendor SDK
 any member            -> a copy of a usd-motion-plugins or motion-connectors
@@ -299,7 +317,9 @@ requires:
 
 The root owns composition, not implementation:
 
-- bundle discovery and workspace-wide configuration
+- bundle discovery and workspace-wide configuration. A bundle is discovered
+  by its `openstrata.plugin.yaml`; `vrmImaging`, which has none (§1), is the
+  one plugin directory the root adds by name
 - integration tests (`tests/integration/`): schema+format, format+resolver,
   full composition, clean-install, aggregate packaging
 - the CI matrix (`openstrata.ci.yaml`) and generated lanes
@@ -356,7 +376,9 @@ carries it ([PACKAGE_CONTRACT.md §4.1](PACKAGE_CONTRACT.md)).
 
 **The product is declared, not discovered.** `openstrata.toml`'s
 `release_members` names the aggregate: the five bundles, `motion_retarget` and
-`vrm_export`.
+`vrm_export`. `vrmImaging` is not among them and has no artifact: with no
+`ost` plugin kind it has no descriptor to package, and it joins the product at
+imaging track Step I5.
 Packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH` when the discovered
 bundle and tool ids minus `release_exclude` are not exactly that list.
 `release_exclude` has been empty since MIG-4 took the three adapter CLIs it
