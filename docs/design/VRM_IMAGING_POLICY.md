@@ -26,11 +26,12 @@ owner: usd-vrm-plugins
 > Workspace Phase 0–8 ([roadmap](../roadmap/README.md#sequences)). The open
 > steps are the [imaging track](../roadmap/imaging-track.md).
 >
-> **Steps I0 and I1 implemented 2026-09-26** (`plugins/vrmImaging`). What
+> **Steps I0–I2 implemented 2026-09-26** (`plugins/vrmImaging`). What
 > Step I0 measured on OpenUSD 26.08 is §27. What Step I1 froze is §28: the
 > `vrm` locator hierarchy, and the decision to live with UsdImaging dirtying a
 > Material's whole network on every authored interface-input edit, which
-> never happens when time moves.
+> never happens when time moves. What Step I2 settled for the multiple-apply
+> texture schema is §29.
 
 ---
 
@@ -1288,7 +1289,7 @@ element.
 | --- | --- | --- |
 | `VrmMaterialAPI` | `vrm/material/<field>` | Step I1 |
 | `VrmMToonAPI` | `vrm/mtoon/<field>` | Step I0 |
-| `VrmTextureInfoAPI:<role>` | `vrm/textureInfo/<role>/<field>`, where a namespaced field nests: `transform:offset` is `transform/offset` | Step I2 (the rule is frozen here; the adapter is Step I2's) |
+| `VrmTextureInfoAPI:<role>` | `vrm/textureInfo/<role>/<field>`, where a namespaced field nests: `transform:offset` is `transform/offset` | Step I2 (the rule was frozen in Step I1; §29) |
 
 What a consumer may rely on:
 
@@ -1358,3 +1359,54 @@ runtime:
    `interfaceMappings` (`ComputeInterfaceInputConsumersMap`). The suites pin
    today's behaviour, so a runtime that narrows it fails the pin and is
    noticed.
+
+---
+
+## 29. Settled in Step I2
+
+Step I2 (`plugins/vrmImaging`, 2026-09-26) added the `VrmTextureInfoAPI`
+adapter, the first for a multiple-apply schema, on the same shared
+implementation as the other two (`vrmImaging_texture_info`). §28.1's rule
+applies to it unchanged. What it settled:
+
+1. **One contribution per applied role.** UsdImaging asks a multiple-apply
+   adapter once per applied instance, and passes the instance name. Each role
+   contributes `vrm/textureInfo/<role>`, and the overlay merges the roles
+   under one `textureInfo`, as it merges groups under one `vrm` (§28.1
+   item 2). A role's fields are read only from its own
+   `inputs:vrm:textureInfo:<role>:` properties. A role is never read under
+   another role's name: the suite gives each of the eleven its own image and
+   checks every one.
+2. **Only the roles the schema allows.** USD composes an instance name the
+   schema does not allow, such as `VrmTextureInfoAPI:bogus` authored in
+   `apiSchemas`, and UsdImaging then asks the adapter about it. The adapter
+   answers only for a role the registry allows
+   (`UsdSchemaRegistry::IsAllowedAPISchemaInstanceName`, which reads the
+   schema's `apiSchemaAllowedInstanceNames`), so the list lives in one place,
+   the schema. A role outside the list is not canonical data, and a consumer
+   never sees it. Measured: without the check, `bogus` reaches Hydra.
+3. **`file` is absent when it is unauthored.** It is the one texture field
+   with no fallback. The schema documents no default, and an empty path would
+   be a value the source never gave. So §28.1 item 3 is enforced as the rule
+   it states: a container lists a name only when that name resolves, and a
+   namespace only when one of its fields does. This changes nothing for
+   `VrmMaterialAPI` and `VrmMToonAPI`, because each of their fields has a
+   fallback or a documented default.
+4. **An image is an asset path, and it is never read** (§11). `file` is
+   UsdImaging's own asset-path data source, typed
+   `HdTypedSampledDataSource<SdfAssetPath>`. It carries the authored path and
+   the path the session's resolver gives it, and it follows UsdImaging's UDIM
+   handling. A path that does not resolve is still delivered, with an empty
+   resolved path, because it is still what the source says. Loading,
+   decoding, colour space and sampler objects are the renderer's. The role
+   fixes whether a texture is colour or data, as the schema says, and nothing
+   here restates that.
+5. **Invalidation is per role and per field.** Among the properties
+   UsdImaging hands over, each instance's call claims only those with its own
+   prefix. So an edit dirties `vrm/textureInfo/<role>/<field>`, and a nested
+   field dirties its nested locator (`.../transform/offset`). A `file`
+   appearing or disappearing dirties `.../file`, the same locator as a
+   changed value. Texture fields are Material interface inputs too, so an
+   authored edit also brings UsdImaging's whole-`material` dirtying (§27
+   item 6, lived with in §28.3). A time-sampled field, such as a UV rotation,
+   dirties its one locator when time moves, and never `material`.

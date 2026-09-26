@@ -1,6 +1,6 @@
 # The Hydra imaging track
 
-**Status:** 🚧 in progress — Steps I0–I1 shipped · **Target:** unscheduled
+**Status:** 🚧 in progress — Steps I0–I2 shipped · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
 
@@ -16,11 +16,12 @@ internal order, not a phase sequence.
 - The schemas it reads shipped with Product P5 Steps 3–4
   ([material track](material-track.md)): every imported material carries
   them, VRM 0.x and 1.0 alike, as Material interface inputs `inputs:vrm:*`.
-- `VrmMaterialAPI` and `VrmMToonAPI` reach Hydra (Steps I0–I1): every field
-  under `vrm/material/<field>` and `vrm/mtoon/<field>` of the material prim,
-  with per-field invalidation, under a locator hierarchy frozen in policy
-  §28. `VrmTextureInfoAPI` does not yet (Step I2), so a Hydra renderer can
-  read every non-texture canonical value but not which image a role samples.
+- All three canonical schemas reach Hydra (Steps I0–I2). Every field is
+  under `vrm/material/<field>`, `vrm/mtoon/<field>` or
+  `vrm/textureInfo/<role>/<field>` of the material prim, with per-field
+  invalidation, under a locator hierarchy frozen in policy §28. A Hydra
+  renderer can read every canonical value, and which image each role
+  samples, as an asset path it resolves and loads itself.
 - On every authored canonical edit UsdImaging also dirties the material's
   whole network, whatever reads it (policy §27 item 6). Step I1 measured
   that time never does, and decided to live with it (policy §28.3). Step I4
@@ -105,14 +106,39 @@ reads is not measured, because it has none yet (Step I3).
 Both adapters are one shared implementation that is given a schema name and
 a group. It names no field except `alphaMode`.
 
-### Step I2 — texture info ⬜
+### Step I2 — texture info ✅
 
-- ⬜ `VrmTextureInfoAPI:<role>`: all eleven allowed roles, with their
+- ✅ `VrmTextureInfoAPI:<role>`: all eleven allowed roles, with their
   multiple-apply instance identity preserved (policy §6.2, §17.6).
-- ⬜ Asset paths and sampling semantics exposed; no image loading (policy §11).
+- ✅ Asset paths and sampling semantics exposed; no image loading (policy §11).
 
 **Done when** a Hydra consumer can reconstruct the complete texture semantic
 record from data sources.
+
+**Shipped 2026-09-26.** Each condition, and where it is shown:
+
+- *the complete record* — `vrmImaging_texture_info` reads every field of a
+  role from `vrm/textureInfo/<role>/<field>`: `file` as an asset path, both
+  authored and resolved, plus `texCoord`, `wrapS`, `wrapT`, `scale`,
+  `strength` and `transform/{offset,rotation,scale}`. It reads them authored
+  and at their fallbacks. An unresolvable image is delivered with an empty
+  resolved path, and an unauthored `file` is absent, not empty
+  (policy §29 items 3–4). A mutation that lists every field fails;
+- *all eleven roles, identity preserved* — one material applies all eleven,
+  each with its own image, and each role reads its own. The suite's list is
+  checked against the schema's. A role the schema does not allow is not
+  exposed. A mutation that drops that check fails, because USD does compose
+  such a role (policy §29 item 2);
+- *invalidation* — six edits, each observed as its own role field and
+  nothing else of the contribution, including a nested `transform/offset`
+  and a `file` appearing and disappearing. A time-sampled UV rotation
+  dirties its one nested locator. Mutations that stop nesting, or that stop
+  telling one role's properties from another's, fail;
+- *no image loading* — nothing in the plugin reads a file. The resolved path
+  is UsdImaging's own asset-path data source.
+
+The shared implementation now binds an applied instance and nests a
+namespaced field. It still names no field except `alphaMode`, and no role.
 
 ### Step I3 — `hydra-toon` handshake ⬜
 

@@ -62,7 +62,7 @@ The canonical material schemas made visible to Hydra
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `vrmImaging` | plugin bundle (`usd-imaging`, [imaging track](../roadmap/imaging-track.md) Steps I0–I1; a bundle since `ost` 0.23.10, [ost report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)) | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session, which its descriptor declares as a bundle edge. A product member. |
+| `vrmImaging` | plugin bundle (`usd-imaging`, [imaging track](../roadmap/imaging-track.md) Steps I0–I2; a bundle since `ost` 0.23.10, [ost report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)) | A UsdImaging API-schema adapter per applied material schema, contributing `vrm/…` data sources to the Hydra material prim beside UsdImaging's `material` container, and one locator per changed canonical property. Describes what a VRM material says and nothing about how it is drawn: no shader, GPU resource, image loading or pipeline choice (`hydra-toon`'s). Links OpenUSD alone and needs `vrmSchema` registered in the session, which its descriptor declares as a bundle edge. A product member. |
 
 **What this workspace consumes is not listed here.** An identity in these
 tables is one this workspace builds. The shared motion packages are
