@@ -1,6 +1,6 @@
 # The Hydra imaging track
 
-**Status:** 🚧 in progress — Steps I0–I2 shipped · **Target:** unscheduled
+**Status:** 🚧 in progress — Steps I0–I3 shipped · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
 
@@ -27,9 +27,12 @@ internal order, not a phase sequence.
   that time never does, and decided to live with it (policy §28.3). Step I4
   inherits one condition: its high-frequency values arrive as time samples
   or through a scene index, not as per-frame authored edits.
-- `hydra-toon` has not chosen its read path: its MAT-Q1 (Renderer Phase 1)
-  lists an API-schema adapter per schema as a candidate, and `usd-mmd-plugins`
-  has fixed that shape for its own schemas (planned `mmdImaging`).
+- `hydra-toon` reads that data (Step I3). Its MAT-Q1 is answered for MToon
+  by this plugin's `vrm` container, read from the terminal scene index:
+  structural changes in the material Sprim's `Sync`, value-only changes by
+  observing the scene index, because no `Sync` follows them (policy §28.3
+  item 3). `usd-mmd-plugins` has fixed the same shape for its own schemas
+  (planned `mmdImaging`).
 - `vrmImaging` is an `ost` `usd-imaging` bundle and a member of the product
   (policy §19). `ost` 0.23.10 checks that the runtime has the usdImaging SDK
   and constructs both adapters from the package, but what they contribute
@@ -140,14 +143,28 @@ record from data sources.
 The shared implementation now binds an applied instance and nests a
 namespaced field. It still names no field except `alphaMode`, and no role.
 
-### Step I3 — `hydra-toon` handshake ⬜
+### Step I3 — `hydra-toon` handshake ✅
 
-- ⬜ `hydra-toon` selects MToon from `vrmImaging`'s data and normalizes it into
-  its own `ToonMaterial` (policy §8, §14) — that repository's work, answered
-  by its MAT-Q1.
-- ⬜ This repository's part: the data it reads is stable, and the renderer has
-  no VRM raw-JSON path, no importer dependency and no reading of `/preview` or
-  `/mtlx` (policy §17.7).
+- ✅ `hydra-toon` selects MToon from `vrmImaging`'s data and normalizes it into
+  its own `ToonMaterial` (policy §8, §14): the probe stage's material and all
+  12 of AliciaSolid's select MToon with `vrmSchema` and `vrmImaging` in the
+  session, and none without them
+  ([renderer report 03](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/03-2026-09-26-material-sprim.md)). A value-only
+  change reaches the same slot with no `Sync`
+  ([renderer report 04](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/04-2026-09-26-material-value-route.md); policy
+  §28.3 item 3).
+- ✅ This repository's part: the data it reads is the frozen locator hierarchy
+  (policy §28.1), and the renderer has no VRM raw-JSON path, no importer
+  dependency and no reading of `/preview` or `/mtlx` (policy §17.7). It
+  selects from the `vrm` container alone and links nothing of this
+  repository ([renderer report 02](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/02-2026-09-26-mat-q1-material-inputs.md)).
+- ✅ The same session in `testusdview`, composed as an `ost` Formation of the
+  `lookdev` runtime, the packaged `vrmImaging` and the renderer, run by
+  its own declared command
+  ([renderer report 06](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/06-2026-09-27-vrm-formation.md);
+  [hydra-toon ost report 06](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/ost/06-2026-09-27-v0.23.13-report-05-reverified.md)).
+  It pins this workstation's `vrmImaging`: a published `lookdev` package is
+  Step I5's.
 
 **Done when** `VrmMToonAPI` → `vrmImaging` → `ToonMaterial::MToon` works in
 `hydra-toon`.
@@ -178,6 +195,10 @@ slot without rebuilding geometry or shader pipelines.
 - ⬜ The scene-index suites run against the packaged plugin, not only the
   build tree. `ost`'s L2 proves the packaged adapters construct, not what
   they contribute.
+- ⬜ A published `lookdev` package of `vrmImaging`, so that a Formation
+  (`hydra-toon`'s VRM session, Step I3) can pin it from a registry rather
+  than from one workstation. The release lane publishes `usd` packages only,
+  and only as GitHub release assets.
 - ⬜ Diagnostics, numbered under the repository's policy (policy §18).
 
 ## 3. Non-goals
