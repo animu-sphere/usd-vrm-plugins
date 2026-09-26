@@ -171,6 +171,10 @@ endforeach()
 # `usd-motion-plugins`' `motion_record` now. What it authored still reaches an
 # avatar here, as a committed clip that motionRetarget's suite bakes.
 add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarget
+# An imported `.vrm` written as native `.usda` / `.usdc` / `.usdz`
+# (docs/design/VRM_EXPORT_POLICY.md). Its end-to-end test needs the three VRM
+# bundles above in the same tree.
+add_subdirectory("tools/vrmExport")
 
 # BVH-3's evaluation point: a recorded file onto a target rig, through
 # `motion_convert` and then an **unchanged** `motion_retarget`. The converter is
@@ -331,10 +335,10 @@ endif()
 # `motion_convert_clip` and `motion_bvh_inspect_report` there
 # (usd-motion-plugins #25). What that costs is stated rather than absorbed: the
 # claim "every executable this workspace ships opens a non-ASCII path" is now
-# over `motion_retarget` alone, which is every executable it ships, and the
-# rest of it is made where the executables went.
+# over `motion_retarget` and `vrm_export`, which is every executable it ships,
+# and the rest of it is made where the executables went.
 if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
-   AND TARGET motion_retarget
+   AND TARGET motion_retarget AND TARGET vrm_export
    AND TARGET UsdVrmFileFormat AND TARGET UsdVrmaFileFormat
    AND TARGET UsdVrmPackageResolver AND EXISTS "${_real_avatar}")
     set(_unicode_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
@@ -345,6 +349,7 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
         COMMAND "${USDVRM_TEST_PYTHON}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/paths/test_unicode_paths.py"
             --retarget "$<TARGET_FILE:motion_retarget>"
+            --export "$<TARGET_FILE:vrm_export>"
             --avatar "${_real_avatar}"
             --vrma "${_unicode_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
             --clip "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda")

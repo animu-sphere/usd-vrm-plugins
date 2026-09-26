@@ -15,6 +15,20 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vrm_export`: an imported `.vrm` as native `.usda`, `.usdc` or `.usdz`**
+  ([export track](docs/roadmap/export-track.md) Step 1;
+  [export policy](docs/design/VRM_EXPORT_POLICY.md)). A new CLI in the
+  product. `vrm_export avatar.vrm -o avatar.usdz` writes the imported stage's
+  root layer with every texture copied into `textures/` and referenced
+  relatively, and packages a `.usdz` with OpenUSD's own packaging; the result
+  opens in an OpenUSD session with **no VRM plugin** and no source `.vrm`.
+  `--check` reopens and validates the output, including OpenUSD's
+  `usdUtilsValidators` for a package; `--overwrite` replaces an existing
+  output, which is otherwise refused; the exit codes say which stage failed.
+  A `.usda` or `.usdc` writes its `textures/` next to itself. Inputs are
+  `.vrm` only. A `.usdc` or `.usdz` keeps every value but not the sign of a
+  zero in an integer-valued vector or array (OpenUSD's crate writer).
+
 - **MToon shading is approximated in MaterialX** (Product P5 Step 6, item 3;
   [material track](docs/roadmap/material-track.md)). An MToon material's
   `/mtlx` now draws `VRMC_materials_mtoon` 1.0's toon lighting — shade colour

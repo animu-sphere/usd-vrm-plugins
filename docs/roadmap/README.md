@@ -51,7 +51,7 @@ table.
 | release closure checklist and checkable invariants | Planned | unscheduled |
 | `ExecIr` invertible VRM humanoid rig | Planned | unscheduled |
 | MToon canonical semantics (Product P5) | In progress | unscheduled |
-| Native USD export (`vrm_export`) | Planned | unscheduled |
+| Native USD export (`vrm_export`) | In progress | unscheduled |
 
 How the motion tracks were ordered before they left this repository is
 [archive/motion-split/roadmap-orderings.md](../archive/motion-split/roadmap-orderings.md).

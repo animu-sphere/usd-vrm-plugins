@@ -121,13 +121,24 @@ ALLOWED: dict[str, frozenset[str]] = {
     "tools/motionRetarget": frozenset(
         {"motionCore", "motionRetarget", "motionSampling", "motionUsd"}),
     "tests/parity": frozenset({"motionCore", "motionRetarget", "motionSampling"}),
+    "tools/vrmExport": frozenset(),
 }
 
-# Workspace libraries a member may not reach: the importers read a file without
-# knowing which avatar it will drive, so VRM rig semantics are not theirs.
-FORBIDDEN_WORKSPACE: dict[str, frozenset[str]] = {
-    "plugins/usdVrmFileFormat": frozenset({"vrmRig"}),
-    "plugins/usdVrmaFileFormat": frozenset({"vrmRig"}),
+# Workspace libraries a member may not reach, and why. The importers read a
+# file without knowing which avatar it will drive, so VRM rig semantics are not
+# theirs. `vrm_export` reaches a `.vrm` through the plugin registry and links
+# OpenUSD alone (VRM_EXPORT_POLICY.md §4), so what the importer authors reaches
+# it as data and never as code.
+FORBIDDEN_WORKSPACE: dict[str, tuple[frozenset[str], str]] = {
+    "plugins/usdVrmFileFormat": (
+        frozenset({"vrmRig"}),
+        "this member reads its input without knowing the target rig"),
+    "plugins/usdVrmaFileFormat": (
+        frozenset({"vrmRig"}),
+        "this member reads its input without knowing the target rig"),
+    "tools/vrmExport": (
+        frozenset({"vrmRig", "vrmContainer", "vrmSchema"}),
+        "vrm_export opens a .vrm through the plugin registry and links no VRM identity"),
 }
 
 MEMBER_GLOBS = ("libs/*/CMakeLists.txt", "plugins/*/CMakeLists.txt",
@@ -414,12 +425,11 @@ def check_member(root: Path, member: str, report: Report) -> None:
             f"{member}: includes {pkg}/ headers without linking '{pkg}' -- the "
             f"edge is borrowed from another target's link line")
 
-    forbidden = FORBIDDEN_WORKSPACE.get(member, frozenset())
+    forbidden, reason = FORBIDDEN_WORKSPACE.get(member, (frozenset(), ""))
     reached = (resolved_packages(code) | linked_packages(code) | included_all)
     for name in sorted(forbidden & reached):
         report.error(
-            f"{member}: reaches the workspace library '{name}' -- this member "
-            f"reads its input without knowing the target rig")
+            f"{member}: reaches the workspace library '{name}' -- {reason}")
 
     for descriptor in DESCRIPTOR_GLOBS:
         path = base / descriptor
@@ -583,6 +593,9 @@ CASES: list[tuple[str, dict[str, str], str]] = [
     ("the .vrma importer knows the target rig",
      {"plugins/usdVrmaFileFormat/src/r.cpp": "#include <vrmRig/RequiredBones.h>\n"},
      "reaches the workspace library 'vrmRig'"),
+    ("vrm_export links the GLB reader",
+     {"tools/vrmExport/src/export/Glb.cpp": "#include <vrmContainer/GlbContainer.h>\n"},
+     "tools/vrmExport: reaches the workspace library 'vrmContainer' -- vrm_export opens"),
     ("the .vrma importer reaches the retarget",
      {"plugins/usdVrmaFileFormat/src/r.cpp": "#include <motionRetarget/RetargetMap.h>\n"},
      "plugins/usdVrmaFileFormat: reaches 'motionRetarget'"),

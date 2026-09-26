@@ -22,6 +22,13 @@ owner: usd-vrm-plugins
 > lands in is fixed by the
 > [status table](../roadmap/README.md#status-at-a-glance), and the open steps
 > are the [export track](../roadmap/export-track.md).
+>
+> **Step 1 implemented 2026-09-26.** Four things measured while building it
+> changed or sharpened a rule here: a `.usdz`'s root layer is
+> `defaultLayer.usdc`, not the output's name (§6.3); a localized name is
+> vrmContainer's hash, which is not quite FNV-1a (§6.2); crate outputs drop
+> the sign of some zeros (§9); and packaging an unlocalized layer copies the
+> whole `.vrm` into the package (§2).
 
 ---
 
@@ -76,6 +83,26 @@ OpenUSD 26.08 runtime, on 2026-09-25, over the vendored VRM 1.0 sample
 - `SdfZipFileWriter` stamps each archive entry with the **local-time
   modification time of the file it was added from**, so two exports of the
   same `.vrm` are not byte-identical (§9).
+
+Measured while Step 1 was built (2026-09-26), against the tool itself:
+
+- Packaged **without** localization, the layer's
+  `C:/…/textures.vrm[images/…]` paths make `UsdUtilsCreateNewUsdzPackage`
+  copy the **whole source `.vrm`** into the package, as `0/textures.vrm` —
+  the outcome §6.4 exists to prevent, and the reason localization comes
+  first. `--check` refuses that output.
+- `SdfZipFileWriter` writes an entry name's UTF-8 bytes **without the ZIP
+  UTF-8 flag** (general-purpose bit 11). OpenUSD reads such a name back
+  correctly; any other ZIP reader decodes it as CP437. Hence an ASCII root
+  layer name (§6.3).
+- OpenUSD's crate writer drops the sign of zero in integer-valued vectors and
+  float arrays — `Gf.Vec2f(-0.0, -0.0)` reads back as `(0, 0)` — while a
+  scalar float keeps its `-0.0`. The importer authors such zeros (MaterialX
+  `place2d` offsets, blend-shape offsets), so a `.usdc` or `.usdz` export is
+  numerically, not bit-for-bit, equal to its source (§9).
+- vrmContainer's `HashBytes` — the name the importer gives an embedded
+  image — uses the offset basis `1469598103934665603`, which is FNV-1a 64's
+  published `14695981039346656037` with its last digit missing (§6.2).
 
 ## 3. Responsibilities
 
@@ -215,11 +242,14 @@ edited in place. The session layer is not part of the output.
 Every asset path in the layer is resolved through `Ar` and its bytes are
 copied into the output:
 
-- A localized file is named `textures/<fnv1a64>.<ext>` — the FNV-1a 64-bit
-  hash of its bytes, as sixteen lowercase hex digits, and the source's
-  lowercase extension. For an embedded image that is the same name the
-  importer already gave it inside the `.vrm`; for an external image it
-  replaces a name that could collide with another avatar's.
+- A localized file is named `textures/<hash>.<ext>` — a 64-bit hash of its
+  bytes as sixteen lowercase hex digits, and the source's lowercase
+  extension. The hash is vrmContainer's `HashBytes`: FNV-1a's algorithm with
+  an offset basis one digit short of the published one (§2). It is kept so an
+  embedded image has the same name here as the importer gave it inside the
+  `.vrm`, where the resolver's package paths are frozen on it; for an
+  external image it replaces a name that could collide with another
+  avatar's.
 - It is referenced as `./textures/<name>` — anchored (§2).
 - Identical bytes are written once.
 - A path that does not resolve, or whose bytes cannot be read, fails the
@@ -236,14 +266,18 @@ file of the same name holds the same bytes. Decided 2026-09-25.
 `.usdz` is written by OpenUSD's own packaging, `UsdUtilsCreateNewUsdzPackage`,
 never by a ZIP writer of this repository:
 
-1. The localized layer is exported as `<output-stem>.usdc`, with its
-   `textures/`, into a temporary directory.
+1. The localized layer is exported as `defaultLayer.usdc`, with its
+   `textures/`, into a temporary directory. The name is fixed and ASCII: the
+   ZIP writer OpenUSD packages with sets no UTF-8 flag, so a non-ASCII output
+   name would reach other ZIP readers as CP437 (§2), and a fixed name keeps a
+   package's contents independent of its file name.
 2. `UsdUtilsCreateNewUsdzPackage` packages it into the output path. The root
    layer is the first entry, as the USDZ specification requires.
 3. The temporary directory is removed, whether packaging succeeded or not.
 
-The root layer is always crate. Entry names beyond the ones above are
-OpenUSD's to choose, and nothing here adds a convention of its own.
+The root layer is always crate, and every entry name is ASCII. Entry names
+beyond the ones above are OpenUSD's to choose, and nothing here adds a
+convention of its own.
 
 ### 6.4 The source `.vrm` is not included
 
@@ -287,6 +321,10 @@ separate process with no VRM plugin on `PXR_PLUGINPATH_NAME`.
 
 - `.usda` and `.usdc`: repeated exports of one `.vrm` are expected to be
   byte-identical, and Step 1's tests assert it for `.usda`.
+- **Equality with the source.** A `.usda` holds every authored value
+  bit-for-bit. A `.usdc` or `.usdz` holds every value numerically: the crate
+  writer drops the sign of zero in integer-valued vectors and float arrays
+  (§2). Step 1's tests compare accordingly.
 - `.usdz`: **not byte-identical in Step 1.** Each entry carries the
   modification time of the temporary file it was packaged from, encoded in
   local time (§2). Pinning those times before packaging makes repeated

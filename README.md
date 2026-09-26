@@ -65,6 +65,7 @@ walk.vrma  ─▶ usdVrmaFileFormat ─▶ /Animation  (semantic humanoid clip)
 | [`vrmContainer`](libs/vrmContainer) | GLB parsing and byte-range validation, shared by the importer and the resolver |
 | [`vrmRig`](libs/vrmRig) | What a VRM rig adds to the generic retarget: required bones, expression resolve, look-at |
 | [`motion_retarget`](tools/motionRetarget) | CLI: bakes a semantic clip onto a VRM rig as `UsdSkelAnimation` |
+| [`vrm_export`](tools/vrmExport) | CLI: writes an imported `.vrm` as native `.usda` / `.usdc` / `.usdz` that opens with no VRM plugin |
 | `usdVrm` | The aggregate product name — never a bundle id |
 
 Identities and dependency directions:
