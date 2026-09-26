@@ -52,8 +52,15 @@
 # on its own registers the `.vrm` format but cannot open a stage (see the
 # comment on the clean-install smoke step, and ost report 23).
 #
+# Beside the product, two `lookdev` cells build, test and package ONE bundle,
+# `vrmImaging`, against the canonical `lookdev` runtime (the one with usdview),
+# for a Formation of it and a Hydra renderer. The `publish` job pushes those
+# packages to GHCR and writes their pin table. Those packages are the only
+# thing this workflow puts in a registry.
+#
 # `workflow_dispatch` is a dry run: the same build/verify/package lanes, with
-# everything uploaded as workflow artifacts and no release object created.
+# everything uploaded as workflow artifacts, no registry write and no release
+# object created.
 #
 # Fork-PR safety: runs only on tag push / manual dispatch, never on
 # pull_request; the token stays read-only except for the release job.
@@ -115,6 +122,7 @@ jobs:
       matrix:
         include:
           - name: release-windows
+            lane: workspace
             cache_cell: usdvrmfileformat-pr-windows
             runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf"
@@ -127,6 +135,7 @@ jobs:
             # import ...`). The runner's default python is 3.12 -> pin 3.13.
             host_python: "3.13"
           - name: release-macos-arm64
+            lane: workspace
             cache_cell: usdvrmfileformat-pr-macos-arm64
             runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6"
@@ -135,11 +144,40 @@ jobs:
             runs_on: ["macos-15"]
             host_python: "3.13"
           - name: release-linux
+            lane: workspace
             cache_cell: usdvrmfileformat-pr-linux
             runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f"
             platform: cy2026
             profile: usd
+            runs_on: ["ubuntu-24.04"]
+            host_python: "3.13"
+          # The `lookdev` cells build ONE bundle, `vrmImaging`, against the
+          # canonical `lookdev` runtime, which carries usdview. That is the
+          # runtime a Formation of `vrmImaging` and a Hydra renderer runs on
+          # (hydra-toon's VRM usdview session), and a component in a Formation
+          # must be packaged for the Formation's runtime profile. The package
+          # carries the `vrmSchema` it was built against. It is not a product
+          # member: the product is the `usd` profile's. The `publish` job below
+          # pushes these packages to GHCR, so a Formation can pin them. Linux
+          # and Windows only: open-strata publishes no macOS `lookdev` leaf
+          # (0.23.12 plans the Metal one), and hydra-toon is Vulkan.
+          - name: release-lookdev-windows
+            lane: lookdev
+            cache_cell: vrmimaging-lookdev-windows
+            runtime_artifact: sha256:b982656c07dd9147973e3c7197d9b050ee48dd1ac291988f7e6025c76c4a785b
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-lookdev@sha256:b840ed4690aa39d4582bc03c0a09fa7bab717216635b55a4eb718482dbfb196b"
+            platform: cy2026
+            profile: lookdev
+            runs_on: ["windows-2022"]
+            host_python: "3.13"
+          - name: release-lookdev-linux
+            lane: lookdev
+            cache_cell: vrmimaging-lookdev-linux
+            runtime_artifact: sha256:7b41fe89f1c4b868ac6af73bc0593a24aa3ce4952fcf4fe4d96d0ae1724f3f34
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-lookdev@sha256:d0dfa81e6bf7bbc19b0b0a5185d4eda789bbb38546505c236311c348b001980f"
+            platform: cy2026
+            profile: lookdev
             runs_on: ["ubuntu-24.04"]
             host_python: "3.13"
     steps:
@@ -304,9 +342,11 @@ jobs:
       # `plugin package` fail closed with PLUGIN_PACKAGE_OUTPUT_MISMATCH. Root
       # build first, per-bundle builds second. See ost report 33 §4.
       - name: Build the workspace root tree (plain libraries + CLI tools)
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: ost build --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --progress plain
       - name: Build every bundle from source (dependency order)
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -337,15 +377,18 @@ jobs:
             echo "::endgroup::"
           done
       - name: Run the verification pyramid against the build tree (whole workspace)
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: ost plugin test --workspace --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
       - name: Package the workspace (lean bundles + aggregate product + split debug symbols)
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .ost-ci
           ost plugin package --workspace --product --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
       - name: Prove packaging is digest-reproducible
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -367,6 +410,7 @@ jobs:
       # step that fails -- by library and bundle -- when the build order above
       # stops putting a binary in the prefix (ost report 40).
       - name: Verify every bundle carries the shared libraries it records
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -383,6 +427,7 @@ jobs:
       # opens, validates, and texture-resolves real models across the composed
       # product. See ost reports 23 and 26.
       - name: Verify the packaged artifacts, composed (clean-install smoke)
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
       # The BVH path's artifact-only run left with MIG-3. It drove the
@@ -400,6 +445,7 @@ jobs:
       # registration and requires a refusal. The display suite left with
       # execMotion (MIG-2).
       - name: Evaluate the exec bundles from the product alone
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -410,9 +456,11 @@ jobs:
           fi
           python scripts/artifact_only_exec_smoke.py --product "$(dirname "$product")"
       - name: Verify the packaged VRMA reader independently
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: ost plugin test plugins/usdVrmaFileFormat --from-package --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
       - name: Stage the release artifacts
+        if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -493,16 +541,190 @@ jobs:
           fi
           cp "$product_archive" release-stage/
           ls -l release-stage/
+      # The `lookdev` lane. `ost` 0.23.11 keeps the workspace's default pin:
+      # a `--profile lookdev` build writes its own
+      # `strata.<runtime-id>.lock`, and `plugin package` reads that one, so
+      # this lane never touches `strata.lock`. It needs no root build: the
+      # two bundles link no workspace library, so the root tree's rewrite of
+      # bundle outputs (ost report 33 section 4) never applies here.
+      - name: Build vrmSchema and vrmImaging for the lookdev runtime
+        if: ${{ matrix.lane == 'lookdev' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for bundle in plugins/vrmSchema plugins/vrmImaging; do
+            echo "::group::build $bundle"
+            ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            echo "::endgroup::"
+          done
+      - name: Run the verification pyramid against vrmImaging (lookdev)
+        if: ${{ matrix.lane == 'lookdev' }}
+        shell: bash
+        run: ost plugin test plugins/vrmImaging --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
+      - name: Package vrmImaging twice and stage it (lookdev)
+        if: ${{ matrix.lane == 'lookdev' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci release-stage oci-stage
+          package() {
+            ost plugin package plugins/vrmImaging --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > "$1"
+          }
+          package .ost-ci/package-lookdev.json
+          package .ost-ci/package-lookdev-second.json
+          first="$(jq -er '.data.archive_digest' .ost-ci/package-lookdev.json)"
+          second="$(jq -er '.data.archive_digest' .ost-ci/package-lookdev-second.json)"
+          if [ "$first" != "$second" ]; then
+            echo "::error title=release packaging::two packagings of the same vrmImaging build disagree ($first, $second)" ; exit 1
+          fi
+          archive="$(jq -er '.data.archive' .ost-ci/package-lookdev.json)"
+          target="$(jq -er '.data.target' .ost-ci/package-lookdev.json)"
+          if command -v cygpath > /dev/null; then archive="$(cygpath -u "$archive")"; fi
+          dist_dir="$(dirname "$archive")"
+          version="$(jq -er '.plugin.version' "$dist_dir/manifest.json")"
+          case "$target" in
+            *-lookdev) ;;
+            *) echo "::error title=release packaging::the lookdev lane packaged target $target" ; exit 1 ;;
+          esac
+          # Flat files join the GitHub release beside the usd packages. The
+          # import directory (archive, manifest, SBOM, checksums) is what
+          # `ost artifact import` takes, and goes to the publish job alone.
+          cp "$archive" release-stage/
+          cp "$dist_dir/manifest.json" "release-stage/vrmImaging-${version}-${target}.manifest.json"
+          mkdir -p "oci-stage/vrmImaging-${target}"
+          cp -R "$dist_dir/." "oci-stage/vrmImaging-${target}/"
+          printf '%s\t%s\t%s\t%s\n' vrmImaging "$version" "$target" "$first" > "oci-stage/vrmImaging-${target}/publish.tsv"
+          cat "oci-stage/vrmImaging-${target}/publish.tsv"
+          ls -l release-stage/
       - name: Upload the staged artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-${{ matrix.name }}
           path: release-stage/
           if-no-files-found: error
+      - name: Upload the package to publish (lookdev)
+        if: ${{ matrix.lane == 'lookdev' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: oci-${{ matrix.name }}
+          path: oci-stage/
+          if-no-files-found: error
+
+  # Pushes the `lookdev` packages to GHCR, one repository tagged per package
+  # and target (`<name>-<version>-<target>`), the shape usd-motion-plugins
+  # publishes and open-strata uses for its runtime leaves. The `usd` packages
+  # stay GitHub release assets only: nothing pins them from a registry yet.
+  # The output is a pin table from what was actually pushed: the archive
+  # digest a Formation names as `artifact`, and the OCI manifest digest to
+  # pull it from, which changes on every republish. It ships as a release
+  # asset and in the notes.
+  #
+  # A first push creates the GHCR package PRIVATE. Making it public is a
+  # one-time manual step in the package settings, which is why everything
+  # goes to one repository. `ost` does not read the docker credential store;
+  # a push needs user + password.
+  #
+  # A dry run imports and lists the packages, pushes nothing, and writes the
+  # table with no source.
+  publish:
+    name: publish the lookdev packages
+    needs: [preflight, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      OST_HOME: ${{ format('{0}/.ost-ci-home', github.workspace) }}
+      OCI_REPOSITORY: "ghcr.io/animu-sphere/usd-vrm-plugins"
+      OST_REGISTRY_USER: ${{ github.actor }}
+      OST_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Download the packages to publish
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: oci-*
+          path: oci-staged
+      - name: Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="ost-cli-x86_64-unknown-linux-musl.tar.xz"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.13"
+          curl -fsSLo "$asset" "$base/$asset"
+          curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
+          actual="$(sha256sum "$asset" | cut -d' ' -f1)"
+          published="$(cut -d' ' -f1 "$asset.sha256")"
+          if [ "$actual" != "$published" ]; then
+            echo "::error title=ost bootstrap::$asset hashes to $actual but the release publishes $published" ; exit 1
+          fi
+          mkdir -p .ost-ci/bootstrap-bin
+          tar -xf "$asset" -C .ost-ci/bootstrap-bin
+          bin="$(find .ost-ci/bootstrap-bin -type f -name ost | head -n 1)"
+          chmod +x "$bin"
+          echo "$(cd "$(dirname "$bin")" && pwd)" >> "$GITHUB_PATH"
+      - name: Import every package into the local registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci
+          : > .ost-ci/artifacts.tsv
+          for dir in oci-staged/*/*/; do
+            [ -f "$dir/manifest.json" ] || { echo "::error title=publish::$dir has no manifest.json" ; exit 1 ; }
+            ost artifact import "$dir" --json > /dev/null
+            cat "$dir/publish.tsv" >> .ost-ci/artifacts.tsv
+          done
+          # One row per lookdev cell that uploaded, counted from what arrived
+          # rather than written here.
+          want="$(ls -d oci-staged/*/ | wc -l | tr -d ' ')"
+          have="$(wc -l < .ost-ci/artifacts.tsv | tr -d ' ')"
+          if [ "$want" -eq 0 ] || [ "$have" -ne "$want" ]; then
+            echo "::error title=publish::$want lookdev cell(s) uploaded, $have package row(s) read" ; exit 1
+          fi
+          cat .ost-ci/artifacts.tsv
+      - name: Push each package to the OCI repository
+        if: ${{ needs.preflight.outputs.is_release == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > .ost-ci/pushed.tsv
+          while IFS=$'\t' read -r name ver target digest; do
+            tag="${name}-${ver}-${target}"
+            out=".ost-ci/push-${tag}.json"
+            ost artifact push "$digest" "oci://${OCI_REPOSITORY}:${tag}" --json > "$out" < /dev/null
+            oci="$(jq -er '.data.oci_digest' "$out")"
+            art="$(jq -er '.data.artifact_digest' "$out")"
+            if [ "$art" != "$digest" ]; then
+              echo "::error title=publish::pushing $tag reported artifact digest $art, expected $digest" ; exit 1
+            fi
+            printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$ver" "$target" "$digest" "$oci" >> .ost-ci/pushed.tsv
+            echo "pushed $tag -> $oci"
+          done < .ost-ci/artifacts.tsv
+      - name: Build the pin table
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.preflight.outputs.is_release }}" = "true" ]; then
+            rows=.ost-ci/pushed.tsv
+          else
+            rows=.ost-ci/artifacts.tsv
+          fi
+          python3 scripts/make_lookdev_pins.py --rows "$rows" \
+            --version "${{ needs.preflight.outputs.version }}" \
+            --repository "${OCI_REPOSITORY}" --out pins \
+            $([ "${{ needs.preflight.outputs.is_release }}" = "true" ] && echo --published)
+          cat pins/lookdev-package-pins.md
+      - name: Upload the pin table
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-pins
+          path: pins/
+          if-no-files-found: error
 
   release:
     name: assemble release (draft)
-    needs: [preflight, build]
+    needs: [preflight, build, publish]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -542,6 +764,9 @@ jobs:
             --version "${{ needs.preflight.outputs.version }}" \
             --checksums dist-release/SHA256SUMS \
             --out release-notes.md $extra
+          # The lookdev pin table, from the publish job (`release-pins`).
+          printf '\n' >> release-notes.md
+          cat dist-release/lookdev-package-pins.md >> release-notes.md
           cat release-notes.md
       - name: Create the draft GitHub release
         if: ${{ needs.preflight.outputs.is_release == 'true' }}
