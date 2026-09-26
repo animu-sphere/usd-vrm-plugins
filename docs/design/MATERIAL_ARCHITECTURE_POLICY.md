@@ -408,23 +408,33 @@ canonical semantics and adds no requirement to the canonical representation.
 Consistent with DESIGN_POLICY §9 Layer 3, renderer-specific shader
 implementations are not coupled into the file-format plugin.
 
-The renderer this is planned against is **`hydra-toon`**, a separate
-repository (not yet created), which reads `VrmMToonAPI` and
-`VrmTextureInfoAPI` directly:
+The renderer this is planned against is **[`hydra-toon`](https://github.com/animu-sphere/hydra-toon)**, a
+separate repository. It reads the canonical schemas through Hydra, as
+**`vrmImaging`** exposes them — a UsdImaging adapter per applied schema, in
+this repository ([imaging policy](VRM_IMAGING_POLICY.md)) — and not by
+querying the stage:
 
 ```text
-usd-vrm-plugins  →  VrmMToonAPI / VrmTextureInfoAPI  →  hydra-toon
+usd-vrm-plugins  →  VrmMaterialAPI / VrmMToonAPI / VrmTextureInfoAPI
+                 →  vrmImaging (Hydra data sources)  →  hydra-toon
 ```
+
+That read path was changed on 2026-09-26: until then this section said
+`hydra-toon` read the schemas "directly". A renderer normally consumes what
+UsdImaging hands it, and reaching back into the stage would bypass Hydra's
+invalidation and put schema interpretation inside the renderer (imaging
+policy §2).
 
 #### 5.3.1 The boundary with `hydra-toon`
 
 | | `usd-vrm-plugins` | `hydra-toon` |
 | --- | --- | --- |
-| Owns | VRM parsing; VRM 0.x / 1.0 normalization; MToon and texture semantics; the USD schemas; the PreviewSurface fallback; the portable MaterialX realization; raw source preservation | consuming `VrmMToonAPI`; the full MToon realization (toon lighting, shade, shading shift and toony, GI equalization, rim, MatCap, outline, UV animation, MToon transparency, render ordering); an MMD toon realization; Vulkan and WebGPU shaders; runtime material evaluation |
+| Owns | VRM parsing; VRM 0.x / 1.0 normalization; MToon and texture semantics; the USD schemas; their Hydra view (`vrmImaging`); the PreviewSurface fallback; the portable MaterialX realization; raw source preservation | consuming `VrmMToonAPI`; the full MToon realization (toon lighting, shade, shading shift and toony, GI equalization, rim, MatCap, outline, UV animation, MToon transparency, render ordering); an MMD toon realization; Vulkan and WebGPU shaders; runtime material evaluation |
 | Does not own | a full MToon raster implementation; an outline renderer; any Vulkan or WebGPU pipeline; renderer-specific shading tricks | the source formats, or the meaning of any canonical attribute |
 
-**The contract between the two is the USD schema and nothing else.** Neither
-links the other, and neither reads the other's generated graphs: `hydra-toon`
+**The contract between the two is the USD schema and nothing else.**
+`vrmImaging`'s Hydra data is a view of that schema owned here, not a second
+contract (imaging policy §6.2). Neither links the other, and neither reads the other's generated graphs: `hydra-toon`
 does not start from `/mtlx`, and nothing here is shaped to suit one renderer's
 pipeline.
 
