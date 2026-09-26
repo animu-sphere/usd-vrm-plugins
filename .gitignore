@@ -6,6 +6,9 @@
 **/.strata/
 CMakeUserPresets.json
 strata.lock
+# Since ost 0.23.11 a build for a non-default selection (`--profile lookdev`)
+# writes its own `strata.<runtime-id>.lock` beside strata.lock.
+strata.*.lock
 
 # Built plugin libraries are staged into each bundle's lib/ by `ost plugin build`.
 **/lib/
