@@ -272,6 +272,16 @@ Current schema contract version: **1**.
   0.23.5 packages from does not carry that file. This reproduces from a clean
   tree and does not happen under 0.23.4. Until `ost` fixes it, `release.yml`
   cannot package.
+- **The `ost` pin is 0.23.13.** 0.23.11–0.23.13 let a Formation of the
+  `lookdev` runtime, `vrmImaging` and `hydra-toon`'s renderer resolve, lock
+  and run its own `testusdview` command
+  ([hydra-toon ost report 06](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/ost/06-2026-09-27-v0.23.13-report-05-reverified.md)).
+  They also let a plugin build and package for `--profile lookdev` without
+  re-pinning the workspace's default lock: that build writes its own
+  `strata.<runtime-id>.lock`, which `.gitignore` now ignores beside
+  `strata.lock`. The pin, the regenerated `ost-source-ci.yml` and
+  `release.yml`'s mirrors change as before. Root `ost build` and `ost test`
+  pass locally on Windows (50/50).
 - **The `ost` pin is 0.23.10**, whose `usd-imaging` kind the `usd` profile
   can select: it checks the runtime's usdImaging SDK and no longer requires
   the `lookdev`-only `hydra-preview`. The pin, the regenerated
