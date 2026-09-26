@@ -20,7 +20,6 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/dataSource.h>
-#include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/usd/usd/primDefinition.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usdImaging/usdImaging/dataSourceAttribute.h>
@@ -84,6 +83,34 @@ bool _IsField(const TfToken& field)
     return std::binary_search(fields.begin(), fields.end(), field);
 }
 
+// One named child, which is all the two outer levels (`vrm`, `mtoon`) are.
+// HdRetainedContainerDataSource would do, but hd/retainedDataSource.h does not
+// compile as C++20 under GCC 13 -- OpenUSD 26.08 declares a constructor there
+// as `HdRetainedTypedSampledDataSource<bool>(...)`, a template-id C++20 no
+// longer accepts in that position -- and `ost`'s toolchain compiles C++20.
+// MSVC accepts it, so only the Linux lane shows it.
+class _ChildContainer : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_ChildContainer);
+
+    TfTokenVector GetNames() override { return {_name}; }
+
+    HdDataSourceBaseHandle Get(const TfToken& name) override
+    {
+        return name == _name ? _child : nullptr;
+    }
+
+private:
+    _ChildContainer(const TfToken& name, const HdDataSourceBaseHandle& child)
+        : _name(name), _child(child)
+    {
+    }
+
+    TfToken _name;
+    HdDataSourceBaseHandle _child;
+};
+
 // One field per name, each the attribute's resolved value at the scene
 // index's time -- the schema fallback included, so a consumer never has to
 // know the schema's defaults. Built lazily, and sampled rather than copied, so
@@ -139,9 +166,9 @@ UsdVrmImagingMToonAPIAdapter::GetImagingSubprimData(
     }
     // Beside the prim adapter's `material` container, never inside it: the
     // portable networks stay as the realizations authored them (policy §6.1).
-    return HdRetainedContainerDataSource::New(
+    return _ChildContainer::New(
         _tokens->vrm,
-        HdRetainedContainerDataSource::New(
+        _ChildContainer::New(
             _tokens->mtoon, _MToonDataSource::New(prim, stageGlobals)));
 }
 

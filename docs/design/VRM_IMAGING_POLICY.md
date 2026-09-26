@@ -1245,6 +1245,14 @@ what it found:
    waits on that kind (Step I5).
 10. **The §25 fixture could not tell authored from fallback.** Its 0.9 is
     `shadingToonyFactor`'s schema fallback. The fixture and §25 use 0.35.
+11. **`hd/retainedDataSource.h` does not compile as C++20 under GCC 13.**
+    OpenUSD 26.08 declares a constructor there as
+    `HdRetainedTypedSampledDataSource<bool>(const bool&)`, a template-id
+    that C++20 no longer accepts in that position. `ost`'s toolchain compiles
+    C++20, so an adapter that includes the header breaks the Linux lane while
+    MSVC accepts it. `vrmImaging` includes none of it and nests its two outer
+    containers with a private one-child container. Reproduced with GCC 13.3
+    `-std=c++20` against the Linux leaf.
 
 Not measured: the Hydra path `hydra-toon` will read (§20 Step I0's last
 item). `hydra-toon` has no material path yet — its MAT-Q1 is Renderer
