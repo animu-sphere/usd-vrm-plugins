@@ -9,6 +9,8 @@ a narrow `std::ifstream` opens a string in that same code page. So until
 test had ever handed a tool one:
 
   * `motion_retarget` could not find the avatar;
+  * (`vrm_export` arrived after the fix, and is held to it from its first
+    commit: the second executable this workspace ships);
   * `motion_bvh_convert` read `é` as `e` and could not open the file -- a claim
     `usd-motion-plugins`' `motion_convert_clip` makes since MIG-3, where the
     converter went;
@@ -44,6 +46,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 from pxr import Ar, Sdf, Usd, UsdSkel
 
@@ -269,6 +272,17 @@ def legs(failures: Failures, arguments: argparse.Namespace,
         "--avatar", avatar, "--animation", vrma,
         "--output", out["vrma_bake"], "--quiet")
 
+    # An imported avatar written as native USD (VRM_EXPORT_POLICY.md). A
+    # `.usda` names its textures by content hash, so from either directory it
+    # is the same bytes; a `.usdz` names every entry in ASCII, because the ZIP
+    # writer OpenUSD packages with sets no UTF-8 flag (policy §6.3).
+    out["export_usda"] = workspace.name("export", "書き出し", ".usda")
+    run(failures, "vrm_export (.usda)", arguments.export,
+        avatar, "-o", out["export_usda"], "--check")
+    out["export_usdz"] = workspace.name("export", "書き出し", ".usdz")
+    run(failures, "vrm_export (.usdz)", arguments.export,
+        avatar, "-o", out["export_usdz"], "--check")
+
     # The live path left with MIG-4: the three recorders to `motion-connectors`
     # and `motion_capture` to `usd-motion-plugins`, as `motion_record`, whose
     # own suite replays a trace from a directory no ANSI code page can spell.
@@ -278,6 +292,7 @@ def legs(failures: Failures, arguments: argparse.Namespace,
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--retarget", type=pathlib.Path, required=True)
+    parser.add_argument("--export", type=pathlib.Path, required=True)
     for data in ("avatar", "vrma", "clip"):
         parser.add_argument(f"--{data}", type=pathlib.Path, required=True)
     arguments = parser.parse_args()
@@ -308,6 +323,22 @@ def main() -> int:
                 check_bake_composes(failures, leg, unicode[key],
                                     unicode["avatar"])
                 check_same_animation(failures, leg, unicode[key], ascii_[key])
+
+        if unicode["export_usda"].exists() and ascii_["export_usda"].exists():
+            failures.check(
+                unicode["export_usda"].read_bytes()
+                == ascii_["export_usda"].read_bytes(),
+                "vrm_export (.usda): the export from a non-ASCII directory "
+                "differs from its ASCII twin")
+        if failures.check(unicode["export_usdz"].exists(),
+                          f"{unicode['export_usdz'].name} was not written"):
+            with zipfile.ZipFile(unicode["export_usdz"]) as package:
+                names = package.namelist()
+            failures.check(
+                names[:1] == ["defaultLayer.usdc"]
+                and all(name.isascii() for name in names),
+                f"vrm_export (.usdz): the entries are {names[:3]}, not "
+                f"defaultLayer.usdc and ASCII texture names")
 
         check_plugin_host(failures, unicode["avatar"], ascii_["avatar"],
                           unicode["vrma"], ascii_["vrma"])

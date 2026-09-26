@@ -1,0 +1,15 @@
+# OpenStrata workspace-tool descriptor. vrm_export is a user-facing deliverable
+# no bundle requires, so the workspace graph never reaches it; this descriptor
+# is what lets `ost plugin package --workspace --product` ship it.
+#
+# It requires no library: it links OpenUSD alone and reaches a `.vrm` through
+# the plugin registry at run time (docs/design/VRM_EXPORT_POLICY.md §4). The
+# three VRM bundles it opens a `.vrm` with are the product's members already.
+schema: openstrata.tool/v1alpha1
+tool:
+  id: vrm_export
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.9.0
+  license: Apache-2.0
+executables: [vrm_export]
+directories: [bin]

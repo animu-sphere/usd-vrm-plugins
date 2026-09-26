@@ -75,3 +75,4 @@ Component-specific docs live with their component, not here:
 | `vrmContainer` | [README](../libs/vrmContainer/README.md) |
 | `vrmRig` | [README](../libs/vrmRig/README.md) |
 | `motion_retarget` | [README](../tools/motionRetarget/README.md) |
+| `vrm_export` | [README](../tools/vrmExport/README.md) |

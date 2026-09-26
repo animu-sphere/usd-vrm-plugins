@@ -50,6 +50,7 @@ members = [
   "libs/vrmContainer",
   "libs/vrmRig",
   "tools/motionRetarget",
+  "tools/vrmExport",
 ]
 release_members = [
   "vrmSchema",
@@ -58,6 +59,7 @@ release_members = [
   "usdVrmaFileFormat",
   "usdVrmPackageResolver",
   "motion_retarget",
+  "vrm_export",
 ]
 # Empty since MIG-4: the three adapter CLIs it named left for
 # `motion-connectors`, and `ost` refuses an exclusion naming a member it does
