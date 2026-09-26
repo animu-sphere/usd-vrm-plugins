@@ -15,6 +15,18 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vrmImaging`: `VrmMaterialAPI` as Hydra data, and the `vrm` locator
+  hierarchy frozen** ([imaging track](docs/roadmap/imaging-track.md) Step I1;
+  [imaging policy](docs/design/VRM_IMAGING_POLICY.md) §28). Every
+  `VrmMaterialAPI` field reaches a Hydra consumer under `vrm/material/<field>`,
+  beside `vrm/mtoon/<field>` in the same `vrm` container, with per-field
+  invalidation. Unauthored `alphaMode`, which has no schema fallback, reads as
+  the schema's documented `OPAQUE`. The locator rule is frozen for all three
+  canonical schemas: `inputs:vrm:<group>:<name>` is `vrm/<group>/<name>`.
+  UsdImaging still dirties a material's whole network on every authored
+  canonical edit. The suite shows that a time move never does, and the policy
+  records the decision to live with it. The plugin is still in no package.
+
 - **`vrmImaging`: `VrmMToonAPI` as Hydra data on the material prim**
   ([imaging track](docs/roadmap/imaging-track.md) Step I0;
   [imaging policy](docs/design/VRM_IMAGING_POLICY.md)). A UsdImaging
