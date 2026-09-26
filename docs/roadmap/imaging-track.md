@@ -1,6 +1,6 @@
 # The Hydra imaging track
 
-**Status:** 🚧 in progress — Step I0 shipped · **Target:** unscheduled
+**Status:** 🚧 in progress — Steps I0–I1 shipped · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
 
@@ -16,14 +16,16 @@ internal order, not a phase sequence.
 - The schemas it reads shipped with Product P5 Steps 3–4
   ([material track](material-track.md)): every imported material carries
   them, VRM 0.x and 1.0 alike, as Material interface inputs `inputs:vrm:*`.
-- `VrmMToonAPI` reaches Hydra (Step I0): every field under
-  `vrm/mtoon/<field>` of the material prim, with per-field invalidation.
-  `VrmMaterialAPI` and `VrmTextureInfoAPI` do not yet. Without them a Hydra
-  renderer sees only the `/preview` or `/mtlx` network, and no realization
-  connects to a canonical input.
-- On every canonical edit UsdImaging also dirties the material's whole
-  network, whatever reads it (policy §27 item 6). That is outside this
-  plugin and open for Step I4.
+- `VrmMaterialAPI` and `VrmMToonAPI` reach Hydra (Steps I0–I1): every field
+  under `vrm/material/<field>` and `vrm/mtoon/<field>` of the material prim,
+  with per-field invalidation, under a locator hierarchy frozen in policy
+  §28. `VrmTextureInfoAPI` does not yet (Step I2), so a Hydra renderer can
+  read every non-texture canonical value but not which image a role samples.
+- On every authored canonical edit UsdImaging also dirties the material's
+  whole network, whatever reads it (policy §27 item 6). Step I1 measured
+  that time never does, and decided to live with it (policy §28.3). Step I4
+  inherits one condition: its high-frequency values arrive as time samples
+  or through a scene index, not as per-frame authored edits.
 - `hydra-toon` has not chosen its read path: its MAT-Q1 (Renderer Phase 1)
   lists an API-schema adapter per schema as a candidate, and `usd-mmd-plugins`
   has fixed that shape for its own schemas (planned `mmdImaging`).
@@ -70,15 +72,38 @@ frozen name: every `VrmMToonAPI` field rather than one, because the field set
 is derived from the schema rather than listed. The Hydra path `hydra-toon`
 reads is not measured, because it has none yet (Step I3).
 
-### Step I1 — material core ⬜
+### Step I1 — material core ✅
 
-- ⬜ `VrmMaterialAPI`: every field, with per-field invalidation (policy §6.2,
+- ✅ `VrmMaterialAPI`: every field, with per-field invalidation (policy §6.2,
   §9). `VrmMToonAPI`'s fields already reach Hydra (Step I0).
-- ⬜ An answer to UsdImaging dirtying the whole network on every canonical
+- ✅ An answer to UsdImaging dirtying the whole network on every canonical
   edit (policy §27 item 6), or a recorded decision to live with it.
-- ⬜ The `vrm` locator hierarchy frozen, from what Step I0 measured.
+- ✅ The `vrm` locator hierarchy frozen, from what Step I0 measured.
 
 **Done when** every non-texture canonical value has Hydra coverage.
+
+**Shipped 2026-09-26.** Each condition, and where it is shown:
+
+- *every non-texture canonical value* — `vrmImaging_material` reads all ten
+  `VrmMaterialAPI` fields, authored and fallback, beside `VrmMToonAPI`'s
+  nineteen (`vrmImaging_mtoon`), both under one `vrm` container. The one
+  field without a schema fallback, `alphaMode`, reads as the schema's
+  documented `OPAQUE` (policy §28.2). A mutation that drops it fails;
+- *per-field invalidation* — four edits, each observed as its own
+  `vrm/material/<field>`. A mutation that dirties `vrm/<group>` instead fails
+  both suites;
+- *the whole-material dirtying* — lived with (policy §28.3). An authored
+  edit dirties `material`, pinned, whether a network reads the input or not.
+  A time move never does: a time-sampled input no network reads dirties its
+  `vrm` locator alone, and one the network reads dirties that and the one
+  reading parameter;
+- *the hierarchy* — one rule, `inputs:vrm:<group>:<name>` at
+  `vrm/<group>/<name>`, frozen for all three schemas (policy §28.1), with no
+  public header: a consumer spells the tokens, and the suites spell them
+  literally.
+
+Both adapters are one shared implementation that is given a schema name and
+a group. It names no field except `alphaMode`.
 
 ### Step I2 — texture info ⬜
 

@@ -10,18 +10,26 @@ It describes what a VRM material says. How that is drawn is a renderer's
 decision — `hydra-toon`'s for MToon — and nothing here is shader code, a GPU
 resource, an image loader or a pipeline choice.
 
-## What exists: Step I0, `VrmMToonAPI`
+## What exists: Steps I0–I1
 
 | Adapter | Applied schema | Contribution on the material prim |
 | --- | --- | --- |
+| `UsdVrmImagingMaterialAPIAdapter` | `VrmMaterialAPI` | `vrm/material/<field>`: one sampled data source per field |
 | `UsdVrmImagingMToonAPIAdapter` | `VrmMToonAPI` | `vrm/mtoon/<field>`: one sampled data source per field |
 
+Both are `UsdVrmImagingSchemaAdapter` given a schema name and a group.
+`VrmTextureInfoAPI` is Step I2.
+
 - **Field names are the schema's.** Every property of the registered
-  `VrmMToonAPI` definition named `inputs:vrm:mtoon:<field>` becomes `<field>`.
-  No field is named in the code, and a property authored under that prefix
-  that the schema does not define is never exposed.
+  definition named `inputs:vrm:<group>:<field>` becomes `vrm/<group>/<field>`
+  (policy §28.1). No field is named in the code, and a property authored under
+  that prefix that the schema does not define is never exposed.
+- **One `vrm` container.** UsdImaging overlays the adapters' contributions, so
+  a material with both schemas has one `vrm` holding `material` and `mtoon`.
 - **Values are resolved.** An unauthored field carries its schema fallback, so
-  a consumer never restates the schema's defaults.
+  a consumer never restates the schema's defaults. `alphaMode`, which the
+  schema cannot give a fallback, reads as its documented `OPAQUE`
+  (policy §28.2).
 - **Values are sampled, not copied.** A time-sampled attribute follows the
   scene index's time, and moving the time dirties that field alone.
 - **Invalidation is per field.** An edit of `inputs:vrm:mtoon:<field>` dirties
@@ -30,17 +38,21 @@ resource, an image loader or a pipeline choice.
   UsdImaging's `material` container, never inside it, so `/preview` and
   `/mtlx` reach Hydra as they always have.
 
-The `vrm` locator hierarchy is **not frozen**: it is the Step I0 experiment's
-shape, and there is no public header for it until Step I1 settles it.
+The `vrm` locator hierarchy is **frozen** (policy §28.1). There is no public
+header: a Hydra consumer spells the tokens itself and links nothing of this
+repository.
 
 ### What it does not control
 
 On OpenUSD 26.08, UsdImaging's own material adapter dirties the **whole**
-`material` locator whenever any interface input of a Material changes, whether
-or not a network reads it — and every canonical attribute is an interface input
-(`inputs:vrm:*`, material policy §6.4.1). So a Hydra consumer sees `material`
-dirty beside `vrm/mtoon/<field>` on every canonical edit. The suite pins that,
-so a runtime that narrows it is noticed.
+`material` locator whenever any interface input of a Material is edited,
+whether or not a network reads it — and every canonical attribute is an
+interface input (`inputs:vrm:*`, material policy §6.4.1). So a Hydra consumer
+sees `material` dirty beside `vrm/<group>/<field>` on every authored canonical
+edit. Moving time never does that: a time-sampled canonical value dirties its
+`vrm` locator and, if a network reads it, that one parameter. The decision to
+live with it is policy §28.3. The suites pin both, so a runtime that narrows
+the edit case is noticed.
 
 ## Requirements
 
@@ -72,8 +84,9 @@ waits on [report 50](../../docs/reports/ost/50-2026-09-26-v0.23.9-the-imaging-ki
 | --- | --- |
 | `vrmImaging_mtoon` | discovery; authored and fallback values under `vrm/mtoon`; the field set equal to the schema's; per-field invalidation; a time-sampled field following time |
 | `vrmImaging_mtoon_without_schema` | no contribution in a session without `vrmSchema` |
+| `vrmImaging_material` | `vrm/material` beside `vrm/mtoon` in one container; authored, fallback and documented-default values; per-field invalidation; time never dirtying the whole `material`, with and without a network reading the input |
 
-The suite opens a hand-authored stage (`tests/fixtures/mtoon_materials.usda`)
-and never a `.vrm`, so what reaches Hydra is the schema contract and not the
-importer. It does not link the plugin: discovery goes through
-`PXR_PLUGINPATH_NAME` and the staged `plugInfo.json`.
+The suites open hand-authored stages (`tests/fixtures/*.usda`) and never a
+`.vrm`, so what reaches Hydra is the schema contract and not the importer. They
+do not link the plugin: discovery goes through `PXR_PLUGINPATH_NAME` and the
+staged `plugInfo.json`.

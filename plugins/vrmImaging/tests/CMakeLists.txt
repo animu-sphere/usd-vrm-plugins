@@ -6,13 +6,11 @@
 set(_vrm_imaging_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 
 # ---------------------------------------------------------------------------
-# VrmMToonAPI through UsdImaging's stage scene index
+# The canonical schemas through UsdImaging's stage scene index
 # ---------------------------------------------------------------------------
-# Links OpenUSD and NOT the plugin: discovery goes through
+# Each suite links OpenUSD and NOT the plugin: discovery goes through
 # PXR_PLUGINPATH_NAME and the staged plugInfo.json, the path a packaged plugin
 # takes.
-add_executable(vrmImaging_mtoon_tests test_vrm_imaging_mtoon.cpp)
-target_include_directories(vrmImaging_mtoon_tests PRIVATE ${PXR_INCLUDE_DIRS})
 set(_vrm_imaging_test_targets)
 foreach(_t IN ITEMS arch tf gf vt plug sdf usd hd usdImaging)
     if(TARGET ${_t})
@@ -21,17 +19,24 @@ foreach(_t IN ITEMS arch tf gf vt plug sdf usd hd usdImaging)
         list(APPEND _vrm_imaging_test_targets pxr::${_t})
     endif()
 endforeach()
-target_link_libraries(vrmImaging_mtoon_tests PRIVATE ${_vrm_imaging_test_targets})
-target_compile_options(vrmImaging_mtoon_tests PRIVATE ${_vrm_imaging_assertions})
-if(MSVC)
-    # OpenUSD's hd/dataSource.h uses the std::atomic_* shared_ptr overloads,
-    # deprecated in C++20, which is what `ost`'s toolchain compiles.
-    target_compile_definitions(vrmImaging_mtoon_tests PRIVATE NOMINMAX
-        _SILENCE_CXX20_OLD_SHARED_PTR_ATOMIC_SUPPORT_DEPRECATION_WARNING)
-    target_compile_options(vrmImaging_mtoon_tests PRIVATE /utf-8)
-endif()
-# The plugin is loaded at run time, so the test has to be built after it.
-add_dependencies(vrmImaging_mtoon_tests ${PLUGIN_NAME})
+
+foreach(_suite IN ITEMS mtoon material)
+    set(_exe vrmImaging_${_suite}_tests)
+    add_executable(${_exe} test_vrm_imaging_${_suite}.cpp)
+    target_include_directories(${_exe} PRIVATE ${PXR_INCLUDE_DIRS})
+    target_link_libraries(${_exe} PRIVATE ${_vrm_imaging_test_targets})
+    target_compile_options(${_exe} PRIVATE ${_vrm_imaging_assertions})
+    if(MSVC)
+        # OpenUSD's hd/dataSource.h uses the std::atomic_* shared_ptr
+        # overloads, deprecated in C++20, which is what `ost`'s toolchain
+        # compiles.
+        target_compile_definitions(${_exe} PRIVATE NOMINMAX
+            _SILENCE_CXX20_OLD_SHARED_PTR_ATOMIC_SUPPORT_DEPRECATION_WARNING)
+        target_compile_options(${_exe} PRIVATE /utf-8)
+    endif()
+    # The plugin is loaded at run time, so the test has to be built after it.
+    add_dependencies(${_exe} ${PLUGIN_NAME})
+endforeach()
 
 set(_vrm_imaging_fixture
     "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mtoon_materials.usda")
@@ -44,6 +49,10 @@ add_test(NAME vrmImaging_mtoon
 # definition includes.
 add_test(NAME vrmImaging_mtoon_without_schema
     COMMAND vrmImaging_mtoon_tests "${_vrm_imaging_fixture}" --without-schema)
+
+add_test(NAME vrmImaging_material
+    COMMAND vrmImaging_material_tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/material_core.usda")
 
 # ---------------------------------------------------------------------------
 # Environment
@@ -69,7 +78,7 @@ set(_vrm_imaging_path_env
     "PATH=path_list_prepend:${_bundle_dir}/lib"
     "PATH=path_list_prepend:${_vrm_schema_bundle}/lib")
 
-set_tests_properties(vrmImaging_mtoon PROPERTIES
+set_tests_properties(vrmImaging_mtoon vrmImaging_material PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_vrm_imaging_path_env};PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
@@ -79,5 +88,6 @@ set_tests_properties(vrmImaging_mtoon_without_schema PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_vrm_imaging_path_env};PXR_PLUGINPATH_NAME=set:${_plug_resources}")
 
-set_tests_properties(vrmImaging_mtoon vrmImaging_mtoon_without_schema
+set_tests_properties(
+    vrmImaging_mtoon vrmImaging_mtoon_without_schema vrmImaging_material
     PROPERTIES LABELS "material.imaging")

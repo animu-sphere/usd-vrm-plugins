@@ -1,0 +1,95 @@
+#usda 1.0
+(
+    """vrmImaging Step I1 fixture: hand-authored VrmMaterialAPI semantics on
+    UsdShadeMaterials, beside VrmMToonAPI, with no .vrm importer involved
+    (VRM_IMAGING_POLICY.md sections 17.2, 17.5).
+
+    Authored values differ from the schema fallbacks on purpose, so a test can
+    tell the attribute from the definition. The two time-sampled materials are
+    identical except that one network reads the canonical input and the other
+    does not: they bound what the whole-material dirtying of section 27 item 6
+    costs (section 28)."""
+    startTimeCode = 0
+    endTimeCode = 10
+)
+
+def Scope "mtl"
+{
+    # Both canonical schemas on one prim, of each value type VrmMaterialAPI
+    # uses, with a portable realization that reads one canonical input.
+    def Material "Body" (
+        prepend apiSchemas = ["VrmMaterialAPI", "VrmMToonAPI"]
+    )
+    {
+        color3f inputs:vrm:material:baseColorFactor = (0.8, 0.7, 0.6)
+        float inputs:vrm:material:metallicFactor = 0
+        uniform token inputs:vrm:material:alphaMode = "MASK"
+        float inputs:vrm:material:alphaCutoff = 0.25
+        uniform bool inputs:vrm:material:doubleSided = 1
+        float inputs:vrm:mtoon:shadingToonyFactor = 0.35
+        token outputs:surface.connect = </mtl/Body/preview/Surface.outputs:surface>
+
+        def Scope "preview"
+        {
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </mtl/Body.inputs:vrm:material:baseColorFactor>
+                token outputs:surface
+            }
+        }
+    }
+
+    # Nothing authored: every value is the schema's, alphaMode included.
+    def Material "Defaults" (
+        prepend apiSchemas = ["VrmMaterialAPI"]
+    )
+    {
+    }
+
+    # A time-sampled canonical colour that no network reads.
+    def Material "Unread" (
+        prepend apiSchemas = ["VrmMaterialAPI"]
+    )
+    {
+        color3f inputs:vrm:material:baseColorFactor.timeSamples = {
+            0: (1, 0, 0),
+            10: (0, 0, 1),
+        }
+        token outputs:surface.connect = </mtl/Unread/preview/Surface.outputs:surface>
+
+        def Scope "preview"
+        {
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.5, 0.5, 0.5)
+                token outputs:surface
+            }
+        }
+    }
+
+    # The same colour, read by the network through the interface input: the
+    # path an animated canonical value takes to a realization (material
+    # policy q9).
+    def Material "Read" (
+        prepend apiSchemas = ["VrmMaterialAPI"]
+    )
+    {
+        color3f inputs:vrm:material:baseColorFactor.timeSamples = {
+            0: (1, 0, 0),
+            10: (0, 0, 1),
+        }
+        token outputs:surface.connect = </mtl/Read/preview/Surface.outputs:surface>
+
+        def Scope "preview"
+        {
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </mtl/Read.inputs:vrm:material:baseColorFactor>
+                token outputs:surface
+            }
+        }
+    }
+}

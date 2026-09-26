@@ -26,11 +26,11 @@ owner: usd-vrm-plugins
 > Workspace Phase 0–8 ([roadmap](../roadmap/README.md#sequences)). The open
 > steps are the [imaging track](../roadmap/imaging-track.md).
 >
-> **Step I0 implemented 2026-09-26** (`plugins/vrmImaging`). What it measured
-> on OpenUSD 26.08 is §27; one finding bounds §9 from outside this plugin —
-> UsdImaging dirties a Material's whole network whenever any interface input
-> changes, so every canonical edit dirties `material` as well as its own
-> `vrm/…` locator.
+> **Steps I0 and I1 implemented 2026-09-26** (`plugins/vrmImaging`). What
+> Step I0 measured on OpenUSD 26.08 is §27. What Step I1 froze is §28: the
+> `vrm` locator hierarchy, and the decision to live with UsdImaging dirtying a
+> Material's whole network on every authored interface-input edit, which
+> never happens when time moves.
 
 ---
 
@@ -1263,3 +1263,95 @@ Not measured: the Hydra path `hydra-toon` will read (§20 Step I0's last
 item). `hydra-toon` has no material path yet — its MAT-Q1 is Renderer
 Phase 1 — so the test consumer stands in for it, and the handshake is
 Step I3.
+
+---
+
+## 28. Frozen in Step I1
+
+Step I1 (`plugins/vrmImaging`, 2026-09-26) added the `VrmMaterialAPI` adapter
+beside the `VrmMToonAPI` one, both on one shared implementation, and measured
+the whole-material dirtying of §27 item 6 on the path an animated value takes
+(`vrmImaging_material`). What it froze and what it decided:
+
+### 28.1 The `vrm` locator hierarchy
+
+One rule, from §7 and what Step I0 measured: a canonical attribute
+`inputs:vrm:<group>:<name>` of an applied schema is exposed at
+`vrm/<group>/<name>` of the Hydra prim of the material it is authored on.
+`inputs:` is dropped and every remaining namespace element is one locator
+element.
+
+| Schema | Locator | Since |
+| --- | --- | --- |
+| `VrmMaterialAPI` | `vrm/material/<field>` | Step I1 |
+| `VrmMToonAPI` | `vrm/mtoon/<field>` | Step I0 |
+| `VrmTextureInfoAPI:<role>` | `vrm/textureInfo/<role>/<field>`, where a namespaced field nests: `transform:offset` is `transform/offset` | Step I2 (the rule is frozen here; the adapter is Step I2's) |
+
+What a consumer may rely on:
+
+1. **The names are the schema's.** No adapter lists a field; each reads its
+   schema's registered definition. A field the schema gains reaches Hydra
+   with no change here, and a renamed schema property is a renamed locator,
+   so a rename is a schema-contract change
+   ([SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
+2. **One `vrm` container per prim.** Each adapter contributes its own
+   `vrm/<group>` branch and UsdImaging's overlay merges them: a material with
+   both schemas has one `vrm` holding `material` and `mtoon`. A group is
+   present exactly when its schema is applied.
+3. **Every name has a value.** The value is the authored one, else the schema
+   fallback, else the schema's documented default (§28.2). A container never
+   lists a name that resolves to nothing.
+4. **Leaves are typed.** Each is a sampled data source of the attribute's
+   value type (`float`, `GfVec3f`, `TfToken`, `bool`, ...), castable to
+   `HdTypedSampledDataSource<T>`, and time-sampled where the attribute is
+   (§10).
+5. **Invalidation is per leaf.** An edit or a time move dirties
+   `vrm/<group>/<field>` and nothing wider of the contribution (§9).
+6. **There is no public header.** A consumer spells these tokens itself.
+   `hydra-toon` links nothing of this repository (§12), so the table above is
+   the contract, and the suites spell every locator literally, which is what
+   holds it.
+
+### 28.2 A documented default: `alphaMode`
+
+`VrmMaterialAPI.alphaMode` is the one canonical property without a schema
+fallback: usdGenSchema would name the fallback's C++ token `OPAQUE`, a
+`wingdi.h` macro. The schema documents unauthored as `'OPAQUE'`, as glTF does.
+The adapter supplies that value, so a consumer never has to interpret an
+absence (§27 item 3). It is the one field an adapter names, and it applies
+only while the definition has no fallback of its own: the day the schema
+carries one, the definition's value is used and the entry does nothing.
+
+### 28.3 The whole-material dirtying: lived with
+
+§27 item 6 found that UsdImaging dirties the whole `material` locator on any
+edit of a Material interface input. Step I1 measured where that happens and
+**decided to live with it**, with no filtering scene index and no patched
+runtime:
+
+1. **Only an authored edit triggers it.** It is
+   `UsdImagingDataSourceMaterialPrim::Invalidate`, which runs on a USD change
+   notice. Pinned for a value both read and not read by a network.
+2. **Time never does.** Moving the scene index's time across a time-sampled
+   canonical input that no network reads dirties `vrm/material/<field>`
+   alone. When a network reads it through the interface connection (material
+   policy q9), time dirties that and the reading parameter's value in each
+   render context, never `material`. On 26.08 that is
+   `material//nodes/preview/Surface/parameters/diffuseColor/value` and the
+   same under `material/__all/`.
+3. **So the cost falls on authored edits**: an editor, a live tweak, one
+   re-read of the network per edit. Step I4's high-frequency values do not
+   have to pay it. They reach Hydra as time samples, or through a scene index
+   downstream of UsdImaging, and neither produces a change notice. If Step I4
+   can deliver them only as per-frame authored edits, this decision is
+   reopened.
+4. **A filter was rejected.** A scene index downstream sees locators, not
+   properties. It cannot tell a canonical-only edit from a change batch that
+   also edited a non-canonical interface input of the same prim, so dropping
+   `material` could hide a real network change. A missed network update is a
+   rendering bug, and an extra one is only a cost.
+5. **The fix is upstream's.** The TODO in `Invalidate` can be answered with
+   the consumer map UsdImaging already computes for the network's
+   `interfaceMappings` (`ComputeInterfaceInputConsumersMap`). The suites pin
+   today's behaviour, so a runtime that narrows it fails the pin and is
+   noticed.

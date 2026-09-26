@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// vrmImaging Phase I0 (VRM_IMAGING_POLICY.md §20, §25): a `VrmMToonAPI` value
+// vrmImaging Step I0 (VRM_IMAGING_POLICY.md §20, §25): a `VrmMToonAPI` value
 // reaches a Hydra consumer through UsdImaging's own stage scene index, and an
 // edit of it dirties the one locator it feeds.
 //
@@ -28,128 +28,34 @@
 //     vrmSchema: no contribution at all, which is the plugin's one runtime
 //     requirement on that bundle, measured by leaving it unmet.
 
-#include "pxr/pxr.h"
+#include "imaging_test_support.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/imaging/hd/dataSource.h"
-#include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/materialSchema.h"
-#include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/primDefinition.h"
 #include "pxr/usd/usd/schemaRegistry.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
-#include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-
-#include <cassert>
-#include <cmath>
-#include <cstdio>
-#include <map>
-#include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+using namespace vrm_imaging_test;
 
 namespace {
 
-const TfToken kVrm("vrm");
 const TfToken kMToon("mtoon");
 
 HdDataSourceLocator
 MToonLocator(const char* field)
 {
-    return HdDataSourceLocator(kVrm, kMToon, TfToken(field));
-}
-
-// Every dirty notice, merged per prim, between two Clear()s.
-class Recorder : public HdSceneIndexObserver
-{
-public:
-    void PrimsAdded(const HdSceneIndexBase&, const AddedPrimEntries&) override {}
-    void PrimsRemoved(const HdSceneIndexBase&, const RemovedPrimEntries&) override {}
-    void PrimsRenamed(const HdSceneIndexBase&, const RenamedPrimEntries&) override {}
-    void PrimsDirtied(const HdSceneIndexBase&,
-                      const DirtiedPrimEntries& entries) override
-    {
-        for (const DirtiedPrimEntry& entry : entries) {
-            dirtied[entry.primPath].insert(entry.dirtyLocators);
-        }
-    }
-
-    HdDataSourceLocatorSet At(const char* path) const
-    {
-        const auto it = dirtied.find(SdfPath(path));
-        return it == dirtied.end() ? HdDataSourceLocatorSet() : it->second;
-    }
-
-    void Clear() { dirtied.clear(); }
-
-    std::map<SdfPath, HdDataSourceLocatorSet> dirtied;
-};
-
-struct Session
-{
-    UsdStageRefPtr stage;
-    UsdImagingStageSceneIndexRefPtr sceneIndex;
-    Recorder recorder;
-};
-
-void
-Open(Session& session, const std::string& fixture)
-{
-    session.stage = UsdStage::Open(fixture);
-    assert(session.stage && "the fixture does not open");
-    session.sceneIndex = UsdImagingStageSceneIndex::New();
-    session.sceneIndex->SetStage(session.stage);
-    session.sceneIndex->SetTime(UsdTimeCode(0.0));
-    session.sceneIndex->AddObserver(HdSceneIndexObserverPtr(&session.recorder));
-}
-
-HdContainerDataSourceHandle
-PrimData(const Session& session, const char* path)
-{
-    return session.sceneIndex->GetPrim(SdfPath(path)).dataSource;
-}
-
-VtValue
-ValueAt(const Session& session, const char* path,
-        const HdDataSourceLocator& locator)
-{
-    const HdSampledDataSourceHandle sampled = HdSampledDataSource::Cast(
-        HdContainerDataSource::Get(PrimData(session, path), locator));
-    return sampled ? sampled->GetValue(0.0f) : VtValue();
+    return VrmLocator("mtoon", field);
 }
 
 float
 FloatAt(const Session& session, const char* path, const char* field)
 {
-    const VtValue value = ValueAt(session, path, MToonLocator(field));
-    assert(value.IsHolding<float>() && "the field is missing or not a float");
-    return value.UncheckedGet<float>();
-}
-
-bool
-Near(float a, float b)
-{
-    return std::fabs(a - b) < 1e-6f;
-}
-
-// The attribute an edit is made through: a direct stage write, as an
-// expression evaluator or an editor would make it.
-UsdAttribute
-Attribute(const Session& session, const char* path, const char* name)
-{
-    const UsdAttribute attribute =
-        session.stage->GetPrimAtPath(SdfPath(path)).GetAttribute(TfToken(name));
-    assert(attribute && "the fixture lost an attribute this test edits");
-    return attribute;
+    return vrm_imaging_test::FloatAt(session, path, MToonLocator(field));
 }
 
 // ---------------------------------------------------------------------------
@@ -266,10 +172,7 @@ TestAnEditDirtiesItsOwnLocator(Session& session)
         expected.insert(HdMaterialSchema::GetDefaultLocator());
         const HdDataSourceLocatorSet got = session.recorder.At("/mtl/Hair");
         if (got != expected) {
-            std::fprintf(stderr, "editing %s dirtied:\n", edit.field);
-            for (const HdDataSourceLocator& locator : got) {
-                std::fprintf(stderr, "  %s\n", locator.GetString().c_str());
-            }
+            PrintLocators(edit.field, got);
         }
         assert(got == expected);
         assert(session.recorder.dirtied.size() == 1);
