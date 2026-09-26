@@ -1244,6 +1244,10 @@ what it found:
    name, builds it and tests it, and no package carries it. §19's packaging
    waits on that kind (Step I5), asked of `ost` in
    [report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md).
+   `ost` 0.23.9 adds it as `usd-imaging`, and the kind requires
+   `hydra-preview`, which only the `lookdev` profile promises. This workspace
+   and every published runtime are `usd`, so it still cannot be adopted
+   ([report 50](../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md)).
 10. **The §25 fixture could not tell authored from fallback.** Its 0.9 is
     `shadingToonyFactor`'s schema fallback. The fixture and §25 use 0.35.
 11. **`hd/retainedDataSource.h` does not compile as C++20 under GCC 13.**

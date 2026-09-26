@@ -57,11 +57,14 @@ so a runtime that narrows it is noticed.
 
 ## Not an `ost` bundle yet
 
-`ost` 0.23.8 has no plugin kind for a UsdImaging adapter, so there is no
-`openstrata.plugin.yaml`: the root `CMakeLists.txt` adds this directory by name,
-the root build compiles and tests it, and no package carries it. Packaging is
-Step I5 and waits on that kind, asked of `ost` in
-[report 49](../../docs/reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md).
+There is no `openstrata.plugin.yaml`: the root `CMakeLists.txt` adds this
+directory by name, the root build compiles and tests it, and no package carries
+it. `ost` 0.23.9 added the `usd-imaging` kind that
+[report 49](../../docs/reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md)
+asked for, and the plugin passes its checks under a `lookdev` runtime. The kind
+requires `hydra-preview`, though, which only the `lookdev` profile promises, and
+this workspace and every published runtime are `usd`. Packaging is Step I5 and
+waits on [report 50](../../docs/reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md)'s P1.
 
 ## Tests
 

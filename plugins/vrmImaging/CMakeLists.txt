@@ -9,10 +9,12 @@
 # Phase I0: `VrmMToonAPI` alone, as the contract experiment the policy (§20,
 # §25) asks for before any Hydra-facing name is frozen.
 #
-# Not an `ost` plugin bundle yet: `ost` 0.23.8 has no plugin kind for a
-# UsdImaging adapter, so there is no descriptor and the root CMakeLists.txt adds
-# this directory by name. It is built and tested by the root build and not
-# packaged (policy §19, Phase I5).
+# Not an `ost` plugin bundle yet. `ost` 0.23.9 has a `usd-imaging` kind, but it
+# requires `hydra-preview`, a capability only the `lookdev` profile promises,
+# and this workspace and every published runtime are `usd` (ost report 50). So
+# there is no descriptor and the root CMakeLists.txt adds this directory by
+# name. It is built and tested by the root build and not packaged (policy §19,
+# Step I5).
 cmake_minimum_required(VERSION 3.22)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
