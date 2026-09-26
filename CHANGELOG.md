@@ -15,6 +15,19 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A `lookdev` package of `vrmImaging`, published to GHCR**
+  ([imaging track](docs/roadmap/imaging-track.md) Step I5). The release lane
+  gains two cells, Windows and Linux x86_64, that build, test (L0–L5) and
+  package `vrmImaging`, carrying its `vrmSchema`, against the canonical CY2026
+  `lookdev` runtime. That is the runtime a Formation of `vrmImaging` and a
+  Hydra renderer runs on (`hydra-toon`'s VRM `usdview` session). A new
+  `publish` job pushes each package to `ghcr.io/animu-sphere/usd-vrm-plugins`
+  as `vrmImaging-<version>-<target>` and writes `lookdev-package-pins.json`
+  and a notes section (`scripts/make_lookdev_pins.py`): the archive digest a
+  Formation names, and the OCI digest to pull it from. The packages also ship
+  as release assets. They are not product members, and no macOS package
+  exists because open-strata publishes no macOS `lookdev` runtime.
+
 - **`vrmImaging`: `VrmTextureInfoAPI` as Hydra data, one role at a time**
   ([imaging track](docs/roadmap/imaging-track.md) Step I2;
   [imaging policy](docs/design/VRM_IMAGING_POLICY.md) §29). Every applied
