@@ -449,7 +449,7 @@ The plan and every measurement behind these rows are in
 ## O. Canonical materials reach Hydra (v0.10.0)
 
 The steps and their done-when are in the
-[imaging track](../roadmap/imaging-track.md), the
+[imaging track](../archive/imaging/imaging-track.md), the
 [material track](../roadmap/material-track.md) and the
 [export track](../roadmap/export-track.md); the summary is the
 [v0.10.0 record](../releases/v0.10.0.md).

@@ -61,7 +61,7 @@ The reasons are what Steps 1 and 2 left behind:
   the same slots; texture-transform binds stay raw (q11).
 - **No renderer reads MToon.** [`hydra-toon`](https://github.com/animu-sphere/hydra-toon) exists (its Renderer
   Phase 0 draws meshes); its material path is Renderer Phase 1, and it reads
-  the schemas through Hydra once the [imaging track](imaging-track.md)
+  the schemas through Hydra once the [imaging track](../archive/imaging/imaging-track.md)
   exposes them there.
 
 ## 3. Steps
@@ -379,7 +379,7 @@ graphs gain the always-authored parametric rim and emission terms.
 
 [`hydra-toon`](https://github.com/animu-sphere/hydra-toon), a sibling repository, reads `VrmMToonAPI` and
 `VrmTextureInfoAPI` through Hydra — as `vrmImaging` exposes them, the
-[imaging track](imaging-track.md) — and owns the full realization: toon lighting, rim, MatCap, outline, UV animation, MToon
+[imaging track](../archive/imaging/imaging-track.md) — and owns the full realization: toon lighting, rim, MatCap, outline, UV animation, MToon
 transparency and render ordering, first on Vulkan and WebGPU (policy §5.3).
 The contract between the two repositories is the USD schema and nothing
 else; neither links the other.

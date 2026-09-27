@@ -17,6 +17,7 @@ cited as its history.
 | Directory | Contents | Current owner of the subject |
 | --- | --- | --- |
 | [motion-split/](motion-split/) | The motion tracks this repository ran before generic motion and live input left it (2026-09-19..24): [the migration](motion-split/motion-foundation-split.md), [boundary consolidation](motion-split/boundary-consolidation.md), [live adapters](motion-split/adapters-mocopi-vmc-ardy.md), [OSC and VRChat trackers](motion-split/osc-and-vrchat-trackers.md), [recorded sources](motion-split/recorded-motion-sources.md), [the OpenExec foundation](motion-split/openexec-foundation.md), and [how they were ordered](motion-split/roadmap-orderings.md) | generic motion: [`usd-motion-plugins`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/docs); input: [`motion-connectors`](https://github.com/animu-sphere/motion-connectors/tree/main/docs); VRM: [VRM_MOTION_POLICY.md](../design/VRM_MOTION_POLICY.md) and the [`ExecIr` track](../roadmap/execir-track.md) |
+| [imaging/](imaging/) | [The Hydra imaging track](imaging/imaging-track.md), shipped in v0.10.0 | [design/VRM_IMAGING_POLICY.md](../design/VRM_IMAGING_POLICY.md) and [reference/SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md#hydra-imaging-vrmimaging) |
 | [packaging/](packaging/) | [The packaging hardening track](packaging/packaging-hardening.md), shipped in v0.8.0 | [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md) |
 
 Superseded design documents are not moved here. They stay at their path as a

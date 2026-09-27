@@ -295,7 +295,7 @@ endif()
 # Imaging Step I4: an expression bake reaches Hydra as time. `motion_retarget`
 # bakes the importer's `expressions.vrm` fixture, whose `happy` drives a colour
 # slot, and `vrmImaging`'s suite reads the layer it wrote through UsdImaging's
-# stage scene index (docs/roadmap/imaging-track.md, Step I4). The same bind on
+# stage scene index (docs/archive/imaging/imaging-track.md, Step I4). The same bind on
 # an MToon material, `expressions_mtoon.vrm`, is the bake `hydra-toon`'s MToon
 # path plays, so it is read here too. Here because it composes the tool, the
 # importer and the imaging bundle; each bake is a CTest fixture of its own, so

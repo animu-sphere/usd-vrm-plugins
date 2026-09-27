@@ -4,7 +4,10 @@ The canonical VRM material schemas made visible to Hydra: a UsdImaging
 API-schema adapter per applied schema, contributing data sources to the Hydra
 material prim and turning a changed USD property into the one locator it feeds.
 The policy is [VRM_IMAGING_POLICY.md](../../docs/design/VRM_IMAGING_POLICY.md);
-the open work is the [imaging track](../../docs/roadmap/imaging-track.md).
+what it supports is
+[SUPPORTED_CONFIGURATIONS.md](../../docs/reference/SUPPORTED_CONFIGURATIONS.md#hydra-imaging-vrmimaging),
+and how it was built is the archived
+[imaging track](../../docs/archive/imaging/imaging-track.md).
 
 It describes what a VRM material says. How that is drawn is a renderer's
 decision — `hydra-toon`'s for MToon — and nothing here is shader code, a GPU

@@ -9,14 +9,13 @@ Which release carries a track is the
 
 Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️ accepted workaround
 
-## Shipped: v0.10.0 — canonical materials reach Hydra 🚧
+## Shipped: v0.10.0 — canonical materials reach Hydra ✅
 
-**Prepared 2026-09-27, not yet tagged.** Items 1–8 are merged and the version
-is bumped ([release record](../releases/v0.10.0.md)). What is left is the
-`release.yml` dry run on `main`, the tag, publishing the draft, and the GHCR
-flip below. This heading says `Shipped` because `check_docs.py` accepts only
-`Next`/`Then`/`Shipped` with a version, and a version with a release record
-cannot be `Next`.
+**Tagged and published on 2026-09-27** ([release record](../releases/v0.10.0.md)).
+This section stays only as the milestone `check_docs.py` reads, and until the
+next release takes a number. The one step left, `hydra-toon`'s re-pin, is its
+repository's; what the release carried out is under
+[Carried over from shipped releases](#carried-over-from-shipped-releases).
 
 **Release boundary:** the canonical material semantics this repository
 imports reach a Hydra renderer as data, including when an expression drives
@@ -24,7 +23,7 @@ them over time. VRM 0.x and 1.0 materials carry one canonical record
 (`VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI:<role>`), both
 realizations (`/preview`, `/mtlx`) are generated from it, and `vrmImaging`
 exposes it to Hydra under the frozen `vrm` locators, with per-field
-invalidation. The release closes the [imaging track](imaging-track.md)
+invalidation. The release closes the [imaging track](../archive/imaging/imaging-track.md)
 (Steps I0–I5) and ships as the product plus a `lookdev` package of
 `vrmImaging` that a Formation pins from a registry.
 
@@ -45,7 +44,7 @@ it has on `main` and continues after the tag:
 ### Work before the tag
 
 Each item's detail and its done-when are in the
-[imaging track](imaging-track.md); this table is the order.
+[imaging track](../archive/imaging/imaging-track.md); this table is the order.
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
@@ -69,20 +68,22 @@ In this order; each step is its own pull request unless it says otherwise.
    `[0.10.0]` section, the [release record](../releases/) `v0.10.0.md`, and
    this heading turned to `Shipped:`. Gate: the workspace graph, the suite,
    and `ost plugin package --workspace --product` on this workstation.
-3. ⬜ **Dry run:** `gh workflow run release.yml --ref main` green on every
-   cell — three workspace cells, two `lookdev` cells, the publish job. This is
-   also the proof still owed by the reduced product:
-   - ⬜ **The aggregate product installs and opens a `.vrm` and a `.vrma` from
+3. ✅ **Dry run:** `gh workflow run release.yml --ref main` green on every
+   cell — three workspace cells, two `lookdev` cells, the publish job
+   (run 36321868958, on `e6bce65`). This is also the proof still owed by the
+   reduced product:
+   - ✅ **The aggregate product installs and opens a `.vrm` and a `.vrma` from
      release artifacts, with the consumed packages resolved as
-     dependencies.** Only a release run can show it: `release.yml` is
-     hand-authored and no pull request executes it.
-4. ⬜ **Tag `v0.10.0` and publish the draft** — the user's decision, after
-   the dry run.
-5. ⬜ **After the tag:** make the GHCR package
-   `ghcr.io/animu-sphere/usd-vrm-plugins` public and pull a `vrmImaging`
-   package anonymously; that closes Step I5's published package. Then
-   `hydra-toon` re-pins its VRM Formation to the published digests, in its
-   own repository.
+     dependencies.** On all three OS: the clean-install smoke, the exec and
+     imaging smokes from the product alone, and the packaged VRMA reader
+     verified `--from-package`.
+4. ✅ **Tag `v0.10.0` and publish the draft** — tagged on `e6bce65`, the
+   tag's run green, published 2026-09-27 with 59 assets.
+5. 🚧 **After the tag:** ✅ the GHCR package
+   `ghcr.io/animu-sphere/usd-vrm-plugins` is public, and both `vrmImaging`
+   `lookdev` packages pull with an anonymous token, each archive equal to the
+   release's `lookdev-package-pins.json`; that closed Step I5. ⬜ `hydra-toon`
+   re-pins its VRM Formation to those digests, in its own repository.
 
 ## Release closure and checkable invariants
 

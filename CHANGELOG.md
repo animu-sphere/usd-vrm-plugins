@@ -33,7 +33,7 @@ Current schema contract version: **1**.
 ### Added
 
 - **The `vrmImaging` suites run against the installed product**
-  ([imaging track](docs/roadmap/imaging-track.md) Step I5). A new release
+  ([imaging track](docs/archive/imaging/imaging-track.md) Step I5). A new release
   lane step, `scripts/artifact_only_imaging_smoke.py`, installs the product
   outside the repository and runs every `vrmImaging` suite in an environment
   with no path into the repository. The suites include the `.vrm` import and
@@ -43,7 +43,7 @@ Current schema contract version: **1**.
   that the packaged adapters construct.
 
 - **A `.vrm` reaches Hydra as its source says** ([imaging
-  track](docs/roadmap/imaging-track.md) Step I5; imaging policy §17.3).
+  track](docs/archive/imaging/imaging-track.md) Step I5; imaging policy §17.3).
   `workspace_import_imaging` imports the committed `mtoon_vrm1.vrm` and
   `mtoon_vrm0.vrm` and reads them through UsdImaging's stage scene index with
   `vrmImaging` in the session. Every canonical value is compared with what
@@ -54,7 +54,7 @@ Current schema contract version: **1**.
   `vrmImaging_texture_info`.
 
 - **`vrmImaging` discovery is a suite of its own** ([imaging
-  track](docs/roadmap/imaging-track.md) Step I5; policy §16, §17.1).
+  track](docs/archive/imaging/imaging-track.md) Step I5; policy §16, §17.1).
   `vrmImaging_discovery` runs in every workspace cell: `PlugRegistry` finds
   `VrmImaging` from its `plugInfo.json`, unloaded, declaring one adapter per
   `Vrm*API` that no other plugin claims, and UsdImaging knows each before the
@@ -62,7 +62,7 @@ Current schema contract version: **1**.
   `ost`'s L2 constructed the adapters, and only in the release lane.
 
 - **An expression bake reaches Hydra as time** ([imaging
-  track](docs/roadmap/imaging-track.md) Step I4, this repository's half). The
+  track](docs/archive/imaging/imaging-track.md) Step I4, this repository's half). The
   root build bakes a clip onto the `expressions.vrm` fixture with
   `motion_retarget` and reads the output through UsdImaging's stage scene index
   with `vrmImaging` in the session (`workspace_expression_bake_imaging`). At
@@ -92,7 +92,7 @@ Current schema contract version: **1**.
   undeclared materials.
 
 - **`VRM300`: canonical materials that will not reach Hydra**
-  ([imaging track](docs/roadmap/imaging-track.md) Step I5; imaging policy
+  ([imaging track](docs/archive/imaging/imaging-track.md) Step I5; imaging policy
   §18). `validate_vrm.py --check-imaging` reports one warning per stage when
   its materials apply `VrmMaterialAPI`, `VrmMToonAPI` or `VrmTextureInfoAPI`
   and the session would not hand them to a Hydra renderer: `vrmImaging` is not
@@ -102,7 +102,7 @@ Current schema contract version: **1**.
   a headless deployment may leave `vrmImaging` out on purpose.
 
 - **A `lookdev` package of `vrmImaging`, published to GHCR**
-  ([imaging track](docs/roadmap/imaging-track.md) Step I5). The release lane
+  ([imaging track](docs/archive/imaging/imaging-track.md) Step I5). The release lane
   gains two cells, Windows and Linux x86_64, that build, test (L0–L5) and
   package `vrmImaging`, carrying its `vrmSchema`, against the canonical CY2026
   `lookdev` runtime. That is the runtime a Formation of `vrmImaging` and a
@@ -115,7 +115,7 @@ Current schema contract version: **1**.
   exists because open-strata publishes no macOS `lookdev` runtime.
 
 - **`vrmImaging`: `VrmTextureInfoAPI` as Hydra data, one role at a time**
-  ([imaging track](docs/roadmap/imaging-track.md) Step I2;
+  ([imaging track](docs/archive/imaging/imaging-track.md) Step I2;
   [imaging policy](docs/design/VRM_IMAGING_POLICY.md) §29). Every applied
   texture role reaches a Hydra consumer under
   `vrm/textureInfo/<role>/<field>`, with `transform:*` nested under
@@ -128,7 +128,7 @@ Current schema contract version: **1**.
   readable from Hydra.
 
 - **`vrmImaging` is a bundle and a member of the product**
-  ([imaging track](docs/roadmap/imaging-track.md) Step I5;
+  ([imaging track](docs/archive/imaging/imaging-track.md) Step I5;
   [ost report 51](docs/reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md)). It has an
   `ost` descriptor of kind `usd-imaging` that provides both adapters, and it is
   named in `members` and `release_members`. The product has eight members, and
@@ -139,7 +139,7 @@ Current schema contract version: **1**.
   root `CMakeLists.txt` no longer adds the directory by name.
 
 - **`vrmImaging`: `VrmMaterialAPI` as Hydra data, and the `vrm` locator
-  hierarchy frozen** ([imaging track](docs/roadmap/imaging-track.md) Step I1;
+  hierarchy frozen** ([imaging track](docs/archive/imaging/imaging-track.md) Step I1;
   [imaging policy](docs/design/VRM_IMAGING_POLICY.md) §28). Every
   `VrmMaterialAPI` field reaches a Hydra consumer under `vrm/material/<field>`,
   beside `vrm/mtoon/<field>` in the same `vrm` container, with per-field
@@ -151,7 +151,7 @@ Current schema contract version: **1**.
   records the decision to live with it.
 
 - **`vrmImaging`: `VrmMToonAPI` as Hydra data on the material prim**
-  ([imaging track](docs/roadmap/imaging-track.md) Step I0;
+  ([imaging track](docs/archive/imaging/imaging-track.md) Step I0;
   [imaging policy](docs/design/VRM_IMAGING_POLICY.md)). A UsdImaging
   API-schema adapter: a Hydra consumer of `UsdImagingStageSceneIndex` reads
   every `VrmMToonAPI` field under `vrm/mtoon/<field>` of the material prim —
