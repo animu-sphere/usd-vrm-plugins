@@ -23,7 +23,7 @@ endforeach()
 # `expression_bake` is built here and registered by the root CMakeLists.txt:
 # its stage is `motion_retarget`'s bake of a `.vrm`, so it needs the tool and
 # the importer in the same build, which only the composed root build has.
-foreach(_suite IN ITEMS mtoon material texture_info expression_bake)
+foreach(_suite IN ITEMS discovery mtoon material texture_info expression_bake)
     set(_exe vrmImaging_${_suite}_tests)
     add_executable(${_exe} test_vrm_imaging_${_suite}.cpp)
     target_include_directories(${_exe} PRIVATE ${PXR_INCLUDE_DIRS})
@@ -40,6 +40,10 @@ foreach(_suite IN ITEMS mtoon material texture_info expression_bake)
     # The plugin is loaded at run time, so the test has to be built after it.
     add_dependencies(${_exe} ${PLUGIN_NAME})
 endforeach()
+
+# Policy §16, §17.1: the plugin and one adapter per schema, from plugInfo.json
+# alone. It reads no stage.
+add_test(NAME vrmImaging_discovery COMMAND vrmImaging_discovery_tests)
 
 set(_vrm_imaging_fixture
     "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mtoon_materials.usda")
@@ -85,7 +89,8 @@ set(_vrm_imaging_path_env
     "PATH=path_list_prepend:${_bundle_dir}/lib"
     "PATH=path_list_prepend:${_vrm_schema_bundle}/lib")
 
-set_tests_properties(vrmImaging_mtoon vrmImaging_material vrmImaging_texture_info PROPERTIES
+set_tests_properties(vrmImaging_discovery vrmImaging_mtoon vrmImaging_material
+    vrmImaging_texture_info PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_vrm_imaging_path_env};PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
@@ -96,6 +101,7 @@ set_tests_properties(vrmImaging_mtoon_without_schema PROPERTIES
         "${_vrm_imaging_path_env};PXR_PLUGINPATH_NAME=set:${_plug_resources}")
 
 set_tests_properties(
-    vrmImaging_mtoon vrmImaging_mtoon_without_schema vrmImaging_material
+    vrmImaging_discovery vrmImaging_mtoon vrmImaging_mtoon_without_schema
+    vrmImaging_material
     vrmImaging_texture_info
     PROPERTIES LABELS "material.imaging")

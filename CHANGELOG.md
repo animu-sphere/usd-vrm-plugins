@@ -15,6 +15,14 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vrmImaging` discovery is a suite of its own** ([imaging
+  track](docs/roadmap/imaging-track.md) Step I5; policy §16, §17.1).
+  `vrmImaging_discovery` runs in every workspace cell: `PlugRegistry` finds
+  `VrmImaging` from its `plugInfo.json`, unloaded, declaring one adapter per
+  `Vrm*API` that no other plugin claims, and UsdImaging knows each before the
+  library loads and constructs each as its declared type. Until now only
+  `ost`'s L2 constructed the adapters, and only in the release lane.
+
 - **An expression bake reaches Hydra as time** ([imaging
   track](docs/roadmap/imaging-track.md) Step I4, this repository's half). The
   root build bakes a clip onto the `expressions.vrm` fixture with

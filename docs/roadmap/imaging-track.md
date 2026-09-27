@@ -248,11 +248,20 @@ package, which only the tag's run can close
   [report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md): a descriptor,
   `release_members`, the product (policy §19), and `usdvrm_baseline`'s
   session and frozen types.
-- ⬜ **Plugin discovery in CI** (policy §16, §17.1). `ost`'s L2 constructs
+- ✅ **Plugin discovery in CI** (policy §16, §17.1). `ost`'s L2 constructs
   the adapters, but it runs only in the release lane: every workspace cell
   is `verify: test`. A suite in the workspace build shows `PlugRegistry`
   discovering `vrmImaging` from its `plugInfo.json` and UsdImaging
   constructing one adapter per schema, with no registration code.
+  **Landed 2026-09-27** as `vrmImaging_discovery`, which every workspace
+  cell runs with the other `vrmImaging` suites. `PlugRegistry` has
+  `VrmImaging` unloaded, declaring exactly the three adapters, each naming a
+  schema `vrmSchema` registered (`VrmTextureInfoAPI` multiple-apply), and no
+  other plugin claims one of those schemas. UsdImaging's registry knows all
+  three while the library is still unloaded, and constructing each builds
+  the declared type and loads it. The suite fails without `vrmImaging`'s
+  `plugInfo.json`, without `vrmSchema`, and with one adapter dropped from the
+  `plugInfo.json`.
 - ⬜ **Invalidation regression tests** (policy §17.4). Its cases are
   `shadeColorFactor`, `baseColorFactor` and `outlineWidthFactor`, which the
   suites already assert, and a `matcap` texture edit, which they do not.
