@@ -13,6 +13,23 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-27
+
+> **Canonical materials reach Hydra.** VRM 0.x and 1.0 materials import to one
+> canonical record (`VrmMaterialAPI`, `VrmMToonAPI`,
+> `VrmTextureInfoAPI:<role>`), both realizations (`/preview`, `/mtlx`) are
+> generated from it, an expression's colour drives it over time, and the new
+> `vrmImaging` bundle hands it to any Hydra renderer under frozen `vrm`
+> locators with per-field invalidation
+> ([release record](docs/releases/v0.10.0.md)). The same interval completes the
+> motion split: generic motion is consumed from `usd-motion-plugins`, live
+> input left for `motion-connectors`, and the product builds VRM and VRMA only.
+> **A minor release on purpose**: `vrmSchema` gains three API schemas and
+> `vrm:materialColorTargetIndices`, and `vrmRig` is a package the tagged 0.9.0
+> release does not have, and in-tree dependents use both. So every `requires`
+> range moves to `>=0.10,<0.11` and excludes the 0.9.0 packages
+> ([PACKAGE_CONTRACT.md §3.1](docs/architecture/PACKAGE_CONTRACT.md#31-a-requires-range-between-two-releases)).
+
 ### Added
 
 - **The `vrmImaging` suites run against the installed product**
@@ -314,6 +331,17 @@ Current schema contract version: **1**.
   code there that knows VRM. Against `main` before this change it reports 17
   violations.
 
+- **A vocabulary check on the headers that are leaving** (the motion
+  migration's MIG-0). `workspace_motion_vocabulary` scans every public header
+  of `motionCore`, `motionRuntime` and the generic half of `vrmRetarget` with
+  comments removed, plus every string literal of their sources, for VRM
+  vocabulary. It fails on any name that
+  `tests/boundary/motion-vocabulary.json` does not dispose of as a rename, an identity name, a diagnostic code or a
+  recorded finding. It also fails on a ledger row the scan no longer finds, and
+  on a finding whose anchor identifier is gone. The first run classified 40
+  names. Three near-miss ledgers each get one thing wrong and must fail with
+  that message.
+
 ### Changed
 
 - **`/mtlx` and `/preview` read expression slot values from the Material**
@@ -516,6 +544,47 @@ Current schema contract version: **1**.
     `vrmRetarget`'s generic half — the one set of headers still moving. It
     empties when that half leaves, and did (below).
 
+- **The `ost` pin is 0.23.2** — `openstrata.ci.yaml`, the workflow re-rendered
+  from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
+  The bump is taken for what it adds, not because it is current: 0.23.0 answers
+  both asks of
+  [ost report 41](docs/reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md).
+  `requires.libraries` can name a digest-pinned library artifact from another
+  repository, and every rendered job runs `ost library pull` before it builds —
+  the edge the motion migration's consuming half waits on
+  ([the migration track](docs/archive/motion-split/motion-foundation-split.md)). An
+  explicitly empty workspace also renders CI now, which is that report's P3.
+  The render gains one more thing beside the pull step: every cell passes
+  `--require-openusd*` positionally, so a cell declaring neither no longer
+  risks an empty array under macOS bash 3.2 `set -u`. The pinned runtime leaves
+  do not move, and the tree is 159/159 green under the new toolchain locally.
+
+  The pin is 0.23.1 rather than 0.23.0 because 0.23.0 could not be adopted:
+  its new `consumer-link` claim probed a materialized runtime before the
+  relocation `ost configure` and `ost plugin build` apply to that same prefix,
+  and every hosted Linux and Windows lane in this repository and both
+  destinations went red on the pin bump alone
+  ([report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)).
+  0.23.1 answers all three of that report's asks. Re-measured here against the
+  pinned Windows artifact from a simulated clean host: `consumer-link` passes,
+  `runtime validate` performs the relocation itself (16 imported targets), and
+  a claim that does fail now names the first CMake error — `Imported target
+  "tf" includes non-existent path` — instead of the trailing warning block.
+
+  One cell needed a change for it, and only one: `usdvrmfileformat-pr-windows`
+  declared no `host_python`, because its pyramid stops at L4. `consumer-link`
+  links **and runs** a C++ consumer, and on Windows that executable loads
+  `python313.dll` through pxr while the Windows runtime bundles no
+  interpreter — so it built and then died at `0xC0000135`. The cell now
+  declares 3.13, which every other cell in the ecosystem already did.
+
+  0.23.2 is the third pin in a day, and the third is the one this repository's
+  own migration needs: the root `ost build` now composes the external library
+  artifacts its members declare. Without it a workspace consuming a
+  digest-pinned library from another repository could not configure at all,
+  which is the shape of the consuming change this repository is about to make
+  ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
+
 ### Removed
 
 - **`execMotion` is consumed, and this repository's copy is gone** (MIG-2,
@@ -631,62 +700,6 @@ Current schema contract version: **1**.
     [the OSC foundation](docs/archive/motion-split/osc-and-vrchat-trackers.md)) are records
     rather than plans now, and every link into the moved code points at the
     repository that holds it.
-
-### Added
-
-- **A vocabulary check on the headers that are leaving** (the motion
-  migration's MIG-0). `workspace_motion_vocabulary` scans every public header
-  of `motionCore`, `motionRuntime` and the generic half of `vrmRetarget` with
-  comments removed, plus every string literal of their sources, for VRM
-  vocabulary. It fails on any name that
-  `tests/boundary/motion-vocabulary.json` does not dispose of as a rename, an identity name, a diagnostic code or a
-  recorded finding. It also fails on a ledger row the scan no longer finds, and
-  on a finding whose anchor identifier is gone. The first run classified 40
-  names. Three near-miss ledgers each get one thing wrong and must fail with
-  that message.
-
-### Changed
-
-- **The `ost` pin is 0.23.2** — `openstrata.ci.yaml`, the workflow re-rendered
-  from it, and `.github/workflows/release.yml`, which mirrors the pin by hand.
-  The bump is taken for what it adds, not because it is current: 0.23.0 answers
-  both asks of
-  [ost report 41](docs/reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md).
-  `requires.libraries` can name a digest-pinned library artifact from another
-  repository, and every rendered job runs `ost library pull` before it builds —
-  the edge the motion migration's consuming half waits on
-  ([the migration track](docs/archive/motion-split/motion-foundation-split.md)). An
-  explicitly empty workspace also renders CI now, which is that report's P3.
-  The render gains one more thing beside the pull step: every cell passes
-  `--require-openusd*` positionally, so a cell declaring neither no longer
-  risks an empty array under macOS bash 3.2 `set -u`. The pinned runtime leaves
-  do not move, and the tree is 159/159 green under the new toolchain locally.
-
-  The pin is 0.23.1 rather than 0.23.0 because 0.23.0 could not be adopted:
-  its new `consumer-link` claim probed a materialized runtime before the
-  relocation `ost configure` and `ost plugin build` apply to that same prefix,
-  and every hosted Linux and Windows lane in this repository and both
-  destinations went red on the pin bump alone
-  ([report 42](docs/reports/ost/42-2026-09-20-v0.23.0-a-claim-measured-before-the-repair.md)).
-  0.23.1 answers all three of that report's asks. Re-measured here against the
-  pinned Windows artifact from a simulated clean host: `consumer-link` passes,
-  `runtime validate` performs the relocation itself (16 imported targets), and
-  a claim that does fail now names the first CMake error — `Imported target
-  "tf" includes non-existent path` — instead of the trailing warning block.
-
-  One cell needed a change for it, and only one: `usdvrmfileformat-pr-windows`
-  declared no `host_python`, because its pyramid stops at L4. `consumer-link`
-  links **and runs** a C++ consumer, and on Windows that executable loads
-  `python313.dll` through pxr while the Windows runtime bundles no
-  interpreter — so it built and then died at `0xC0000135`. The cell now
-  declares 3.13, which every other cell in the ecosystem already did.
-
-  0.23.2 is the third pin in a day, and the third is the one this repository's
-  own migration needs: the root `ost build` now composes the external library
-  artifacts its members declare. Without it a workspace consuming a
-  digest-pinned library from another repository could not configure at all,
-  which is the shape of the consuming change this repository is about to make
-  ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Fixed
 
@@ -4771,7 +4784,8 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.6.0...v0.7.0

@@ -9,7 +9,14 @@ Which release carries a track is the
 
 Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️ accepted workaround
 
-## Next: v0.10.0 — canonical materials reach Hydra 🚧
+## Shipped: v0.10.0 — canonical materials reach Hydra 🚧
+
+**Prepared 2026-09-27, not yet tagged.** Items 1–8 are merged and the version
+is bumped ([release record](../releases/v0.10.0.md)). What is left is the
+`release.yml` dry run on `main`, the tag, publishing the draft, and the GHCR
+flip below. This heading says `Shipped` because `check_docs.py` accepts only
+`Next`/`Then`/`Shipped` with a version, and a version with a release record
+cannot be `Next`.
 
 **Release boundary:** the canonical material semantics this repository
 imports reach a Hydra renderer as data, including when an expression drives
@@ -55,8 +62,8 @@ Each item's detail and its done-when are in the
 
 In this order; each step is its own pull request unless it says otherwise.
 
-1. ⬜ **Items 1–8 merged**, the I4 renderer report merged in `hydra-toon`.
-2. ⬜ **Preparation:** the lockstep bump to `0.10.0` (`VERSION`,
+1. ✅ **Items 1–8 merged**, the I4 renderer report merged in `hydra-toon`.
+2. ✅ **Preparation:** the lockstep bump to `0.10.0` (`VERSION`,
    `openstrata.toml`, every descriptor `version:`, every `requires` range to
    `>=0.10,<0.11`, every CMake standalone fallback), the CHANGELOG's
    `[0.10.0]` section, the [release record](../releases/) `v0.10.0.md`, and

@@ -18,7 +18,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
     file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" _vrm_imaging_version LIMIT_COUNT 1)
     string(STRIP "${_vrm_imaging_version}" _vrm_imaging_version)
 else()
-    set(_vrm_imaging_version "0.9.0")
+    set(_vrm_imaging_version "0.10.0")
 endif()
 
 project(VrmImagingPlugin

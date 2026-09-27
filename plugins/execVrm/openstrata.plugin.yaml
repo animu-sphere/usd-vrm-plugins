@@ -3,7 +3,7 @@ manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
   name: execVrm
-  version: 0.9.0
+  version: 0.10.0
   kind: usd-exec
 license: Apache-2.0
 runtime:
@@ -34,7 +34,7 @@ requires:
     # retarget and the rig's diagnostics are handed because `motionRetarget`
     # holds no required set of its own. The retarget itself is declared below.
     - id: vrmRig
-      version: ">=0.9,<0.10"
+      version: ">=0.10,<0.11"
     # And what the retarget is built on, named rather than left to the closure:
     # the vocabulary a humanoid binds (`openstrata::motion::HumanJoint`) is
     # motionCore's, and a bundle names what it spells.
@@ -79,7 +79,7 @@ requires:
   # found" -- measured in execVrm_humanoid.
   bundles:
     - id: vrmSchema
-      version: ">=0.9,<0.10"
+      version: ">=0.10,<0.11"
       contract: 1
     # execMotion, for the pose a retarget reads. Not linked either:
     # `vrm.computeBoundPose` reads `motion.sampleAnimation` by name across a

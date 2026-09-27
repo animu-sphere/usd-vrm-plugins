@@ -1,6 +1,6 @@
 # The Hydra imaging track
 
-**Status:** 🚧 in progress — Steps I0–I3 shipped · **Target:** v0.10.0
+**Status:** 🚧 in progress — Steps I0–I5 done for v0.10.0; the published package waits on the tag · **Target:** v0.10.0
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
 

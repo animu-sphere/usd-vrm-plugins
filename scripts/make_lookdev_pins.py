@@ -18,7 +18,7 @@ not exist.
 Usage (what .github/workflows/release.yml runs):
 
     python scripts/make_lookdev_pins.py --rows .ost-ci/pushed.tsv \
-        --version 0.9.0 --repository ghcr.io/animu-sphere/usd-vrm-plugins \
+        --version 0.10.0 --repository ghcr.io/animu-sphere/usd-vrm-plugins \
         --out pins --published
 """
 from __future__ import annotations

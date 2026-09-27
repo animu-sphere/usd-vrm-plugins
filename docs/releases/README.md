@@ -8,6 +8,7 @@ rewritten; new work goes to a new record. Active, incomplete work lives in the
 
 | Version | Record | Theme |
 | --- | --- | --- |
+| v0.10.0 | [v0.10.0.md](v0.10.0.md) | Canonical materials reach Hydra: one canonical record per VRM 0.x and 1.0 material, both realizations generated from it, expression colours driving it over time, and `vrmImaging` handing it to any Hydra renderer with per-field invalidation; native USD export; the motion split completed |
 | v0.9.0 | [v0.9.0.md](v0.9.0.md) | The OpenExec foundation: `execMotion` and `execVrm` evaluate a humanoid through OpenExec as wrappers over the motion libraries, equal to the offline bake bit for bit on recorded input, from the installed product |
 | v0.8.0 | [v0.8.0.md](v0.8.0.md) | Installed-package consumer lane, shared OSC foundation and VRChat OSC Trackers input: twelve packages consumed from a clean prefix by a project that is not this workspace, and a third live surface reaching an unchanged pipeline over shared transport and decoder libraries |
 | v0.7.0 | [v0.7.0.md](v0.7.0.md) | mocopi live input and generic BVH recorded-motion ingestion: two surfaces of one capture product reach a retargeted `UsdSkelAnimation` through an unchanged `motion_retarget` |
