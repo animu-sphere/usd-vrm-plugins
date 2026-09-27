@@ -15,6 +15,17 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **An expression bake reaches Hydra as time** ([imaging
+  track](docs/roadmap/imaging-track.md) Step I4, this repository's half). The
+  root build bakes a clip onto the `expressions.vrm` fixture with
+  `motion_retarget` and reads the output through UsdImaging's stage scene index
+  with `vrmImaging` in the session (`workspace_expression_bake_imaging`). At
+  each baked time the expression's colour slot, and each `/preview` and `/mtlx`
+  parameter that reads it, carries the bake's sample. A time move dirties only
+  those locators, never the whole `material` and nothing of the bound mesh, so
+  imaging policy §28.3's decision to live with the whole-material dirtying of
+  authored edits stands.
+
 - **Expression colours drive the canonical material slots** (Product P5
   Step 7; [material track](docs/roadmap/material-track.md)). A VRM
   expression's material-colour bind now resolves through one table — the
