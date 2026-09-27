@@ -12,7 +12,7 @@ set(_vrm_imaging_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 # PXR_PLUGINPATH_NAME and the staged plugInfo.json, the path a packaged plugin
 # takes.
 set(_vrm_imaging_test_targets)
-foreach(_t IN ITEMS arch tf gf vt plug sdf usd hd usdImaging)
+foreach(_t IN ITEMS arch tf gf js vt plug ar sdf usd hd usdImaging)
     if(TARGET ${_t})
         list(APPEND _vrm_imaging_test_targets ${_t})
     elseif(TARGET pxr::${_t})
@@ -20,10 +20,12 @@ foreach(_t IN ITEMS arch tf gf vt plug sdf usd hd usdImaging)
     endif()
 endforeach()
 
-# `expression_bake` is built here and registered by the root CMakeLists.txt:
-# its stage is `motion_retarget`'s bake of a `.vrm`, so it needs the tool and
-# the importer in the same build, which only the composed root build has.
-foreach(_suite IN ITEMS discovery mtoon material texture_info expression_bake)
+# `expression_bake` and `import` are built here and registered by the root
+# CMakeLists.txt: their stages are a `.vrm` the importer reads -- baked by
+# `motion_retarget` for the first -- so they need the importer (and the tool)
+# in the same build, which only the composed root build has.
+foreach(_suite IN ITEMS discovery mtoon material texture_info expression_bake
+                        import)
     set(_exe vrmImaging_${_suite}_tests)
     add_executable(${_exe} test_vrm_imaging_${_suite}.cpp)
     target_include_directories(${_exe} PRIVATE ${PXR_INCLUDE_DIRS})
