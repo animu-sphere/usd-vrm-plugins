@@ -1367,7 +1367,12 @@ runtime:
    have to pay it. They reach Hydra as time samples, or through a scene index
    downstream of UsdImaging, and neither produces a change notice. If Step I4
    can deliver them only as per-frame authored edits, this decision is
-   reopened.
+   reopened. Step I4 measured that it does not: `motion_retarget` writes an
+   expression's colour as time samples on the slot, and a time move over the
+   bake dirties `vrm/material/<field>` and the parameters that read it in
+   every render context (`/mtlx`'s under `material/mtlx/` as well), never
+   `material` and nothing of the bound mesh
+   (`workspace_expression_bake_imaging`). The decision stands.
    The same property means that a classic render delegate never gets these
    values through `Sync`. For a material Sprim,
    `HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits` maps only locators

@@ -175,7 +175,7 @@ Unblocked: Product P5 Step 7 landed expression binds on the canonical slots
 (2026-09-27), so an expression bake is time samples on the Material's
 `inputs:vrm:*` (policy §10, §17.5).
 
-- ⬜ **An expression bake reaches Hydra as time.** The generated `expressions.vrm`
+- ✅ **An expression bake reaches Hydra as time.** The generated `expressions.vrm`
   fixture's colour bind, baked by `motion_retarget`, read through
   `UsdImagingStageSceneIndex` with `vrmImaging` in the session: the value at
   each baked time equals the bake's sample, and a time move dirties the
@@ -191,6 +191,27 @@ Unblocked: Product P5 Step 7 landed expression binds on the canonical slots
 
 **Done when** a canonical colour change reaches a live `hydra-toon` material
 slot without rebuilding geometry or shader pipelines.
+
+**This repository's half, 2026-09-27.** The root build bakes
+`expressive_clip.usda` onto `expressions.vrm` with `motion_retarget`
+(`workspace_expression_bake`, a CTest fixture), and
+`workspace_expression_bake_imaging` reads the layer it wrote through the stage
+scene index with `vrmImaging` in the session:
+
+- *the bake's samples* — `happy` drives `Face_Mat`'s emission, and at 0, 15
+  and 30 `vrm/material/emissiveFactor` is black, half red and red (the clip's
+  1.5 clamped). So is every network parameter that reads the slot: `/preview`'s
+  `emissiveColor` and `/mtlx`'s `emissive`, both required, since a bake that
+  reached one realization is one the other renderer never sees;
+- *a time move* — dirties that `vrm` locator and those parameters, in each
+  render context they appear in (`material//`, `material/__all/`,
+  `material/mtlx/`), and nothing else of the material: never `material`, and
+  no locator of `/Asset/geo/Face`, the mesh it is bound to. Every data source
+  of both prims is read first, as a renderer that has drawn them has.
+
+A bake that writes nothing on the slot fails, and so does a time-varying
+attribute on the bound mesh, which dirties its own locator. Policy §28.3's
+condition is met, and the whole-material dirtying stays lived with.
 
 ### Step I5 — hardening ⬜
 

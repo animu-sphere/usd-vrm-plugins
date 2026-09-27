@@ -102,3 +102,11 @@ The suites open hand-authored stages (`tests/fixtures/*.usda`) and never a
 `.vrm`, so what reaches Hydra is the schema contract and not the importer. They
 do not link the plugin: discovery goes through `PXR_PLUGINPATH_NAME` and the
 staged `plugInfo.json`.
+
+One more suite is built here and registered by the root build, because its
+stage is not hand-authored: `workspace_expression_bake_imaging` runs
+`vrmImaging_expression_bake_tests` over `motion_retarget`'s bake of the
+importer's `expressions.vrm` (imaging track Step I4). An expression's colour
+reaches `vrm/material/emissiveFactor` and both realizations' reading
+parameters at each baked time, and a time move dirties those alone — never
+the whole `material`, nothing of the bound mesh.

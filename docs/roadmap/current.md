@@ -42,7 +42,7 @@ Each item's detail and its done-when are in the
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| 1 | **I4 — an expression bake reaches Hydra as time.** A `.vrm` fixture's expression colour, baked by `motion_retarget` onto the Material's `inputs:vrm:*`, is read through `vrmImaging` at each baked time, and a time move dirties that field's `vrm` locator (and a reading network parameter), never `material` and no geometry locator. | this repository | ⬜ |
+| 1 | **I4 — an expression bake reaches Hydra as time.** A `.vrm` fixture's expression colour, baked by `motion_retarget` onto the Material's `inputs:vrm:*`, is read through `vrmImaging` at each baked time, and a time move dirties that field's `vrm` locator (and a reading network parameter), never `material` and no geometry locator. | this repository | ✅ `workspace_expression_bake_imaging` |
 | 2 | **I4 — a live `hydra-toon` slot.** The same bake played in `hydra-toon`'s host session changes the MToon slot, and no geometry, draw packet or pipeline is rebuilt, recorded as a renderer report. | `hydra-toon` | ⬜ |
 | 3 | **I5 — plugin discovery in CI.** A suite in every workspace cell shows `PlugRegistry` discovering `vrmImaging` and UsdImaging constructing each adapter from `plugInfo.json` alone (policy §16, §17.1). | this repository | ⬜ |
 | 4 | **I5 — invalidation regression.** Policy §17.4's cases, each held by a suite: the `matcap` texture edit is the one not yet asserted. | this repository | ⬜ |

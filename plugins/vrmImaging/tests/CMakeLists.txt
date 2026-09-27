@@ -20,7 +20,10 @@ foreach(_t IN ITEMS arch tf gf vt plug sdf usd hd usdImaging)
     endif()
 endforeach()
 
-foreach(_suite IN ITEMS mtoon material texture_info)
+# `expression_bake` is built here and registered by the root CMakeLists.txt:
+# its stage is `motion_retarget`'s bake of a `.vrm`, so it needs the tool and
+# the importer in the same build, which only the composed root build has.
+foreach(_suite IN ITEMS mtoon material texture_info expression_bake)
     set(_exe vrmImaging_${_suite}_tests)
     add_executable(${_exe} test_vrm_imaging_${_suite}.cpp)
     target_include_directories(${_exe} PRIVATE ${PXR_INCLUDE_DIRS})
