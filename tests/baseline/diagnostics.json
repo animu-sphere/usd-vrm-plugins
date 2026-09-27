@@ -64,7 +64,7 @@
     "VRM150": {
       "severity": "INFO",
       "source": "import",
-      "title": "VRM 0.x materialValues expression preserved raw only"
+      "title": "VRM 0.x materialValues bind with no colour slot preserved raw only"
     },
     "VRM151": {
       "severity": "WARNING",

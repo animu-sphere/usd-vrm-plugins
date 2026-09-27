@@ -172,8 +172,9 @@ namespaced field. It still names no field except `alphaMode`, and no role.
 ### Step I4 — animated material semantics ⬜
 
 - ⬜ Time-sampled and expression-driven canonical values through imaging
-  (policy §10, §17.5), after Product P5 Step 7 lands expression binds on the
-  canonical slots.
+  (policy §10, §17.5). Unblocked: Product P5 Step 7 landed expression binds
+  on the canonical slots (2026-09-27), so an expression bake is time samples
+  on the Material's `inputs:vrm:*`.
 
 **Done when** a canonical colour change reaches a live `hydra-toon` material
 slot without rebuilding geometry or shader pipelines.

@@ -110,7 +110,7 @@ repository.
 - 🚧 **Step 6** — `/mtlx` generated from canonical semantics: unlit, lit and
   MToon (headlight) shipped; the comparison on issue #119's asset open
   ([track §3](material-track.md#3-steps))
-- ⬜ **Step 7** — expression material binds onto canonical slots
+- ✅ **Step 7** — expression material binds onto canonical slots
   ([track §3](material-track.md#3-steps))
 
 ## Product P6 — round-trip / exporter research

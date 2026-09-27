@@ -162,9 +162,14 @@ the ones that mesh binds: a blend shape is named by the token its own mesh chose
 for it, so an avatar whose meshes bind no blend shape at all has nothing an
 animation can drive, and `motion_retarget` says so per blend shape.
 
-Material colours are a different story: the bake resolves them, reports how many
-slots the clip drives, and deliberately authors none — a colour slot is a
-material input, not a skeletal one.
+Material colours land on the materials, not the animation: the bake writes each
+colour slot the clip drives as time samples on the Material's canonical input
+(`inputs:vrm:material:baseColorFactor` for `color`, and so on — the
+[schema contract's slot table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots)),
+in the same output layer. Both `/mtlx` and `/preview` read those inputs, so
+scrubbing the timeline in `usdview` shows the colour change. A slot the
+material cannot carry — an MToon colour on a material that is not MToon — is
+named on stderr and not written.
 
 ## Checking that it is the right size
 

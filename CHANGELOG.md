@@ -15,6 +15,21 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Expression colours drive the canonical material slots** (Product P5
+  Step 7; [material track](docs/roadmap/material-track.md)). A VRM
+  expression's material-colour bind now resolves through one table — the
+  [schema contract's](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots),
+  carried in code as `vrmRig/MaterialColorSlots.h` — onto the Material's
+  `inputs:vrm:*` attribute for its slot. `motion_retarget` writes the resolved
+  colour there as time samples in its output layer, where it used to warn that
+  colours were "not written", and reports "N material colours driven". VRM
+  0.x `materialValues` colours (`_Color`, `_EmissionColor`, `_ShadeColor`,
+  `_RimColor`, `_OutlineColor`) are typed onto the same slots, sRGB-decoded
+  as the material's own colours are; this departs from UniVRM's migration,
+  which passes them through. `VRM150` now names only what has no slot:
+  texture transforms (kept raw, material policy q11), other properties,
+  undeclared materials.
+
 - **A `lookdev` package of `vrmImaging`, published to GHCR**
   ([imaging track](docs/roadmap/imaging-track.md) Step I5). The release lane
   gains two cells, Windows and Linux x86_64, that build, test (L0–L5) and
@@ -246,6 +261,17 @@ Current schema contract version: **1**.
   violations.
 
 ### Changed
+
+- **`/mtlx` and `/preview` read expression slot values from the Material**
+  (material policy q12). Every slot value a realization uses is a NodeGraph
+  interface connection to the Material's canonical input rather than a
+  copied value: all of them in `/mtlx`, and in `/preview` those it takes
+  unchanged (an untextured base colour and alpha; emission at strength 1). An
+  animated slot therefore shows in Storm with nothing regenerated. `/preview`
+  still folds factor × texture into `UsdUVTexture.scale`. MToon `/mtlx`
+  graphs now always carry the parametric rim and emission terms, black
+  included, so a slot animated up from black has a graph to show in. Every
+  imported stage's material graphs change accordingly.
 
 - **The root `CMakeLists.txt` resolves no consumed package.** Each member
   resolves what it links through `usdvrm_consume_package()`
@@ -609,6 +635,15 @@ Current schema contract version: **1**.
   ([report 43](docs/reports/ost/43-2026-09-20-v0.23.1-the-root-build-cannot-see-an-external-library.md)).
 
 ### Fixed
+
+- **An expression binding two colour slots of one material lost its
+  pairing.** A USD relationship holds each target once, so
+  `vrm:materialColorTargets` for `color` + `emissionColor` of one face held
+  one material against two slots and two values. A new
+  `vrm:materialColorTargetIndices` (additive within schema contract v1) names
+  each bind's target; the importer, the validator (`VRM244`) and
+  `motion_retarget` follow it, and a stage without it pairs by position as
+  before.
 
 - **The release lane validates the runtime after the host Python.** Since
   the `ost` 0.23.1 pin, `runtime validate` runs a consumer executable, and

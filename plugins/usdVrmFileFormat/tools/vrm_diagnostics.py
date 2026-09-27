@@ -86,7 +86,8 @@ _IMPORT_SPECS = [
     _spec("VRM141", Severity.WARNING, "import",
           "Duplicate humanoid bone; first mapping kept"),
     _spec("VRM150", Severity.INFO, "import",
-          "VRM 0.x materialValues expression preserved raw only"),
+          "VRM 0.x materialValues bind with no colour slot preserved raw "
+          "only"),
     _spec("VRM151", Severity.WARNING, "import",
           "Expression morph target index out of range; bind skipped"),
     _spec("VRM152", Severity.WARNING, "import",
