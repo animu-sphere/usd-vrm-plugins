@@ -4,8 +4,9 @@
 // bake reaches Hydra as time.
 //
 // The stage is `motion_retarget`'s output over the importer's `expressions.vrm`
-// fixture: its `happy` expression binds `emissionColor` of `Face_Mat` to red,
-// and the bake writes that slot as time samples on the Material's canonical
+// fixture, or over `expressions_mtoon.vrm`, the same bind on an MToon
+// material: `happy` binds `emissionColor` of `Face_Mat` to red, and the bake
+// writes that slot as time samples on the Material's canonical
 // `inputs:vrm:material:emissiveFactor` (Product P5 Step 7). Nothing here bakes
 // or imports; the root CMakeLists.txt runs the tool and hands this suite the
 // layer it wrote, with usdVrmFileFormat, vrmSchema and vrmImaging registered.
@@ -29,6 +30,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/usd/sdf/path.h"
 
 #include <string>
 #include <utility>
@@ -52,10 +54,17 @@ const std::pair<double, GfVec3f> kBakedSamples[] = {
     {30.0, GfVec3f(1.0f, 0.0f, 0.0f)},
 };
 
-// The shader inputs each realization drives from the slot.
-const TfToken kReadingParameters[] = {
-    TfToken("emissiveColor"), // UsdPreviewSurface, /preview
-    TfToken("emissive"),      // ND_standard_surface_surfaceshader, /mtlx
+// The shader inputs each realization drives from the slot, as (node, input):
+// a glTF material's and an MToon material's. The node is the last element of
+// the shader's path, under the realization's `preview` or `mtlx` graph.
+struct Reader {
+    TfToken node;
+    TfToken input;
+};
+const Reader kReadingParameters[] = {
+    {TfToken("surface"), TfToken("emissiveColor")}, // UsdPreviewSurface
+    {TfToken("surface"), TfToken("emissive")},      // ND_gltf_pbr_surfaceshader
+    {TfToken("withEmission"), TfToken("in2")},      // MToon's ND_add_color3
 };
 
 using Sampled = std::vector<std::pair<HdDataSourceLocator, VtValue>>;
@@ -90,23 +99,29 @@ ReadAll(const Session& session, const char* path)
     return result;
 }
 
-bool
-IsReadingParameter(const HdDataSourceLocator& locator)
+// The node's path when `locator` is one of kReadingParameters, else empty:
+// material/<context>/nodes/<node>/parameters/<name>/value.
+SdfPath
+ReadingNode(const HdDataSourceLocator& locator)
 {
-    // material/<context>/nodes/<node>/parameters/<name>/value
     const size_t n = locator.GetElementCount();
     if (n < 7 ||
         locator.GetFirstElement() != HdMaterialSchema::GetSchemaToken() ||
         locator.GetElement(n - 1) != HdMaterialNodeParameterSchemaTokens->value ||
         locator.GetElement(n - 3) != HdMaterialNodeSchemaTokens->parameters) {
-        return false;
+        return SdfPath();
     }
-    for (const TfToken& name : kReadingParameters) {
-        if (locator.GetElement(n - 2) == name) {
-            return true;
+    const SdfPath node(locator.GetElement(n - 4).GetString());
+    if (!node.IsPrimPath()) {
+        return SdfPath();
+    }
+    for (const Reader& reader : kReadingParameters) {
+        if (node.GetNameToken() == reader.node &&
+            locator.GetElement(n - 2) == reader.input) {
+            return node;
         }
     }
-    return false;
+    return SdfPath();
 }
 
 GfVec3f
@@ -166,12 +181,12 @@ TestTheBakeReachesHydraAsTime(Session& session)
     bool preview = false;
     bool mtlx = false;
     for (const auto& [locator, value] : material) {
-        if (IsReadingParameter(locator)) {
+        const SdfPath node = ReadingNode(locator);
+        if (!node.IsEmpty()) {
             readers.push_back(locator);
-            preview |= locator.GetElement(locator.GetElementCount() - 2) ==
-                       kReadingParameters[0];
-            mtlx |= locator.GetElement(locator.GetElementCount() - 2) ==
-                    kReadingParameters[1];
+            const TfToken graph = node.GetParentPath().GetNameToken();
+            preview |= graph == TfToken("preview");
+            mtlx |= graph == TfToken("mtlx");
         }
     }
     // Both realizations read the slot; a bake that reached one of them would

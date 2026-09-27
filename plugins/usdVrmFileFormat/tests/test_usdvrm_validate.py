@@ -75,7 +75,8 @@ def check_taxonomy():
 def check_valid_fixtures():
     """Every committed fixture must import to a contract-valid stage."""
     for name in ("minimal.vrm", "vrm0_minimal.vrm", "multiskin_ibm.vrm",
-                 "unordered_skel.vrm", "expressions.vrm", "springbone.vrm",
+                 "unordered_skel.vrm", "expressions.vrm", "expressions_mtoon.vrm",
+                 "springbone.vrm",
                  "lookat.vrm", "constraints.vrm", "textures.vrm", "animation.vrm",
                  "materials.vrm", "names.vrm"):
         stage = _open(name)
