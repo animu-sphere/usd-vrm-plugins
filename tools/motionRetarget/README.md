@@ -119,10 +119,16 @@ keeps owning its rig. Five consequences are worth knowing:
   declares a name and authors no weight is not a zero — nothing is authored for
   its targets — and a sample that says nothing (a USD value block) leaves the
   previous weight standing rather than dropping it to zero.
-- **Material colours are resolved and not authored.** A colour slot is a
-  material input and the material layer owns what an MToon or a
-  `UsdPreviewSurface` calls it, so the bake reports how many slots the clip
-  drives on this rig instead of writing them.
+- **Material colours land on the material's semantics, never its shaders.**
+  A resolved colour slot is written as time samples on the Material's
+  canonical input the
+  [schema contract's slot table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots)
+  names — `color` on `inputs:vrm:material:baseColorFactor` and its alpha, the
+  MToon slots on their `VrmMToonAPI` factors — as an override in the output
+  layer, from the material's own value by the VRM rule
+  `base + Σ weight · (target − base)`. Nothing is written below `/preview` or
+  `/mtlx`; they read those inputs. A slot whose schema the material does not
+  apply, or a slot name outside VRM 1.0's six, is named and not written.
 - **The avatar can say two expressions must not both drive its face.** Morph
   offsets sum on the vertices they share even when the expressions bind
   different targets, so a `happy` that raises the cheek drives an eyelid a
@@ -217,8 +223,8 @@ Match the code and the subject, not the sentence after them. A refused
 
 The same holds for the face: expressions the clip animates and this avatar does
 not declare, weights clamped from outside `[0, 1]`, blend shapes no mesh binds,
-and material colour slots the bake resolves and does not write are each named
-rather than counted. A clip is authored against no avatar in particular, so none
+and material colour slots the material cannot carry are each named rather than
+counted. A clip is authored against no avatar in particular, so none
 of them is an error — but a whole expression track going missing without a line
 of output is how a bake looks correct and drives nothing.
 

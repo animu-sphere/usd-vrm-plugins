@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1–5 shipped, Step 6 items 1–3 shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1–7 shipped; Step 8 is `hydra-toon`'s · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -47,20 +47,18 @@ The reasons are what Steps 1 and 2 left behind:
 - ✅ **Step 5 — `/preview` generated from canonical semantics** (2026-09-25;
   policy §6.5). It is a function of the Material's canonical attributes and
   nothing else, run by the importer on what it reads back from the stage.
-- 🚧 **Step 6 — `/mtlx` generated from canonical semantics** (items 1–3,
-  2026-09-25; policy §5.2.1). Every material carries both realizations, both
-  generated from the canonical attributes alone: lit materials as glTF PBR,
-  unlit ones as emission, MToon ones as a headlight-lit toon approximation —
-  shade, shading shift and toony, MatCap, parametric rim — through the same
-  `gltf_pbr` terminal (policy §11 q13). What is left is the visual comparison
-  on issue #119's asset, which is not in the repository.
-- **Expression colour binds already target a slot, not a shader input.** A
-  VRM 1.0 `materialColorBinds` entry is typed on its expression prim as a
-  relationship to the `UsdShadeMaterial` plus a VRM slot name (`color`,
-  `shadeColor`, …) and a target value; `vrmRig`'s resolver resolves it, and
-  `motion_retarget` warns and writes nothing, because the slot has no
-  canonical attribute to land on. VRM 0.x `materialValues` binds are raw only
-  (diagnostic `VRM150`), and VRM 1.0 `textureTransformBinds` raw only.
+- ✅ **Step 6 — `/mtlx` generated from canonical semantics** (2026-09-25;
+  policy §5.2.1). Every material carries both realizations, both generated
+  from the canonical attributes alone: lit materials as glTF PBR, unlit ones
+  as emission, MToon ones as a headlight-lit toon approximation — shade,
+  shading shift and toony, MatCap, parametric rim — through the same
+  `gltf_pbr` terminal (policy §11 q13). Issue #119 was closed 2026-09-27.
+- ✅ **Step 7 — expression colours drive canonical slots** (2026-09-27;
+  policy §6.7). A bind's slot resolves through the schema contract's table
+  onto the Material's `inputs:vrm:*`; `motion_retarget` writes it there as
+  time samples, and both realizations read it through their interface, so
+  the colour shows with nothing regenerated. VRM 0.x `materialValues` land on
+  the same slots; texture-transform binds stay raw (q11).
 - **No renderer reads MToon.** [`hydra-toon`](https://github.com/animu-sphere/hydra-toon) exists (its Renderer
   Phase 0 draws meshes); its material path is Renderer Phase 1, and it reads
   the schemas through Hydra once the [imaging track](imaging-track.md)
@@ -69,7 +67,7 @@ The reasons are what Steps 1 and 2 left behind:
 ## 3. Steps
 
 Steps 3 → 4 → 5/6 are sequential; 5 and 6 are independent of each other.
-Step 7 needs Step 3's slot table and open question 9, not Steps 5–6. Step 8
+Step 7 needed Step 3's slot table and open question 9, not Steps 5–6. Step 8
 is another repository's.
 
 ### Step 3 — the canonical material schema contract ✅
@@ -208,15 +206,12 @@ baseline diff, `/preview` now honours glTF's emissive factor and
 `KHR_materials_emissive_strength`: it ignored the strength, and on a lit
 material with an emissive texture dropped the factor too.
 
-**Values, not connections.** `/preview` carries generated *values*; it
-connects to no canonical input. Which realization inputs should instead
-connect to the Material's `inputs:vrm:*`, so an animated canonical value
-reaches them without regenerating, is Step 7's question (policy §11 q12):
-UsdPreviewSurface has no arithmetic node, so anything folded — factor ×
-texture, occlusion and normal scale/bias, glTF alpha coverage — can only be
-a generated value.
+**Values, not connections** — as shipped. Step 7 then connected the inputs
+an expression slot reaches unchanged (policy §11 q12); UsdPreviewSurface has
+no arithmetic node, so anything folded — factor × texture, occlusion and
+normal scale/bias, glTF alpha coverage — is still a generated value.
 
-### Step 6 — `/mtlx` generated from canonical semantics 🚧
+### Step 6 — `/mtlx` generated from canonical semantics ✅
 
 The same re-pointing for MaterialX, and the realization's growth, in this
 order:
@@ -306,10 +301,13 @@ model wherever it is stated. Shown by:
 Viewing a skinned avatar needs `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1`,
 or the toon ramp shows every triangle (policy §5.2.1).
 
-Still open: the comparison on issue #119's asset — the done-when's first
-target — which is not in the repository; the issue has only captures.
+**Issue #119 closed 2026-09-27, by the maintainer's decision.** The
+done-when's first target was a comparison on #119's asset, `AliciaSolid.vrm`.
+That file is not redistributable, so it stays out of the repository. The
+issue's remaining cause was the MToon shade path, which item 3 realizes. No
+comparison against a VRM viewer was run, and none is owed.
 
-### Step 7 — expression material binds onto canonical slots ⬜
+### Step 7 — expression material binds onto canonical slots ✅
 
 An expression changes a material *semantic*, never a realization's shader
 input (policy §6.6). The work:
@@ -324,9 +322,7 @@ input (policy §6.6). The work:
   instead of warning, and the realizations follow them (q9).
 - `textureTransformBinds`: in or out of scope (q11).
 - Which realization inputs connect to the canonical `inputs:vrm:*` and which
-  stay generated values (q12). `/preview` folds factor × texture into
-  `UsdUVTexture.scale`, which no connection can express, so an animated base
-  colour on a textured material reaches `/preview` only by regeneration.
+  stay generated values (q12).
 
 The OpenExec half — `vrm.computeMaterialColorOverrides` — is the
 [`ExecIr` track](execir-track.md)'s P1-1 and reads the same table.
@@ -335,6 +331,49 @@ The OpenExec half — `vrm.computeMaterialColorOverrides` — is the
 attribute; the change shows through both `/preview` and `/mtlx` without a
 re-bake; nothing writes below either graph; and `motion_retarget`'s "not
 written" warning is gone.
+
+**Shipped 2026-09-27.** The user's calls: q11 — texture-transform binds stay
+raw; q12 — connect every slot value wherever the realization can express the
+relation; q14 — a VRM 0.x target is sRGB-decoded like the material's own
+colours (the one departure from UniVRM's migration). One defect surfaced on
+the way, and was fixed first: a relationship holds each target once, so an
+expression binding two slots of one material — six binds, three materials in
+the fixture — lost its pairing with the parallel arrays.
+`vrm:materialColorTargetIndices` now names each bind's target (additive
+within v1; a stage without it pairs by position, as before). Each condition,
+and where it is shown:
+
+- *the table* — the
+  [schema contract's](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots),
+  carried in code as `vrmRig/MaterialColorSlots.h` and pinned by
+  `vrmRig_tests`;
+- *0.x on the same slots* — `mtoon_vrm0.vrm`'s `Joy` states every colour
+  property 0.x has plus three that must stay raw; `mtoon_vrm1.vrm` is the
+  same expression as UniVRM writes it in 1.0, each target a hand-worked
+  literal. `check_mtoon_vrm0_matches_vrm1` requires the same targets, index
+  array, slots and values from both, and exactly three `VRM150`s;
+- *a baked colour changes the canonical attribute* —
+  `motion_retarget_design_triplet` bakes `angry` at 0.25 onto a white
+  `FaceMaterial` and requires (1, 0.75, 0.75) and alpha 0.875 on its
+  `baseColorFactor` / `baseColorAlphaFactor` at every sample, an MToon slot
+  of the same (non-MToon) material reported and not written, nothing
+  authored below the Material, and the "not written" warning gone. A second
+  avatar states its binds in the pre-index positional form and still lands;
+- *shows through both realizations without a re-bake* —
+  `usdvrm_realization_regenerate` puts a time sample on each slot's canonical
+  input and requires the node input that realizes it, in `/preview` and
+  `/mtlx`, lit, unlit and MToon, to resolve to it at that frame (13 cases),
+  and still regenerates the one `/preview` value that has to stay folded. In
+  Storm, a `usdrecord` probe with the values time-sampled on the Materials
+  only: unlit base colour red → blue through `/mtlx` and through `/preview`,
+  and an MToon emission of 0 → 0.5 on a 0.2 grey reading exactly sRGB 124 →
+  218 (linear 0.2 → 0.7);
+- *nothing below either graph* — the retarget suite checks the output layer;
+  the realizations carry interface connections, never a written colour.
+
+The baseline diff is the new index attribute and, for every material, each
+slot value turning from a copied value into an interface connection; MToon
+graphs gain the always-authored parametric rim and emission terms.
 
 ### Step 8 — `hydra-toon` consumes the contract (owned elsewhere)
 

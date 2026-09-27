@@ -312,19 +312,29 @@ class "VrmExpressionAPI" (
             string userDocBrief = "Whether the expression value is clamped to 0/1 (binary)."
         }
     )
+    uniform int[] vrm:materialColorTargetIndices (
+        customData = {
+            string userDocBrief = """Per material color bind, the index into vrm:materialColorTargets
+        of the material it drives; parallel to vrm:materialColorTypes and
+        vrm:materialColorValues."""
+        }
+    )
     rel vrm:materialColorTargets (
         customData = {
-            string userDocBrief = "The materials whose colors this expression overrides."
+            string userDocBrief = """The materials whose colors this expression overrides, each
+        once."""
         }
     )
     uniform token[] vrm:materialColorTypes (
         customData = {
-            string userDocBrief = "Color slot per target (e.g."
+            string userDocBrief = """Color slot per material color bind: VRM 1.0's color,
+        emissionColor, shadeColor, matcapColor, rimColor or outlineColor."""
         }
     )
     uniform float4[] vrm:materialColorValues (
         customData = {
-            string userDocBrief = "Target RGBA per material color bind, parallel to vrm:materialColorTargets."
+            string userDocBrief = """Target RGBA per material color bind, linear, parallel to
+        vrm:materialColorTargetIndices."""
         }
     )
     rel vrm:morphTargets (

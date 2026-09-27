@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "usd/MtlxRealization.h"
 
+#include "usd/CanonicalInput.h"
 #include "usd/UvTransform.h"
 
 #include "pxr/base/gf/vec2f.h"
@@ -59,15 +60,30 @@ _GltfOpacity(const VrmMaterialSemantics& s)
     return s.alphaMode == "OPAQUE" ? 1.0f : s.baseColorAlphaFactor;
 }
 
-
-// One /mtlx graph under construction: defines its nodes, and shares one
-// texcoord node between every texture that samples it.
+// One /mtlx graph under construction: defines its nodes, shares one texcoord
+// node between every texture that samples it, and reads canonical values
+// through its interface.
 class _Graph
 {
-public:
-    _Graph(const UsdStagePtr& stage, const SdfPath& path) : _stage(stage), _path(path) {}
+  public:
+    _Graph(const UsdShadeMaterial& material, const UsdShadeNodeGraph& graph)
+        : _material(material), _graph(graph), _stage(graph.GetPrim().GetStage()),
+          _path(graph.GetPath())
+    {
+    }
 
-    UsdShadeShader Node(const std::string& name, const char* id) const
+    // The Material's canonical input `name`, through this graph's interface
+    // (policy §11 q12). Every expression colour slot is read this way wherever
+    // the graph uses it, so the realization follows a value animated on the
+    // Material without being regenerated.
+    UsdShadeInput
+    Canonical(const char* name, const SdfValueTypeName& type) const
+    {
+        return UsdVrmCanonicalInput(_material, _graph, name, type);
+    }
+
+    UsdShadeShader
+    Node(const std::string& name, const char* id) const
     {
         UsdShadeShader n = UsdShadeShader::Define(_stage, _path.AppendChild(TfToken(name)));
         n.CreateIdAttr(VtValue(TfToken(id)));
@@ -80,8 +96,9 @@ public:
     // data textures (vector3) have none. A texture that is not addressed by
     // the mesh's UVs (MToon's MatCap) passes its own `uv` and takes no
     // transform.
-    UsdShadeOutput Sample(const std::string& role, const VrmTextureRef& ref, const char* id,
-                          const SdfValueTypeName& type, bool srgb, UsdShadeOutput uv = {})
+    UsdShadeOutput
+    Sample(const std::string& role, const VrmTextureRef& ref, const char* id,
+           const SdfValueTypeName& type, bool srgb, UsdShadeOutput uv = {})
     {
         const bool meshUv = !uv;
         if (meshUv)
@@ -130,8 +147,9 @@ public:
         return image.CreateOutput(TfToken("out"), type);
     }
 
-private:
-    UsdShadeOutput _Texcoord()
+  private:
+    UsdShadeOutput
+    _Texcoord()
     {
         if (!_st)
         {
@@ -147,6 +165,8 @@ private:
         return _st;
     }
 
+    UsdShadeMaterial _material;
+    UsdShadeNodeGraph _graph;
     UsdStagePtr _stage;
     SdfPath _path;
     UsdShadeOutput _st;
@@ -175,11 +195,19 @@ _AuthorBaseColor(_Graph& g, UsdShadeShader surface, UsdShadeInput color,
         surface.CreateInput(TfToken("alpha_cutoff"), SdfValueTypeNames->Float).Set(s.alphaCutoff);
     }
 
+    const UsdShadeInput factorRgb =
+        g.Canonical("vrm:material:baseColorFactor", SdfValueTypeNames->Color3f);
+    auto factorAlpha = [&]
+    { return g.Canonical("vrm:material:baseColorAlphaFactor", SdfValueTypeNames->Float); };
     const VrmTextureRef* tex = _Texture(s, "baseColor");
     if (!tex)
     {
-        color.Set(s.baseColorFactor);
-        opacity.Set(_GltfOpacity(s));
+        color.ConnectToSource(factorRgb);
+        // OPAQUE ignores the factor's alpha, so there is nothing to follow.
+        if (alphaMode == 0)
+            opacity.Set(_GltfOpacity(s));
+        else
+            opacity.ConnectToSource(factorAlpha());
         return;
     }
 
@@ -188,11 +216,15 @@ _AuthorBaseColor(_Graph& g, UsdShadeShader surface, UsdShadeInput color,
     const UsdShadeOutput sample =
         g.Sample("baseColor", *tex, "ND_image_color4", SdfValueTypeNames->Color4f, true);
 
+    // glTF's RGBA factor is two canonical inputs; one node puts it back
+    // together for the multiply.
+    UsdShadeShader factorRgba = g.Node("baseColorFactorRgba", "ND_combine2_color4CF");
+    factorRgba.CreateInput(TfToken("in1"), SdfValueTypeNames->Color3f).ConnectToSource(factorRgb);
+    factorRgba.CreateInput(TfToken("in2"), SdfValueTypeNames->Float).ConnectToSource(factorAlpha());
     UsdShadeShader factor = g.Node("baseColorFactor", "ND_multiply_color4");
     factor.CreateInput(TfToken("in1"), SdfValueTypeNames->Color4f).ConnectToSource(sample);
-    const GfVec3f& f = s.baseColorFactor;
     factor.CreateInput(TfToken("in2"), SdfValueTypeNames->Color4f)
-        .Set(GfVec4f(f[0], f[1], f[2], s.baseColorAlphaFactor));
+        .ConnectToSource(factorRgba.CreateOutput(TfToken("out"), SdfValueTypeNames->Color4f));
 
     UsdShadeShader split = g.Node("baseColorSplit", "ND_separate4_color4");
     split.CreateInput(TfToken("in"), SdfValueTypeNames->Color4f)
@@ -293,24 +325,37 @@ _AuthorNormalMap(_Graph& g, const VrmMaterialSemantics& s)
 }
 
 // glTF emission onto `input`: emissiveFactor * emissiveTexture, the factor
-// scaled by `factorScale`.
+// scaled by `factorScale` -- through a node only where the scale is not 1, so a
+// factor that needs no scaling is read from the Material as it is.
 void
-_AuthorEmission(_Graph& g, UsdShadeInput input, const VrmMaterialSemantics& s,
-                float factorScale)
+_AuthorEmission(_Graph& g, UsdShadeInput input, const VrmMaterialSemantics& s, float factorScale)
 {
-    const GfVec3f factor = s.emissiveFactor * factorScale;
+    const UsdShadeInput canonical =
+        g.Canonical("vrm:material:emissiveFactor", SdfValueTypeNames->Color3f);
+    auto connectFactor = [&](UsdShadeInput target)
+    {
+        if (factorScale == 1.0f)
+        {
+            target.ConnectToSource(canonical);
+            return;
+        }
+        UsdShadeShader scaled = g.Node("emissiveFactorScaled", "ND_multiply_color3FA");
+        scaled.CreateInput(TfToken("in1"), SdfValueTypeNames->Color3f).ConnectToSource(canonical);
+        scaled.CreateInput(TfToken("in2"), SdfValueTypeNames->Float).Set(factorScale);
+        target.ConnectToSource(scaled.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
+    };
     if (const VrmTextureRef* tex = _Texture(s, "emissive"))
     {
         UsdShadeShader mul = g.Node("emissiveFactor", "ND_multiply_color3");
         mul.CreateInput(TfToken("in1"), SdfValueTypeNames->Color3f)
             .ConnectToSource(
                 g.Sample("emissive", *tex, "ND_image_color3", SdfValueTypeNames->Color3f, true));
-        mul.CreateInput(TfToken("in2"), SdfValueTypeNames->Color3f).Set(factor);
+        connectFactor(mul.CreateInput(TfToken("in2"), SdfValueTypeNames->Color3f));
         input.ConnectToSource(mul.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
     }
     else
     {
-        input.Set(factor);
+        connectFactor(input);
     }
 }
 
@@ -348,8 +393,7 @@ _AuthorLit(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
 
     if (const UsdShadeOutput normal = _AuthorNormalMap(g, s))
     {
-        surface.CreateInput(TfToken("normal"), SdfValueTypeNames->Vector3f)
-            .ConnectToSource(normal);
+        surface.CreateInput(TfToken("normal"), SdfValueTypeNames->Vector3f).ConnectToSource(normal);
     }
 
     // glTF occlusion: ao = 1 + strength * (sample.r - 1) = mix(1, sample.r, strength).
@@ -481,18 +525,20 @@ _AuthorMToon(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
     UsdShadeShader toon = g.Node("toon", "ND_mix_color3");
     _AuthorBaseColor(g, surface, in(toon, "fg", SdfValueTypeNames->Color3f), s);
     UsdShadeInput shade = in(toon, "bg", SdfValueTypeNames->Color3f);
+    const UsdShadeInput shadeFactor =
+        g.Canonical("vrm:mtoon:shadeColorFactor", SdfValueTypeNames->Color3f);
     if (const VrmTextureRef* tex = _Texture(s, "shadeMultiply"))
     {
         UsdShadeShader mul = g.Node("shadeColor", "ND_multiply_color3");
         in(mul, "in1", SdfValueTypeNames->Color3f)
             .ConnectToSource(g.Sample("shadeMultiply", *tex, "ND_image_color3",
                                       SdfValueTypeNames->Color3f, true));
-        in(mul, "in2", SdfValueTypeNames->Color3f).Set(m.shadeColorFactor);
+        in(mul, "in2", SdfValueTypeNames->Color3f).ConnectToSource(shadeFactor);
         shade.ConnectToSource(out(mul, "out", SdfValueTypeNames->Color3f));
     }
     else
     {
-        shade.Set(m.shadeColorFactor);
+        shade.ConnectToSource(shadeFactor);
     }
     in(toon, "mix", SdfValueTypeNames->Float)
         .ConnectToSource(out(ramp, "out", SdfValueTypeNames->Float));
@@ -564,15 +610,16 @@ _AuthorMToon(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
 
         UsdShadeShader matcap = g.Node("matcap", "ND_multiply_color3");
         in(matcap, "in1", SdfValueTypeNames->Color3f)
-            .ConnectToSource(g.Sample("matcap", *tex, "ND_image_color3",
-                                      SdfValueTypeNames->Color3f, true,
-                                      out(uv, "out", SdfValueTypeNames->Float2)));
-        in(matcap, "in2", SdfValueTypeNames->Color3f).Set(m.matcapFactor);
+            .ConnectToSource(g.Sample("matcap", *tex, "ND_image_color3", SdfValueTypeNames->Color3f,
+                                      true, out(uv, "out", SdfValueTypeNames->Float2)));
+        in(matcap, "in2", SdfValueTypeNames->Color3f)
+            .ConnectToSource(g.Canonical("vrm:mtoon:matcapFactor", SdfValueTypeNames->Color3f));
         rim = out(matcap, "out", SdfValueTypeNames->Color3f);
     }
 
-    // A black parametric rim adds nothing, so none is authored.
-    if (m.parametricRimColorFactor != GfVec3f(0.0f))
+    // The parametric rim is authored even where its colour is black and adds
+    // nothing: `rimColor` is an expression slot, and a rim animated up from
+    // black needs a graph to show in.
     {
         UsdShadeShader base = g.Node("rimFresnelBase", "ND_subtract_float");
         in(base, "in1", SdfValueTypeNames->Float).Set(1.0f + m.parametricRimLiftFactor);
@@ -588,7 +635,9 @@ _AuthorMToon(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
         in(fresnel, "in2", SdfValueTypeNames->Float)
             .Set(std::max(m.parametricRimFresnelPowerFactor, 1e-5f));
         UsdShadeShader parametric = g.Node("parametricRim", "ND_multiply_color3FA");
-        in(parametric, "in1", SdfValueTypeNames->Color3f).Set(m.parametricRimColorFactor);
+        in(parametric, "in1", SdfValueTypeNames->Color3f)
+            .ConnectToSource(
+                g.Canonical("vrm:mtoon:parametricRimColorFactor", SdfValueTypeNames->Color3f));
         in(parametric, "in2", SdfValueTypeNames->Float)
             .ConnectToSource(out(fresnel, "out", SdfValueTypeNames->Float));
         const UsdShadeOutput p = out(parametric, "out", SdfValueTypeNames->Color3f);
@@ -624,7 +673,8 @@ _AuthorMToon(_Graph& g, UsdShadeShader surface, const VrmMaterialSemantics& s)
 
     // MToon adds glTF's emission. The strength is folded into the factor:
     // `emissive_strength` would scale the toon colour on the same input too.
-    if (_Texture(s, "emissive") || s.emissiveFactor * s.emissiveStrength != GfVec3f(0.0f))
+    // Authored even where it is black, as the parametric rim is: `emissionColor`
+    // is an expression slot.
     {
         UsdShadeShader withEmission = g.Node("withEmission", "ND_add_color3");
         in(withEmission, "in1", SdfValueTypeNames->Color3f).ConnectToSource(color);
@@ -644,7 +694,7 @@ UsdVrmAuthorMtlx(const UsdShadeMaterial& material, const VrmMaterialSemantics& s
     const UsdStagePtr stage = material.GetPrim().GetStage();
     const SdfPath mtlxPath = material.GetPath().AppendChild(TfToken("mtlx"));
     UsdShadeNodeGraph graph = UsdShadeNodeGraph::Define(stage, mtlxPath);
-    _Graph g(stage, mtlxPath);
+    _Graph g(material, graph);
 
     // Every shading model ends in the glTF surface (material policy §5.2.1).
     // MToon is the material's shading model wherever it is stated, whatever

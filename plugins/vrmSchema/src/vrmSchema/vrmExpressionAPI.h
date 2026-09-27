@@ -336,9 +336,39 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
 
   public:
     // --------------------------------------------------------------------- //
+    // VRMMATERIALCOLORTARGETINDICES
+    // --------------------------------------------------------------------- //
+    /// Per material color bind, the index into vrm:materialColorTargets
+    /// of the material it drives; parallel to vrm:materialColorTypes and
+    /// vrm:materialColorValues. A stage authored before this attribute has
+    /// none, and its binds pair with the targets by position -- which is right
+    /// only where no material is bound twice.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform int[] vrm:materialColorTargetIndices` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDVRM_API
+    UsdAttribute GetVrmMaterialColorTargetIndicesAttr() const;
+
+    /// See GetVrmMaterialColorTargetIndicesAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateVrmMaterialColorTargetIndicesAttr(VtValue const& defaultValue = VtValue(),
+                                                         bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
     // VRMMATERIALCOLORTYPES
     // --------------------------------------------------------------------- //
-    /// Color slot per target (e.g. color, emission), parallel to vrm:materialColorTargets.
+    /// Color slot per material color bind: VRM 1.0's color,
+    /// emissionColor, shadeColor, matcapColor, rimColor or outlineColor.
+    /// Parallel to vrm:materialColorTargetIndices.
     ///
     /// | ||
     /// | -- | -- |
@@ -362,7 +392,9 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMMATERIALCOLORVALUES
     // --------------------------------------------------------------------- //
-    /// Target RGBA per material color bind, parallel to vrm:materialColorTargets.
+    /// Target RGBA per material color bind, linear, parallel to
+    /// vrm:materialColorTargetIndices. The fourth component is ignored by a
+    /// slot with no alpha.
     ///
     /// | ||
     /// | -- | -- |
@@ -400,7 +432,10 @@ class UsdVrmExpressionAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMMATERIALCOLORTARGETS
     // --------------------------------------------------------------------- //
-    /// The materials whose colors this expression overrides.
+    /// The materials whose colors this expression overrides, each
+    /// once. A relationship holds a target once however often it is added, so
+    /// one material bound in two slots is one target here; which bind names
+    /// which target is vrm:materialColorTargetIndices.
     ///
     USDVRM_API
     UsdRelationship GetVrmMaterialColorTargetsRel() const;

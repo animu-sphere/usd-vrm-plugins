@@ -142,18 +142,16 @@
         "/Asset/mtl/Glass/mtlx/surface": {
           "id": "ND_gltf_pbr_surfaceshader",
           "inputs": {
-            "alpha": 0.300000012,
+            "alpha": {
+              "connectedTo": "/Asset/mtl/Glass/mtlx.vrm:material:baseColorAlphaFactor"
+            },
             "alpha_mode": 2,
-            "base_color": [
-              0.200000003,
-              0.400000006,
-              0.899999976
-            ],
-            "emissive": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Glass/mtlx.vrm:material:baseColorFactor"
+            },
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Glass/mtlx.vrm:material:emissiveFactor"
+            },
             "emissive_strength": 1.0,
             "metallic": 1.0,
             "roughness": 1.0
@@ -162,18 +160,16 @@
         "/Asset/mtl/Glass/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
-            "diffuseColor": [
-              0.200000003,
-              0.400000006,
-              0.899999976
-            ],
-            "emissiveColor": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Glass/preview.vrm:material:baseColorFactor"
+            },
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Glass/preview.vrm:material:emissiveFactor"
+            },
             "metallic": 1.0,
-            "opacity": 0.300000012,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/Glass/preview.vrm:material:baseColorAlphaFactor"
+            },
             "roughness": 1.0
           }
         }
@@ -203,11 +199,9 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Glow/mtlx/emissiveImage.out"
             },
-            "in2": [
-              0.5,
-              0.25,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Glow/mtlx.vrm:material:emissiveFactor"
+            }
           }
         },
         "/Asset/mtl/Glow/mtlx/emissiveImage": {
@@ -235,11 +229,9 @@
           "inputs": {
             "alpha": 1.0,
             "alpha_mode": 0,
-            "base_color": [
-              0.200000003,
-              0.200000003,
-              0.200000003
-            ],
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Glow/mtlx.vrm:material:baseColorFactor"
+            },
             "emissive": {
               "connectedTo": "/Asset/mtl/Glow/mtlx/emissiveFactor.out"
             },
@@ -278,11 +270,9 @@
         "/Asset/mtl/Glow/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
-            "diffuseColor": [
-              0.200000003,
-              0.200000003,
-              0.200000003
-            ],
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Glow/preview.vrm:material:baseColorFactor"
+            },
             "emissiveColor": {
               "connectedTo": "/Asset/mtl/Glow/preview/emissiveTexture.rgb"
             },
@@ -314,19 +304,17 @@
         "/Asset/mtl/Leaf/mtlx/surface": {
           "id": "ND_gltf_pbr_surfaceshader",
           "inputs": {
-            "alpha": 1.0,
+            "alpha": {
+              "connectedTo": "/Asset/mtl/Leaf/mtlx.vrm:material:baseColorAlphaFactor"
+            },
             "alpha_cutoff": 0.300000012,
             "alpha_mode": 1,
-            "base_color": [
-              0.100000001,
-              0.800000012,
-              0.200000003
-            ],
-            "emissive": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Leaf/mtlx.vrm:material:baseColorFactor"
+            },
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Leaf/mtlx.vrm:material:emissiveFactor"
+            },
             "emissive_strength": 1.0,
             "metallic": 1.0,
             "roughness": 1.0
@@ -335,18 +323,16 @@
         "/Asset/mtl/Leaf/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
-            "diffuseColor": [
-              0.100000001,
-              0.800000012,
-              0.200000003
-            ],
-            "emissiveColor": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Leaf/preview.vrm:material:baseColorFactor"
+            },
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Leaf/preview.vrm:material:emissiveFactor"
+            },
             "metallic": 1.0,
-            "opacity": 1.0,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/Leaf/preview.vrm:material:baseColorAlphaFactor"
+            },
             "opacityThreshold": 0.300000012,
             "roughness": 1.0
           }
@@ -377,12 +363,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorImage.out"
             },
-            "in2": [
-              0.800000012,
-              0.600000024,
-              0.400000006,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Metal/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Metal/mtlx/baseColorImage": {
@@ -433,11 +427,9 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Metal/mtlx/emissiveImage.out"
             },
-            "in2": [
-              0.100000001,
-              0.200000003,
-              0.300000012
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Metal/mtlx.vrm:material:emissiveFactor"
+            }
           }
         },
         "/Asset/mtl/Metal/mtlx/emissiveImage": {
@@ -786,11 +778,9 @@
               0.0,
               0.0
             ],
-            "emissive": [
-              0.899999976,
-              0.100000001,
-              0.100000001
-            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Unlit/mtlx.vrm:material:baseColorFactor"
+            },
             "metallic": 0.0,
             "roughness": 1.0,
             "specular": 0.0
@@ -804,11 +794,9 @@
               0.0,
               0.0
             ],
-            "emissiveColor": [
-              0.899999976,
-              0.100000001,
-              0.100000001
-            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Unlit/preview.vrm:material:baseColorFactor"
+            },
             "metallic": 0.0,
             "opacity": 1.0,
             "roughness": 1.0
@@ -840,12 +828,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorImage.out"
             },
-            "in2": [
-              0.300000012,
-              0.600000024,
-              0.899999976,
-              0.800000012
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitCutout/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/UnlitCutout/mtlx/baseColorImage": {
@@ -989,12 +985,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage": {
@@ -1381,6 +1385,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/UnlitCutout/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -1469,6 +1480,13 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorFactorRgba",
       "type": "Shader"
     },
     {
@@ -1654,6 +1672,13 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Metal/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Metal/mtlx/baseColorFactorRgba",
       "type": "Shader"
     },
     {

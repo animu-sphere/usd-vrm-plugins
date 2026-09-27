@@ -14,7 +14,10 @@
       happy      two morph targets, one of them bound at half weight
       blink      binary -- a partly-closed eyelid is not a pose this rig has
       surprised  declared here, never reported by the clip: not a zero
-      angry      a material colour and no morph target at all
+      angry      two colour slots of one material and no morph target: its
+                 `color` lands on the canonical base colour, and its
+                 `shadeColor` has nowhere to land on a material that is not
+                 MToon
       ghost      a blend shape no mesh binds, so no token can name it
 
     `Face_Frown` and `Face_Unbound` must therefore stay out of the authored
@@ -96,8 +99,12 @@ def SkelRoot "Avatar"
 
     def Scope "Materials"
     {
-        def Material "FaceMaterial"
+        def Material "FaceMaterial" (
+            apiSchemas = ["VrmMaterialAPI"]
+        )
         {
+            color3f inputs:vrm:material:baseColorFactor = (1, 1, 1)
+            float inputs:vrm:material:baseColorAlphaFactor = 1
         }
     }
 
@@ -140,8 +147,9 @@ def SkelRoot "Avatar"
                 uniform token vrm:expressionType = "preset"
                 uniform bool vrm:isBinary = 0
                 rel vrm:materialColorTargets = [</Avatar/Materials/FaceMaterial>]
-                uniform token[] vrm:materialColorTypes = ["color"]
-                uniform float4[] vrm:materialColorValues = [(1, 0, 0, 1)]
+                uniform int[] vrm:materialColorTargetIndices = [0, 0]
+                uniform token[] vrm:materialColorTypes = ["color", "shadeColor"]
+                uniform float4[] vrm:materialColorValues = [(1, 0, 0, 0.5), (0, 0, 1, 1)]
             }
 
             def Scope "ghost"

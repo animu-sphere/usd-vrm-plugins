@@ -2,6 +2,7 @@
 #include "StageIo.h"
 
 #include "motionUsd/ClipReader.h"
+#include "vrmRig/MaterialColorSlots.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
@@ -17,9 +18,11 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/references.h"
+#include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
@@ -182,6 +185,7 @@ const TfToken kOverrideMouth("vrm:overrideMouth");
 const TfToken kMorphTargets("vrm:morphTargets");
 const TfToken kMorphTargetWeights("vrm:morphTargetWeights");
 const TfToken kMaterialColorTargets("vrm:materialColorTargets");
+const TfToken kMaterialColorTargetIndices("vrm:materialColorTargetIndices");
 const TfToken kMaterialColorTypes("vrm:materialColorTypes");
 const TfToken kMaterialColorValues("vrm:materialColorValues");
 
@@ -347,16 +351,29 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
     {
         attribute.Get(&colorValues);
     }
+    // Which target each bind drives. A relationship holds a material once
+    // however many of its slots the expression binds, so the importer names
+    // each bind's target by index; a stage authored before the index array
+    // pairs the binds with the targets by position.
+    VtIntArray colorIndices;
+    const UsdAttribute indicesAttribute = prim.GetAttribute(kMaterialColorTargetIndices);
+    const bool indexed = indicesAttribute && indicesAttribute.Get(&colorIndices);
+    if (!indexed)
+    {
+        colorIndices.resize(colorTargets.size());
+        for (std::size_t i = 0; i < colorTargets.size(); ++i)
+            colorIndices[i] = static_cast<int>(i);
+    }
     if (!colorTargets.empty() &&
-        (colorTypes.size() != colorTargets.size() || colorValues.size() != colorTargets.size()))
+        (colorTypes.size() != colorIndices.size() || colorValues.size() != colorIndices.size()))
     {
         warnings->push_back("expression <" + prim.GetPath().GetString() + "> binds " +
-                            std::to_string(colorTargets.size()) + " material colour(s) with " +
+                            std::to_string(colorIndices.size()) + " material colour(s) with " +
                             std::to_string(colorTypes.size()) + " slot(s) and " +
                             std::to_string(colorValues.size()) +
                             " value(s); the binds that are short of either are skipped");
     }
-    for (std::size_t i = 0; i < colorTargets.size(); ++i)
+    for (std::size_t i = 0; i < colorIndices.size(); ++i)
     {
         // Skipped, as the warning says, and not completed from thin air. A
         // slot is half the key, so inventing one would merge two binds of a
@@ -367,8 +384,16 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
         {
             continue;
         }
+        const int target = colorIndices[i];
+        if (target < 0 || static_cast<std::size_t>(target) >= colorTargets.size())
+        {
+            warnings->push_back("expression <" + prim.GetPath().GetString() +
+                                "> binds a material colour to target index " +
+                                std::to_string(target) + ", which it does not have; skipped");
+            continue;
+        }
         vrmRig::MaterialColorBind bind;
-        bind.material = colorTargets[i].GetString();
+        bind.material = colorTargets[static_cast<std::size_t>(target)].GetString();
         bind.colorType = colorTypes[i].GetString();
         bind.targetValue = colorValues[i];
         definition.materialColors.push_back(std::move(bind));
@@ -694,7 +719,7 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
         if (raw.IsHolding<std::string>())
         {
             vrmRig::ParseLookAtRangeMaps(raw.UncheckedGet<std::string>(), &avatar->lookAtRig,
-                                              &avatar->warnings);
+                                         &avatar->warnings);
         }
         TfToken type;
         if (prim.GetAttribute(kVrmType).Get(&type))
@@ -970,8 +995,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
     else if (timeRangeDerived)
     {
         clip->diagnostics.Report(openstrata::motion::MakeRetargetDiagnostic(
-            openstrata::motion::RetargetDiagnosticCode::TimeRangeDerived,
-            read.animationPath,
+            openstrata::motion::RetargetDiagnosticCode::TimeRangeDerived, read.animationPath,
             "the clip states no time samples, so its one pose is placed at "
             "the stage's start time code, " +
                 TfStringify(clip->stage->GetStartTimeCode())));
@@ -1117,8 +1141,7 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
             {
                 // The `vrm:` expression is this rig's own vocabulary, so it
                 // wins over a generic channel of the same name -- said once.
-                if (pose.channels.Find(expression.name) &&
-                    shadowed.insert(expression.name).second)
+                if (pose.channels.Find(expression.name) && shadowed.insert(expression.name).second)
                 {
                     clip->warnings.push_back(
                         "clip states '" + expression.name +
@@ -1257,6 +1280,101 @@ AuthorBlendShapeWeights(const UsdSkelAnimation& authored, const Avatar& avatar,
     result->blendShapesAuthored = tokens.size();
 }
 
+// Authors the resolved expression colours onto the materials' canonical
+// inputs (material policy §6.7, P5 Step 7).
+//
+// An expression changes a material *semantic*, never a realization's shader
+// input: the colour lands on the Material's `inputs:vrm:*` attribute the
+// schema contract's slot table names, as time samples on an override in this
+// layer, and every realization that reads the attribute -- `/mtlx`, the parts
+// of `/preview` that can, a renderer of its own -- follows it. Nothing is
+// written below either graph.
+//
+// The VRM rule for a slot is base + sum(weight_i * (target_i - base)), and the
+// base is the material's own value -- read here, from the avatar, since the
+// resolver deliberately has none. A slot the specification calls "Unused" for
+// a material has no attribute to land on (an MToon slot on a glTF PBR
+// material), and is reported rather than invented.
+void
+AuthorMaterialColors(const UsdStageRefPtr& stage, double timeCodesPerSecond,
+                     const std::vector<vrmRig::ResolvedExpressions>& expressions,
+                     WriteResult* result)
+{
+    struct Target
+    {
+        UsdAttribute color;
+        UsdAttribute alpha; // invalid where the slot has no fourth component
+        GfVec4f base;
+    };
+    std::map<std::pair<std::string, std::string>, Target> targets;
+    std::set<std::pair<std::string, std::string>> refused;
+
+    auto resolve = [&](const vrmRig::ResolvedMaterialColor& color) -> const Target*
+    {
+        const auto key = std::make_pair(color.material, color.colorType);
+        if (const auto found = targets.find(key); found != targets.end())
+            return &found->second;
+        if (refused.count(key))
+            return nullptr;
+        auto refuse = [&](const std::string& why)
+        {
+            refused.insert(key);
+            result->warnings.push_back("the clip drives '" + color.colorType + "' of <" +
+                                       color.material + ">, which " + why +
+                                       "; the colour is not authored");
+            return nullptr;
+        };
+
+        const vrmRig::MaterialColorSlot* slot = vrmRig::FindMaterialColorSlot(color.colorType);
+        if (!slot)
+            return refuse("is not one of VRM 1.0's six colour slots");
+        const UsdPrim prim = stage->GetPrimAtPath(SdfPath(color.material));
+        if (!prim)
+            return refuse("the avatar does not have");
+        // The composed `apiSchemas` list as authored, not GetAppliedSchemas():
+        // this tool registers no vrmSchema plugin, and the registry-backed
+        // list leaves out a schema it has no definition for -- which would
+        // refuse every slot of a `.usda` avatar opened without the bundle.
+        SdfTokenListOp apiSchemas;
+        TfTokenVector applied;
+        if (prim.GetMetadata(UsdTokens->apiSchemas, &apiSchemas))
+            apiSchemas.ApplyOperations(&applied);
+        if (std::find(applied.begin(), applied.end(), TfToken(slot->schema)) == applied.end())
+            return refuse(std::string("does not apply ") + slot->schema +
+                          ", so the slot has no canonical attribute");
+        Target target;
+        target.color = prim.GetAttribute(TfToken(slot->colorInput));
+        GfVec3f rgb(0.0f);
+        if (!target.color || !target.color.Get(&rgb))
+            return refuse(std::string("has no value for ") + slot->colorInput);
+        float alpha = 1.0f;
+        if (slot->alphaInput)
+        {
+            target.alpha = prim.GetAttribute(TfToken(slot->alphaInput));
+            if (!target.alpha || !target.alpha.Get(&alpha))
+                return refuse(std::string("has no value for ") + slot->alphaInput);
+        }
+        target.base = GfVec4f(rgb[0], rgb[1], rgb[2], alpha);
+        return &targets.emplace(key, target).first->second;
+    };
+
+    for (const vrmRig::ResolvedExpressions& sample : expressions)
+    {
+        const UsdTimeCode time(sample.timestamp * timeCodesPerSecond);
+        for (const vrmRig::ResolvedMaterialColor& color : sample.materialColors)
+        {
+            const Target* target = resolve(color);
+            if (!target)
+                continue;
+            const GfVec4f value = color.Apply(target->base);
+            target->color.Set(GfVec3f(value[0], value[1], value[2]), time);
+            if (target->alpha)
+                target->alpha.Set(value[3], time);
+        }
+    }
+    result->materialColorsAuthored = targets.size();
+}
+
 } // namespace
 
 bool
@@ -1386,6 +1504,7 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, co
                             std::to_string(animation.samples.size()) + " retargeted sample(s)");
         }
         AuthorBlendShapeWeights(authored, avatar, clip.timeCodesPerSecond, expressions, result);
+        AuthorMaterialColors(stage, clip.timeCodesPerSecond, expressions, result);
     }
 
     // Bind the result on an override of the referenced skeleton rather than by

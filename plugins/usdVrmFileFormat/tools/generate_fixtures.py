@@ -26,9 +26,11 @@ specific import behavior the smoke test then asserts:
   badext.vrm         semantically broken VRM humanoid (must warn, not crash)
   mtoon_vrm0.vrm     VRM 0.x MToon materialProperties covering every 0.x -> 1.0
                      conversion: render modes and queue ranking, shading ramp,
-                     outline units, UV animation, texture tiling, defaults
-  mtoon_vrm1.vrm     the same materials as UniVRM migrates them to VRM 1.0;
-                     both must author the same canonical material values
+                     outline units, UV animation, texture tiling, defaults;
+                     and an expression's materialValues, typed and raw
+  mtoon_vrm1.vrm     the same materials (and expression colour binds) as
+                     UniVRM migrates them to VRM 1.0; both must author the same
+                     canonical material values and the same binds
 
 Usage: python generate_fixtures.py [out_dir]   (default: ../tests/fixtures)
 """
@@ -755,6 +757,33 @@ def build_mtoon_vrm0():
                           "baseColorTexture": {"index": _LIT}}})
     ext = vrm0_extension({})
     ext["materialProperties"] = material_properties
+    # materialValues: each colour property 0.x can state, onto MToon and onto
+    # the plain material, plus the three kinds that stay raw (VRM150): a
+    # texture transform, a property with no colour slot, and a material the
+    # file does not declare.
+    ext["blendShapeMaster"] = {"blendShapeGroups": [{
+        "name": "Joy", "presetName": "joy", "isBinary": False, "binds": [],
+        "materialValues": [
+            {"materialName": "Face", "propertyName": "_Color",
+             "targetValue": [1.0, 0.5, 0.5, 0.75]},
+            {"materialName": "Face", "propertyName": "_EmissionColor",
+             "targetValue": [0.5, 0.25, 0.0, 1.0]},
+            {"materialName": "Hair", "propertyName": "_ShadeColor",
+             "targetValue": [0.25, 0.5, 1.0, 1.0]},
+            {"materialName": "Hair", "propertyName": "_RimColor",
+             "targetValue": [0.5, 0.5, 0.5, 1.0]},
+            {"materialName": "Hair", "propertyName": "_OutlineColor",
+             "targetValue": [0.0, 0.25, 1.0, 0.5]},
+            {"materialName": "Plain", "propertyName": "_Color",
+             "targetValue": [0.5, 0.5, 0.5, 1.0]},
+            {"materialName": "Face", "propertyName": "_MainTex_ST",
+             "targetValue": [2.0, 2.0, 0.0, 0.0]},
+            {"materialName": "Face", "propertyName": "_OutlineWidth",
+             "targetValue": [1.0, 0.0, 0.0, 0.0]},
+            {"materialName": "Missing", "propertyName": "_Color",
+             "targetValue": [0.0, 0.0, 0.0, 1.0]},
+        ],
+    }]}
     return b.build(_mtoon_scene(b, materials, "VRM", ext))
 
 
@@ -845,8 +874,35 @@ def build_mtoon_vrm1():
          "pbrMetallicRoughness": {"baseColorFactor": [0.2, 0.3, 0.4, 1.0],
                                   "baseColorTexture": {"index": _LIT}}},
     ]
+    # Joy's materialValues as colour binds, targets converted sRGB -> linear
+    # except emission (0.5 -> 0.21404114, 0.25 -> 0.05087609; alpha as-is).
+    # UniVRM's migration would pass them through unconverted -- the one
+    # departure, recorded in the schema contract. Its `_MainTex_ST` becomes a
+    # texture-transform bind (scale (2, 2), offset y = 1 - 0 - 2), which the
+    # importer keeps raw either way; the other two raw entries have no 1.0 form.
+    vrm = vrm1_extension({})
+    vrm["expressions"] = {"preset": {"happy": {
+        "isBinary": False,
+        "materialColorBinds": [
+            {"material": 1, "type": "color",
+             "targetValue": [1.0, 0.21404114, 0.21404114, 0.75]},
+            {"material": 1, "type": "emissionColor",
+             "targetValue": [0.5, 0.25, 0.0, 1.0]},
+            {"material": 0, "type": "shadeColor",
+             "targetValue": [0.05087609, 0.21404114, 1.0, 1.0]},
+            {"material": 0, "type": "rimColor",
+             "targetValue": [0.21404114, 0.21404114, 0.21404114, 1.0]},
+            {"material": 0, "type": "outlineColor",
+             "targetValue": [0.0, 0.05087609, 1.0, 0.5]},
+            {"material": 5, "type": "color",
+             "targetValue": [0.21404114, 0.21404114, 0.21404114, 1.0]},
+        ],
+        "textureTransformBinds": [
+            {"material": 1, "scale": [2.0, 2.0], "offset": [0.0, -1.0]},
+        ],
+    }}}
     return b.build(_mtoon_scene(
-        b, materials, "VRMC_vrm", vrm1_extension({}),
+        b, materials, "VRMC_vrm", vrm,
         extra_used=("VRMC_materials_mtoon", "KHR_materials_unlit",
                     "KHR_texture_transform")))
 

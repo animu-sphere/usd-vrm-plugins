@@ -36,6 +36,18 @@ def _vclose(a, b, eps=1e-5):
     return all(abs(a[i] - b[i]) < eps for i in range(len(a)))
 
 
+def _get(prim, name, time=Usd.TimeCode.Default()):
+    """A shader input's value as a renderer resolves it: through its
+    connections, so an input that reads a canonical value from the Material
+    (material policy q12) reports the Material's value."""
+    attr = prim.GetAttribute(name)
+    if not attr:
+        return None
+    producers = UsdShade.Input(attr).GetValueProducingAttributes()
+    source = producers[0] if producers else attr
+    return source.Get(time)
+
+
 def _graph_text(stage, path, package):
     """The subtree at `path` as usda, re-rooted at /Graph, with the material's
     own path and the package it was read from spelled out of it."""
@@ -235,6 +247,7 @@ def check_expressions():
     # materialColorBinds: drives Face_Mat emission to red.
     ct = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
     assert ct == [Sdf.Path("/Asset/mtl/Face_Mat")], ct
+    assert list(happy.GetAttribute("vrm:materialColorTargetIndices").Get()) == [0]
     assert list(happy.GetAttribute("vrm:materialColorTypes").Get()) == ["emissionColor"]
     cv = happy.GetAttribute("vrm:materialColorValues").Get()
     assert cv and tuple(cv[0]) == (1.0, 0.0, 0.0, 1.0), list(cv)
@@ -323,18 +336,18 @@ def check_materials():
     stage = _open("materials.vrm")
     leaf = stage.GetPrimAtPath("/Asset/mtl/Leaf/preview/surface")
     assert leaf.IsValid(), "expected MASK material Leaf"
-    thr = leaf.GetAttribute("inputs:opacityThreshold").Get()
+    thr = _get(leaf, "inputs:opacityThreshold")
     assert thr is not None and abs(thr - 0.3) < 1e-6, f"MASK opacityThreshold: {thr}"
     glass = stage.GetPrimAtPath("/Asset/mtl/Glass/preview/surface")
-    assert abs(glass.GetAttribute("inputs:opacity").Get() - 0.3) < 1e-6
+    assert abs(_get(glass, "inputs:opacity") - 0.3) < 1e-6
     # KHR_materials_unlit: base color via emissive, diffuse/lit response killed,
     # so scene lights don't facet the low-poly surface.
     flat = stage.GetPrimAtPath("/Asset/mtl/Unlit/preview/surface")
     assert flat.IsValid(), "expected unlit material Unlit"
-    assert flat.GetAttribute("inputs:diffuseColor").Get() == Gf.Vec3f(0, 0, 0)
-    em = flat.GetAttribute("inputs:emissiveColor").Get()
+    assert _get(flat, "inputs:diffuseColor") == Gf.Vec3f(0, 0, 0)
+    em = _get(flat, "inputs:emissiveColor")
     assert abs(em[0] - 0.9) < 1e-6 and abs(em[2] - 0.1) < 1e-6, em
-    assert abs(flat.GetAttribute("inputs:metallic").Get()) < 1e-6
+    assert abs(_get(flat, "inputs:metallic")) < 1e-6
 
     # The same material in MaterialX: the colour agrees with /preview, but it is
     # reached as glTF emission with the lit response switched off rather than
@@ -343,30 +356,30 @@ def check_materials():
     mx = stage.GetPrimAtPath("/Asset/mtl/Unlit/mtlx/surface")
     assert mx.IsValid(), "expected a MaterialX realization on the unlit material"
     assert mx.GetAttribute("info:id").Get() == "ND_gltf_pbr_surfaceshader"
-    assert mx.GetAttribute("inputs:base_color").Get() == Gf.Vec3f(0, 0, 0)
-    assert abs(mx.GetAttribute("inputs:specular").Get()) < 1e-6, \
+    assert _get(mx, "inputs:base_color") == Gf.Vec3f(0, 0, 0)
+    assert abs(_get(mx, "inputs:specular")) < 1e-6, \
         "a specular lobe would put a highlight on a toon surface"
-    assert _vclose(mx.GetAttribute("inputs:emissive").Get(), em), \
+    assert _vclose(_get(mx, "inputs:emissive"), em), \
         "unlit colour must match the /preview realization"
-    assert mx.GetAttribute("inputs:alpha_mode").Get() == 0, "Unlit is OPAQUE"
+    assert _get(mx, "inputs:alpha_mode") == 0, "Unlit is OPAQUE"
 
     # A lit material carries MaterialX too (P5 Step 6), through the same
     # terminal with the lit response left on: glTF's base colour, alpha and
     # coverage, and metallic / roughness at their factors.
     mx = stage.GetPrimAtPath("/Asset/mtl/Glass/mtlx/surface")
     assert mx.GetAttribute("info:id").Get() == "ND_gltf_pbr_surfaceshader"
-    assert _vclose(mx.GetAttribute("inputs:base_color").Get(), (0.2, 0.4, 0.9))
-    assert abs(mx.GetAttribute("inputs:alpha").Get() - 0.3) < 1e-6
-    assert mx.GetAttribute("inputs:alpha_mode").Get() == 2, "Glass is BLEND"
-    assert mx.GetAttribute("inputs:metallic").Get() == 1.0
-    assert mx.GetAttribute("inputs:roughness").Get() == 1.0
+    assert _vclose(_get(mx, "inputs:base_color"), (0.2, 0.4, 0.9))
+    assert abs(_get(mx, "inputs:alpha") - 0.3) < 1e-6
+    assert _get(mx, "inputs:alpha_mode") == 2, "Glass is BLEND"
+    assert _get(mx, "inputs:metallic") == 1.0
+    assert _get(mx, "inputs:roughness") == 1.0
     assert not mx.GetAttribute("inputs:specular").HasAuthoredValue(), \
         "a lit material keeps glTF's specular"
 
     # Lit emission through a texture: factor * strength folded into the
     # texture's scale, since glTF emission is factor * texture * strength.
     glow = stage.GetPrimAtPath("/Asset/mtl/Glow/preview/emissiveTexture")
-    assert _vclose(glow.GetAttribute("inputs:scale").Get(), (1.0, 0.5, 2.0, 1.0))
+    assert _vclose(_get(glow, "inputs:scale"), (1.0, 0.5, 2.0, 1.0))
     assert stage.GetPrimAtPath("/Asset/mtl/Glow/preview/surface").GetAttribute(
         "inputs:emissiveColor").GetConnections() == [
             glow.GetPath().AppendProperty("outputs:rgb")]
@@ -384,8 +397,8 @@ def check_mtlx_textured_unlit():
 
     # glTF alpha coverage stated natively: MASK is a cutout the renderer
     # performs, not an ifgreater comparison drawn as a blended surface.
-    assert surface.GetAttribute("inputs:alpha_mode").Get() == 1
-    cut = surface.GetAttribute("inputs:alpha_cutoff").Get()
+    assert _get(surface, "inputs:alpha_mode") == 1
+    cut = _get(surface, "inputs:alpha_cutoff")
     assert abs(cut - 0.4) < 1e-6, f"alpha_cutoff: {cut}"
 
     # base colour = factor * texture, with the factor's alpha in the 4th
@@ -397,13 +410,19 @@ def check_mtlx_textured_unlit():
         "base colour must be decoded from sRGB"
     # glTF's "repeat" is MaterialX's "periodic"; passing the glTF word through
     # would author an unknown enum that nothing rejects.
-    assert image.GetAttribute("inputs:uaddressmode").Get() == "periodic"
-    assert image.GetAttribute("inputs:vaddressmode").Get() == "clamp"
+    assert _get(image, "inputs:uaddressmode") == "periodic"
+    assert _get(image, "inputs:vaddressmode") == "clamp"
 
     factor = stage.GetPrimAtPath(f"{g}/baseColorFactor")
     assert factor.GetAttribute("info:id").Get() == "ND_multiply_color4"
-    assert _vclose(factor.GetAttribute("inputs:in2").Get(),
-                   Gf.Vec4f(0.3, 0.6, 0.9, 0.8)), "base colour factor"
+    # The factor is the Material's two canonical inputs, recombined (q12).
+    rgba = stage.GetPrimAtPath(f"{g}/baseColorFactorRgba")
+    assert rgba.GetAttribute("info:id").Get() == "ND_combine2_color4CF"
+    assert factor.GetAttribute("inputs:in2").GetConnections() == [
+        rgba.GetPath().AppendProperty("outputs:out")]
+    rgb, alpha = _get(rgba, "inputs:in1"), _get(rgba, "inputs:in2")
+    factor_value = Gf.Vec4f(rgb[0], rgb[1], rgb[2], alpha)
+    assert _vclose(factor_value, Gf.Vec4f(0.3, 0.6, 0.9, 0.8)), "base colour factor"
 
     # The /preview realization folds the same factor into UsdUVTexture.scale.
     # Both realizations multiply after the sRGB decode, so the colour agrees
@@ -411,7 +430,7 @@ def check_mtlx_textured_unlit():
     scale = stage.GetPrimAtPath(
         "/Asset/mtl/UnlitCutout/preview/baseColorTexture"
     ).GetAttribute("inputs:scale").Get()
-    assert _vclose(scale, factor.GetAttribute("inputs:in2").Get()), \
+    assert _vclose(scale, factor_value), \
         f"preview scale {scale} disagrees with the MaterialX factor"
 
     # Alpha reaches the surface, colour reaches emission: the graph is wired
@@ -518,7 +537,18 @@ def _mtlx_id(shader):
 
 
 def _mtlx_value(shader, name):
-    return shader.GetInput(name).Get()
+    """A /mtlx input's value, followed through the graph's interface to the
+    Material where the input reads a canonical value (q12)."""
+    return _get(shader.GetPrim(), f"inputs:{name}")
+
+
+def _mtlx_base_color_factor(factor):
+    """The RGBA a /mtlx base-colour multiply takes: the Material's colour and
+    alpha, recombined by one node."""
+    rgba, _ = _mtlx_source(factor, "in2")
+    assert _mtlx_id(rgba) == "ND_combine2_color4CF", _mtlx_id(rgba)
+    rgb, alpha = _mtlx_value(rgba, "in1"), _mtlx_value(rgba, "in2")
+    return Gf.Vec4f(rgb[0], rgb[1], rgb[2], alpha)
 
 
 def check_mtlx_lit():
@@ -558,7 +588,7 @@ def check_mtlx_lit():
     rgb, _ = source(surface, "base_color")
     split, _ = source(rgb, "in1")
     factor, _ = source(split, "in")
-    assert _vclose(value(factor, "in2"), (0.8, 0.6, 0.4, 1.0))
+    assert _vclose(_mtlx_base_color_factor(factor), (0.8, 0.6, 0.4, 1.0))
     image, _ = source(factor, "in1")
     assert sample(image, "ND_image_color4", srgb=True) is None
     assert value(surface, "alpha") == 1.0 and value(surface, "alpha_mode") == 0
@@ -691,18 +721,28 @@ def check_mtlx_mtoon():
     rim_ndotv, _ = source(base, "in2")
     assert rim_ndotv.GetPath() == ndotv.GetPath(), "rim and shading share N.V"
 
-    # Face states no rim, no MatCap texture and no emission: the toon colour
-    # is the emission, and no rim node is authored.
+    # Face states a black rim, no MatCap texture and no emission, and still
+    # carries the parametric rim and the emission term: `rimColor` and
+    # `emissionColor` are expression slots (Step 7), and a colour animated up
+    # from black needs a graph to show in. Both read the Material's black.
     face = UsdShade.Shader(stage.GetPrimAtPath("/Asset/mtl/Face/mtlx/surface"))
-    face_toon, _ = source(face, "emissive")
+    face_emission, _ = source(face, "emissive")
+    assert node_id(face_emission) == "ND_add_color3", node_id(face_emission)
+    assert value(face_emission, "in2") == Gf.Vec3f(0, 0, 0)
+    face_rim, _ = source(face_emission, "in1")
+    face_parametric, _ = source(face_rim, "in2")
+    assert node_id(face_parametric) == "ND_multiply_color3FA"
+    assert value(face_parametric, "in1") == Gf.Vec3f(0, 0, 0)
+    face_toon, _ = source(face_rim, "in1")
     assert node_id(face_toon) == "ND_mix_color3", node_id(face_toon)
-    assert not stage.GetPrimAtPath("/Asset/mtl/Face/mtlx/rimFresnel")
 
     # MToon decides the shading model wherever it is stated: textures.vrm's
     # Skin is MToon on a lit glTF core, and still draws as toon.
     textures = _open("textures.vrm")
     skin = UsdShade.Shader(textures.GetPrimAtPath("/Asset/mtl/Skin/mtlx/surface"))
     skin_toon, _ = source(skin, "emissive")
+    while node_id(skin_toon) == "ND_add_color3":  # + emission, + rim
+        skin_toon, _ = source(skin_toon, "in1")
     assert node_id(skin_toon) == "ND_mix_color3", node_id(skin_toon)
 
 
@@ -745,16 +785,16 @@ def check_texture_transform():
 
     xf = stage.GetPrimAtPath("/Asset/mtl/UnlitPlaced/preview/baseColorTexture_xf")
     assert xf.IsValid(), "expected a UsdTransform2d on the placed material"
-    p_scale = xf.GetAttribute("inputs:scale").Get()
-    p_rot = xf.GetAttribute("inputs:rotation").Get()
-    p_trans = xf.GetAttribute("inputs:translation").Get()
+    p_scale = _get(xf, "inputs:scale")
+    p_rot = _get(xf, "inputs:rotation")
+    p_trans = _get(xf, "inputs:translation")
 
     place = stage.GetPrimAtPath("/Asset/mtl/UnlitPlaced/mtlx/baseColorPlace")
     assert place.IsValid(), "expected a place2d on the placed material"
-    m_scale = place.GetAttribute("inputs:scale").Get()
-    m_rot = place.GetAttribute("inputs:rotate").Get()
-    m_offset = place.GetAttribute("inputs:offset").Get()
-    assert place.GetAttribute("inputs:operationorder").Get() in (None, 0), \
+    m_scale = _get(place, "inputs:scale")
+    m_rot = _get(place, "inputs:rotate")
+    m_offset = _get(place, "inputs:offset")
+    assert _get(place, "inputs:operationorder") in (None, 0), \
         "the maths below assumes place2d's default SRT order"
 
     def preview_sample(st):
@@ -918,16 +958,16 @@ def check_textures():
     assert mat.IsValid() and surf.IsValid() and tex.IsValid()
 
     assert tex.GetAttribute("info:id").Get() == "UsdUVTexture"
-    f = tex.GetAttribute("inputs:file").Get()
+    f = _get(tex, "inputs:file")
     assert f and ".vrm[" in f.path and f.path.endswith(".png]"), f
     resolved = Ar.GetResolver().Resolve(f.path)
     assert resolved, f
     asset = Ar.GetResolver().OpenAsset(resolvedPath=resolved)
     assert asset and asset.GetSize() > 0, f
-    assert tex.GetAttribute("inputs:sourceColorSpace").Get() == "sRGB"
-    assert tex.GetAttribute("inputs:wrapS").Get() == "repeat"
-    assert tex.GetAttribute("inputs:wrapT").Get() == "clamp"
-    assert tex.GetAttribute("inputs:scale").Get() == Gf.Vec4f(0.5, 0.25, 0.75, 0.6)
+    assert _get(tex, "inputs:sourceColorSpace") == "sRGB"
+    assert _get(tex, "inputs:wrapS") == "repeat"
+    assert _get(tex, "inputs:wrapT") == "clamp"
+    assert _get(tex, "inputs:scale") == Gf.Vec4f(0.5, 0.25, 0.75, 0.6)
 
     # diffuseColor <- texture.rgb, and st <- stReader.result.
     conn = surf.GetAttribute("inputs:diffuseColor").GetConnections()
@@ -1007,7 +1047,7 @@ def check_mtoon_vrm0_matches_vrm1():
     # MToon material so), BLEND from _BlendMode, the linear factor folded into
     # the texture -- where the glTF core beside it says lit, OPAQUE, gamma.
     tex = vrm0.GetPrimAtPath("/Asset/mtl/Hair/preview/baseColorTexture")
-    assert _vclose(tex.GetAttribute("inputs:scale").Get(),
+    assert _vclose(_get(tex, "inputs:scale"),
                    (0.21404114, 1.0, 0.05087609, 0.75))
     surface = vrm0.GetPrimAtPath("/Asset/mtl/Hair/preview/surface")
     assert surface.GetAttribute("inputs:emissiveColor").GetConnections() == [
@@ -1031,6 +1071,42 @@ def check_mtoon_vrm0_matches_vrm1():
     plain = vrm0.GetPrimAtPath("/Asset/mtl/Plain")
     assert "VrmMToonAPI" not in plain.GetAppliedSchemas()
     assert not plain.GetAttribute("vrm:shaderModel")
+
+    # Expression colours (P5 Step 7): Joy's materialValues land on the same
+    # slots, targets and values as the 1.0 file's materialColorBinds -- the
+    # colours sRGB-decoded as the materials' own are, emission as-is.
+    binds = []
+    for stage in (vrm0, vrm1):
+        happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
+        assert happy.GetAttribute("vrm:expressionName").Get() == "happy"
+        # Face is bound in two slots and Hair in three, and a relationship
+        # holds each once: the binds reach them through the index array.
+        targets = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
+        assert [str(t) for t in targets] == [
+            "/Asset/mtl/Face", "/Asset/mtl/Hair", "/Asset/mtl/Plain"], targets
+        indices = list(happy.GetAttribute("vrm:materialColorTargetIndices").Get())
+        assert indices == [0, 0, 1, 1, 1, 2], indices
+        binds.append((
+            [str(targets[i]) for i in indices],
+            list(happy.GetAttribute("vrm:materialColorTypes").Get()),
+            [tuple(v) for v in happy.GetAttribute("vrm:materialColorValues").Get()]))
+    (targets0, types0, values0), (targets1, types1, values1) = binds
+    assert targets0 == targets1 == [
+        "/Asset/mtl/Face", "/Asset/mtl/Face", "/Asset/mtl/Hair", "/Asset/mtl/Hair",
+        "/Asset/mtl/Hair", "/Asset/mtl/Plain"], (targets0, targets1)
+    assert types0 == types1 == ["color", "emissionColor", "shadeColor", "rimColor",
+                                "outlineColor", "color"], (types0, types1)
+    assert len(values0) == len(values1) == 6
+    for v0, v1 in zip(values0, values1):
+        assert _vclose(v0, v1), (values0, values1)
+    # What has no slot stays raw, one VRM150 each: the texture transform (q11),
+    # a property that is no colour, a material the file does not declare.
+    warnings = vrm0.GetDefaultPrim().GetCustomData()["vrm"]["warnings"]
+    raw = [w for w in warnings if w.startswith("[VRM150]")]
+    assert len(raw) == 3, raw
+    assert any("'_MainTex_ST'" in w for w in raw), raw
+    assert any("'_OutlineWidth'" in w for w in raw), raw
+    assert any("'Missing'" in w for w in raw), raw
 
 
 def check_portable_package():
@@ -1064,7 +1140,7 @@ def check_portable_package():
         assert packaged_stage, f"failed to open packaged stage: {stage_path}"
         tex = packaged_stage.GetPrimAtPath(
             "/Asset/mtl/Skin/preview/baseColorTexture")
-        asset = tex.GetAttribute("inputs:file").Get()
+        asset = _get(tex, "inputs:file")
         assert asset.path.startswith("textures/"), asset
         assert not pathlib.Path(asset.path).is_absolute(), asset
         assert (package_dir / asset.path).exists(), asset

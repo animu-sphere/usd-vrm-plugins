@@ -131,6 +131,7 @@
 ?CreateVrmIsBinaryAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmJointsAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmLeftEyeAttr@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
+?CreateVrmMaterialColorTargetIndicesAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmMaterialColorTargetsRel@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?CreateVrmMaterialColorTypesAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmMaterialColorValuesAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
@@ -279,6 +280,7 @@
 ?GetVrmIsBinaryAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmJointsAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmLeftEyeAttr@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
+?GetVrmMaterialColorTargetIndicesAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmMaterialColorTargetsRel@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?GetVrmMaterialColorTypesAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmMaterialColorValuesAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ

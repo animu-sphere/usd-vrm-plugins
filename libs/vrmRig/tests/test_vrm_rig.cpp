@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "vrmRig/ExpressionResolver.h"
 #include "vrmRig/LookAtEvaluator.h"
+#include "vrmRig/MaterialColorSlots.h"
 #include "vrmRig/RequiredBones.h"
 
 #include "pxr/base/gf/quatd.h"
@@ -1361,6 +1362,46 @@ TestTheRequiredBonesAreVrm10sSeventeenHipsFirst()
     assert(&vrmRig::GetRequiredBones() == &required);
 }
 
+void
+TestTheColourSlotsAreVrm10sSixOnTheCanonicalInputs()
+{
+    // The specification's MaterialColorType, in its order, each once.
+    const std::vector<vrmRig::MaterialColorSlot>& slots = vrmRig::GetMaterialColorSlots();
+    const std::vector<std::string> names = {"color",     "emissionColor", "shadeColor",
+                                            "matcapColor", "rimColor",    "outlineColor"};
+    assert(slots.size() == names.size());
+    for (std::size_t i = 0; i < slots.size(); ++i)
+    {
+        assert(slots[i].name == names[i]);
+        assert(vrmRig::FindMaterialColorSlot(names[i]) == &slots[i]);
+        // Every one a Material interface input: a plain `vrm:` attribute
+        // cannot be a connection source, so a realization could not follow it.
+        assert(std::string(slots[i].colorInput).rfind("inputs:vrm:", 0) == 0);
+    }
+
+    // Only `color` has a fourth component to land on; for the rest the
+    // specification says the fourth value is ignored.
+    const vrmRig::MaterialColorSlot* color = vrmRig::FindMaterialColorSlot("color");
+    assert(std::string(color->schema) == "VrmMaterialAPI");
+    assert(std::string(color->alphaInput) == "inputs:vrm:material:baseColorAlphaFactor");
+    for (std::size_t i = 1; i < slots.size(); ++i)
+        assert(slots[i].alphaInput == nullptr);
+
+    // glTF core slots on VrmMaterialAPI, MToon's on VrmMToonAPI.
+    assert(std::string(vrmRig::FindMaterialColorSlot("emissionColor")->colorInput) ==
+           "inputs:vrm:material:emissiveFactor");
+    assert(std::string(vrmRig::FindMaterialColorSlot("rimColor")->colorInput) ==
+           "inputs:vrm:mtoon:parametricRimColorFactor");
+    assert(std::string(vrmRig::FindMaterialColorSlot("outlineColor")->schema) == "VrmMToonAPI");
+
+    // A 0.x property name, or a misspelling, is no slot: the importer migrates
+    // `_Color` before anything reaches here, and a guess would drive the wrong
+    // colour.
+    assert(vrmRig::FindMaterialColorSlot("_Color") == nullptr);
+    assert(vrmRig::FindMaterialColorSlot("Color") == nullptr);
+    assert(vrmRig::FindMaterialColorSlot("") == nullptr);
+}
+
 } // namespace
 
 int
@@ -1399,6 +1440,7 @@ main()
     TestBothVrmSpellingsParseToOneValue();
     TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding();
     TestTheRequiredBonesAreVrm10sSeventeenHipsFirst();
+    TestTheColourSlotsAreVrm10sSixOnTheCanonicalInputs();
     std::puts("vrmRig unit tests passed");
     return 0;
 }

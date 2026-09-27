@@ -8,8 +8,10 @@
 //
 // The stage is flattened first, so nothing of the source .vrm, the file format
 // or the importer is reachable when a graph is regenerated: only the stage.
-// A second check changes a canonical value and regenerates, so a generator that
-// ignored its input and reproduced a remembered graph would fail.
+// A second check animates each expression colour slot on the Material and
+// requires the realizations' node inputs to resolve to it with nothing
+// regenerated (P5 Step 7), and a third changes a value /preview can only hold
+// folded and regenerates, so a generator that ignored its input would fail.
 //
 // Usage: test_realization_regenerate <dir-with-.vrm> [<dir> ...]
 // Needs the usdVrmFileFormat plugin (and vrmSchema) on PXR_PLUGINPATH_NAME to
@@ -19,10 +21,10 @@
 #include "usd/MtlxRealization.h"
 #include "usd/PreviewRealization.h"
 
-#include <vrmSchema/vrmMToonAPI.h>
 #include <vrmSchema/vrmMaterialAPI.h>
 
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/copyUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/primRange.h"
@@ -75,7 +77,8 @@ Describe(const UsdShadeMaterial& material, const Realization& r)
     if (src->GetPrimAtPath(graph))
     {
         SdfLayerRefPtr out = SdfLayer::CreateAnonymous(".usda");
-        if (!SdfCopySpec(src, graph, out, SdfPath::AbsoluteRootPath().AppendChild(TfToken(r.graph))))
+        if (!SdfCopySpec(src, graph, out,
+                         SdfPath::AbsoluteRootPath().AppendChild(TfToken(r.graph))))
             return "<copy failed>";
         out->ExportToString(&text);
     }
@@ -147,8 +150,8 @@ main(int argc, char** argv)
                     if (before != after)
                     {
                         Fail(path + " " + material.GetPath().GetString() + ": regenerated /" +
-                             r.graph + " differs\n--- imported\n" + before +
-                             "\n--- regenerated\n" + after);
+                             r.graph + " differs\n--- imported\n" + before + "\n--- regenerated\n" +
+                             after);
                     }
                 }
                 if (material.GetPrim().GetChild(TfToken("mtlx")))
@@ -162,63 +165,109 @@ main(int argc, char** argv)
         }
     }
 
-    // Each generator reads its input: move a canonical value, regenerate, and
-    // the realization follows. Glass is lit and untextured, so its base colour
-    // lands on /preview's diffuseColor and /mtlx's base_color as a value;
-    // Unlit is unlit and untextured, so it lands on /mtlx's emissive.
-    if (!mutationStage)
+    // Every expression colour slot a realization uses is read from the
+    // Material, not copied into the graph (material policy §11 q12): animate
+    // the canonical value and the node input follows through the graph's
+    // interface, with nothing regenerated. Each case names the node input and
+    // the canonical attribute its value must come from.
+    struct Follows
     {
-        Fail("materials.vrm not found");
-    }
-    else
+        UsdStageRefPtr stage;
+        const char* material;
+        const char* node; // relative to the material: graph/node
+        const char* input;
+        const char* canonical;
+    };
+    const Follows follows[] = {
+        // materials.vrm: Glass is lit and untextured, Unlit unlit and untextured.
+        {mutationStage, "Glass", "preview/surface", "diffuseColor",
+         "inputs:vrm:material:baseColorFactor"},
+        {mutationStage, "Glass", "preview/surface", "opacity",
+         "inputs:vrm:material:baseColorAlphaFactor"},
+        {mutationStage, "Glass", "mtlx/surface", "base_color",
+         "inputs:vrm:material:baseColorFactor"},
+        {mutationStage, "Unlit", "preview/surface", "emissiveColor",
+         "inputs:vrm:material:baseColorFactor"},
+        {mutationStage, "Unlit", "mtlx/surface", "emissive", "inputs:vrm:material:baseColorFactor"},
+        // mtoon_vrm1.vrm: Hair states every realized MToon term, textured;
+        // Veil has no shade texture and a black rim.
+        {mtoonStage, "Hair", "mtlx/baseColorFactorRgba", "in1",
+         "inputs:vrm:material:baseColorFactor"},
+        {mtoonStage, "Hair", "mtlx/baseColorFactorRgba", "in2",
+         "inputs:vrm:material:baseColorAlphaFactor"},
+        {mtoonStage, "Hair", "mtlx/shadeColor", "in2", "inputs:vrm:mtoon:shadeColorFactor"},
+        {mtoonStage, "Hair", "mtlx/matcap", "in2", "inputs:vrm:mtoon:matcapFactor"},
+        {mtoonStage, "Hair", "mtlx/parametricRim", "in1",
+         "inputs:vrm:mtoon:parametricRimColorFactor"},
+        {mtoonStage, "Hair", "mtlx/emissiveFactor", "in2", "inputs:vrm:material:emissiveFactor"},
+        {mtoonStage, "Veil", "mtlx/toon", "bg", "inputs:vrm:mtoon:shadeColorFactor"},
+        {mtoonStage, "Veil", "mtlx/parametricRim", "in1",
+         "inputs:vrm:mtoon:parametricRimColorFactor"},
+    };
+    const UsdTimeCode frame(12.0);
+    for (const Follows& f : follows)
     {
-        struct Mutation
+        const std::string where = std::string(f.material) + "/" + f.node + "." + f.input;
+        if (!f.stage)
         {
-            const char* material;
-            const Realization& realization;
-            const char* shaderInput;
-        };
-        const Mutation mutations[] = {
-            {"Glass", kRealizations[0], "diffuseColor"},
-            {"Unlit", kRealizations[1], "emissive"},
-            {"Glass", kRealizations[1], "base_color"},
-        };
-        const GfVec3f moved(0.25f, 0.5f, 0.75f);
-        for (const Mutation& m : mutations)
-        {
-            const SdfPath matPath = SdfPath("/Asset/mtl").AppendChild(TfToken(m.material));
-            const UsdShadeMaterial material(mutationStage->GetPrimAtPath(matPath));
-            UsdVrmMaterialAPI(material.GetPrim()).GetBaseColorFactorAttr().Set(moved);
-            Regenerate(material, m.realization);
-            GfVec3f value(0.0f);
-            const UsdShadeShader surface(mutationStage->GetPrimAtPath(
-                matPath.AppendChild(TfToken(m.realization.graph)).AppendChild(TfToken("surface"))));
-            if (!surface || !surface.GetInput(TfToken(m.shaderInput)).Get(&value) ||
-                value != moved)
-            {
-                Fail(std::string(m.material) + ": /" + m.realization.graph +
-                     " did not follow a changed baseColorFactor");
-            }
+            Fail(where + ": fixture not found");
+            continue;
         }
+        const SdfPath matPath = SdfPath("/Asset/mtl").AppendChild(TfToken(f.material));
+        const UsdShadeShader node(f.stage->GetPrimAtPath(matPath.AppendPath(SdfPath(f.node))));
+        const UsdShadeInput input = node ? node.GetInput(TfToken(f.input)) : UsdShadeInput();
+        if (!input)
+        {
+            Fail(where + ": no such input");
+            continue;
+        }
+        // The value-producing attribute: the one the renderer reads.
+        const UsdShadeAttributeVector producers = input.GetValueProducingAttributes();
+        const SdfPath expected = matPath.AppendProperty(TfToken(f.canonical));
+        if (producers.size() != 1 || producers[0].GetPath() != expected)
+        {
+            Fail(where + ": its value does not come from " + expected.GetString());
+            continue;
+        }
+        // A time sample on the Material -- what an expression bake authors --
+        // is what the input resolves to at that frame.
+        const UsdAttribute canonical = f.stage->GetAttributeAtPath(expected);
+        if (canonical.GetTypeName() == SdfValueTypeNames->Float)
+        {
+            float value = 0.0f;
+            canonical.Set(0.375f, frame);
+            if (!producers[0].Get(&value, frame) || value != 0.375f)
+                Fail(where + ": did not follow an animated " + f.canonical);
+        }
+        else
+        {
+            const GfVec3f moved(0.25f, 0.5f, 0.75f);
+            GfVec3f value(0.0f);
+            canonical.Set(moved, frame);
+            if (!producers[0].Get(&value, frame) || value != moved)
+                Fail(where + ": did not follow an animated " + f.canonical);
+        }
+        canonical.ClearAtTime(frame);
     }
 
-    // ...and an MToon value reaches the MToon graph: Veil has no shade
-    // texture, so its shade colour lands on the toon mix as a value.
-    if (!mtoonStage)
+    // What /preview can only take folded -- Hair's base colour is factor *
+    // texture in UsdUVTexture.scale -- follows by regenerating, which is the
+    // generator still reading its input.
+    if (mtoonStage)
     {
-        Fail("mtoon_vrm1.vrm not found");
-    }
-    else
-    {
-        const SdfPath veilPath("/Asset/mtl/Veil");
-        const UsdShadeMaterial veil(mtoonStage->GetPrimAtPath(veilPath));
+        const SdfPath hairPath("/Asset/mtl/Hair");
+        const UsdShadeMaterial hair(mtoonStage->GetPrimAtPath(hairPath));
         const GfVec3f moved(0.25f, 0.5f, 0.75f);
-        UsdVrmMToonAPI(veil.GetPrim()).GetShadeColorFactorAttr().Set(moved);
-        Regenerate(veil, kRealizations[1]);
-        GfVec3f shade(0.0f);
-        const UsdShadeShader toon(mtoonStage->GetPrimAtPath(veilPath.AppendPath(SdfPath("mtlx/toon"))));
-        if (!toon || !toon.GetInput(TfToken("bg")).Get(&shade) || shade != moved)
-            Fail("Veil: /mtlx did not follow a changed shadeColorFactor");
+        UsdVrmMaterialAPI(hair.GetPrim()).GetBaseColorFactorAttr().Set(moved);
+        Regenerate(hair, kRealizations[0]);
+        GfVec4f scale(0.0f);
+        const UsdShadeShader tex(
+            mtoonStage->GetPrimAtPath(hairPath.AppendPath(SdfPath("preview/baseColorTexture"))));
+        if (!tex || !tex.GetInput(TfToken("scale")).Get(&scale) ||
+            GfVec3f(scale[0], scale[1], scale[2]) != moved)
+        {
+            Fail("Hair: /preview did not follow a changed baseColorFactor on regenerating");
+        }
     }
 
     // Not a vacuous pass: the fixtures and the vendored corpus.

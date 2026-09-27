@@ -300,6 +300,81 @@ would take C#'s zero — a black, transparent base colour for a missing
 `_Color`. A 0.x material that is not MToon (`VRM_USE_GLTFSHADER`, the legacy
 `VRM/Unlit*` shaders) carries its glTF core only and no `VrmMToonAPI`.
 
+## Expression colours drive canonical slots
+
+Added 2026-09-27 (Product P5 Step 7), additive within v1. An expression's
+material-colour bind names a **slot** — VRM 1.0's `MaterialColorType` — and
+a slot is a canonical material attribute, never a realization's shader input
+([material policy](../../../docs/design/MATERIAL_ARCHITECTURE_POLICY.md)
+§6.7). Every writer and evaluator resolves a slot through this one table
+(`vrmRig/MaterialColorSlots.h` carries it in code):
+
+| Slot | Schema | Canonical input | Fourth component |
+| --- | --- | --- | --- |
+| `color` | `VrmMaterialAPI` | `inputs:vrm:material:baseColorFactor` | `inputs:vrm:material:baseColorAlphaFactor` |
+| `emissionColor` | `VrmMaterialAPI` | `inputs:vrm:material:emissiveFactor` | ignored |
+| `shadeColor` | `VrmMToonAPI` | `inputs:vrm:mtoon:shadeColorFactor` | ignored |
+| `matcapColor` | `VrmMToonAPI` | `inputs:vrm:mtoon:matcapFactor` | ignored |
+| `rimColor` | `VrmMToonAPI` | `inputs:vrm:mtoon:parametricRimColorFactor` | ignored |
+| `outlineColor` | `VrmMToonAPI` | `inputs:vrm:mtoon:outlineColorFactor` | ignored |
+
+Each row is the glTF or `VRMC_materials_mtoon` field the VRM 1.0
+specification's expression table names. Four rules are the contract:
+
+**A slot lands only where its schema is applied.** An MToon slot of a glTF
+PBR material is one the specification calls "Unused"; it has no attribute to
+land on, and a writer reports it rather than inventing one.
+
+**The value is linear, and the rule is the specification's.** A resolved slot
+is `base + Σ weightᵢ · (targetᵢ − base)`, with `base` the material's own
+authored value. Written as time samples on the Material's canonical input —
+by `motion_retarget`, on an override in its output layer — and nothing is
+written below `/preview` or `/mtlx`. Both realizations read the slot values
+through a NodeGraph interface connection wherever their graph can express the
+relation (material policy §11 q12), so an animated slot shows without
+regenerating either one; `/preview` holds a copy only where it has to fold the
+value into another (factor × texture in `UsdUVTexture.scale`).
+
+**Each bind names its target by index.** A relationship holds a target once
+however many times it is added, so an expression binding two slots of one
+material — `color` and `emissionColor` of a face — cannot pair its binds with
+`vrm:materialColorTargets` by position. `vrm:materialColorTargetIndices` gives,
+per bind, the index of its material in the relationship; the slot and value
+arrays are parallel to it. A stage authored before the attribute has none and
+pairs by position, which is correct exactly when no material is bound twice.
+The validator checks both forms (`VRM244`).
+
+**The slot token is carried as spelled.** A slot outside the six reaches a
+consumer as data; the consumer reports it.
+
+### VRM 0.x `materialValues` migrate onto the same slots
+
+A VRM 0.x `blendShapeGroups[].materialValues` entry is
+`{materialName, propertyName, targetValue}` in Unity terms. The importer
+migrates it the way UniVRM's
+[`MigrationVrmExpression.cs`](https://github.com/vrm-c/UniVRM/blob/d3665db37d5c1e97f962d0a451a7b7938df3e30a/Packages/VRM10/Runtime/Migration/MigrationVrmExpression.cs)
+does — the material is the first whose glTF name is `materialName` — with one
+departure:
+
+| VRM 0.x property | Slot | Target conversion | Fidelity |
+| --- | --- | --- | --- |
+| `_Color` | `color` | RGB sRGB → linear; alpha as-is | Normalized |
+| `_EmissionColor` | `emissionColor` | already linear | Normalized |
+| `_ShadeColor` | `shadeColor` | RGB sRGB → linear | Normalized |
+| `_RimColor` | `rimColor` | RGB sRGB → linear | Normalized |
+| `_OutlineColor` | `outlineColor` | RGB sRGB → linear | Normalized |
+| `_MainTex_ST`, `_MainTex_ST_S`, `_MainTex_ST_T` | — (a texture transform, §11 q11) | — | Lossless in the raw block only; `VRM150` |
+| any other property; an undeclared material; a target that is not four numbers | — | — | Lossless in the raw block only; `VRM150` |
+
+**The departure from UniVRM:** its migration passes a 0.x target through
+unconverted, while converting the material it lands on (the
+[0.x MToon table](#vrm-0x-mtoon-normalizes-into-the-same-fields)) — so a 0.x
+target equal to the material's own `_Color` would come out lighter than the
+material. A 0.x target is a Unity colour, as the material's are, and takes the
+same conversion (the user's call, 2026-09-27). `mtoon_vrm0.vrm` and
+`mtoon_vrm1.vrm` carry the same expression in both versions, and the importer
+must author the same binds for each.
+
 ## Humanoid representation decision
 
 The v1 contract uses one token attribute per human bone:
@@ -322,7 +397,7 @@ lossless.
 | API | Applied to | Required typed data | Raw fallback |
 | --- | --- | --- | --- |
 | `VrmHumanoidAPI` | `/Asset/rig/Humanoid` | `vrm:skeleton`, authored `vrm:humanBones:<bone>` tokens | `/Asset.customData.vrm:rawExtension` |
-| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:overrideBlink`, `vrm:overrideLookAt`, `vrm:overrideMouth`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
+| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:overrideBlink`, `vrm:overrideLookAt`, `vrm:overrideMouth`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` (each material once) plus parallel `vrm:materialColorTargetIndices`, `vrm:materialColorTypes` and `vrm:materialColorValues` ([expression colours](#expression-colours-drive-canonical-slots)) | `/Asset.customData.vrm:rawExtension` |
 | `VrmLookAtAPI` | `/Asset/rig/LookAt` | `vrm:type`; optional `vrm:skeleton`, `vrm:leftEye`, `vrm:rightEye` joint tokens | `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
 | `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | `vrm:joints` plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmColliderAPI` | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` | `vrm:shape`, `vrm:node`, `vrm:offset`, `vrm:radius`; `vrm:tail` for capsules | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
@@ -332,14 +407,17 @@ lossless.
 | `VrmTextureInfoAPI:<role>` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), one of eleven roles | `inputs:vrm:textureInfo:<role>:file`, `texCoord`; the rest where the source states them | as for the API that owns the role |
 
 Array ordering is part of the contract: every parallel array listed above uses
-the same index order as its relationship or `vrm:joints` token array.
+the same index order as its relationship or `vrm:joints` token array — except
+the material-colour arrays, which are parallel to
+`vrm:materialColorTargetIndices` (a relationship holds a target once, so it
+cannot carry one entry per bind).
 
 ## Raw extension correspondence
 
 | VRM source | Typed/schema destination | Preservation |
 | --- | --- | --- |
 | VRM 1.0 `humanoid.humanBones` / VRM 0.x `humanoid.humanBones[]` | `VrmHumanoidAPI` per-bone token attrs | Full VRM block at `/Asset.customData.vrm:rawExtension` |
-| VRM 1.0 `expressions.preset/custom` / VRM 0.x `blendShapeMaster.blendShapeGroups` | `VrmExpressionAPI` expression prims, morph binds, material-color binds, and the VRM 1.0 `overrideBlink` / `overrideLookAt` / `overrideMouth` tokens | Full VRM block at `/Asset.customData.vrm:rawExtension`; VRM 0.x materialValues that are not typed are diagnostic `VRM150` |
+| VRM 1.0 `expressions.preset/custom` / VRM 0.x `blendShapeMaster.blendShapeGroups` | `VrmExpressionAPI` expression prims, morph binds, material-color binds (VRM 1.0 `materialColorBinds`; VRM 0.x colour `materialValues`, [migrated](#vrm-0x-materialvalues-migrate-onto-the-same-slots)), and the VRM 1.0 `overrideBlink` / `overrideLookAt` / `overrideMouth` tokens | Full VRM block at `/Asset.customData.vrm:rawExtension`; a VRM 0.x `materialValues` entry with no colour slot is diagnostic `VRM150` |
 | VRM 1.0 / 0.x `lookAt` | `VrmLookAtAPI` type and eye joint tokens | Raw lookAt curves at `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
 | VRM 1.0 `springBone` / VRM 0.x `secondaryAnimation` | `VrmSpringBoneAPI` and `VrmColliderAPI` | Raw spring-bone block at `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VRMC_node_constraint` | `VrmConstraintAPI` | Raw constraint block at each constraint prim's `customData.vrm:constraint:raw` |
@@ -362,7 +440,7 @@ Schema-contract-specific validator rules:
 | `VRM270`, `VRM271` | `/Asset` carries a supported schema contract version. |
 | `VRM222`-`VRM226` | Canonical material schemas apply only to a `UsdShadeMaterial`, use one of the eleven texture roles, carry token values from their documented sets, and agree with `vrm:shaderModel`; a canonical texture asset resolves. |
 | `VRM230`-`VRM232` | Humanoid prim applies `VrmHumanoidAPI`, resolves `vrm:skeleton`, and each authored bone token names a skeleton joint. |
-| `VRM240`-`VRM244` | Expression relationships resolve and all parallel arrays line up with their target relationships. |
+| `VRM240`-`VRM244` | Expression relationships resolve and all parallel arrays line up with their target relationships — the material-colour arrays with `vrm:materialColorTargetIndices` where it is authored, each index naming a target. |
 | `VRM245`-`VRM247` | LookAt prim applies `VrmLookAtAPI`; eye tokens resolve when a skeleton relationship is authored. |
 | `VRM250`-`VRM255` | Spring-bone joint tokens, collider group targets, parallel arrays, collider API application, and collider shape tokens are valid. |
 | `VRM262`-`VRM264` | Constraint prims apply `VrmConstraintAPI`, use known constraint type tokens, and hierarchical joint tokens resolve. |
@@ -376,7 +454,7 @@ These are intentionally outside v1:
 | Gap | v1 treatment |
 | --- | --- |
 | `VrmColliderGroupAPI` | Collider groups remain structural scope prims; spring chains target them with `vrm:colliderGroups`. |
-| Expression texture-transform binds | Preserved in the raw VRM block. The typed v1 expression contract covers morph and material-color binds. |
+| Expression texture-transform binds | Preserved in the raw VRM block (material policy §11 q11), VRM 1.0 `textureTransformBinds` and VRM 0.x `_MainTex_ST` `materialValues` (`VRM150`) alike. The typed v1 expression contract covers morph and material-color binds. |
 | Human-bone axis metadata | Not authored as per-bone API data in v1. Consumers should use the normalized +Z stage, `UsdSkel` rest/bind transforms, and raw fallback when they need source-axis detail. |
 | Sampler filters | glTF `magFilter` / `minFilter` are not typed on `VrmTextureInfoAPI`; no realization reads them. Preserved in the raw VRM block. |
 | Canonical-rest provenance per bone | The stage is already front-normalized and carries `vrm:sourceFrontAxis` / `vrm:frontAxisNormalized`; per-bone rest provenance is deferred. |

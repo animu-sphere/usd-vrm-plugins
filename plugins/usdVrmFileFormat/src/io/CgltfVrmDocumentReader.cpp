@@ -479,6 +479,76 @@ _ReadMToon0(const JsObject& mp, int renderQueueOffsetNumber, const _TextureResol
         p.Float("_UvAnimRotation", 0.0f) * 2.0f * 3.14159265358979f;
 }
 
+// One VRM 0.x `materialValues` entry as a VRM 1.0 colour bind (P5 Step 7).
+//
+// The mapping is UniVRM's MigrationVrmExpression: the material is the first
+// whose glTF name is `materialName`, and five Unity properties become the
+// five colour slots 0.x can state (0.x has no MatCap colour). A 0.x target is
+// a Unity colour, so it is converted the way the material's own colours are
+// (Step 4): sRGB to linear except for emission, alpha as-is. That conversion is
+// the one departure from UniVRM, whose migration passes the target through
+// unconverted while converting the material it lands on -- so a target equal
+// to the material's own `_Color` would come out lighter than the material.
+//
+// False, with `reason` completing "a materialValues bind ...", for an entry
+// that has no slot: a texture transform (`_MainTex_ST`, material policy q11),
+// any other property, a material the file does not declare, a malformed
+// target. Those stay in the raw block.
+bool
+_Vrm0MaterialColorBind(const JsObject* mv, const std::vector<std::string>& materialNames,
+                       VrmExpression::MaterialColorBind* out, std::string* reason)
+{
+    if (!mv)
+    {
+        *reason = "that is not an object";
+        return false;
+    }
+    const JsValue* nameValue = _Find(*mv, "materialName");
+    const JsValue* propertyValue = _Find(*mv, "propertyName");
+    const std::string materialName =
+        nameValue && nameValue->IsString() ? nameValue->GetString() : std::string();
+    const std::string property =
+        propertyValue && propertyValue->IsString() ? propertyValue->GetString() : std::string();
+
+    static const std::map<std::string, std::pair<const char*, bool>> kSlots = {
+        // property -> (slot, the colour is sRGB)
+        {"_Color", {"color", true}},
+        {"_EmissionColor", {"emissionColor", false}},
+        {"_ShadeColor", {"shadeColor", true}},
+        {"_RimColor", {"rimColor", true}},
+        {"_OutlineColor", {"outlineColor", true}},
+    };
+    const auto slot = kSlots.find(property);
+    if (slot == kSlots.end())
+    {
+        *reason = property.rfind("_MainTex_ST", 0) == 0
+                      ? "for texture transform '" + property + "' (not typed)"
+                      : "for property '" + property + "', which has no colour slot";
+        return false;
+    }
+    const auto material = std::find(materialNames.begin(), materialNames.end(), materialName);
+    if (material == materialNames.end())
+    {
+        *reason = "naming material '" + materialName + "', which the file does not declare";
+        return false;
+    }
+    const JsArray* target = _AsArray(_Find(*mv, "targetValue"));
+    if (!target || target->size() != 4 ||
+        !std::all_of(target->begin(), target->end(),
+                     [](const JsValue& v) { return v.IsReal() || v.IsInt(); }))
+    {
+        *reason = "for '" + property + "' with a targetValue that is not four numbers";
+        return false;
+    }
+    const auto c = _AsFloats<4>(_Find(*mv, "targetValue"), {0.0f, 0.0f, 0.0f, 0.0f});
+    const GfVec3f rgb(c[0], c[1], c[2]);
+    const GfVec3f linear = slot->second.second ? _SrgbToLinear(rgb) : rgb;
+    out->materialIndex = static_cast<int>(material - materialNames.begin());
+    out->type = slot->second.first;
+    out->targetValue = GfVec4f(linear[0], linear[1], linear[2], c[3]);
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // cgltf node helpers
 // ---------------------------------------------------------------------------
@@ -1683,15 +1753,28 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
                                              index, w);
                                 }
                             }
-                            // VRM 0.x material-value binds (MToon _Color etc.) are
-                            // not mapped to USD; they remain in vrm:rawExtension.
-                            if (_AsArray(_Find(*g, "materialValues")))
+                            // VRM 0.x material-value binds: the colour properties
+                            // migrate onto VRM 1.0's colour slots, as UniVRM's
+                            // MigrationVrmExpression migrates them; what has no
+                            // slot stays in vrm:rawExtension (VRM150).
+                            if (const JsArray* values = _AsArray(_Find(*g, "materialValues")))
                             {
-                                outDoc->warnings.push_back(VrmDiagMsg(
-                                    VrmDiag::ExpressionVrm0MaterialValues,
-                                    "expression '" + expr.name +
-                                        "' has VRM 0.x materialValues binds; preserved in "
+                                for (const JsValue& mv : *values)
+                                {
+                                    std::string reason;
+                                    VrmExpression::MaterialColorBind mb;
+                                    if (_Vrm0MaterialColorBind(_AsObject(&mv), rawMatNames, &mb,
+                                                               &reason))
+                                    {
+                                        expr.materialColorBinds.push_back(std::move(mb));
+                                        continue;
+                                    }
+                                    outDoc->warnings.push_back(VrmDiagMsg(
+                                        VrmDiag::ExpressionVrm0MaterialValues,
+                                        "expression '" + expr.name + "' has a VRM 0.x "
+                                        "materialValues bind " + reason + "; preserved in "
                                         "vrm:rawExtension only (not mapped to USD)"));
+                                }
                             }
                             outDoc->expressions.push_back(std::move(expr));
                         }

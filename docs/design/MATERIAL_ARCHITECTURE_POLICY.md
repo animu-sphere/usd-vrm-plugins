@@ -32,6 +32,9 @@
 > open questions it owned are answered in §11, and the one that changed a rule
 > here is q9 — canonical attributes are Material interface inputs,
 > `inputs:vrm:*`, not plain `vrm:*` attributes (§6.4.1).
+>
+> **Step 7 shipped 2026-09-27**, settling q11, q12 and q14 (§11): expression
+> colours land on canonical slots and the realizations read them (§6.7).
 
 ---
 
@@ -690,6 +693,13 @@ unknown to `hydra-toon`. The slot → attribute table is part of the schema
 contract (§10), so every writer and every evaluator resolves a slot the same
 way.
 
+*Shipped 2026-09-27 (Step 7).* The table is the
+[schema contract's](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots);
+`motion_retarget` writes a resolved slot as time samples on the Material's
+canonical input, and both realizations read the slot values through their
+NodeGraph interface (§11 q12), so the colour shows through either with
+nothing regenerated and nothing written below them.
+
 ---
 
 ## 7. Product P5, in order
@@ -898,7 +908,8 @@ each step may and may not do.
 - **Step 5 — `/preview` from canonical semantics.** The generator's input is
   the canonical field set and nothing else, so it can be run on a stage as
   well as in the importer. No value changes. *Shipped 2026-09-25,* generating
-  values rather than connecting to the canonical inputs (§11 q12).
+  values rather than connecting to the canonical inputs; Step 7 connected the
+  ones it can (§11 q12).
 - **Step 6 — `/mtlx` from canonical semantics.** The shipped unlit graph is
   re-pointed first with no value change; then lit glTF PBR through the same
   `gltf_pbr` terminal (§5.2.1); then portable MToon approximations — shade,
@@ -908,7 +919,9 @@ each step may and may not do.
   (§11 q13).
 - **Step 7 — expression material binds.** Resolved colours land on canonical
   slots through the contract's slot table (§6.7), and reach whichever
-  realization is selected without being written into it.
+  realization is selected without being written into it. *Shipped
+  2026-09-27:* colours only (§11 q11), connected wherever a realization can
+  express the relation (§11 q12), VRM 0.x targets sRGB-decoded (§11 q14).
 
 Steps 5 and 6 are independent of each other. Step 7 needs Step 3's slot table
 and §11 q9, not Steps 5–6.
@@ -972,8 +985,9 @@ must be isolated one at a time:
    `_ShadeColor`, which no realization reads yet. Since Step 4 they are typed —
    `VrmTextureInfoAPI:shadeMultiply` and `inputs:vrm:mtoon:shadeColorFactor`,
    through the 0.x half of §6.6 — and since Step 6 `/mtlx` draws them (§7.5).
-   What is left is comparing the asset itself, which is not in the
-   repository.
+
+**Closed 2026-09-27**, by the maintainer's decision. The last candidate is
+realized, and the issue was closed without a comparison against a VRM viewer.
 
 Do not assume `COLOR_0` must be multiplied into MToon appearance without checking
 the source material and the applicable VRM/MToon specification behavior. That
@@ -1011,7 +1025,7 @@ their own PRs:
 | ✅ `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI` added to the typed API table, with their raw fallbacks | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | ✅ The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | ✅ The VRM 0.x MToon row: `materialProperties` lands in the same typed schemas (§6.6), with the per-field conversion table | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields) | Step 4 |
-| The slot → canonical attribute table for expression material binds (§6.7), on the `VrmExpressionAPI` row; VRM 0.x `materialValues` typed onto the same slots, narrowing `VRM150` | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 7 |
+| ✅ The slot → canonical attribute table for expression material binds (§6.7), on the `VrmExpressionAPI` row; VRM 0.x `materialValues` typed onto the same slots, narrowing `VRM150`; `vrm:materialColorTargetIndices`, because a relationship cannot pair two slots of one material by position | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots) | Step 7 |
 | ✅ The MToon rows restated as typed-and-realized once both generators read canonical semantics | [CAPABILITY_MATRIX.md](../reference/CAPABILITY_MATRIX.md) | Steps 5–6 |
 
 ---
@@ -1031,6 +1045,7 @@ their own PRs:
 | ~~8~~ | ~~Does `COLOR_0` participate in MToon appearance for the issue #119 asset?~~ **No** — the asset has no `COLOR_0` on any primitive (settled on the issue, 2026-08-12). Kept as a question for other assets, not this one. | — |
 | ~~9~~ | ~~How does an animated canonical value reach a generated realization? `UsdShade` connects only `inputs:` / `outputs:` attributes, so a namespaced `vrm:mtoon:*` attribute cannot be a connection source: either the Material also exposes interface `inputs:` that each graph connects to, or the canonical attributes themselves are `inputs:`. Decided before any name is frozen, because it decides §6.4's namespace.~~ **The canonical attributes themselves are `inputs:`** — `inputs:vrm:*` (settled 2026-09-25, measured in Storm; §6.4.1). | — |
 | ~~10~~ | ~~Which VRM 0.x MToon parameters do not map onto a 1.0 field by renaming alone, and what conversion does each take? Recorded per field with its fidelity class, not invented at the call site (§6.6).~~ **UniVRM's own 0.x → 1.0 migration, exactly** (settled 2026-09-25), its two destructive choices included — a missing shade texture takes the lit texture, `rimLightingMixFactor` is always 1 — so a 0.x avatar and the 1.0 file UniVRM migrates it to carry the same canonical values. The one departure: an absent 0.x property takes the MToon 0.x shader default, not C#'s zero. Every row, with its fidelity class, is the [schema contract's 0.x table](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-mtoon-normalizes-into-the-same-fields). | — |
-| 11 | Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only? | Step 7 |
-| 12 | Which realization inputs connect to the Material's canonical `inputs:vrm:*` (so an animated value reaches them without regeneration, §6.4.1) and which stay generated values? UsdPreviewSurface has no arithmetic node, so a folded value — factor × texture in `UsdUVTexture.scale`, occlusion and normal scale/bias, glTF alpha coverage — cannot be a connection; `/mtlx` can multiply. Step 5 ships generated values only. | Step 7 |
+| ~~11~~ | ~~Are VRM 1.0 `textureTransformBinds` (and 0.x's texture-transform `materialValues`) in scope for the canonical slots, or preserved raw only?~~ **Preserved raw only** (settled 2026-09-27, the user's call). The specification applies one scale and offset to every UV-addressed texture of the material, and the canonical schemas have no material-wide transform: typing it would mean a rule for spreading one value over up to eleven `VrmTextureInfoAPI` instances, with nothing yet to read it. VRM 1.0's stay in the raw block; a 0.x `_MainTex_ST*` entry is `VRM150`. | — |
+| ~~12~~ | ~~Which realization inputs connect to the Material's canonical `inputs:vrm:*` (so an animated value reaches them without regeneration, §6.4.1) and which stay generated values?~~ **Every expression slot value, wherever the realization can express the relation** (settled 2026-09-27, the user's call). `/mtlx` connects all of them — it can multiply, so a textured base colour is `combine2(factor, alpha) × texture` and MToon's emission `factor × strength` — and it now authors the parametric rim and the emission term even where they are black, since a slot animated up from black needs a graph to show in. `/preview` connects the inputs a slot value reaches unchanged (an untextured base colour and alpha; emission at strength 1 with no texture); what it has to fold — factor × texture in `UsdUVTexture.scale`, emission × strength — stays a generated value and follows only by regenerating. That is `/preview`'s fidelity limit, not a rule (§5.4). The other canonical values stay generated: nothing animates them. Measured in Storm: time samples on the Material's `baseColorFactor` drive `/mtlx` and `/preview` frame by frame, and MToon's `emissiveFactor` adds exactly (linear 0.2 + 0.5 = 0.7, sRGB 218). | — |
 | ~~13~~ | ~~What light does a portable toon transition read? MToon's lit/shade boundary is a ramp over N·L, but standard MaterialX nodes reach scene lights only inside a BSDF, so an emissive toon graph has no light to take a dot product with.~~ **A headlight** (settled 2026-09-25, the user's call): L is the direction to the camera, white at intensity 1, so N·L is `nprlib`'s signed `facingratio`. The shading follows the camera and ignores scene lights; parametric rim and MatCap read the same view vector, and `rimLightingMixFactor` has nothing to mix. | — |
+| ~~14~~ | ~~A VRM 0.x `materialValues` colour is a Unity colour, and VRM 1.0's `targetValue` a linear one. UniVRM's migration converts the material's own `_Color` but passes the expression target through: follow it (as q10 did), or convert the target too?~~ **Convert** (settled 2026-09-27, the user's call): `_Color`, `_ShadeColor`, `_RimColor`, `_OutlineColor` sRGB → linear, emission and alpha as-is — the one departure from UniVRM's migration here, recorded in the [schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#vrm-0x-materialvalues-migrate-onto-the-same-slots). Following UniVRM would make a target equal to the material's own colour come out lighter than it. | — |

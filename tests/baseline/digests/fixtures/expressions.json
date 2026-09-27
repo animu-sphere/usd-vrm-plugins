@@ -23,16 +23,12 @@
           "inputs": {
             "alpha": 1.0,
             "alpha_mode": 0,
-            "base_color": [
-              0.800000012,
-              0.600000024,
-              0.5
-            ],
-            "emissive": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "base_color": {
+              "connectedTo": "/Asset/mtl/Face_Mat/mtlx.vrm:material:baseColorFactor"
+            },
+            "emissive": {
+              "connectedTo": "/Asset/mtl/Face_Mat/mtlx.vrm:material:emissiveFactor"
+            },
             "emissive_strength": 1.0,
             "metallic": 0.0,
             "roughness": 0.699999988
@@ -41,16 +37,12 @@
         "/Asset/mtl/Face_Mat/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
-            "diffuseColor": [
-              0.800000012,
-              0.600000024,
-              0.5
-            ],
-            "emissiveColor": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Face_Mat/preview.vrm:material:baseColorFactor"
+            },
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Face_Mat/preview.vrm:material:emissiveFactor"
+            },
             "metallic": 0.0,
             "opacity": 1.0,
             "roughness": 0.699999988

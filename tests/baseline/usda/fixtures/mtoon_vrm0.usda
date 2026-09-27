@@ -14,12 +14,13 @@ def Xform "Asset" (
     "licenseName": "Redistribution_Prohibited",
     "title": "usdVrm 0.x Fixture"
 }'''
-            string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm 0.x Fixture","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[]},"materialProperties":[{"name":"Hair","shader":"VRM/MToon","renderQueue":2510,"floatProperties":{"_BlendMode":3,"_CullMode":0,"_Cutoff":0.5,"_BumpScale":0.8,"_ShadeShift":-0.2,"_ShadeToony":0.5,"_IndirectLightIntensity":0.25,"_RimFresnelPower":3.0,"_RimLift":0.1,"_RimLightingMix":0.4,"_OutlineWidthMode":1,"_OutlineWidth":0.5,"_OutlineColorMode":1,"_OutlineLightingMix":0.6,"_UvAnimScrollX":0.5,"_UvAnimScrollY":0.25,"_UvAnimRotation":0.25},"vectorProperties":{"_Color":[0.5,1.0,0.25,0.75],"_ShadeColor":[0.5,0.5,0.5,1.0],"_RimColor":[1.0,0.5,0.0,1.0],"_OutlineColor":[0.25,0.5,1.0,1.0],"_EmissionColor":[0.1,0.2,0.3,1.0],"_MainTex":[0.25,0.5,2.0,0.5]},"textureProperties":{"_MainTex":0,"_ShadeTexture":1,"_BumpMap":2,"_EmissionMap":3,"_SphereAdd":4,"_RimTexture":5,"_OutlineWidthTexture":6,"_UvAnimMaskTexture":7},"keywordMap":{},"tagMap":{}},{"name":"Face","shader":"VRM/MToon","renderQueue":2450,"floatProperties":{"_BlendMode":1,"_CullMode":2,"_Cutoff":0.3,"_OutlineWidthMode":2,"_OutlineWidth":1.0,"_OutlineColorMode":0,"_OutlineLightingMix":0.8},"vectorProperties":{"_Color":[1.0,1.0,1.0,1.0],"_MainTex":[0.0,0.0,1.0,1.0]},"textureProperties":{"_MainTex":0},"keywordMap":{},"tagMap":{}},{"name":"Veil","shader":"VRM/MToon","renderQueue":3000,"floatProperties":{"_BlendMode":2},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Tear","shader":"VRM/MToon","renderQueue":2990,"floatProperties":{"_BlendMode":2,"_CullMode":1},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Lashes","shader":"VRM/MToon","renderQueue":2501,"floatProperties":{"_BlendMode":3},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Plain","shader":"VRM_USE_GLTFSHADER","renderQueue":-1,"floatProperties":{},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}}]}'
+            string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm 0.x Fixture","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[]},"materialProperties":[{"name":"Hair","shader":"VRM/MToon","renderQueue":2510,"floatProperties":{"_BlendMode":3,"_CullMode":0,"_Cutoff":0.5,"_BumpScale":0.8,"_ShadeShift":-0.2,"_ShadeToony":0.5,"_IndirectLightIntensity":0.25,"_RimFresnelPower":3.0,"_RimLift":0.1,"_RimLightingMix":0.4,"_OutlineWidthMode":1,"_OutlineWidth":0.5,"_OutlineColorMode":1,"_OutlineLightingMix":0.6,"_UvAnimScrollX":0.5,"_UvAnimScrollY":0.25,"_UvAnimRotation":0.25},"vectorProperties":{"_Color":[0.5,1.0,0.25,0.75],"_ShadeColor":[0.5,0.5,0.5,1.0],"_RimColor":[1.0,0.5,0.0,1.0],"_OutlineColor":[0.25,0.5,1.0,1.0],"_EmissionColor":[0.1,0.2,0.3,1.0],"_MainTex":[0.25,0.5,2.0,0.5]},"textureProperties":{"_MainTex":0,"_ShadeTexture":1,"_BumpMap":2,"_EmissionMap":3,"_SphereAdd":4,"_RimTexture":5,"_OutlineWidthTexture":6,"_UvAnimMaskTexture":7},"keywordMap":{},"tagMap":{}},{"name":"Face","shader":"VRM/MToon","renderQueue":2450,"floatProperties":{"_BlendMode":1,"_CullMode":2,"_Cutoff":0.3,"_OutlineWidthMode":2,"_OutlineWidth":1.0,"_OutlineColorMode":0,"_OutlineLightingMix":0.8},"vectorProperties":{"_Color":[1.0,1.0,1.0,1.0],"_MainTex":[0.0,0.0,1.0,1.0]},"textureProperties":{"_MainTex":0},"keywordMap":{},"tagMap":{}},{"name":"Veil","shader":"VRM/MToon","renderQueue":3000,"floatProperties":{"_BlendMode":2},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Tear","shader":"VRM/MToon","renderQueue":2990,"floatProperties":{"_BlendMode":2,"_CullMode":1},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Lashes","shader":"VRM/MToon","renderQueue":2501,"floatProperties":{"_BlendMode":3},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Plain","shader":"VRM_USE_GLTFSHADER","renderQueue":-1,"floatProperties":{},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}}],"blendShapeMaster":{"blendShapeGroups":[{"name":"Joy","presetName":"joy","isBinary":false,"binds":[],"materialValues":[{"materialName":"Face","propertyName":"_Color","targetValue":[1.0,0.5,0.5,0.75]},{"materialName":"Face","propertyName":"_EmissionColor","targetValue":[0.5,0.25,0.0,1.0]},{"materialName":"Hair","propertyName":"_ShadeColor","targetValue":[0.25,0.5,1.0,1.0]},{"materialName":"Hair","propertyName":"_RimColor","targetValue":[0.5,0.5,0.5,1.0]},{"materialName":"Hair","propertyName":"_OutlineColor","targetValue":[0.0,0.25,1.0,0.5]},{"materialName":"Plain","propertyName":"_Color","targetValue":[0.5,0.5,0.5,1.0]},{"materialName":"Face","propertyName":"_MainTex_ST","targetValue":[2.0,2.0,0.0,0.0]},{"materialName":"Face","propertyName":"_OutlineWidth","targetValue":[1.0,0.0,0.0,0.0]},{"materialName":"Missing","propertyName":"_Color","targetValue":[0.0,0.0,0.0,1.0]}]}]}}'
             int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "-Z"
             string sourceVersion = "0.x"
             string specVersion = "0.0"
+            string[] warnings = ["[VRM150] expression 'happy' has a VRM 0.x materialValues bind for texture transform '_MainTex_ST' (not typed); preserved in vrm:rawExtension only (not mapped to USD)", "[VRM150] expression 'happy' has a VRM 0.x materialValues bind for property '_OutlineWidth', which has no colour slot; preserved in vrm:rawExtension only (not mapped to USD)", "[VRM150] expression 'happy' has a VRM 0.x materialValues bind naming material 'Missing', which the file does not declare; preserved in vrm:rawExtension only (not mapped to USD)"]
         }
     }
     kind = "component"
@@ -223,6 +224,12 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Hair.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Hair.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Hair.inputs:vrm:material:emissiveFactor>
+                color3f inputs:vrm:mtoon:matcapFactor.connect = </Asset/mtl/Hair.inputs:vrm:mtoon:matcapFactor>
+                color3f inputs:vrm:mtoon:parametricRimColorFactor.connect = </Asset/mtl/Hair.inputs:vrm:mtoon:parametricRimColorFactor>
+                color3f inputs:vrm:mtoon:shadeColorFactor.connect = </Asset/mtl/Hair.inputs:vrm:mtoon:shadeColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Hair/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -346,11 +353,19 @@ def Xform "Asset" (
                     color4f outputs:out
                 }
 
+                def Shader "baseColorFactorRgba"
+                {
+                    uniform token info:id = "ND_combine2_color4CF"
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx.inputs:vrm:material:baseColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Hair/mtlx.inputs:vrm:material:baseColorAlphaFactor>
+                    color4f outputs:out
+                }
+
                 def Shader "baseColorFactor"
                 {
                     uniform token info:id = "ND_multiply_color4"
                     color4f inputs:in1.connect = </Asset/mtl/Hair/mtlx/baseColorImage.outputs:out>
-                    color4f inputs:in2 = (0.21404114, 1, 0.05087609, 0.75)
+                    color4f inputs:in2.connect = </Asset/mtl/Hair/mtlx/baseColorFactorRgba.outputs:out>
                     color4f outputs:out
                 }
 
@@ -377,7 +392,7 @@ def Xform "Asset" (
                 {
                     uniform token info:id = "ND_multiply_color3"
                     color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/shadeMultiplyImage.outputs:out>
-                    color3f inputs:in2 = (0.21404114, 0.21404114, 0.21404114)
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx.inputs:vrm:mtoon:shadeColorFactor>
                     color3f outputs:out
                 }
 
@@ -501,7 +516,7 @@ def Xform "Asset" (
                 {
                     uniform token info:id = "ND_multiply_color3"
                     color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/matcapImage.outputs:out>
-                    color3f inputs:in2 = (1, 1, 1)
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx.inputs:vrm:mtoon:matcapFactor>
                     color3f outputs:out
                 }
 
@@ -545,7 +560,7 @@ def Xform "Asset" (
                 def Shader "parametricRim"
                 {
                     uniform token info:id = "ND_multiply_color3FA"
-                    color3f inputs:in1 = (1, 0.21404114, 0)
+                    color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx.inputs:vrm:mtoon:parametricRimColorFactor>
                     float inputs:in2.connect = </Asset/mtl/Hair/mtlx/rimFresnel.outputs:out>
                     color3f outputs:out
                 }
@@ -608,7 +623,7 @@ def Xform "Asset" (
                 {
                     uniform token info:id = "ND_multiply_color3"
                     color3f inputs:in1.connect = </Asset/mtl/Hair/mtlx/emissiveImage.outputs:out>
-                    color3f inputs:in2 = (0.1, 0.2, 0.3)
+                    color3f inputs:in2.connect = </Asset/mtl/Hair/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
 
@@ -772,6 +787,11 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Face.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Face.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Face.inputs:vrm:material:emissiveFactor>
+                color3f inputs:vrm:mtoon:parametricRimColorFactor.connect = </Asset/mtl/Face.inputs:vrm:mtoon:parametricRimColorFactor>
+                color3f inputs:vrm:mtoon:shadeColorFactor.connect = </Asset/mtl/Face.inputs:vrm:mtoon:shadeColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Face/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -781,7 +801,7 @@ def Xform "Asset" (
                     float inputs:alpha_cutoff = 0.3
                     int inputs:alpha_mode = 1
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive.connect = </Asset/mtl/Face/mtlx/toon.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Face/mtlx/withEmission.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
@@ -867,11 +887,19 @@ def Xform "Asset" (
                     color4f outputs:out
                 }
 
+                def Shader "baseColorFactorRgba"
+                {
+                    uniform token info:id = "ND_combine2_color4CF"
+                    color3f inputs:in1.connect = </Asset/mtl/Face/mtlx.inputs:vrm:material:baseColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Face/mtlx.inputs:vrm:material:baseColorAlphaFactor>
+                    color4f outputs:out
+                }
+
                 def Shader "baseColorFactor"
                 {
                     uniform token info:id = "ND_multiply_color4"
                     color4f inputs:in1.connect = </Asset/mtl/Face/mtlx/baseColorImage.outputs:out>
-                    color4f inputs:in2 = (1, 1, 1, 1)
+                    color4f inputs:in2.connect = </Asset/mtl/Face/mtlx/baseColorFactorRgba.outputs:out>
                     color4f outputs:out
                 }
 
@@ -898,7 +926,7 @@ def Xform "Asset" (
                 {
                     uniform token info:id = "ND_multiply_color3"
                     color3f inputs:in1.connect = </Asset/mtl/Face/mtlx/shadeMultiplyImage.outputs:out>
-                    color3f inputs:in2 = (0.9331069, 0.62091595, 0.71056664)
+                    color3f inputs:in2.connect = </Asset/mtl/Face/mtlx.inputs:vrm:mtoon:shadeColorFactor>
                     color3f outputs:out
                 }
 
@@ -921,6 +949,55 @@ def Xform "Asset" (
                     float2 inputs:texcoord.connect = </Asset/mtl/Face/mtlx/shadeMultiplyPlace.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "clamp"
+                    color3f outputs:out
+                }
+
+                def Shader "rimFresnelBase"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1 = 1
+                    float inputs:in2.connect = </Asset/mtl/Face/mtlx/nDotV.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "rimFresnelClamp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Face/mtlx/rimFresnelBase.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "rimFresnel"
+                {
+                    uniform token info:id = "ND_power_float"
+                    float inputs:in1.connect = </Asset/mtl/Face/mtlx/rimFresnelClamp.outputs:out>
+                    float inputs:in2 = 1
+                    float outputs:out
+                }
+
+                def Shader "parametricRim"
+                {
+                    uniform token info:id = "ND_multiply_color3FA"
+                    color3f inputs:in1.connect = </Asset/mtl/Face/mtlx.inputs:vrm:mtoon:parametricRimColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Face/mtlx/rimFresnel.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withRim"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Face/mtlx/toon.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Face/mtlx/parametricRim.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withEmission"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Face/mtlx/withRim.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Face/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
             }
@@ -985,15 +1062,17 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Veil.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Veil.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Veil/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
                     color3f inputs:diffuseColor = (0, 0, 0)
-                    color3f inputs:emissiveColor = (1, 1, 1)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Veil/preview.inputs:vrm:material:baseColorFactor>
                     float inputs:metallic = 0
-                    float inputs:opacity = 1
+                    float inputs:opacity.connect = </Asset/mtl/Veil/preview.inputs:vrm:material:baseColorAlphaFactor>
                     float inputs:roughness = 1
                     token outputs:surface
                 }
@@ -1001,15 +1080,20 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Veil.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Veil.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Veil.inputs:vrm:material:emissiveFactor>
+                color3f inputs:vrm:mtoon:parametricRimColorFactor.connect = </Asset/mtl/Veil.inputs:vrm:mtoon:parametricRimColorFactor>
+                color3f inputs:vrm:mtoon:shadeColorFactor.connect = </Asset/mtl/Veil.inputs:vrm:mtoon:shadeColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Veil/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
-                    float inputs:alpha = 1
+                    float inputs:alpha.connect = </Asset/mtl/Veil/mtlx.inputs:vrm:material:baseColorAlphaFactor>
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive.connect = </Asset/mtl/Veil/mtlx/toon.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Veil/mtlx/withEmission.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
@@ -1059,9 +1143,58 @@ def Xform "Asset" (
                 def Shader "toon"
                 {
                     uniform token info:id = "ND_mix_color3"
-                    color3f inputs:bg = (0.9331069, 0.62091595, 0.71056664)
-                    color3f inputs:fg = (1, 1, 1)
+                    color3f inputs:bg.connect = </Asset/mtl/Veil/mtlx.inputs:vrm:mtoon:shadeColorFactor>
+                    color3f inputs:fg.connect = </Asset/mtl/Veil/mtlx.inputs:vrm:material:baseColorFactor>
                     float inputs:mix.connect = </Asset/mtl/Veil/mtlx/ramp.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "rimFresnelBase"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1 = 1
+                    float inputs:in2.connect = </Asset/mtl/Veil/mtlx/nDotV.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "rimFresnelClamp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Veil/mtlx/rimFresnelBase.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "rimFresnel"
+                {
+                    uniform token info:id = "ND_power_float"
+                    float inputs:in1.connect = </Asset/mtl/Veil/mtlx/rimFresnelClamp.outputs:out>
+                    float inputs:in2 = 1
+                    float outputs:out
+                }
+
+                def Shader "parametricRim"
+                {
+                    uniform token info:id = "ND_multiply_color3FA"
+                    color3f inputs:in1.connect = </Asset/mtl/Veil/mtlx.inputs:vrm:mtoon:parametricRimColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Veil/mtlx/rimFresnel.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withRim"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Veil/mtlx/toon.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Veil/mtlx/parametricRim.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withEmission"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Veil/mtlx/withRim.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Veil/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
             }
@@ -1127,15 +1260,17 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Tear.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Tear.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Tear/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
                     color3f inputs:diffuseColor = (0, 0, 0)
-                    color3f inputs:emissiveColor = (1, 1, 1)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Tear/preview.inputs:vrm:material:baseColorFactor>
                     float inputs:metallic = 0
-                    float inputs:opacity = 1
+                    float inputs:opacity.connect = </Asset/mtl/Tear/preview.inputs:vrm:material:baseColorAlphaFactor>
                     float inputs:roughness = 1
                     token outputs:surface
                 }
@@ -1143,15 +1278,20 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Tear.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Tear.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Tear.inputs:vrm:material:emissiveFactor>
+                color3f inputs:vrm:mtoon:parametricRimColorFactor.connect = </Asset/mtl/Tear.inputs:vrm:mtoon:parametricRimColorFactor>
+                color3f inputs:vrm:mtoon:shadeColorFactor.connect = </Asset/mtl/Tear.inputs:vrm:mtoon:shadeColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Tear/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
-                    float inputs:alpha = 1
+                    float inputs:alpha.connect = </Asset/mtl/Tear/mtlx.inputs:vrm:material:baseColorAlphaFactor>
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive.connect = </Asset/mtl/Tear/mtlx/toon.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Tear/mtlx/withEmission.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
@@ -1201,9 +1341,58 @@ def Xform "Asset" (
                 def Shader "toon"
                 {
                     uniform token info:id = "ND_mix_color3"
-                    color3f inputs:bg = (0.9331069, 0.62091595, 0.71056664)
-                    color3f inputs:fg = (1, 1, 1)
+                    color3f inputs:bg.connect = </Asset/mtl/Tear/mtlx.inputs:vrm:mtoon:shadeColorFactor>
+                    color3f inputs:fg.connect = </Asset/mtl/Tear/mtlx.inputs:vrm:material:baseColorFactor>
                     float inputs:mix.connect = </Asset/mtl/Tear/mtlx/ramp.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "rimFresnelBase"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1 = 1
+                    float inputs:in2.connect = </Asset/mtl/Tear/mtlx/nDotV.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "rimFresnelClamp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Tear/mtlx/rimFresnelBase.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "rimFresnel"
+                {
+                    uniform token info:id = "ND_power_float"
+                    float inputs:in1.connect = </Asset/mtl/Tear/mtlx/rimFresnelClamp.outputs:out>
+                    float inputs:in2 = 1
+                    float outputs:out
+                }
+
+                def Shader "parametricRim"
+                {
+                    uniform token info:id = "ND_multiply_color3FA"
+                    color3f inputs:in1.connect = </Asset/mtl/Tear/mtlx.inputs:vrm:mtoon:parametricRimColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Tear/mtlx/rimFresnel.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withRim"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Tear/mtlx/toon.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Tear/mtlx/parametricRim.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withEmission"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Tear/mtlx/withRim.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Tear/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
             }
@@ -1268,15 +1457,17 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Lashes.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Lashes.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Lashes/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
                     color3f inputs:diffuseColor = (0, 0, 0)
-                    color3f inputs:emissiveColor = (1, 1, 1)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Lashes/preview.inputs:vrm:material:baseColorFactor>
                     float inputs:metallic = 0
-                    float inputs:opacity = 1
+                    float inputs:opacity.connect = </Asset/mtl/Lashes/preview.inputs:vrm:material:baseColorAlphaFactor>
                     float inputs:roughness = 1
                     token outputs:surface
                 }
@@ -1284,15 +1475,20 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Lashes.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Lashes.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Lashes.inputs:vrm:material:emissiveFactor>
+                color3f inputs:vrm:mtoon:parametricRimColorFactor.connect = </Asset/mtl/Lashes.inputs:vrm:mtoon:parametricRimColorFactor>
+                color3f inputs:vrm:mtoon:shadeColorFactor.connect = </Asset/mtl/Lashes.inputs:vrm:mtoon:shadeColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Lashes/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
-                    float inputs:alpha = 1
+                    float inputs:alpha.connect = </Asset/mtl/Lashes/mtlx.inputs:vrm:material:baseColorAlphaFactor>
                     int inputs:alpha_mode = 2
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive.connect = </Asset/mtl/Lashes/mtlx/toon.outputs:out>
+                    color3f inputs:emissive.connect = </Asset/mtl/Lashes/mtlx/withEmission.outputs:out>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
@@ -1342,9 +1538,58 @@ def Xform "Asset" (
                 def Shader "toon"
                 {
                     uniform token info:id = "ND_mix_color3"
-                    color3f inputs:bg = (0.9331069, 0.62091595, 0.71056664)
-                    color3f inputs:fg = (1, 1, 1)
+                    color3f inputs:bg.connect = </Asset/mtl/Lashes/mtlx.inputs:vrm:mtoon:shadeColorFactor>
+                    color3f inputs:fg.connect = </Asset/mtl/Lashes/mtlx.inputs:vrm:material:baseColorFactor>
                     float inputs:mix.connect = </Asset/mtl/Lashes/mtlx/ramp.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "rimFresnelBase"
+                {
+                    uniform token info:id = "ND_subtract_float"
+                    float inputs:in1 = 1
+                    float inputs:in2.connect = </Asset/mtl/Lashes/mtlx/nDotV.outputs:out>
+                    float outputs:out
+                }
+
+                def Shader "rimFresnelClamp"
+                {
+                    uniform token info:id = "ND_clamp_float"
+                    float inputs:high = 1
+                    float inputs:in.connect = </Asset/mtl/Lashes/mtlx/rimFresnelBase.outputs:out>
+                    float inputs:low = 0
+                    float outputs:out
+                }
+
+                def Shader "rimFresnel"
+                {
+                    uniform token info:id = "ND_power_float"
+                    float inputs:in1.connect = </Asset/mtl/Lashes/mtlx/rimFresnelClamp.outputs:out>
+                    float inputs:in2 = 1
+                    float outputs:out
+                }
+
+                def Shader "parametricRim"
+                {
+                    uniform token info:id = "ND_multiply_color3FA"
+                    color3f inputs:in1.connect = </Asset/mtl/Lashes/mtlx.inputs:vrm:mtoon:parametricRimColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Lashes/mtlx/rimFresnel.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withRim"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Lashes/mtlx/toon.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Lashes/mtlx/parametricRim.outputs:out>
+                    color3f outputs:out
+                }
+
+                def Shader "withEmission"
+                {
+                    uniform token info:id = "ND_add_color3"
+                    color3f inputs:in1.connect = </Asset/mtl/Lashes/mtlx/withRim.outputs:out>
+                    color3f inputs:in2.connect = </Asset/mtl/Lashes/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
             }
@@ -1379,6 +1624,7 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Plain.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Plain/preview/surface.outputs:surface>
 
                 def Shader "surface"
@@ -1386,7 +1632,7 @@ def Xform "Asset" (
                     uniform token info:id = "UsdPreviewSurface"
                     color3f inputs:diffuseColor = (0.2, 0.3, 0.4)
                     color3f inputs:diffuseColor.connect = </Asset/mtl/Plain/preview/baseColorTexture.outputs:rgb>
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Plain/preview.inputs:vrm:material:emissiveFactor>
                     float inputs:metallic = 1
                     float inputs:opacity = 1
                     float inputs:opacity.connect = </Asset/mtl/Plain/preview/baseColorTexture.outputs:a>
@@ -1421,6 +1667,9 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Plain.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Plain.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Plain.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Plain/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -1430,7 +1679,7 @@ def Xform "Asset" (
                     float inputs:alpha_cutoff = 0.25
                     int inputs:alpha_mode = 1
                     color3f inputs:base_color.connect = </Asset/mtl/Plain/mtlx/baseColorRgb.outputs:out>
-                    color3f inputs:emissive = (0, 0, 0)
+                    color3f inputs:emissive.connect = </Asset/mtl/Plain/mtlx.inputs:vrm:material:emissiveFactor>
                     float inputs:emissive_strength = 1
                     float inputs:metallic = 1
                     float inputs:roughness = 1
@@ -1457,11 +1706,19 @@ def Xform "Asset" (
                     color4f outputs:out
                 }
 
+                def Shader "baseColorFactorRgba"
+                {
+                    uniform token info:id = "ND_combine2_color4CF"
+                    color3f inputs:in1.connect = </Asset/mtl/Plain/mtlx.inputs:vrm:material:baseColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Plain/mtlx.inputs:vrm:material:baseColorAlphaFactor>
+                    color4f outputs:out
+                }
+
                 def Shader "baseColorFactor"
                 {
                     uniform token info:id = "ND_multiply_color4"
                     color4f inputs:in1.connect = </Asset/mtl/Plain/mtlx/baseColorImage.outputs:out>
-                    color4f inputs:in2 = (0.2, 0.3, 0.4, 1)
+                    color4f inputs:in2.connect = </Asset/mtl/Plain/mtlx/baseColorFactorRgba.outputs:out>
                     color4f outputs:out
                 }
 
@@ -1517,6 +1774,25 @@ def Xform "Asset" (
 
     def Scope "rig"
     {
+        def Scope "Expressions"
+        {
+            def Scope "happy" (
+                apiSchemas = ["VrmExpressionAPI"]
+            )
+            {
+                uniform token vrm:expressionName = "happy"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                uniform int[] vrm:materialColorTargetIndices = [0, 0, 1, 1, 1, 2]
+                rel vrm:materialColorTargets = [
+                    </Asset/mtl/Face>,
+                    </Asset/mtl/Hair>,
+                    </Asset/mtl/Plain>,
+                ]
+                uniform token[] vrm:materialColorTypes = ["color", "emissionColor", "shadeColor", "rimColor", "outlineColor", "color"]
+                uniform float4[] vrm:materialColorValues = [(1, 0.21404114, 0.21404114, 0.75), (0.5, 0.25, 0, 1), (0.05087609, 0.21404114, 1, 1), (0.21404114, 0.21404114, 0.21404114, 1), (0, 0.05087609, 1, 0.5), (0.21404114, 0.21404114, 0.21404114, 1)]
+            }
+        }
     }
 }
 

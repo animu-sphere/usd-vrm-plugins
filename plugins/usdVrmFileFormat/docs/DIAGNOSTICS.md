@@ -46,7 +46,7 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | VRM121 | WARNING | import | Primitive has no POSITION; skipped |
 | VRM140 | WARNING | import | Humanoid bone could not be mapped to a joint |
 | VRM141 | WARNING | import | Duplicate humanoid bone; first mapping kept |
-| VRM150 | INFO | import | VRM 0.x materialValues expression preserved raw only |
+| VRM150 | INFO | import | VRM 0.x materialValues bind with no colour slot preserved raw only |
 | VRM151 | WARNING | import | Expression morph target index out of range; bind skipped |
 | VRM152 | WARNING | import | Duplicate expression name; first declaration kept |
 | VRM153 | WARNING | import | Expression override value is not none/block/blend; carried verbatim |

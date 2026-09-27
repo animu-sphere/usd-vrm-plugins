@@ -485,6 +485,10 @@ struct UsdVrmTokensType
     ///
     /// UsdVrmLookAtAPI
     const TfToken vrmLeftEye;
+    /// \brief "vrm:materialColorTargetIndices"
+    ///
+    /// UsdVrmExpressionAPI
+    const TfToken vrmMaterialColorTargetIndices;
     /// \brief "vrm:materialColorTargets"
     ///
     /// UsdVrmExpressionAPI

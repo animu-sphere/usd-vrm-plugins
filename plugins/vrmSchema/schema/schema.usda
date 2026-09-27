@@ -176,13 +176,27 @@ class "VrmExpressionAPI" (
         doc = "Per-target weights, parallel to vrm:morphTargets."
     )
     rel vrm:materialColorTargets (
-        doc = "The materials whose colors this expression overrides."
+        doc = """The materials whose colors this expression overrides, each
+        once. A relationship holds a target once however often it is added, so
+        one material bound in two slots is one target here; which bind names
+        which target is vrm:materialColorTargetIndices."""
+    )
+    uniform int[] vrm:materialColorTargetIndices (
+        doc = """Per material color bind, the index into vrm:materialColorTargets
+        of the material it drives; parallel to vrm:materialColorTypes and
+        vrm:materialColorValues. A stage authored before this attribute has
+        none, and its binds pair with the targets by position -- which is right
+        only where no material is bound twice."""
     )
     uniform token[] vrm:materialColorTypes (
-        doc = "Color slot per target (e.g. color, emission), parallel to vrm:materialColorTargets."
+        doc = """Color slot per material color bind: VRM 1.0's color,
+        emissionColor, shadeColor, matcapColor, rimColor or outlineColor.
+        Parallel to vrm:materialColorTargetIndices."""
     )
     uniform float4[] vrm:materialColorValues (
-        doc = "Target RGBA per material color bind, parallel to vrm:materialColorTargets."
+        doc = """Target RGBA per material color bind, linear, parallel to
+        vrm:materialColorTargetIndices. The fourth component is ignored by a
+        slot with no alpha."""
     )
 }
 

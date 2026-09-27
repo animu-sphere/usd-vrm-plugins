@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "usd/PreviewRealization.h"
 
+#include "usd/CanonicalInput.h"
 #include "usd/UvTransform.h"
 
 #include "pxr/base/gf/vec3f.h"
@@ -47,13 +48,43 @@ UsdVrmAuthorPreview(const UsdShadeMaterial& material, const VrmMaterialSemantics
     // base color through emissive with no lit response, so scene lights
     // don't carve facets into the low-poly surface (the "polygonal" look).
     const bool unlit = s.unlit;
+    const VrmTextureRef* baseColorTex = _Texture(s, "baseColor");
+    const VrmTextureRef* metallicRoughnessTex = _Texture(s, "metallicRoughness");
+    const VrmTextureRef* normalTex = _Texture(s, "normal");
+    const VrmTextureRef* emissiveTex = _Texture(s, "emissive");
+    const VrmTextureRef* occlusionTex = _Texture(s, "occlusion");
+
+    // Where a canonical value is a surface input unchanged, the input reads it
+    // from the Material instead of holding a copy (policy §11 q12), so an
+    // expression colour on the Material shows here too. What UsdPreviewSurface
+    // can only take folded -- factor * texture in UsdUVTexture.scale, emission
+    // times its strength -- stays a generated value: it has no arithmetic node
+    // to fold with, so an animated factor reaches it only by regenerating.
+    auto author = [&](const char* input, const SdfValueTypeName& type, bool connect,
+                      const char* canonical, const VtValue& value)
+    {
+        UsdShadeInput in = shader.CreateInput(TfToken(input), type);
+        if (connect)
+            in.ConnectToSource(UsdVrmCanonicalInput(material, preview, canonical, type));
+        else
+            in.Set(value);
+    };
     // glTF emission is emissiveFactor * emissiveTexture, scaled by
     // KHR_materials_emissive_strength.
     const GfVec3f emissive = s.emissiveFactor * s.emissiveStrength;
-    shader.CreateInput(TfToken("diffuseColor"), SdfValueTypeNames->Color3f)
-        .Set(unlit ? GfVec3f(0.0f) : s.baseColorFactor);
-    shader.CreateInput(TfToken("emissiveColor"), SdfValueTypeNames->Color3f)
-        .Set(unlit ? s.baseColorFactor : emissive);
+    author("diffuseColor", SdfValueTypeNames->Color3f, !unlit && !baseColorTex,
+           "vrm:material:baseColorFactor", VtValue(unlit ? GfVec3f(0.0f) : s.baseColorFactor));
+    if (unlit)
+    {
+        author("emissiveColor", SdfValueTypeNames->Color3f, !baseColorTex,
+               "vrm:material:baseColorFactor", VtValue(s.baseColorFactor));
+    }
+    else
+    {
+        author("emissiveColor", SdfValueTypeNames->Color3f,
+               !emissiveTex && s.emissiveStrength == 1.0f, "vrm:material:emissiveFactor",
+               VtValue(emissive));
+    }
     shader.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float)
         .Set(unlit ? 0.0f : s.metallicFactor);
     shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
@@ -61,8 +92,9 @@ UsdVrmAuthorPreview(const UsdShadeMaterial& material, const VrmMaterialSemantics
     // glTF's alpha-coverage rule: OPAQUE "the alpha value is ignored and the
     // rendered output is fully opaque", so a factor alpha of 0.3 on an OPAQUE
     // material is opaque, not 30% transparent.
-    shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float)
-        .Set(s.alphaMode == "OPAQUE" ? 1.0f : s.baseColorAlphaFactor);
+    author("opacity", SdfValueTypeNames->Float, s.alphaMode != "OPAQUE" && !baseColorTex,
+           "vrm:material:baseColorAlphaFactor",
+           VtValue(s.alphaMode == "OPAQUE" ? 1.0f : s.baseColorAlphaFactor));
     if (s.alphaMode == "MASK")
     {
         shader.CreateInput(TfToken("opacityThreshold"), SdfValueTypeNames->Float)
@@ -79,11 +111,6 @@ UsdVrmAuthorPreview(const UsdShadeMaterial& material, const VrmMaterialSemantics
     // Textures: the five glTF core roles. A single UsdPrimvarReader_float2
     // feeds every UsdUVTexture's st; each role becomes one UsdUVTexture wired
     // into the matching UsdPreviewSurface input.
-    const VrmTextureRef* baseColorTex = _Texture(s, "baseColor");
-    const VrmTextureRef* metallicRoughnessTex = _Texture(s, "metallicRoughness");
-    const VrmTextureRef* normalTex = _Texture(s, "normal");
-    const VrmTextureRef* emissiveTex = _Texture(s, "emissive");
-    const VrmTextureRef* occlusionTex = _Texture(s, "occlusion");
     const bool anyTex =
         baseColorTex || metallicRoughnessTex || normalTex || emissiveTex || occlusionTex;
     UsdShadeShader stReader;

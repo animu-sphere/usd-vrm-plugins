@@ -423,7 +423,25 @@ def _check_expressions(stage: Usd.Stage, out: list[Diagnostic]) -> None:
         if color_targets:
             type_count = _array_len(expr.GetAttribute("vrm:materialColorTypes"))
             value_count = _array_len(expr.GetAttribute("vrm:materialColorValues"))
-            if type_count != len(color_targets) or value_count != len(color_targets):
+            indices_attr = expr.GetAttribute("vrm:materialColorTargetIndices")
+            indices = indices_attr.Get() if indices_attr and                 indices_attr.HasAuthoredValue() else None
+            if indices is not None:
+                # One entry per bind, each naming a target: a relationship
+                # holds a material once however many of its slots are bound.
+                if type_count != len(indices) or value_count != len(indices):
+                    out.append(diag.make(
+                        "VRM244",
+                        "expression material-color arrays are not parallel to "
+                        "vrm:materialColorTargetIndices",
+                        path))
+                if any(i < 0 or i >= len(color_targets) for i in indices):
+                    out.append(diag.make(
+                        "VRM244",
+                        "vrm:materialColorTargetIndices names a target "
+                        "vrm:materialColorTargets does not have",
+                        path))
+            elif type_count != len(color_targets) or value_count != len(color_targets):
+                # A stage from before the index array pairs by position.
                 out.append(diag.make(
                     "VRM244",
                     "expression material-color arrays are not parallel to "
