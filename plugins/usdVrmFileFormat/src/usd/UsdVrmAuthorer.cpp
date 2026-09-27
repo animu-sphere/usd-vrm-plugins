@@ -54,6 +54,7 @@
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <set>
@@ -656,8 +657,13 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outU
             }
 
             // Material-color binds: relationship to the target materials plus
-            // parallel slot-name / RGBA target arrays (evaluation is downstream).
+            // parallel index / slot-name / RGBA target arrays (evaluation is
+            // downstream). A relationship holds each target once -- adding
+            // Face twice leaves one Face -- so a material bound in two slots
+            // cannot pair with its binds by position; each bind names its
+            // target by index instead.
             SdfPathVector colorTargets;
+            VtIntArray colorTargetIndices;
             VtTokenArray colorTypes;
             VtVec4fArray colorValues;
             for (const VrmExpression::MaterialColorBind& mb : e.materialColorBinds)
@@ -667,7 +673,11 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outU
                 {
                     continue;
                 }
-                colorTargets.push_back(materialPaths[mb.materialIndex]);
+                const SdfPath& target = materialPaths[mb.materialIndex];
+                auto it = std::find(colorTargets.begin(), colorTargets.end(), target);
+                if (it == colorTargets.end())
+                    it = colorTargets.insert(colorTargets.end(), target);
+                colorTargetIndices.push_back(static_cast<int>(it - colorTargets.begin()));
                 colorTypes.push_back(TfToken(mb.type));
                 colorValues.push_back(mb.targetValue);
             }
@@ -675,6 +685,9 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outU
             {
                 p.CreateRelationship(TfToken("vrm:materialColorTargets"), false)
                     .SetTargets(colorTargets);
+                p.CreateAttribute(TfToken("vrm:materialColorTargetIndices"),
+                                  SdfValueTypeNames->IntArray, false, SdfVariabilityUniform)
+                    .Set(colorTargetIndices);
                 p.CreateAttribute(TfToken("vrm:materialColorTypes"), SdfValueTypeNames->TokenArray,
                                   false, SdfVariabilityUniform)
                     .Set(colorTypes);

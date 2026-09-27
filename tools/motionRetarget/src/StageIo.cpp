@@ -182,6 +182,7 @@ const TfToken kOverrideMouth("vrm:overrideMouth");
 const TfToken kMorphTargets("vrm:morphTargets");
 const TfToken kMorphTargetWeights("vrm:morphTargetWeights");
 const TfToken kMaterialColorTargets("vrm:materialColorTargets");
+const TfToken kMaterialColorTargetIndices("vrm:materialColorTargetIndices");
 const TfToken kMaterialColorTypes("vrm:materialColorTypes");
 const TfToken kMaterialColorValues("vrm:materialColorValues");
 
@@ -347,16 +348,29 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
     {
         attribute.Get(&colorValues);
     }
+    // Which target each bind drives. A relationship holds a material once
+    // however many of its slots the expression binds, so the importer names
+    // each bind's target by index; a stage authored before the index array
+    // pairs the binds with the targets by position.
+    VtIntArray colorIndices;
+    const UsdAttribute indicesAttribute = prim.GetAttribute(kMaterialColorTargetIndices);
+    const bool indexed = indicesAttribute && indicesAttribute.Get(&colorIndices);
+    if (!indexed)
+    {
+        colorIndices.resize(colorTargets.size());
+        for (std::size_t i = 0; i < colorTargets.size(); ++i)
+            colorIndices[i] = static_cast<int>(i);
+    }
     if (!colorTargets.empty() &&
-        (colorTypes.size() != colorTargets.size() || colorValues.size() != colorTargets.size()))
+        (colorTypes.size() != colorIndices.size() || colorValues.size() != colorIndices.size()))
     {
         warnings->push_back("expression <" + prim.GetPath().GetString() + "> binds " +
-                            std::to_string(colorTargets.size()) + " material colour(s) with " +
+                            std::to_string(colorIndices.size()) + " material colour(s) with " +
                             std::to_string(colorTypes.size()) + " slot(s) and " +
                             std::to_string(colorValues.size()) +
                             " value(s); the binds that are short of either are skipped");
     }
-    for (std::size_t i = 0; i < colorTargets.size(); ++i)
+    for (std::size_t i = 0; i < colorIndices.size(); ++i)
     {
         // Skipped, as the warning says, and not completed from thin air. A
         // slot is half the key, so inventing one would merge two binds of a
@@ -367,8 +381,16 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
         {
             continue;
         }
+        const int target = colorIndices[i];
+        if (target < 0 || static_cast<std::size_t>(target) >= colorTargets.size())
+        {
+            warnings->push_back("expression <" + prim.GetPath().GetString() +
+                                "> binds a material colour to target index " +
+                                std::to_string(target) + ", which it does not have; skipped");
+            continue;
+        }
         vrmRig::MaterialColorBind bind;
-        bind.material = colorTargets[i].GetString();
+        bind.material = colorTargets[static_cast<std::size_t>(target)].GetString();
         bind.colorType = colorTypes[i].GetString();
         bind.targetValue = colorValues[i];
         definition.materialColors.push_back(std::move(bind));

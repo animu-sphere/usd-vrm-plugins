@@ -16,7 +16,7 @@ def Xform "Asset" (
     "name": "usdVrm Fixture",
     "version": "1.0"
 }'''
-            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{}}}'
+            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{}},"expressions":{"preset":{"happy":{"isBinary":false,"materialColorBinds":[{"material":1,"type":"color","targetValue":[1.0,0.21404114,0.21404114,0.75]},{"material":1,"type":"emissionColor","targetValue":[0.5,0.25,0.0,1.0]},{"material":0,"type":"shadeColor","targetValue":[0.05087609,0.21404114,1.0,1.0]},{"material":0,"type":"rimColor","targetValue":[0.21404114,0.21404114,0.21404114,1.0]},{"material":0,"type":"outlineColor","targetValue":[0.0,0.05087609,1.0,0.5]},{"material":5,"type":"color","targetValue":[0.21404114,0.21404114,0.21404114,1.0]}],"textureTransformBinds":[{"material":1,"scale":[2.0,2.0],"offset":[0.0,-1.0]}]}}}}'
             int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
@@ -1418,6 +1418,25 @@ def Xform "Asset" (
 
     def Scope "rig"
     {
+        def Scope "Expressions"
+        {
+            def Scope "happy" (
+                apiSchemas = ["VrmExpressionAPI"]
+            )
+            {
+                uniform token vrm:expressionName = "happy"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                uniform int[] vrm:materialColorTargetIndices = [0, 0, 1, 1, 1, 2]
+                rel vrm:materialColorTargets = [
+                    </Asset/mtl/Face>,
+                    </Asset/mtl/Hair>,
+                    </Asset/mtl/Plain>,
+                ]
+                uniform token[] vrm:materialColorTypes = ["color", "emissionColor", "shadeColor", "rimColor", "outlineColor", "color"]
+                uniform float4[] vrm:materialColorValues = [(1, 0.21404114, 0.21404114, 0.75), (0.5, 0.25, 0, 1), (0.05087609, 0.21404114, 1, 1), (0.21404114, 0.21404114, 0.21404114, 1), (0, 0.05087609, 1, 0.5), (0.21404114, 0.21404114, 0.21404114, 1)]
+            }
+        }
     }
 }
 

@@ -2404,6 +2404,17 @@
     {
       "path": "/Asset/rig",
       "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/Expressions",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/happy",
+      "type": "Scope"
     }
   ],
   "skeletons": {},
@@ -2414,7 +2425,7 @@
     "frontAxisNormalized": false,
     "metaName": "usdVrm Fixture",
     "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
-    "rawExtensionSha256": "914d217985b21303df2dc775cfe0f5765de8659ae1c02ac2be8c988f5e9f5acf",
+    "rawExtensionSha256": "43fccb2a5ef3e462d48d971615926902c3caf657d4f7f45754e925e306a1ac0d",
     "schemaContractVersion": 1,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",

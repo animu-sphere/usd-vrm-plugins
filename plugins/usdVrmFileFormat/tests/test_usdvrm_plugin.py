@@ -235,6 +235,7 @@ def check_expressions():
     # materialColorBinds: drives Face_Mat emission to red.
     ct = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
     assert ct == [Sdf.Path("/Asset/mtl/Face_Mat")], ct
+    assert list(happy.GetAttribute("vrm:materialColorTargetIndices").Get()) == [0]
     assert list(happy.GetAttribute("vrm:materialColorTypes").Get()) == ["emissionColor"]
     cv = happy.GetAttribute("vrm:materialColorValues").Get()
     assert cv and tuple(cv[0]) == (1.0, 0.0, 0.0, 1.0), list(cv)
@@ -1031,6 +1032,42 @@ def check_mtoon_vrm0_matches_vrm1():
     plain = vrm0.GetPrimAtPath("/Asset/mtl/Plain")
     assert "VrmMToonAPI" not in plain.GetAppliedSchemas()
     assert not plain.GetAttribute("vrm:shaderModel")
+
+    # Expression colours (P5 Step 7): Joy's materialValues land on the same
+    # slots, targets and values as the 1.0 file's materialColorBinds -- the
+    # colours sRGB-decoded as the materials' own are, emission as-is.
+    binds = []
+    for stage in (vrm0, vrm1):
+        happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
+        assert happy.GetAttribute("vrm:expressionName").Get() == "happy"
+        # Face is bound in two slots and Hair in three, and a relationship
+        # holds each once: the binds reach them through the index array.
+        targets = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
+        assert [str(t) for t in targets] == [
+            "/Asset/mtl/Face", "/Asset/mtl/Hair", "/Asset/mtl/Plain"], targets
+        indices = list(happy.GetAttribute("vrm:materialColorTargetIndices").Get())
+        assert indices == [0, 0, 1, 1, 1, 2], indices
+        binds.append((
+            [str(targets[i]) for i in indices],
+            list(happy.GetAttribute("vrm:materialColorTypes").Get()),
+            [tuple(v) for v in happy.GetAttribute("vrm:materialColorValues").Get()]))
+    (targets0, types0, values0), (targets1, types1, values1) = binds
+    assert targets0 == targets1 == [
+        "/Asset/mtl/Face", "/Asset/mtl/Face", "/Asset/mtl/Hair", "/Asset/mtl/Hair",
+        "/Asset/mtl/Hair", "/Asset/mtl/Plain"], (targets0, targets1)
+    assert types0 == types1 == ["color", "emissionColor", "shadeColor", "rimColor",
+                                "outlineColor", "color"], (types0, types1)
+    assert len(values0) == len(values1) == 6
+    for v0, v1 in zip(values0, values1):
+        assert _vclose(v0, v1), (values0, values1)
+    # What has no slot stays raw, one VRM150 each: the texture transform (q11),
+    # a property that is no colour, a material the file does not declare.
+    warnings = vrm0.GetDefaultPrim().GetCustomData()["vrm"]["warnings"]
+    raw = [w for w in warnings if w.startswith("[VRM150]")]
+    assert len(raw) == 3, raw
+    assert any("'_MainTex_ST'" in w for w in raw), raw
+    assert any("'_OutlineWidth'" in w for w in raw), raw
+    assert any("'Missing'" in w for w in raw), raw
 
 
 def check_portable_package():

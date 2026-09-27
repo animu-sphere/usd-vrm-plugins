@@ -48,6 +48,7 @@ usdvrm_consume_package(motionCore)
 add_library(vrmRig STATIC
     src/ExpressionResolver.cpp
     src/LookAtEvaluator.cpp
+    src/MaterialColorSlots.cpp
     src/RequiredBones.cpp)
 add_library(vrmRig::vrmRig ALIAS vrmRig)
 set_target_properties(vrmRig PROPERTIES

@@ -41,6 +41,7 @@ source that has no stage at all.
 | --- | --- |
 | `vrmRig/RequiredBones.h` | `GetRequiredBones` — VRM 1.0's seventeen required humanoid bones, hips first, which a caller passes as `motionRetarget`'s `RetargetOptions::requiredBones` |
 | `vrmRig/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
+| `vrmRig/MaterialColorSlots.h` | `MaterialColorSlot`, `GetMaterialColorSlots`, `FindMaterialColorSlot` — the schema contract's table from a VRM colour slot to the canonical Material input it drives |
 | `vrmRig/LookAtEvaluator.h` | `LookAtRangeMap`, `LookAtCurveKey`, `LookAtType`, `LookAtRig`, `ParseLookAtRangeMaps`, `LookAtHead`, `LookAtInput`, `LookAtEvaluator`, `ResolvedLookAt`, `LookAtDiagnostics` |
 
 ## Four decisions worth knowing

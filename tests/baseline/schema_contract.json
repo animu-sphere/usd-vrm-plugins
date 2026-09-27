@@ -1,6 +1,6 @@
 {
   "baselineSchemaVersion": 1,
-  "generatedSchemaSha256": "b963e6efedc348d5e2133801388c4f2e9ce2041dbf7531c39665be2d46ab7997",
+  "generatedSchemaSha256": "11ca0d8eecc9bc53bebb72d0abc7816fa7d218d1357a2b679f4e9288d18909f7",
   "registryVisible": {
     "VrmColliderAPI": true,
     "VrmConstraintAPI": true,
@@ -77,6 +77,10 @@
         },
         "vrm:isBinary": {
           "typeName": "bool",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:materialColorTargetIndices": {
+          "typeName": "VtArray<int>",
           "variability": "Sdf.VariabilityUniform"
         },
         "vrm:materialColorTargets": {

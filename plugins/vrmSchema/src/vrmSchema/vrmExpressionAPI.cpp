@@ -189,6 +189,21 @@ UsdVrmExpressionAPI::CreateVrmMorphTargetWeightsAttr(VtValue const& defaultValue
 }
 
 UsdAttribute
+UsdVrmExpressionAPI::GetVrmMaterialColorTargetIndicesAttr() const
+{
+    return GetPrim().GetAttribute(UsdVrmTokens->vrmMaterialColorTargetIndices);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::CreateVrmMaterialColorTargetIndicesAttr(VtValue const& defaultValue,
+                                                             bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmMaterialColorTargetIndices, SdfValueTypeNames->IntArray,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
+}
+
+UsdAttribute
 UsdVrmExpressionAPI::GetVrmMaterialColorTypesAttr() const
 {
     return GetPrim().GetAttribute(UsdVrmTokens->vrmMaterialColorTypes);
@@ -262,15 +277,11 @@ const TfTokenVector&
 UsdVrmExpressionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdVrmTokens->vrmExpressionName,
-        UsdVrmTokens->vrmExpressionType,
-        UsdVrmTokens->vrmIsBinary,
-        UsdVrmTokens->vrmOverrideBlink,
-        UsdVrmTokens->vrmOverrideLookAt,
-        UsdVrmTokens->vrmOverrideMouth,
-        UsdVrmTokens->vrmMorphTargetWeights,
-        UsdVrmTokens->vrmMaterialColorTypes,
-        UsdVrmTokens->vrmMaterialColorValues,
+        UsdVrmTokens->vrmExpressionName,     UsdVrmTokens->vrmExpressionType,
+        UsdVrmTokens->vrmIsBinary,           UsdVrmTokens->vrmOverrideBlink,
+        UsdVrmTokens->vrmOverrideLookAt,     UsdVrmTokens->vrmOverrideMouth,
+        UsdVrmTokens->vrmMorphTargetWeights, UsdVrmTokens->vrmMaterialColorTargetIndices,
+        UsdVrmTokens->vrmMaterialColorTypes, UsdVrmTokens->vrmMaterialColorValues,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(UsdAPISchemaBase::GetSchemaAttributeNames(true), localNames);

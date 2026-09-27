@@ -2404,6 +2404,17 @@
     {
       "path": "/Asset/rig",
       "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/Expressions",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/happy",
+      "type": "Scope"
     }
   ],
   "skeletons": {},
@@ -2414,13 +2425,15 @@
     "frontAxisNormalized": true,
     "metaName": null,
     "metaSha256": "e9b524f3093a365c3e9f0c6d158818491af0de76e46e4ba443abdc64711916ba",
-    "rawExtensionSha256": "493afa4ba4f00293912fc7e21e55b8117ea55e7be1f7ef2674baffdf8b402132",
+    "rawExtensionSha256": "b388ec85eb3b20e31b8e56bb7318544afddfa58d029d73288545903870b2a5fc",
     "schemaContractVersion": 1,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "-Z",
     "sourceVersion": "0.x",
     "specVersion": "0.0",
-    "warningCodes": [],
-    "warningCount": 0
+    "warningCodes": [
+      "VRM150"
+    ],
+    "warningCount": 3
   }
 }

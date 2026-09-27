@@ -14,12 +14,13 @@ def Xform "Asset" (
     "licenseName": "Redistribution_Prohibited",
     "title": "usdVrm 0.x Fixture"
 }'''
-            string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm 0.x Fixture","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[]},"materialProperties":[{"name":"Hair","shader":"VRM/MToon","renderQueue":2510,"floatProperties":{"_BlendMode":3,"_CullMode":0,"_Cutoff":0.5,"_BumpScale":0.8,"_ShadeShift":-0.2,"_ShadeToony":0.5,"_IndirectLightIntensity":0.25,"_RimFresnelPower":3.0,"_RimLift":0.1,"_RimLightingMix":0.4,"_OutlineWidthMode":1,"_OutlineWidth":0.5,"_OutlineColorMode":1,"_OutlineLightingMix":0.6,"_UvAnimScrollX":0.5,"_UvAnimScrollY":0.25,"_UvAnimRotation":0.25},"vectorProperties":{"_Color":[0.5,1.0,0.25,0.75],"_ShadeColor":[0.5,0.5,0.5,1.0],"_RimColor":[1.0,0.5,0.0,1.0],"_OutlineColor":[0.25,0.5,1.0,1.0],"_EmissionColor":[0.1,0.2,0.3,1.0],"_MainTex":[0.25,0.5,2.0,0.5]},"textureProperties":{"_MainTex":0,"_ShadeTexture":1,"_BumpMap":2,"_EmissionMap":3,"_SphereAdd":4,"_RimTexture":5,"_OutlineWidthTexture":6,"_UvAnimMaskTexture":7},"keywordMap":{},"tagMap":{}},{"name":"Face","shader":"VRM/MToon","renderQueue":2450,"floatProperties":{"_BlendMode":1,"_CullMode":2,"_Cutoff":0.3,"_OutlineWidthMode":2,"_OutlineWidth":1.0,"_OutlineColorMode":0,"_OutlineLightingMix":0.8},"vectorProperties":{"_Color":[1.0,1.0,1.0,1.0],"_MainTex":[0.0,0.0,1.0,1.0]},"textureProperties":{"_MainTex":0},"keywordMap":{},"tagMap":{}},{"name":"Veil","shader":"VRM/MToon","renderQueue":3000,"floatProperties":{"_BlendMode":2},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Tear","shader":"VRM/MToon","renderQueue":2990,"floatProperties":{"_BlendMode":2,"_CullMode":1},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Lashes","shader":"VRM/MToon","renderQueue":2501,"floatProperties":{"_BlendMode":3},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Plain","shader":"VRM_USE_GLTFSHADER","renderQueue":-1,"floatProperties":{},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}}]}'
+            string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm 0.x Fixture","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[]},"materialProperties":[{"name":"Hair","shader":"VRM/MToon","renderQueue":2510,"floatProperties":{"_BlendMode":3,"_CullMode":0,"_Cutoff":0.5,"_BumpScale":0.8,"_ShadeShift":-0.2,"_ShadeToony":0.5,"_IndirectLightIntensity":0.25,"_RimFresnelPower":3.0,"_RimLift":0.1,"_RimLightingMix":0.4,"_OutlineWidthMode":1,"_OutlineWidth":0.5,"_OutlineColorMode":1,"_OutlineLightingMix":0.6,"_UvAnimScrollX":0.5,"_UvAnimScrollY":0.25,"_UvAnimRotation":0.25},"vectorProperties":{"_Color":[0.5,1.0,0.25,0.75],"_ShadeColor":[0.5,0.5,0.5,1.0],"_RimColor":[1.0,0.5,0.0,1.0],"_OutlineColor":[0.25,0.5,1.0,1.0],"_EmissionColor":[0.1,0.2,0.3,1.0],"_MainTex":[0.25,0.5,2.0,0.5]},"textureProperties":{"_MainTex":0,"_ShadeTexture":1,"_BumpMap":2,"_EmissionMap":3,"_SphereAdd":4,"_RimTexture":5,"_OutlineWidthTexture":6,"_UvAnimMaskTexture":7},"keywordMap":{},"tagMap":{}},{"name":"Face","shader":"VRM/MToon","renderQueue":2450,"floatProperties":{"_BlendMode":1,"_CullMode":2,"_Cutoff":0.3,"_OutlineWidthMode":2,"_OutlineWidth":1.0,"_OutlineColorMode":0,"_OutlineLightingMix":0.8},"vectorProperties":{"_Color":[1.0,1.0,1.0,1.0],"_MainTex":[0.0,0.0,1.0,1.0]},"textureProperties":{"_MainTex":0},"keywordMap":{},"tagMap":{}},{"name":"Veil","shader":"VRM/MToon","renderQueue":3000,"floatProperties":{"_BlendMode":2},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Tear","shader":"VRM/MToon","renderQueue":2990,"floatProperties":{"_BlendMode":2,"_CullMode":1},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Lashes","shader":"VRM/MToon","renderQueue":2501,"floatProperties":{"_BlendMode":3},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}},{"name":"Plain","shader":"VRM_USE_GLTFSHADER","renderQueue":-1,"floatProperties":{},"vectorProperties":{},"textureProperties":{},"keywordMap":{},"tagMap":{}}],"blendShapeMaster":{"blendShapeGroups":[{"name":"Joy","presetName":"joy","isBinary":false,"binds":[],"materialValues":[{"materialName":"Face","propertyName":"_Color","targetValue":[1.0,0.5,0.5,0.75]},{"materialName":"Face","propertyName":"_EmissionColor","targetValue":[0.5,0.25,0.0,1.0]},{"materialName":"Hair","propertyName":"_ShadeColor","targetValue":[0.25,0.5,1.0,1.0]},{"materialName":"Hair","propertyName":"_RimColor","targetValue":[0.5,0.5,0.5,1.0]},{"materialName":"Hair","propertyName":"_OutlineColor","targetValue":[0.0,0.25,1.0,0.5]},{"materialName":"Plain","propertyName":"_Color","targetValue":[0.5,0.5,0.5,1.0]},{"materialName":"Face","propertyName":"_MainTex_ST","targetValue":[2.0,2.0,0.0,0.0]},{"materialName":"Face","propertyName":"_OutlineWidth","targetValue":[1.0,0.0,0.0,0.0]},{"materialName":"Missing","propertyName":"_Color","targetValue":[0.0,0.0,0.0,1.0]}]}]}}'
             int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "-Z"
             string sourceVersion = "0.x"
             string specVersion = "0.0"
+            string[] warnings = ["[VRM150] expression 'happy' has a VRM 0.x materialValues bind for texture transform '_MainTex_ST' (not typed); preserved in vrm:rawExtension only (not mapped to USD)", "[VRM150] expression 'happy' has a VRM 0.x materialValues bind for property '_OutlineWidth', which has no colour slot; preserved in vrm:rawExtension only (not mapped to USD)", "[VRM150] expression 'happy' has a VRM 0.x materialValues bind naming material 'Missing', which the file does not declare; preserved in vrm:rawExtension only (not mapped to USD)"]
         }
     }
     kind = "component"
@@ -1517,6 +1518,25 @@ def Xform "Asset" (
 
     def Scope "rig"
     {
+        def Scope "Expressions"
+        {
+            def Scope "happy" (
+                apiSchemas = ["VrmExpressionAPI"]
+            )
+            {
+                uniform token vrm:expressionName = "happy"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                uniform int[] vrm:materialColorTargetIndices = [0, 0, 1, 1, 1, 2]
+                rel vrm:materialColorTargets = [
+                    </Asset/mtl/Face>,
+                    </Asset/mtl/Hair>,
+                    </Asset/mtl/Plain>,
+                ]
+                uniform token[] vrm:materialColorTypes = ["color", "emissionColor", "shadeColor", "rimColor", "outlineColor", "color"]
+                uniform float4[] vrm:materialColorValues = [(1, 0.21404114, 0.21404114, 0.75), (0.5, 0.25, 0, 1), (0.05087609, 0.21404114, 1, 1), (0.21404114, 0.21404114, 0.21404114, 1), (0, 0.05087609, 1, 0.5), (0.21404114, 0.21404114, 0.21404114, 1)]
+            }
+        }
     }
 }
 
