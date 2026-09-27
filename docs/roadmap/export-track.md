@@ -1,7 +1,7 @@
 # The native USD export track
 
-**Status:** 🚧 in progress — Step 1 implemented · **Target:** unscheduled
-([status table](README.md#status-at-a-glance)) ·
+**Status:** 🚧 in progress — Step 1 implemented · **Target:** v0.10.0 carries Step 1;
+Steps 2–4 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [export policy](../design/VRM_EXPORT_POLICY.md) §11
 
 `vrm_export`: an imported `.vrm` written as a native `.usda`, `.usdc` or

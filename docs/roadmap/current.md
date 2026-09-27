@@ -9,24 +9,73 @@ Which release carries a track is the
 
 Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️ accepted workaround
 
-## Shipped: v0.9.0 — the OpenExec foundation
+## Next: v0.10.0 — canonical materials reach Hydra 🚧
 
-The last release ([record](../releases/v0.9.0.md)). The next one has no
-number yet; it takes one when it is cut. What v0.9.0 left open is
-[below](#carried-out-of-v090).
+**Release boundary:** the canonical material semantics this repository
+imports reach a Hydra renderer as data, including when an expression drives
+them over time. VRM 0.x and 1.0 materials carry one canonical record
+(`VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI:<role>`), both
+realizations (`/preview`, `/mtlx`) are generated from it, and `vrmImaging`
+exposes it to Hydra under the frozen `vrm` locators, with per-field
+invalidation. The release closes the [imaging track](imaging-track.md)
+(Steps I0–I5) and ships as the product plus a `lookdev` package of
+`vrmImaging` that a Formation pins from a registry.
 
-## The next release
+**Why this number, and why this line** (decided 2026-09-27): v0.10.0 ships
+what has landed since v0.9.0 — the `[Unreleased]` section of the
+[CHANGELOG](../../CHANGELOG.md) — and stops at `vrmImaging`. Steps I4 and I5
+land before the tag, and nothing else is added. Every other track keeps what
+it has on `main` and continues after the tag:
 
-Since v0.9.0 the product builds VRM and VRMA only and consumes generic motion
-as installed packages ([WORKSPACE.md](../architecture/WORKSPACE.md) §1). That
-reduced product has passed every pull-request lane and has not yet been
-released.
+| Track | In v0.10.0 | After v0.10.0 |
+| --- | --- | --- |
+| Hydra imaging (`vrmImaging`) | Steps I0–I5: the whole track | — |
+| MToon canonical semantics (Product P5) | Steps 3–7 (Steps 1–2 shipped earlier) | Step 8 is `hydra-toon`'s; the image regression test the P5 goal names |
+| Native USD export (`vrm_export`) | Step 1 | Steps 2–4 |
+| The motion split | complete: the product builds VRM and VRMA only | — |
+| `ExecIr`, release closure, carried items | — | unscheduled |
 
-- ⬜ **The aggregate product installs and opens a `.vrm` and a `.vrma` from
-  release artifacts, with the consumed packages resolved as dependencies.**
-  Only a release run can show it: `release.yml` is hand-authored and no
-  pull request executes it. The next release's `workflow_dispatch` dry run is
-  the proof.
+### Work before the tag
+
+Each item's detail and its done-when are in the
+[imaging track](imaging-track.md); this table is the order.
+
+| # | Item | Where | Status |
+| --- | --- | --- | --- |
+| 1 | **I4 — an expression bake reaches Hydra as time.** A `.vrm` fixture's expression colour, baked by `motion_retarget` onto the Material's `inputs:vrm:*`, is read through `vrmImaging` at each baked time, and a time move dirties that field's `vrm` locator (and a reading network parameter), never `material` and no geometry locator. | this repository | ⬜ |
+| 2 | **I4 — a live `hydra-toon` slot.** The same bake played in `hydra-toon`'s host session changes the MToon slot, and no geometry, draw packet or pipeline is rebuilt, recorded as a renderer report. | `hydra-toon` | ⬜ |
+| 3 | **I5 — plugin discovery in CI.** A suite in every workspace cell shows `PlugRegistry` discovering `vrmImaging` and UsdImaging constructing each adapter from `plugInfo.json` alone (policy §16, §17.1). | this repository | ⬜ |
+| 4 | **I5 — invalidation regression.** Policy §17.4's cases, each held by a suite: the `matcap` texture edit is the one not yet asserted. | this repository | ⬜ |
+| 5 | **I5 — a `.vrm` integration fixture.** The committed MToon fixtures imported by `usdVrmFileFormat` and read through `vrmImaging`, compared with the source semantics (policy §17.3). | this repository | ⬜ |
+| 6 | **I5 — the suites against the packaged plugin.** The scene-index suites run against the plugin `ost plugin package` produced, in the release lane, where packaging runs. | this repository | ⬜ |
+| 7 | **I5 — an OpenUSD compatibility statement** in [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md): the scene-index path only, the runtime's usdImaging SDK, the version measured. | this repository | ⬜ |
+| 8 | **I5 — numbered diagnostics** (policy §18), under the existing `VRMxxx` catalog; the proposal is in the track, and it is the user's call. | this repository | ⬜ |
+
+### Cutting the release
+
+In this order; each step is its own pull request unless it says otherwise.
+
+1. ⬜ **Items 1–8 merged**, the I4 renderer report merged in `hydra-toon`.
+2. ⬜ **Preparation:** the lockstep bump to `0.10.0` (`VERSION`,
+   `openstrata.toml`, every descriptor `version:`, every `requires` range to
+   `>=0.10,<0.11`, every CMake standalone fallback), the CHANGELOG's
+   `[0.10.0]` section, the [release record](../releases/) `v0.10.0.md`, and
+   this heading turned to `Shipped:`. Gate: the workspace graph, the suite,
+   and `ost plugin package --workspace --product` on this workstation.
+3. ⬜ **Dry run:** `gh workflow run release.yml --ref main` green on every
+   cell — three workspace cells, two `lookdev` cells, the publish job. This is
+   also the proof still owed by the reduced product:
+   - ⬜ **The aggregate product installs and opens a `.vrm` and a `.vrma` from
+     release artifacts, with the consumed packages resolved as
+     dependencies.** Only a release run can show it: `release.yml` is
+     hand-authored and no pull request executes it.
+4. ⬜ **Tag `v0.10.0` and publish the draft** — the user's decision, after
+   the dry run.
+5. ⬜ **After the tag:** make the GHCR package
+   `ghcr.io/animu-sphere/usd-vrm-plugins` public and pull a `vrmImaging`
+   package anonymously; that closes Step I5's published package. Then
+   `hydra-toon` re-pins its VRM Formation to the published digests, in its
+   own repository.
 
 ## Release closure and checkable invariants
 

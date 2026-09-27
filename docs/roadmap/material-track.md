@@ -1,7 +1,7 @@
 # The MToon canonical-semantics track
 
 **Status:** 🚧 in progress — Steps 1–7 shipped; Step 8 is `hydra-toon`'s · **Target:**
-unscheduled ([status table](README.md#status-at-a-glance)) ·
+v0.10.0 carries Steps 3–7; Step 8 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
 What is left of Product P5. The rule every step below serves is the policy's

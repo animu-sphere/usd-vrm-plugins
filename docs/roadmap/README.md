@@ -48,12 +48,12 @@ table.
 | Track | Status | Target |
 | --- | --- | --- |
 | OpenExec foundation | Shipped | v0.9.0 |
-| release-artifact proof of the reduced product | Planned | the next release |
+| release-artifact proof of the reduced product | Planned | v0.10.0 |
 | release closure checklist and checkable invariants | Planned | unscheduled |
 | `ExecIr` invertible VRM humanoid rig | Planned | unscheduled |
-| MToon canonical semantics (Product P5) | In progress | unscheduled |
-| Native USD export (`vrm_export`) | In progress | unscheduled |
-| Hydra imaging (`vrmImaging`) | In progress | unscheduled |
+| MToon canonical semantics (Product P5) | In progress | v0.10.0 carries Steps 3–7; the rest unscheduled |
+| Native USD export (`vrm_export`) | In progress | v0.10.0 carries Step 1; the rest unscheduled |
+| Hydra imaging (`vrmImaging`) | In progress | v0.10.0 |
 
 How the motion tracks were ordered before they left this repository is
 [archive/motion-split/roadmap-orderings.md](../archive/motion-split/roadmap-orderings.md).
