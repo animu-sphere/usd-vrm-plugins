@@ -54,15 +54,18 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Glass.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Glass.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Glass.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Glass/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.2, 0.4, 0.9)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor.connect = </Asset/mtl/Glass/preview.inputs:vrm:material:baseColorFactor>
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Glass/preview.inputs:vrm:material:emissiveFactor>
                     float inputs:metallic = 1
-                    float inputs:opacity = 0.3
+                    float inputs:opacity.connect = </Asset/mtl/Glass/preview.inputs:vrm:material:baseColorAlphaFactor>
                     float inputs:roughness = 1
                     token outputs:surface
                 }
@@ -70,15 +73,18 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Glass.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Glass.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Glass.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Glass/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
-                    float inputs:alpha = 0.3
+                    float inputs:alpha.connect = </Asset/mtl/Glass/mtlx.inputs:vrm:material:baseColorAlphaFactor>
                     int inputs:alpha_mode = 2
-                    color3f inputs:base_color = (0.2, 0.4, 0.9)
-                    color3f inputs:emissive = (0, 0, 0)
+                    color3f inputs:base_color.connect = </Asset/mtl/Glass/mtlx.inputs:vrm:material:baseColorFactor>
+                    color3f inputs:emissive.connect = </Asset/mtl/Glass/mtlx.inputs:vrm:material:emissiveFactor>
                     float inputs:emissive_strength = 1
                     float inputs:metallic = 1
                     float inputs:roughness = 1
@@ -112,15 +118,18 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Leaf.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Leaf.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Leaf.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Leaf/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.1, 0.8, 0.2)
-                    color3f inputs:emissiveColor = (0, 0, 0)
+                    color3f inputs:diffuseColor.connect = </Asset/mtl/Leaf/preview.inputs:vrm:material:baseColorFactor>
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Leaf/preview.inputs:vrm:material:emissiveFactor>
                     float inputs:metallic = 1
-                    float inputs:opacity = 1
+                    float inputs:opacity.connect = </Asset/mtl/Leaf/preview.inputs:vrm:material:baseColorAlphaFactor>
                     float inputs:opacityThreshold = 0.3
                     float inputs:roughness = 1
                     token outputs:surface
@@ -129,16 +138,19 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Leaf.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Leaf.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Leaf.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Leaf/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
-                    float inputs:alpha = 1
+                    float inputs:alpha.connect = </Asset/mtl/Leaf/mtlx.inputs:vrm:material:baseColorAlphaFactor>
                     float inputs:alpha_cutoff = 0.3
                     int inputs:alpha_mode = 1
-                    color3f inputs:base_color = (0.1, 0.8, 0.2)
-                    color3f inputs:emissive = (0, 0, 0)
+                    color3f inputs:base_color.connect = </Asset/mtl/Leaf/mtlx.inputs:vrm:material:baseColorFactor>
+                    color3f inputs:emissive.connect = </Asset/mtl/Leaf/mtlx.inputs:vrm:material:emissiveFactor>
                     float inputs:emissive_strength = 1
                     float inputs:metallic = 1
                     float inputs:roughness = 1
@@ -172,13 +184,14 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Unlit.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Unlit/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
                     color3f inputs:diffuseColor = (0, 0, 0)
-                    color3f inputs:emissiveColor = (0.9, 0.1, 0.1)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/Unlit/preview.inputs:vrm:material:baseColorFactor>
                     float inputs:metallic = 0
                     float inputs:opacity = 1
                     float inputs:roughness = 1
@@ -188,6 +201,7 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Unlit.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Unlit/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -196,7 +210,7 @@ def Xform "Asset" (
                     float inputs:alpha = 1
                     int inputs:alpha_mode = 0
                     color3f inputs:base_color = (0, 0, 0)
-                    color3f inputs:emissive = (0.9, 0.1, 0.1)
+                    color3f inputs:emissive.connect = </Asset/mtl/Unlit/mtlx.inputs:vrm:material:baseColorFactor>
                     float inputs:metallic = 0
                     float inputs:roughness = 1
                     float inputs:specular = 0
@@ -276,6 +290,8 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/UnlitCutout.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/UnlitCutout.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/UnlitCutout/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -312,11 +328,19 @@ def Xform "Asset" (
                     color4f outputs:out
                 }
 
+                def Shader "baseColorFactorRgba"
+                {
+                    uniform token info:id = "ND_combine2_color4CF"
+                    color3f inputs:in1.connect = </Asset/mtl/UnlitCutout/mtlx.inputs:vrm:material:baseColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/UnlitCutout/mtlx.inputs:vrm:material:baseColorAlphaFactor>
+                    color4f outputs:out
+                }
+
                 def Shader "baseColorFactor"
                 {
                     uniform token info:id = "ND_multiply_color4"
                     color4f inputs:in1.connect = </Asset/mtl/UnlitCutout/mtlx/baseColorImage.outputs:out>
-                    color4f inputs:in2 = (0.3, 0.6, 0.9, 0.8)
+                    color4f inputs:in2.connect = </Asset/mtl/UnlitCutout/mtlx/baseColorFactorRgba.outputs:out>
                     color4f outputs:out
                 }
 
@@ -423,6 +447,8 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/UnlitPlaced.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/UnlitPlaced.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/UnlitPlaced/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -468,11 +494,19 @@ def Xform "Asset" (
                     color4f outputs:out
                 }
 
+                def Shader "baseColorFactorRgba"
+                {
+                    uniform token info:id = "ND_combine2_color4CF"
+                    color3f inputs:in1.connect = </Asset/mtl/UnlitPlaced/mtlx.inputs:vrm:material:baseColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/UnlitPlaced/mtlx.inputs:vrm:material:baseColorAlphaFactor>
+                    color4f outputs:out
+                }
+
                 def Shader "baseColorFactor"
                 {
                     uniform token info:id = "ND_multiply_color4"
                     color4f inputs:in1.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorImage.outputs:out>
-                    color4f inputs:in2 = (1, 1, 1, 1)
+                    color4f inputs:in2.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorFactorRgba.outputs:out>
                     color4f outputs:out
                 }
 
@@ -526,12 +560,13 @@ def Xform "Asset" (
 
             def NodeGraph "preview"
             {
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Glow.inputs:vrm:material:baseColorFactor>
                 token outputs:surface.connect = </Asset/mtl/Glow/preview/surface.outputs:surface>
 
                 def Shader "surface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.2, 0.2, 0.2)
+                    color3f inputs:diffuseColor.connect = </Asset/mtl/Glow/preview.inputs:vrm:material:baseColorFactor>
                     color3f inputs:emissiveColor = (1, 0.5, 2)
                     color3f inputs:emissiveColor.connect = </Asset/mtl/Glow/preview/emissiveTexture.outputs:rgb>
                     float inputs:metallic = 1
@@ -566,6 +601,8 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Glow.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Glow.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Glow/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -573,7 +610,7 @@ def Xform "Asset" (
                     uniform token info:id = "ND_gltf_pbr_surfaceshader"
                     float inputs:alpha = 1
                     int inputs:alpha_mode = 0
-                    color3f inputs:base_color = (0.2, 0.2, 0.2)
+                    color3f inputs:base_color.connect = </Asset/mtl/Glow/mtlx.inputs:vrm:material:baseColorFactor>
                     color3f inputs:emissive.connect = </Asset/mtl/Glow/mtlx/emissiveFactor.outputs:out>
                     float inputs:emissive_strength = 2
                     float inputs:metallic = 1
@@ -585,7 +622,7 @@ def Xform "Asset" (
                 {
                     uniform token info:id = "ND_multiply_color3"
                     color3f inputs:in1.connect = </Asset/mtl/Glow/mtlx/emissiveImage.outputs:out>
-                    color3f inputs:in2 = (0.5, 0.25, 1)
+                    color3f inputs:in2.connect = </Asset/mtl/Glow/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
 
@@ -780,6 +817,9 @@ def Xform "Asset" (
 
             def NodeGraph "mtlx"
             {
+                float inputs:vrm:material:baseColorAlphaFactor.connect = </Asset/mtl/Metal.inputs:vrm:material:baseColorAlphaFactor>
+                color3f inputs:vrm:material:baseColorFactor.connect = </Asset/mtl/Metal.inputs:vrm:material:baseColorFactor>
+                color3f inputs:vrm:material:emissiveFactor.connect = </Asset/mtl/Metal.inputs:vrm:material:emissiveFactor>
                 token outputs:surface.connect = </Asset/mtl/Metal/mtlx/surface.outputs:surface>
 
                 def Shader "surface"
@@ -817,11 +857,19 @@ def Xform "Asset" (
                     color4f outputs:out
                 }
 
+                def Shader "baseColorFactorRgba"
+                {
+                    uniform token info:id = "ND_combine2_color4CF"
+                    color3f inputs:in1.connect = </Asset/mtl/Metal/mtlx.inputs:vrm:material:baseColorFactor>
+                    float inputs:in2.connect = </Asset/mtl/Metal/mtlx.inputs:vrm:material:baseColorAlphaFactor>
+                    color4f outputs:out
+                }
+
                 def Shader "baseColorFactor"
                 {
                     uniform token info:id = "ND_multiply_color4"
                     color4f inputs:in1.connect = </Asset/mtl/Metal/mtlx/baseColorImage.outputs:out>
-                    color4f inputs:in2 = (0.8, 0.6, 0.4, 1)
+                    color4f inputs:in2.connect = </Asset/mtl/Metal/mtlx/baseColorFactorRgba.outputs:out>
                     color4f outputs:out
                 }
 
@@ -936,7 +984,7 @@ def Xform "Asset" (
                 {
                     uniform token info:id = "ND_multiply_color3"
                     color3f inputs:in1.connect = </Asset/mtl/Metal/mtlx/emissiveImage.outputs:out>
-                    color3f inputs:in2 = (0.1, 0.2, 0.3)
+                    color3f inputs:in2.connect = </Asset/mtl/Metal/mtlx.inputs:vrm:material:emissiveFactor>
                     color3f outputs:out
                 }
 

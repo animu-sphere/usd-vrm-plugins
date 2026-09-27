@@ -395,12 +395,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Body_00_SKIN/mtlx/baseColorImage": {
@@ -477,6 +485,17 @@
             "scale": 1.0
           }
         },
+        "/Asset/mtl/Body_00_SKIN/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Body_00_SKIN/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -505,17 +524,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Body_00_SKIN/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              0.930110872,
-              0.623960435,
-              0.708375931
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/Body_00_SKIN/mtlx/shadeMultiplyImage": {
@@ -558,7 +603,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -576,6 +621,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/mtlx/parametricRim.out"
             }
           }
         },
@@ -648,12 +715,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorImage": {
@@ -704,6 +779,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Bottoms_01_CLOTH/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -732,17 +818,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Bottoms_01_CLOTH/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              0.623960435,
-              0.672443211,
-              0.930110872
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/Bottoms_01_CLOTH/mtlx/shadeMultiplyImage": {
@@ -785,7 +897,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -803,6 +915,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/parametricRim.out"
             }
           }
         },
@@ -875,12 +1009,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorImage": {
@@ -931,6 +1073,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/EyeHighlight_00_EYE/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -959,17 +1112,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/EyeHighlight_00_EYE/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/EyeHighlight_00_EYE/mtlx/shadeMultiplyImage": {
@@ -1012,7 +1191,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -1030,6 +1209,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/parametricRim.out"
             }
           }
         },
@@ -1102,12 +1303,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorImage": {
@@ -1158,6 +1367,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/EyeIris_00_EYE/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -1186,17 +1406,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/EyeIris_00_EYE/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/EyeIris_00_EYE/mtlx/shadeMultiplyImage": {
@@ -1239,7 +1485,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -1257,6 +1503,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/mtlx/parametricRim.out"
             }
           }
         },
@@ -1329,12 +1597,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorImage": {
@@ -1385,6 +1661,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/EyeWhite_00_EYE/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -1413,17 +1700,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/EyeWhite_00_EYE/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/EyeWhite_00_EYE/mtlx/shadeMultiplyImage": {
@@ -1466,7 +1779,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -1484,6 +1797,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/mtlx/parametricRim.out"
             }
           }
         },
@@ -1556,12 +1891,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorImage": {
@@ -1612,6 +1955,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/FaceBrow_00_FACE/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -1640,17 +1994,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/FaceBrow_00_FACE/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/FaceBrow_00_FACE/mtlx/shadeMultiplyImage": {
@@ -1693,7 +2073,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -1711,6 +2091,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/mtlx/parametricRim.out"
             }
           }
         },
@@ -1783,12 +2185,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorImage": {
@@ -1839,6 +2249,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/FaceEyeline_00_FACE/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -1867,17 +2288,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/FaceEyeline_00_FACE/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/FaceEyeline_00_FACE/mtlx/shadeMultiplyImage": {
@@ -1920,7 +2367,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -1938,6 +2385,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/parametricRim.out"
             }
           }
         },
@@ -2010,12 +2479,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorImage": {
@@ -2066,6 +2543,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/FaceMouth_00_FACE/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -2094,17 +2582,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/FaceMouth_00_FACE/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              0.930110872,
-              0.623960435,
-              0.708375931
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/FaceMouth_00_FACE/mtlx/shadeMultiplyImage": {
@@ -2147,7 +2661,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -2165,6 +2679,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/mtlx/parametricRim.out"
             }
           }
         },
@@ -2237,12 +2773,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Face_00_SKIN/mtlx/baseColorImage": {
@@ -2293,6 +2837,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/Face_00_SKIN/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Face_00_SKIN/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -2321,17 +2876,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Face_00_SKIN/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              0.930110872,
-              0.623960435,
-              0.708375931
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/Face_00_SKIN/mtlx/shadeMultiplyImage": {
@@ -2374,7 +2955,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -2392,6 +2973,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/mtlx/parametricRim.out"
             }
           }
         },
@@ -2464,12 +3067,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorImage": {
@@ -2546,6 +3157,17 @@
             "scale": 1.0
           }
         },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/HairBack_00_HAIR/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -2574,17 +3196,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/HairBack_00_HAIR/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/HairBack_00_HAIR/mtlx/shadeMultiplyImage": {
@@ -2627,7 +3275,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -2645,6 +3293,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/mtlx/parametricRim.out"
             }
           }
         },
@@ -2717,12 +3387,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorImage": {
@@ -2773,11 +3451,9 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/emissiveImage.out"
             },
-            "in2": [
-              0.70837605,
-              0.254152179,
-              0.0437350422
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx.vrm:material:emissiveFactor"
+            }
           }
         },
         "/Asset/mtl/Hair_00_HAIR/mtlx/emissiveImage": {
@@ -2826,6 +3502,17 @@
             "scale": 1.0
           }
         },
+        "/Asset/mtl/Hair_00_HAIR/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Hair_00_HAIR/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -2854,17 +3541,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Hair_00_HAIR/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/Hair_00_HAIR/mtlx/shadeMultiplyImage": {
@@ -2932,10 +3645,21 @@
           "id": "ND_add_color3",
           "inputs": {
             "in1": {
-              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/withRim.out"
             },
             "in2": {
               "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/emissiveFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/Hair_00_HAIR/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/mtlx/parametricRim.out"
             }
           }
         },
@@ -3008,12 +3732,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorImage": {
@@ -3064,6 +3796,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Shoes_01_CLOTH/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -3092,17 +3835,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Shoes_01_CLOTH/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              0.623960435,
-              0.672443211,
-              0.930110872
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/Shoes_01_CLOTH/mtlx/shadeMultiplyImage": {
@@ -3145,7 +3914,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -3163,6 +3932,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/mtlx/parametricRim.out"
             }
           }
         },
@@ -3235,12 +4026,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorImage.out"
             },
-            "in2": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorImage": {
@@ -3291,6 +4090,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Tops_01_CLOTH/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -3319,17 +4129,43 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Tops_01_CLOTH/mtlx/shadeColor": {
           "id": "ND_multiply_color3",
           "inputs": {
             "in1": {
               "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/shadeMultiplyImage.out"
             },
-            "in2": [
-              0.623960435,
-              0.672443211,
-              0.930110872
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx.vrm:mtoon:shadeColorFactor"
+            }
           }
         },
         "/Asset/mtl/Tops_01_CLOTH/mtlx/shadeMultiplyImage": {
@@ -3372,7 +4208,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -3390,6 +4226,28 @@
             },
             "mix": {
               "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/mtlx/parametricRim.out"
             }
           }
         },
@@ -4265,6 +5123,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Body_00_SKIN/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -4294,6 +5159,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Body_00_SKIN/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -4403,6 +5310,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -4432,6 +5346,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -4541,6 +5497,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -4570,6 +5533,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -4679,6 +5684,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -4708,6 +5720,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -4832,6 +5886,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -4861,6 +5922,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -4970,6 +6073,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -4999,6 +6109,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5108,6 +6260,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5137,6 +6296,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5247,6 +6448,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Face_00_SKIN/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5276,6 +6484,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Face_00_SKIN/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5385,6 +6635,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5414,6 +6671,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5523,6 +6822,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5552,6 +6858,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5661,6 +7009,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5690,6 +7045,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5799,6 +7196,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5828,6 +7232,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/mtlx/withEmission",
       "type": "Shader"
     },
     {
@@ -5953,6 +7399,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -5982,6 +7435,41 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Hair_00_HAIR/mtlx/shadeMultiplyImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/mtlx/withRim",
       "type": "Shader"
     },
     {

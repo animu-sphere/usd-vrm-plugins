@@ -40,12 +40,20 @@
             "in1": {
               "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorImage.out"
             },
-            "in2": [
-              0.5,
-              0.25,
-              0.75,
-              0.600000024
-            ]
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorFactorRgba.out"
+            }
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/baseColorFactorRgba": {
+          "id": "ND_combine2_color4CF",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx.vrm:material:baseColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx.vrm:material:baseColorAlphaFactor"
+            }
           }
         },
         "/Asset/mtl/Skin/mtlx/baseColorImage": {
@@ -96,6 +104,17 @@
             "faceforward": false
           }
         },
+        "/Asset/mtl/Skin/mtlx/parametricRim": {
+          "id": "ND_multiply_color3FA",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx.vrm:mtoon:parametricRimColorFactor"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/rimFresnel.out"
+            }
+          }
+        },
         "/Asset/mtl/Skin/mtlx/ramp": {
           "id": "ND_clamp_float",
           "inputs": {
@@ -124,6 +143,34 @@
             "in2": 4.99999905
           }
         },
+        "/Asset/mtl/Skin/mtlx/rimFresnel": {
+          "id": "ND_power_float",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/rimFresnelClamp.out"
+            },
+            "in2": 5.0
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/rimFresnelBase": {
+          "id": "ND_subtract_float",
+          "inputs": {
+            "in1": 1.0,
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/nDotV.out"
+            }
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/rimFresnelClamp": {
+          "id": "ND_clamp_float",
+          "inputs": {
+            "high": 1.0,
+            "in": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/rimFresnelBase.out"
+            },
+            "low": 0.0
+          }
+        },
         "/Asset/mtl/Skin/mtlx/shading": {
           "id": "ND_add_float",
           "inputs": {
@@ -150,7 +197,7 @@
               0.0
             ],
             "emissive": {
-              "connectedTo": "/Asset/mtl/Skin/mtlx/toon.out"
+              "connectedTo": "/Asset/mtl/Skin/mtlx/withEmission.out"
             },
             "metallic": 0.0,
             "roughness": 1.0,
@@ -160,16 +207,36 @@
         "/Asset/mtl/Skin/mtlx/toon": {
           "id": "ND_mix_color3",
           "inputs": {
-            "bg": [
-              0.5,
-              0.200000003,
-              0.200000003
-            ],
+            "bg": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx.vrm:mtoon:shadeColorFactor"
+            },
             "fg": {
               "connectedTo": "/Asset/mtl/Skin/mtlx/baseColorRgb.out"
             },
             "mix": {
               "connectedTo": "/Asset/mtl/Skin/mtlx/ramp.out"
+            }
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/withEmission": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/withRim.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx.vrm:material:emissiveFactor"
+            }
+          }
+        },
+        "/Asset/mtl/Skin/mtlx/withRim": {
+          "id": "ND_add_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/toon.out"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/Skin/mtlx/parametricRim.out"
             }
           }
         },
@@ -206,11 +273,9 @@
             "diffuseColor": {
               "connectedTo": "/Asset/mtl/Skin/preview/baseColorTexture.rgb"
             },
-            "emissiveColor": [
-              0.0,
-              0.0,
-              0.0
-            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Skin/preview.vrm:material:emissiveFactor"
+            },
             "metallic": 1.0,
             "opacity": 1.0,
             "roughness": 1.0
@@ -357,6 +422,13 @@
       "appliedSchemas": [
         "NodeDefAPI"
       ],
+      "path": "/Asset/mtl/Skin/mtlx/baseColorFactorRgba",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
       "path": "/Asset/mtl/Skin/mtlx/baseColorFactor",
       "type": "Shader"
     },
@@ -372,6 +444,48 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Skin/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/rimFresnelBase",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/rimFresnelClamp",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/rimFresnel",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/parametricRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/withRim",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Skin/mtlx/withEmission",
       "type": "Shader"
     },
     {
