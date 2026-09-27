@@ -1,6 +1,6 @@
 # The Hydra imaging track
 
-**Status:** 🚧 in progress — Steps I0–I3 shipped · **Target:** unscheduled
+**Status:** 🚧 in progress — Steps I0–I3 shipped · **Target:** v0.10.0
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
 
@@ -171,19 +171,33 @@ namespaced field. It still names no field except `alphaMode`, and no role.
 
 ### Step I4 — animated material semantics ⬜
 
-- ⬜ Time-sampled and expression-driven canonical values through imaging
-  (policy §10, §17.5). Unblocked: Product P5 Step 7 landed expression binds
-  on the canonical slots (2026-09-27), so an expression bake is time samples
-  on the Material's `inputs:vrm:*`.
+Unblocked: Product P5 Step 7 landed expression binds on the canonical slots
+(2026-09-27), so an expression bake is time samples on the Material's
+`inputs:vrm:*` (policy §10, §17.5).
+
+- ⬜ **An expression bake reaches Hydra as time.** The generated `expressions.vrm`
+  fixture's colour bind, baked by `motion_retarget`, read through
+  `UsdImagingStageSceneIndex` with `vrmImaging` in the session: the value at
+  each baked time equals the bake's sample, and a time move dirties the
+  field's `vrm/<group>/<field>` locator and, where a network reads the slot,
+  that parameter — never `material`, and no locator of the mesh the material
+  is bound to. That is policy §28.3's condition met: the values arrive as
+  time samples, not as per-frame authored edits, so the whole-material
+  dirtying stays lived with.
+- ⬜ **A live `hydra-toon` slot** (`hydra-toon`'s part, recorded as a renderer
+  report): the same bake played in its host session changes the MToon
+  parameter slot, and the frame rebuilds no geometry, draw packet or
+  pipeline.
 
 **Done when** a canonical colour change reaches a live `hydra-toon` material
 slot without rebuilding geometry or shader pipelines.
 
 ### Step I5 — hardening ⬜
 
-- ⬜ Plugin discovery in CI, an OpenUSD compatibility statement, invalidation
-  regression tests and a representative `.vrm` integration fixture
-  (policy §17.3).
+Everything below lands before v0.10.0 is tagged, except the published
+package, which only the tag's run can close
+([current.md](current.md#next-v0100--canonical-materials-reach-hydra-)).
+
 - ✅ An `ost` plugin kind for a UsdImaging adapter: asked in
   [ost report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md),
   delivered in `ost` 0.23.9 as `usd-imaging`.
@@ -193,14 +207,47 @@ slot without rebuilding geometry or shader pipelines.
   [report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md): a descriptor,
   `release_members`, the product (policy §19), and `usdvrm_baseline`'s
   session and frozen types.
-- ⬜ The scene-index suites run against the packaged plugin, not only the
-  build tree. `ost`'s L2 proves the packaged adapters construct, not what
-  they contribute.
-- ⬜ A published `lookdev` package of `vrmImaging`, so that a Formation
-  (`hydra-toon`'s VRM session, Step I3) can pin it from a registry rather
-  than from one workstation. The release lane publishes `usd` packages only,
-  and only as GitHub release assets.
-- ⬜ Diagnostics, numbered under the repository's policy (policy §18).
+- ⬜ **Plugin discovery in CI** (policy §16, §17.1). `ost`'s L2 constructs
+  the adapters, but it runs only in the release lane: every workspace cell
+  is `verify: test`. A suite in the workspace build shows `PlugRegistry`
+  discovering `vrmImaging` from its `plugInfo.json` and UsdImaging
+  constructing one adapter per schema, with no registration code.
+- ⬜ **Invalidation regression tests** (policy §17.4). Its cases are
+  `shadeColorFactor`, `baseColorFactor` and `outlineWidthFactor`, which the
+  suites already assert, and a `matcap` texture edit, which they do not.
+- ⬜ **A representative `.vrm` integration fixture** (policy §17.3). The
+  committed `mtoon_vrm0.vrm` and `mtoon_vrm1.vrm`, imported by
+  `usdVrmFileFormat` and read through `vrmImaging`, with selected values
+  compared to what `tests/material_oracle.py` expects of the source.
+- ⬜ **The scene-index suites against the packaged plugin.** `ost`'s L2
+  proves the packaged adapters construct, not what they contribute. The
+  release lane, where `ost plugin package` runs, reruns the suites with the
+  package's `plugInfo.json` in place of the build tree's.
+- ⬜ **An OpenUSD compatibility statement** in
+  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md):
+  OpenUSD 26.08, the only version measured (a second cell is Product P1's,
+  blocked on a published runtime); the scene-index path only, since the
+  legacy `UsdImagingDelegate` never calls an API-schema adapter; the runtime's
+  usdImaging SDK; and `USDIMAGING_ENABLE_PLUGINS=0` dropping the plugin
+  without a word (policy §27).
+- ⬜ **Numbered diagnostics** (policy §18). Proposed, and the user's call:
+  §18's candidates go into the existing `VRMxxx` catalog
+  ([DIAGNOSTICS.md](../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md)),
+  not a new `VRMI` series, and only where something can observe them at run
+  time. That is one new code, `VRM300` (WARNING, `validate`): a stage whose
+  materials apply `Vrm*API` is validated in a session that has `vrmSchema`
+  but not `vrmImaging`, so a Hydra renderer sees the realizations only.
+  `validate_vrm.py` raises it when asked to check imaging, because a
+  headless deployment may omit the plugin on purpose (policy §19). The other
+  candidates are not diagnostics: a missing contribution and a missed
+  invalidation are what the suites above assert, and a role the schema does
+  not allow is `VRM224`, which `vrmSchema`'s validation already owns.
+- ⬜ **A published `lookdev` package of `vrmImaging`**, so that a Formation
+  (`hydra-toon`'s VRM session, Step I3) pins it from a registry rather than
+  from one workstation. The release lane builds and publishes it
+  (`lane: lookdev`, 2026-09-27) and has passed a dry run; no tag has run it.
+  Closed when the v0.10.0 package is public on
+  `ghcr.io/animu-sphere/usd-vrm-plugins` and pulls anonymously.
 
 ## 3. Non-goals
 
