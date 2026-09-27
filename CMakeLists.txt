@@ -456,6 +456,41 @@ else()
         "tree; skipping workspace_validate_imaging")
 endif()
 
+# Imaging Step I5, a `.vrm` integration fixture (policy §17.3): the committed
+# MToon pair imported by usdVrmFileFormat and read through vrmImaging, against
+# what `material_oracle.py` expects of the 1.0 source. Here because it
+# composes the importer, the imaging bundle and the package resolver, which
+# opens each texture's `.vrm[images/...]` path to compare the bytes.
+set(_import_fixtures "${CMAKE_CURRENT_SOURCE_DIR}/plugins/usdVrmFileFormat/tests")
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
+   AND TARGET UsdVrmFileFormat AND TARGET UsdVrmPackageResolver
+   AND TARGET vrmImaging_import_tests)
+    set(_ii_usd_root "")
+    if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
+        set(_ii_usd_root "${pxr_DIR}")
+    elseif(pxr_DIR)
+        get_filename_component(_ii_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
+    endif()
+    set(_ii_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
+    add_test(NAME workspace_import_imaging
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/imaging/test_import_imaging.py"
+            --suite "$<TARGET_FILE:vrmImaging_import_tests>"
+            --oracle-dir "${_import_fixtures}"
+            --vrm1 "${_import_fixtures}/fixtures/mtoon_vrm1.vrm"
+            --vrm0 "${_import_fixtures}/fixtures/mtoon_vrm0.vrm"
+            --work "${CMAKE_CURRENT_BINARY_DIR}/tests/imaging")
+    set_tests_properties(workspace_import_imaging PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${_ii_usd_root}/bin;PATH=path_list_prepend:${_ii_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmPackageResolver>;PATH=path_list_prepend:${_ii_plugins}/vrmSchema/lib;PATH=path_list_prepend:${_ii_plugins}/vrmImaging/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_ii_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_ii_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/plugins/usdVrmPackageResolver/tests/resources/usdVrmPackageResolver;PXR_PLUGINPATH_NAME=path_list_prepend:${_ii_plugins}/vrmSchema/plugin/resources/vrmSchema;PXR_PLUGINPATH_NAME=path_list_prepend:${_ii_plugins}/vrmImaging/plugin/resources/vrmImaging"
+        LABELS "material.imaging")
+else()
+    message(STATUS
+        "usd-vrm-plugins: usdVrmFileFormat, usdVrmPackageResolver or "
+        "vrmImaging's suites are not in this build tree; skipping "
+        "workspace_import_imaging")
+endif()
+
 # The OpenExec plan's P0-2 labels, read back from CTest itself. `ost test`
 # reports one flat total, so a member whose suite silently stopped registering
 # reads as passing (usdVrmaFileFormat did, for months); this fails instead,

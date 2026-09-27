@@ -104,10 +104,22 @@ The suites open hand-authored stages (`tests/fixtures/*.usda`) and never a
 do not link the plugin: discovery goes through `PXR_PLUGINPATH_NAME` and the
 staged `plugInfo.json`.
 
-One more suite is built here and registered by the root build, because its
-stage is not hand-authored: `workspace_expression_bake_imaging` runs
-`vrmImaging_expression_bake_tests` over `motion_retarget`'s bake of the
-importer's `expressions.vrm` (imaging track Step I4). An expression's colour
-reaches `vrm/material/emissiveFactor` and both realizations' reading
-parameters at each baked time, and a time move dirties those alone — never
-the whole `material`, nothing of the bound mesh.
+Two more suites are built here and registered by the root build, because
+their stages are not hand-authored:
+
+- `workspace_expression_bake_imaging` runs `vrmImaging_expression_bake_tests`
+  over `motion_retarget`'s bake of the importer's `expressions.vrm` (imaging
+  track Step I4). An expression's colour reaches
+  `vrm/material/emissiveFactor` and both realizations' reading parameters at
+  each baked time, and a time move dirties those alone — never the whole
+  `material`, nothing of the bound mesh.
+- `workspace_import_imaging` runs `vrmImaging_import_tests` over the
+  importer's `mtoon_vrm1.vrm` and `mtoon_vrm0.vrm` (Step I5, policy §17.3),
+  with the package resolver registered. The expectation is written from the
+  1.0 source's JSON by the importer suite's `material_oracle.py`, never read
+  from the stage. The prims with a `vrm` contribution are exactly the source's
+  materials. `vrm/material` and `vrm/mtoon` hold exactly the fields the source
+  maps, each at its value. Each texture role's stated fields match, and its
+  `file`, resolved and opened, is the source's image byte for byte. The 0.x
+  file is read against the same expectation, since it is the 1.0 file's
+  source under UniVRM's migration.
