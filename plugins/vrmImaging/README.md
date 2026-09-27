@@ -93,6 +93,7 @@ dirty, is proved by the suites below, against the build tree only.
 
 | CTest | What it measures |
 | --- | --- |
+| `vrmImaging_discovery` | `PlugRegistry` finds `VrmImaging` unloaded, declaring exactly one adapter per `Vrm*API` and no other plugin claiming one; each schema registered by `vrmSchema`; UsdImaging knows each adapter before loading the library and constructs each as its declared type, which loads it |
 | `vrmImaging_mtoon` | discovery; authored and fallback values under `vrm/mtoon`; the field set equal to the schema's; per-field invalidation; a time-sampled field following time |
 | `vrmImaging_mtoon_without_schema` | no contribution in a session without `vrmSchema` |
 | `vrmImaging_texture_info` | every allowed role under its own name, the schema's list checked; every field of a role, `file` as authored and resolved asset path or absent; a disallowed role not exposed; per-role, per-field invalidation, nested fields and a `file` appearing included; a time-sampled UV rotation |
