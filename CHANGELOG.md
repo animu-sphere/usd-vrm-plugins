@@ -15,6 +15,27 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The `vrmImaging` suites run against the installed product**
+  ([imaging track](docs/roadmap/imaging-track.md) Step I5). A new release
+  lane step, `scripts/artifact_only_imaging_smoke.py`, installs the product
+  outside the repository and runs every `vrmImaging` suite in an environment
+  with no path into the repository. The suites include the `.vrm` import and
+  the Step I4 expression bake, made by the product's own `motion_retarget`.
+  `VrmImaging` has to load from the install, and discovery has to fail once
+  the product's registration is moved aside. Until now `ost`'s L2 showed only
+  that the packaged adapters construct.
+
+- **A `.vrm` reaches Hydra as its source says** ([imaging
+  track](docs/roadmap/imaging-track.md) Step I5; imaging policy §17.3).
+  `workspace_import_imaging` imports the committed `mtoon_vrm1.vrm` and
+  `mtoon_vrm0.vrm` and reads them through UsdImaging's stage scene index with
+  `vrmImaging` in the session. Every canonical value is compared with what
+  `material_oracle.py` derives from the 1.0 source's JSON: 6 materials and
+  227 values per file. That includes each texture's image, resolved through
+  the package resolver and compared byte for byte. The `matcap` texture edit,
+  the last of the policy's §17.4 invalidation cases, is now asserted by
+  `vrmImaging_texture_info`.
+
 - **`vrmImaging` discovery is a suite of its own** ([imaging
   track](docs/roadmap/imaging-track.md) Step I5; policy §16, §17.1).
   `vrmImaging_discovery` runs in every workspace cell: `PlugRegistry` finds
@@ -730,6 +751,18 @@ Current schema contract version: **1**.
   artifact-only exec smoke.
 
 ### Documentation
+
+- **What `vrmImaging` supports**, in
+  [SUPPORTED_CONFIGURATIONS.md](docs/reference/SUPPORTED_CONFIGURATIONS.md#hydra-imaging-vrmimaging)
+  (imaging track Step I5):
+  - OpenUSD 26.08 only, on the runtime's own usdImaging SDK, with
+    `vrmSchema` registered in the session;
+  - the scene-index path only: the legacy `UsdImagingDelegate` gets no `vrm`
+    data;
+  - the three silent absences, which `VRM300` reports;
+  - 26.08's whole-`material` dirtying on an authored edit, where a time move
+    never dirties the whole material;
+  - a `lookdev` package for Windows and Linux only.
 
 - **Documentation consolidated to one owner per subject** (the motion
   documentation consolidation policy). Generic motion is

@@ -35,8 +35,9 @@ internal order, not a phase sequence.
   (planned `mmdImaging`).
 - `vrmImaging` is an `ost` `usd-imaging` bundle and a member of the product
   (policy §19). `ost` 0.23.10 checks that the runtime has the usdImaging SDK
-  and constructs both adapters from the package, but what they contribute
-  is proved against the build tree only (Step I5).
+  and constructs both adapters from the package. What they contribute is
+  proved against the build tree in every workspace cell, and against the
+  installed product in the release lane (Step I5).
 
 ## 2. Steps
 
@@ -262,24 +263,57 @@ package, which only the tag's run can close
   the declared type and loads it. The suite fails without `vrmImaging`'s
   `plugInfo.json`, without `vrmSchema`, and with one adapter dropped from the
   `plugInfo.json`.
-- ⬜ **Invalidation regression tests** (policy §17.4). Its cases are
+- ✅ **Invalidation regression tests** (policy §17.4). Its cases are
   `shadeColorFactor`, `baseColorFactor` and `outlineWidthFactor`, which the
   suites already assert, and a `matcap` texture edit, which they do not.
-- ⬜ **A representative `.vrm` integration fixture** (policy §17.3). The
+  **Landed 2026-09-27** in `vrmImaging_texture_info`. The suite replaces the
+  `matcap` image, going from a path that does not resolve to one that does.
+  It requires exactly `vrm/textureInfo/matcap/file` to be dirtied, plus
+  UsdImaging's whole `material`, and the new path read back resolved. If the
+  adapter leaves `file` out of its invalidation, the suite fails at this
+  case.
+- ✅ **A representative `.vrm` integration fixture** (policy §17.3). The
   committed `mtoon_vrm0.vrm` and `mtoon_vrm1.vrm`, imported by
   `usdVrmFileFormat` and read through `vrmImaging`, with selected values
   compared to what `tests/material_oracle.py` expects of the source.
-- ⬜ **The scene-index suites against the packaged plugin.** `ost`'s L2
+  **Landed 2026-09-27** as `workspace_import_imaging`. It compares every
+  value, not a selection: 6 materials and 227 values per file. The
+  expectation is written from the 1.0 source's JSON by the oracle and never
+  read from the stage. The 0.x file is held to the same expectation, because
+  the 1.0 file is its UniVRM migration. `vrmImaging_import_tests` reads,
+  through the stage scene index alone:
+  - the prims with a `vrm` contribution, which must be exactly the source's
+    materials;
+  - each group and field, at the source's value;
+  - each texture role, with its `file` resolved and opened to the source
+    image's bytes.
+
+  The suite fails without the package resolver, without `vrmImaging`, and
+  with any one expected value, image or UV offset altered.
+- ✅ **The scene-index suites against the packaged plugin.** `ost`'s L2
   proves the packaged adapters construct, not what they contribute. The
   release lane, where `ost plugin package` runs, reruns the suites with the
   package's `plugInfo.json` in place of the build tree's.
-- ⬜ **An OpenUSD compatibility statement** in
-  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md):
+  **Landed 2026-09-27** as `scripts/artifact_only_imaging_smoke.py`, a step
+  in each release workspace cell. It installs the product outside the
+  repository and uses the exec smoke's environment, which has no path into
+  the repository. It runs every `vrmImaging` suite there, including the
+  import suite and the Step I4 bake, which the product's own
+  `motion_retarget` makes. `VrmImaging` has to load from the prefix. With
+  the product's registration moved aside, discovery has to fail. The
+  `lookdev` package is not covered; `ost plugin test` L0–L5 verifies it.
+- ✅ **An OpenUSD compatibility statement** in
+  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md#hydra-imaging-vrmimaging):
   OpenUSD 26.08, the only version measured (a second cell is Product P1's,
   blocked on a published runtime); the scene-index path only, since the
   legacy `UsdImagingDelegate` never calls an API-schema adapter; the runtime's
   usdImaging SDK; and `USDIMAGING_ENABLE_PLUGINS=0` dropping the plugin
   without a word (policy §27).
+  **Landed 2026-09-27** as the Hydra imaging section. Beside those four
+  points it states what the session needs (`vrmSchema` registered, not
+  linked), the three silent absences `VRM300` reports, what 26.08 dirties on
+  an authored edit and on a time move, where each claim is verified, and that
+  the `lookdev` package covers Windows and Linux only.
 - ✅ **Numbered diagnostics** (policy §18). Proposed, and taken by the user
   on 2026-09-27:
   §18's candidates go into the existing `VRMxxx` catalog
