@@ -23,11 +23,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import sys
 from typing import Any
 
-from pxr import Ar, Sdf, Tf, Usd, UsdGeom, UsdShade, UsdSkel
+from pxr import Ar, Plug, Sdf, Tf, Usd, UsdGeom, UsdShade, UsdSkel
 
 import vrm_diagnostics as diag
 from vrm_diagnostics import Diagnostic, Severity
@@ -581,8 +582,121 @@ def _check_raw_preservation(dp: Usd.Prim, out: list[Diagnostic]) -> None:
             dp.GetPath().pathString))
 
 
-def validate_stage(stage: Usd.Stage) -> list[Diagnostic]:
-    """Run the full validation contract; return the diagnostics found."""
+# --- Imaging (opt-in) ---------------------------------------------------------
+# Whether the canonical material records reach a Hydra renderer at all
+# (VRM_IMAGING_POLICY.md §18, §19). That is a property of the session, not of
+# the stage, so it is checked only when asked: a headless deployment may leave
+# vrmImaging out on purpose, and the stage is no less valid for it.
+
+IMAGING_ADAPTER_BASE = "UsdImagingAPISchemaAdapter"
+
+
+def _getenv_bool(name: str, default: bool) -> bool:
+    """TfGetenvBool's reading of an environment variable."""
+    value = os.environ.get(name, "")
+    if not value:
+        return default
+    return value.lower() in ("true", "yes", "on", "1")
+
+
+def imaging_adapter_schemas(external_plugins: bool | None = None) -> dict[str, str]:
+    """API schema name -> adapter type, as UsdImaging's adapter registry would
+    construct them in this session.
+
+    The discovery the registry makes, from plugin metadata alone: every type a
+    plugin declares as derived from `UsdImagingAPISchemaAdapter`, keyed by its
+    `apiSchemaName`. With `USDIMAGING_ENABLE_PLUGINS` off the registry keeps
+    only types marked `isInternal`, which drops every adapter this workspace
+    ships without a word (policy §27). Nothing is loaded.
+    """
+    if external_plugins is None:
+        external_plugins = _getenv_bool("USDIMAGING_ENABLE_PLUGINS", True)
+    # Through the plugin registry, which declares the plugins' types first:
+    # Tf.Type.FindByName answers "unknown" for a type only a plugInfo.json
+    # names until something has asked the registry.
+    base = Plug.Registry.FindTypeByName(IMAGING_ADAPTER_BASE)
+    registry = Plug.Registry()
+    if base.isUnknown:
+        return {}
+    found: dict[str, str] = {}
+    for adapter in registry.GetAllDerivedTypes(base):
+        plugin = registry.GetPluginForType(adapter)
+        if not plugin:
+            continue
+        metadata = plugin.GetMetadataForType(adapter)
+        if not external_plugins and metadata.get("isInternal") is not True:
+            continue
+        name = metadata.get("apiSchemaName")
+        if isinstance(name, str) and name:
+            found[name] = adapter.typeName
+    return found
+
+
+def _authored_material_families(stage: Usd.Stage) -> dict[str, int]:
+    """Canonical material schema -> the number of prims applying it.
+
+    Read from the composed `apiSchemas` list as authored, not from
+    GetAppliedSchemas(): the registry-backed list leaves out a schema it has no
+    definition for, and a session without vrmSchema is one this check is for.
+    """
+    counts: dict[str, int] = {}
+    for prim in stage.Traverse():
+        list_op = prim.GetMetadata("apiSchemas")
+        applied = list_op.ApplyOperations([]) if list_op else []
+        families = {Usd.SchemaRegistry.GetTypeNameAndInstance(s)[0]
+                    for s in applied}
+        for family in families & set(MATERIAL_SCHEMAS):
+            counts[family] = counts.get(family, 0) + 1
+    return counts
+
+
+def _check_imaging(stage: Usd.Stage, out: list[Diagnostic],
+                   adapters: dict[str, str] | None = None,
+                   external_plugins: bool | None = None) -> None:
+    """VRM300: the stage carries canonical material semantics and this session
+    cannot hand them to Hydra, so a renderer sees the `/preview` and `/mtlx`
+    realizations only. Once per stage, naming each schema left out and why."""
+    families = _authored_material_families(stage)
+    if not families:
+        return
+    if external_plugins is None:
+        external_plugins = _getenv_bool("USDIMAGING_ENABLE_PLUGINS", True)
+    if adapters is None:
+        adapters = imaging_adapter_schemas(external_plugins)
+    registry = Usd.SchemaRegistry()
+    unregistered = sorted(f for f in families
+                          if not registry.FindAppliedAPIPrimDefinition(f))
+    unadapted = sorted(f for f in families
+                       if f not in unregistered and f not in adapters)
+    if not unregistered and not unadapted:
+        return
+    reasons = []
+    if unregistered:
+        reasons.append(
+            f"{', '.join(unregistered)} is not a registered schema (vrmSchema "
+            f"is not in the session), so UsdImaging asks no adapter about it")
+    if unadapted:
+        why = ("USDIMAGING_ENABLE_PLUGINS is off, which drops every external "
+               "adapter" if not external_plugins
+               else "vrmImaging is not in the session")
+        reasons.append(f"no UsdImaging adapter handles {', '.join(unadapted)} "
+                       f"({why})")
+    applied = ", ".join(f"{f} on {n}" for f, n in sorted(families.items()))
+    dp = stage.GetDefaultPrim()
+    out.append(diag.make(
+        "VRM300",
+        f"canonical material semantics ({applied}) will not reach Hydra: "
+        f"{'; '.join(reasons)}. A Hydra renderer sees /preview and /mtlx only",
+        dp.GetPath().pathString if dp else ""))
+
+
+def validate_stage(stage: Usd.Stage, check_imaging: bool = False) -> list[Diagnostic]:
+    """Run the full validation contract; return the diagnostics found.
+
+    `check_imaging` adds VRM300, a check of the session rather than the stage:
+    whether a Hydra consumer would see the canonical material records. Off by
+    default.
+    """
 
     out: list[Diagnostic] = []
     dp = _check_stage_root(stage, out)
@@ -600,10 +714,13 @@ def validate_stage(stage: Usd.Stage) -> list[Diagnostic]:
     _check_colliders(stage, out)
     _check_constraints(stage, out)
     _check_raw_preservation(dp, out)
+    if check_imaging:
+        _check_imaging(stage, out)
     return out
 
 
-def validate_path(path: str) -> tuple[list[Diagnostic], bool]:
+def validate_path(path: str, check_imaging: bool = False
+                  ) -> tuple[list[Diagnostic], bool]:
     """Open `path` as a stage and validate it. Returns (diagnostics, opened)."""
 
     try:
@@ -612,7 +729,7 @@ def validate_path(path: str) -> tuple[list[Diagnostic], bool]:
         stage = None
     if not stage:
         return ([diag.make("VRM200", f"failed to open stage: {path}")], False)
-    return validate_stage(stage), True
+    return validate_stage(stage, check_imaging), True
 
 
 def build_result(path: str, diagnostics: list[Diagnostic]) -> dict[str, Any]:
@@ -647,12 +764,17 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("input", help="Stage to validate (.vrm/.usd/.usda)")
     parser.add_argument(
         "--json", action="store_true", help="Emit the machine-readable JSON report")
+    parser.add_argument(
+        "--check-imaging", action="store_true",
+        help="Also report VRM300 when this session would not hand the "
+             "canonical material schemas to Hydra (no vrmImaging, no "
+             "vrmSchema, or USDIMAGING_ENABLE_PLUGINS off)")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
-    diagnostics, opened = validate_path(args.input)
+    diagnostics, opened = validate_path(args.input, args.check_imaging)
     result = build_result(args.input, diagnostics)
     if args.json:
         print(json.dumps(result, indent=2, sort_keys=True))

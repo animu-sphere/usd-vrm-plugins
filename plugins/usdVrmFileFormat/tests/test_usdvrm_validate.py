@@ -53,6 +53,10 @@ def check_taxonomy():
     assert diag.severity_of("VRM150") is Severity.INFO
     assert diag.severity_of("VRM200") is Severity.FATAL
     assert diag.severity_of("VRMZZZ") is Severity.WARNING  # unknown -> default
+    # The one imaging code: a session that cannot show Hydra the canonical
+    # records is a fidelity loss, not a broken stage.
+    assert diag.severity_of("VRM300") is Severity.WARNING
+    assert diag.CATALOG["VRM300"].source == "validate"
 
     d = diag.make_import_diagnostic("[VRM150] preserved raw only")
     assert d.code == "VRM150" and d.severity is Severity.INFO and d.source == "import"
@@ -278,6 +282,59 @@ def check_material_semantics_rules():
     assert "VRM222" in _codes(validate_vrm.validate_stage(stage))
 
 
+def check_imaging_rules():
+    """VRM300, with the session's adapters given rather than discovered, so the
+    rule is measured whatever this suite's plugin path holds. The discovery
+    itself, in sessions that do and do not register vrmImaging, is the root
+    build's `workspace_validate_imaging`."""
+    all_three = {name: "Adapter" for name in validate_vrm.MATERIAL_SCHEMAS}
+
+    def imaging(stage, **kwargs):
+        out = []
+        validate_vrm._check_imaging(stage, out, **kwargs)
+        assert all(d.code == "VRM300" for d in out), out
+        assert len(out) <= 1, "VRM300 is once per stage"
+        return out[0].message if out else None
+
+    stage = _open("mtoon_vrm1.vrm")
+    # Off unless asked: a headless deployment is not an invalid one.
+    assert "VRM300" not in _codes(validate_vrm.validate_stage(stage))
+
+    # Every applied family has an adapter: nothing to say.
+    assert imaging(stage, adapters=all_three, external_plugins=True) is None
+
+    # No adapter at all: each family named, with the reason and the count.
+    message = imaging(stage, adapters={}, external_plugins=True)
+    assert message, "no VRM300 for a session without vrmImaging"
+    for family in validate_vrm.MATERIAL_SCHEMAS:
+        assert family in message, (family, message)
+    assert "vrmImaging is not in the session" in message, message
+    assert "VrmMToonAPI on 5" in message, message
+
+    # One family missing: only that one is named as unhandled.
+    partial = {k: v for k, v in all_three.items() if k != "VrmTextureInfoAPI"}
+    message = imaging(stage, adapters=partial, external_plugins=True)
+    assert message and "handles VrmTextureInfoAPI (" in message, message
+
+    # The environment switch that drops external adapters is named as such.
+    message = imaging(stage, adapters={}, external_plugins=False)
+    assert "USDIMAGING_ENABLE_PLUGINS is off" in message, message
+
+    # A stage with no canonical material says nothing, even with no adapters.
+    bare = Usd.Stage.CreateInMemory()
+    UsdShade.Material.Define(bare, "/Looks/Plain")
+    assert imaging(bare, adapters={}, external_plugins=True) is None
+
+    # The discovery reads plugin metadata the way UsdImaging's registry does:
+    # with external plugins off only `isInternal` types remain, and those are
+    # OpenUSD's own -- never a Vrm*API adapter.
+    internal = validate_vrm.imaging_adapter_schemas(external_plugins=False)
+    assert "MaterialBindingAPI" in internal, sorted(internal)
+    assert not set(internal) & set(validate_vrm.MATERIAL_SCHEMAS), internal
+    assert set(internal) <= set(
+        validate_vrm.imaging_adapter_schemas(external_plugins=True))
+
+
 def check_collider_rules_without_spring_scope():
     """Collider validation must not depend on a SpringBones scope being present."""
     stage = _open("springbone.vrm")
@@ -372,6 +429,7 @@ def main() -> int:
                   check_schema_parallel_array_rules,
                   check_schema_token_rules,
                   check_material_semantics_rules,
+                  check_imaging_rules,
                   check_collider_rules_without_spring_scope,
                   check_missing_default_prim,
                   check_report_sections_and_coded_import_warnings,

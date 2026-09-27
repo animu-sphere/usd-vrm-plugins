@@ -28,7 +28,12 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 - **import** — emitted by the C++ importer (reader/authorer) at `Read()` time and
   surfaced on `/Asset.customData.vrm:warnings`, coded.
 - **validate** — emitted by `tools/validate_vrm.py` over an already-imported
-  stage. No C++ analogue.
+  stage. No C++ analogue. `VRM300` checks the *session* rather than the stage,
+  and only under `--check-imaging`: the stage's materials apply the canonical
+  schemas, and this session would not hand them to a Hydra renderer, because
+  `vrmImaging` is not registered, `vrmSchema` is not, or
+  `USDIMAGING_ENABLE_PLUGINS` is off. A headless deployment may leave
+  `vrmImaging` out on purpose, so the check is opt-in and a warning.
 
 ## Code catalog
 
@@ -96,6 +101,7 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | VRM264 | ERROR | validate | Constraint joint value is not a skeleton joint |
 | VRM270 | WARNING | validate | Schema contract version is absent |
 | VRM271 | ERROR | validate | Schema contract version is unsupported |
+| VRM300 | WARNING | validate | Canonical material semantics cannot reach Hydra in this session |
 
 ## Tools
 
@@ -103,6 +109,11 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 # Validate an imported stage against the contract (exit 1 on error/fatal).
 ost plugin run plugins/usdVrmFileFormat -- \
     python plugins/usdVrmFileFormat/tools/validate_vrm.py avatar.vrm --json
+
+# The same, and whether a Hydra renderer in this session sees the canonical
+# material records (VRM300): quiet only with vrmImaging in the session.
+ost plugin run plugins/usdVrmFileFormat --with plugins/vrmImaging -- \
+    python plugins/usdVrmFileFormat/tools/validate_vrm.py avatar.vrm --check-imaging
 
 # Full compatibility report: import + validation diagnostics, asset inventory,
 # feature compatibility (human-readable, or --json / --out report.json).

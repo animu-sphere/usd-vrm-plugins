@@ -192,6 +192,10 @@ _VALIDATE_SPECS = [
           "Schema contract version is absent"),
     _spec("VRM271", Severity.ERROR, "validate",
           "Schema contract version is unsupported"),
+    # Raised only when the caller asks for the imaging check: a deployment
+    # without Hydra may leave vrmImaging out on purpose.
+    _spec("VRM300", Severity.WARNING, "validate",
+          "Canonical material semantics cannot reach Hydra in this session"),
 ]
 
 CATALOG: dict[str, DiagnosticSpec] = {

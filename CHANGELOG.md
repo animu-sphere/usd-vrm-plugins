@@ -30,6 +30,16 @@ Current schema contract version: **1**.
   texture transforms (kept raw, material policy q11), other properties,
   undeclared materials.
 
+- **`VRM300`: canonical materials that will not reach Hydra**
+  ([imaging track](docs/roadmap/imaging-track.md) Step I5; imaging policy
+  §18). `validate_vrm.py --check-imaging` reports one warning per stage when
+  its materials apply `VrmMaterialAPI`, `VrmMToonAPI` or `VrmTextureInfoAPI`
+  and the session would not hand them to a Hydra renderer: `vrmImaging` is not
+  registered, `vrmSchema` is not, or `USDIMAGING_ENABLE_PLUGINS` is off, which
+  UsdImaging applies without a word. It finds the adapters the way UsdImaging
+  does, from plugin metadata, and loads nothing. It is off by default, because
+  a headless deployment may leave `vrmImaging` out on purpose.
+
 - **A `lookdev` package of `vrmImaging`, published to GHCR**
   ([imaging track](docs/roadmap/imaging-track.md) Step I5). The release lane
   gains two cells, Windows and Linux x86_64, that build, test (L0–L5) and
