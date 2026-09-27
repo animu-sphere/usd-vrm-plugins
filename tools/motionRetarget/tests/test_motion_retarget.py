@@ -398,6 +398,33 @@ EXPECTED_BLEND_SHAPE_WEIGHTS = {
 }
 
 
+def check_material_colour(stage: Usd.Stage, material: str,
+                          rgb: tuple, alpha: float, times: list,
+                          failures: Failures) -> None:
+    """A resolved `color` slot, as time samples on the Material's canonical
+    base colour and alpha, and on nothing else of the layer the bake wrote."""
+    prim = stage.GetPrimAtPath(material)
+    for name, want in (("inputs:vrm:material:baseColorFactor", rgb),
+                       ("inputs:vrm:material:baseColorAlphaFactor", (alpha,))):
+        attr = prim.GetAttribute(name)
+        samples = [round(t, 6) for t in attr.GetTimeSamples()] if attr else []
+        if not failures.check(samples == times,
+                              f"{material}.{name} time samples {samples} != {times}"):
+            continue
+        for time in times:
+            value = attr.Get(time)
+            value = tuple(value) if hasattr(value, "__len__") else (value,)
+            failures.check(vectors_match(list(value), list(want)),
+                           f"{material}.{name} at {time}: {value} != {want}")
+    # The bake writes the semantic, never a realization: no over below the
+    # Material in the output layer.
+    layer = stage.GetRootLayer()
+    below = [str(p) for p in layer.GetPrimAtPath(material).nameChildren.keys()] \
+        if layer.GetPrimAtPath(material) else []
+    failures.check(not below,
+                   f"the bake authored below {material}: {below}")
+
+
 def check_expression_bake(tool: str, fixtures: pathlib.Path,
                           faceless_avatar: pathlib.Path, humanoid_map: str,
                           workspace: pathlib.Path,
@@ -469,11 +496,29 @@ def check_expression_bake(tool: str, fixtures: pathlib.Path,
              "the weight clamped from 1.5 was not reported by name"),
             ("Face_Unbound",
              "the blend shape no mesh binds was not named on stderr"),
-            ("material colour",
-             "the material colour this rig resolves was not reported as "
-             "unwritten")):
+            ("does not apply VrmMToonAPI",
+             "the MToon slot of a material that is not MToon was not "
+             "reported as unwritten")):
         failures.check(wanted in result.stderr,
                        f"{message}: {result.stderr.strip()}")
+    failures.check("not written" not in result.stderr,
+                   f"the colour this rig resolves is still reported as not "
+                   f"written: {result.stderr.strip()}")
+    failures.check("1 material colours driven" in result.stdout,
+                   f"the summary does not count the driven colour: "
+                   f"{result.stdout.strip()}")
+
+    # `angry` at 0.25 drives FaceMaterial's `color` towards (1, 0, 0, 0.5),
+    # from the material's own white: base + 0.25 * (target - base). It lands on
+    # the canonical inputs (material policy §6.7), which every realization
+    # reads, and on nothing below the Material.
+    check_material_colour(
+        stage, "/Avatar/Materials/FaceMaterial", (1.0, 0.75, 0.75), 0.875,
+        expected_times, failures)
+    face = stage.GetPrimAtPath("/Avatar/Materials/FaceMaterial")
+    failures.check(
+        not face.GetAttribute("inputs:vrm:mtoon:shadeColorFactor"),
+        "a shade colour was authored on a material with no VrmMToonAPI")
 
     check_usdskel_resolves_the_expressions(output, failures)
     check_an_unreported_weight_holds(tool, avatar, clip, humanoid_map,
@@ -562,6 +607,13 @@ def check_expression_overrides_arbitrate_the_face(
         failures.check(
             vectors_match(values, want),
             f"overridden blendShapeWeights at {time}: {values} != {want}")
+
+    # This rig states its colour binds the way a stage from before
+    # `vrm:materialColorTargetIndices` did -- paired with the targets by
+    # position -- and they still land: `angry` at 0.25 from grey towards red.
+    check_material_colour(
+        stage, "/Avatar/Materials/FaceMaterial", (0.625, 0.375, 0.375), 1.0,
+        sorted(EXPECTED_OVERRIDDEN_WEIGHTS), failures)
 
     # The suppression is named, with the expression that did it: a producer
     # whose blink track went flat has nothing to find in the weights, because

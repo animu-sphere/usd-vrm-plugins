@@ -108,27 +108,6 @@ JoinNames(const std::vector<std::string>& names)
     return joined;
 }
 
-// The distinct material colour slots a clip drives on this rig.
-//
-// They are resolved and deliberately not authored: a colour slot is a material
-// input, and the material layer owns what an MToon or a UsdPreviewSurface calls
-// it. Reporting the count is what keeps that a stated boundary rather than a
-// silent omission -- an operator whose clip turns a face red sees why it did
-// not.
-std::size_t
-CountMaterialColors(const std::vector<vrmRig::ResolvedExpressions>& expressions)
-{
-    std::set<std::pair<std::string, std::string>> slots;
-    for (const vrmRig::ResolvedExpressions& sample : expressions)
-    {
-        for (const vrmRig::ResolvedMaterialColor& color : sample.materialColors)
-        {
-            slots.emplace(color.material, color.colorType);
-        }
-    }
-    return slots.size();
-}
-
 // Evaluates the clip's gaze against the avatar's own look-at configuration,
 // one result per retargeted sample.
 //
@@ -528,14 +507,6 @@ main(int argc, char** argv)
                       << JoinNames(expressionDiagnostics.suppressedNames) << "\n";
         }
         ReportWarnings(expressionDiagnostics.warnings, options.quiet);
-        const std::size_t materialColors = CountMaterialColors(expressions);
-        if (materialColors != 0)
-        {
-            std::cerr << "motion_retarget: warning: the clip drives " << materialColors
-                      << " material colour slot(s) of this rig; "
-                         "motion_retarget authors blend-shape weights only, "
-                         "so they are not written\n";
-        }
     }
 
     motionRetargetTool::WriteResult written;
@@ -555,6 +526,10 @@ main(int argc, char** argv)
         if (written.blendShapesAuthored != 0)
         {
             std::cout << ", " << written.blendShapesAuthored << " blend shapes driven";
+        }
+        if (written.materialColorsAuthored != 0)
+        {
+            std::cout << ", " << written.materialColorsAuthored << " material colours driven";
         }
         if (eyeJointsDriven != 0)
         {

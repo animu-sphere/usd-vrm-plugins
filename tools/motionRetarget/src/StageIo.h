@@ -118,6 +118,9 @@ bool ReadClip(const std::string& path, const std::string& skeletonPathOverride, 
 struct WriteResult
 {
     std::size_t blendShapesAuthored = 0;
+    // Distinct (material, colour slot) pairs authored onto the materials'
+    // canonical inputs.
+    std::size_t materialColorsAuthored = 0;
     std::vector<std::string> warnings;
 };
 
