@@ -185,9 +185,12 @@ Unblocked: Product P5 Step 7 landed expression binds on the canonical slots
   time samples, not as per-frame authored edits, so the whole-material
   dirtying stays lived with.
 - ⬜ **A live `hydra-toon` slot** (`hydra-toon`'s part, recorded as a renderer
-  report): the same bake played in its host session changes the MToon
-  parameter slot, and the frame rebuilds no geometry, draw packet or
-  pipeline.
+  report): the bake of `expressions_mtoon.vrm` — the same bind on an MToon
+  material — played in its host session changes the MToon parameter slot,
+  and the frame rebuilds no geometry, draw packet or pipeline.
+  `expressions.vrm`'s `Face_Mat` is a glTF material, which `hydra-toon`
+  draws with fallback PreviewSurface values until it reads a surface network,
+  so its bake moves nothing there.
 
 **Done when** a canonical colour change reaches a live `hydra-toon` material
 slot without rebuilding geometry or shader pipelines.
@@ -212,6 +215,14 @@ scene index with `vrmImaging` in the session:
 A bake that writes nothing on the slot fails, and so does a time-varying
 attribute on the bound mesh, which dirties its own locator. Policy §28.3's
 condition is met, and the whole-material dirtying stays lived with.
+
+The same suite reads the bake of `expressions_mtoon.vrm`
+(`workspace_expression_bake_mtoon`, `…_mtoon_imaging`): that fixture's
+`Face_Mat` is MToon and its `happy` binds the same emission and no morph
+target, so the bake moves a material slot and the skeleton and nothing of the
+mesh. The samples and the dirtied set are the same, except that `/mtlx` reads
+the slot as the `in2` of MToon's `withEmission` add instead of a surface's
+`emissive`.
 
 ### Step I5 — hardening ⬜
 

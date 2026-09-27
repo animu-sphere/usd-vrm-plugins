@@ -24,7 +24,11 @@ Current schema contract version: **1**.
   parameter that reads it, carries the bake's sample. A time move dirties only
   those locators, never the whole `material` and nothing of the bound mesh, so
   imaging policy §28.3's decision to live with the whole-material dirtying of
-  authored edits stands.
+  authored edits stands. A second fixture, `expressions_mtoon.vrm`, carries
+  the same emission bind on an MToon material and binds no morph target; its
+  bake is read the same way (`workspace_expression_bake_mtoon_imaging`, where
+  `/mtlx` reads the slot through MToon's emission add), and it is the bake
+  `hydra-toon` plays for the step's live-slot half.
 
 - **Expression colours drive the canonical material slots** (Product P5
   Step 7; [material track](docs/roadmap/material-track.md)). A VRM

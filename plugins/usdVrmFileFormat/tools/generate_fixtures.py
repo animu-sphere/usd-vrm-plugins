@@ -17,6 +17,9 @@ specific import behavior the smoke test then asserts:
   multiskin_ibm.vrm  two skins, overlapping joints, non-identity inverse binds
   unordered_skel.vrm skin joints listed child-before-parent (topology reorder)
   expressions.vrm    a morph target + a VRM 1.0 preset expression binding it
+  expressions_mtoon.vrm expressions.vrm's skin and emission bind on an MToon
+                     material, with no morph target: a bake of it changes a
+                     material slot and nothing of the mesh
   names.vrm          duplicate / Japanese / empty mesh & material names
   materials.vrm      alpha BLEND + double-sided, alpha MASK with a cutoff, and
                      the unlit cases the MaterialX realization is built on:
@@ -481,6 +484,55 @@ def build_expressions():
                     "morphTargetBinds": [{"node": 0, "index": 0, "weight": 0.5}],
                 }},
             },
+        }},
+    }
+    return b.build(gltf)
+
+
+def build_expressions_mtoon():
+    """expressions.vrm's skin and emission bind, on an MToon material.
+
+    The expression binds no morph target, so a bake of it moves a material
+    slot and the skeleton, and nothing of the mesh: what a renderer's MToon
+    path must take as a value (vrmImaging Step I4).
+    """
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16), tuple(IDENTITY16)])
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Face", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]},
+        ],
+        "meshes": [{"name": "Face", "primitives": [{
+            "attributes": skin_attrs, "indices": idx, "material": 0}]}],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": ibm, "skeleton": 1}],
+        # Dark and grey, so a lit render neither clips the red the bind adds
+        # nor tints it: red over green stays 1 until the emission moves it.
+        "materials": [{
+            "name": "Face_Mat",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [0.2, 0.2, 0.2, 1.0],
+                "metallicFactor": 0.0, "roughnessFactor": 0.7},
+            "doubleSided": True,
+            "extensions": {"VRMC_materials_mtoon": {
+                "specVersion": "1.0",
+                "shadeColorFactor": [0.1, 0.1, 0.1],
+            }},
+        }],
+        "extensionsUsed": ["VRMC_vrm", "VRMC_materials_mtoon"],
+        "extensions": {"VRMC_vrm": {
+            **vrm1_extension({"hips": 1, "spine": 2}),
+            "expressions": {"preset": {"happy": {
+                "isBinary": False,
+                "materialColorBinds": [
+                    {"material": 0, "type": "emissionColor",
+                     "targetValue": [1.0, 0.0, 0.0, 1.0]}],
+            }}},
         }},
     }
     return b.build(gltf)
@@ -987,6 +1039,7 @@ FIXTURES = {
     "multiskin_ibm.vrm": build_multiskin_ibm,
     "unordered_skel.vrm": build_unordered_skel,
     "expressions.vrm": build_expressions,
+    "expressions_mtoon.vrm": build_expressions_mtoon,
     "vrm0_expressions.vrm": build_vrm0_expressions,
     "vrm0_frontbake.vrm": build_vrm0_frontbake,
     "names.vrm": build_names,

@@ -295,15 +295,17 @@ endif()
 # Imaging Step I4: an expression bake reaches Hydra as time. `motion_retarget`
 # bakes the importer's `expressions.vrm` fixture, whose `happy` drives a colour
 # slot, and `vrmImaging`'s suite reads the layer it wrote through UsdImaging's
-# stage scene index (docs/roadmap/imaging-track.md, Step I4). Here because it
-# composes the tool, the importer and the imaging bundle; the bake is a CTest
-# fixture of its own, so a bake that fails is reported as the bake.
-set(_expression_fixture
-    "${CMAKE_CURRENT_SOURCE_DIR}/plugins/usdVrmFileFormat/tests/fixtures/expressions.vrm")
+# stage scene index (docs/roadmap/imaging-track.md, Step I4). The same bind on
+# an MToon material, `expressions_mtoon.vrm`, is the bake `hydra-toon`'s MToon
+# path plays, so it is read here too. Here because it composes the tool, the
+# importer and the imaging bundle; each bake is a CTest fixture of its own, so
+# a bake that fails is reported as the bake.
+set(_expression_fixtures
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugins/usdVrmFileFormat/tests/fixtures/expressions.vrm"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugins/usdVrmFileFormat/tests/fixtures/expressions_mtoon.vrm")
 if(USDVRM_BUILD_TESTS
    AND TARGET motion_retarget AND TARGET UsdVrmFileFormat
-   AND TARGET vrmImaging_expression_bake_tests
-   AND EXISTS "${_expression_fixture}")
+   AND TARGET vrmImaging_expression_bake_tests)
     set(_i4_usd_root "")
     if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
         set(_i4_usd_root "${pxr_DIR}")
@@ -313,26 +315,36 @@ if(USDVRM_BUILD_TESTS
     set(_i4_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
     set(_i4_dir "${CMAKE_CURRENT_BINARY_DIR}/tests/imaging")
     file(MAKE_DIRECTORY "${_i4_dir}")
-    set(_i4_bake "${_i4_dir}/expression_bake.usda")
-    add_test(NAME workspace_expression_bake
-        COMMAND motion_retarget
-            --avatar "${_expression_fixture}"
-            --animation "${CMAKE_CURRENT_SOURCE_DIR}/tools/motionRetarget/tests/fixtures/expressive_clip.usda"
-            --output "${_i4_bake}"
-            --quiet)
-    add_test(NAME workspace_expression_bake_imaging
-        COMMAND vrmImaging_expression_bake_tests "${_i4_bake}")
-    set_tests_properties(workspace_expression_bake PROPERTIES
-        FIXTURES_SETUP usdvrm_expression_bake)
-    set_tests_properties(workspace_expression_bake_imaging PROPERTIES
-        FIXTURES_REQUIRED usdvrm_expression_bake)
-    # The importer as its own suites load it, the schema bundle it applies, and
-    # the imaging bundle from its build-tree resources.
-    set_tests_properties(workspace_expression_bake workspace_expression_bake_imaging
-        PROPERTIES
-        ENVIRONMENT_MODIFICATION
-            "PATH=path_list_prepend:${_i4_usd_root}/bin;PATH=path_list_prepend:${_i4_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_i4_plugins}/vrmSchema/lib;PATH=path_list_prepend:${_i4_plugins}/vrmImaging/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PXR_PLUGINPATH_NAME=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_i4_plugins}/vrmSchema/plugin/resources/vrmSchema;PXR_PLUGINPATH_NAME=path_list_prepend:${_i4_plugins}/vrmImaging/plugin/resources/vrmImaging"
-        LABELS "material.imaging")
+    foreach(_i4_fixture IN LISTS _expression_fixtures)
+        if(NOT EXISTS "${_i4_fixture}")
+            continue()
+        endif()
+        # expressions.vrm -> workspace_expression_bake{,_imaging};
+        # expressions_mtoon.vrm -> workspace_expression_bake_mtoon{,_imaging}.
+        get_filename_component(_i4_stem "${_i4_fixture}" NAME_WE)
+        string(REPLACE "expressions" "" _i4_suffix "${_i4_stem}")
+        set(_i4_bake "${_i4_dir}/expression_bake${_i4_suffix}.usda")
+        set(_i4_test "workspace_expression_bake${_i4_suffix}")
+        add_test(NAME ${_i4_test}
+            COMMAND motion_retarget
+                --avatar "${_i4_fixture}"
+                --animation "${CMAKE_CURRENT_SOURCE_DIR}/tools/motionRetarget/tests/fixtures/expressive_clip.usda"
+                --output "${_i4_bake}"
+                --quiet)
+        add_test(NAME ${_i4_test}_imaging
+            COMMAND vrmImaging_expression_bake_tests "${_i4_bake}")
+        set_tests_properties(${_i4_test} PROPERTIES
+            FIXTURES_SETUP usdvrm_expression_bake${_i4_suffix})
+        set_tests_properties(${_i4_test}_imaging PROPERTIES
+            FIXTURES_REQUIRED usdvrm_expression_bake${_i4_suffix})
+        # The importer as its own suites load it, the schema bundle it applies,
+        # and the imaging bundle from its build-tree resources.
+        set_tests_properties(${_i4_test} ${_i4_test}_imaging
+            PROPERTIES
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:${_i4_usd_root}/bin;PATH=path_list_prepend:${_i4_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_i4_plugins}/vrmSchema/lib;PATH=path_list_prepend:${_i4_plugins}/vrmImaging/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PXR_PLUGINPATH_NAME=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_i4_plugins}/vrmSchema/plugin/resources/vrmSchema;PXR_PLUGINPATH_NAME=path_list_prepend:${_i4_plugins}/vrmImaging/plugin/resources/vrmImaging"
+            LABELS "material.imaging")
+    endforeach()
 else()
     message(STATUS
         "usd-vrm-plugins: motion_retarget, usdVrmFileFormat or vrmImaging's "

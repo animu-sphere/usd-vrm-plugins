@@ -274,6 +274,32 @@ def check_expressions():
     assert smile.GetAttribute("vrm:isBinary").Get() is True
 
 
+def check_expressions_mtoon():
+    """expressions.vrm's emission bind on an MToon material, with no morph target.
+
+    The bake `hydra-toon` plays for vrmImaging Step I4: its `happy` moves a
+    slot of an MToon material and nothing of the mesh.
+    """
+    stage = _open("expressions_mtoon.vrm")
+    material = stage.GetPrimAtPath("/Asset/mtl/Face_Mat")
+    applied = material.GetAppliedSchemas()
+    assert "VrmMaterialAPI" in applied and "VrmMToonAPI" in applied, applied
+    assert material.GetAttribute("inputs:vrm:material:emissiveFactor").Get()         == Gf.Vec3f(0.0, 0.0, 0.0)
+
+    face = UsdSkel.BindingAPI(stage.GetPrimAtPath("/Asset/geo/Face"))
+    assert face.GetSkeletonRel().GetTargets(), "Face is not bound to the skeleton"
+    assert not face.GetBlendShapesAttr().HasAuthoredValue(),         "the fixture has no morph target"
+
+    happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
+    assert "VrmExpressionAPI" in happy.GetAppliedSchemas(), happy.GetAppliedSchemas()
+    assert not happy.GetRelationship("vrm:morphTargets").GetTargets()
+    ct = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
+    assert ct == [material.GetPath()], ct
+    assert list(happy.GetAttribute("vrm:materialColorTypes").Get()) == ["emissionColor"]
+    cv = happy.GetAttribute("vrm:materialColorValues").Get()
+    assert cv and tuple(cv[0]) == (1.0, 0.0, 0.0, 1.0), list(cv)
+
+
 def check_vrm0_expressions():
     """VRM 0.x blendShapeMaster: preset detection + weight 0..100 -> 0..1."""
     stage = _open("vrm0_expressions.vrm")
@@ -1255,6 +1281,7 @@ def main() -> int:
 
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
+                  check_expressions_mtoon,
                   check_vrm0_expressions, check_vrm0_frontbake,
                   check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
