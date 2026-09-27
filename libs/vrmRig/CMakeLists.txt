@@ -7,7 +7,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
          _vrm_rig_version LIMIT_COUNT 1)
     string(STRIP "${_vrm_rig_version}" _vrm_rig_version)
 else()
-    set(_vrm_rig_version "0.9.0")
+    set(_vrm_rig_version "0.10.0")
 endif()
 
 project(vrmRig

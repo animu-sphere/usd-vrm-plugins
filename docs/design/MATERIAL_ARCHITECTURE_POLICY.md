@@ -733,8 +733,8 @@ raw JSON.** Renderer work of any kind is behind it.
 
 ### 7.1 Step 1 — restructure the PreviewSurface hierarchy
 
-> **Shipped 2026-08-13** (unreleased; see the changelog's `[Unreleased]`
-> entry). Every "done when" below is met. The one thing worth carrying
+> **Shipped 2026-08-13**, released in v0.7.0 (see that changelog
+> section). Every "done when" below is met. The one thing worth carrying
 > forward: the digest diff is a *mechanically* verified path move — the
 > committed digests, with the rename applied and nothing else, equal the
 > regenerated ones for all 28 inputs including both corpus avatars — rather than
@@ -775,8 +775,8 @@ before                          after
 
 ### 7.2 Step 2 — add the MaterialX realization
 
-> **Unlit shipped 2026-08-14** (unreleased; see the changelog's `[Unreleased]`
-> entry). The node choice is not the one this section originally assumed — see
+> **Unlit shipped 2026-08-14**, released in v0.7.0 (see that changelog
+> section). The node choice is not the one this section originally assumed — see
 > §5.2.1, which is the measurement that changed it. Lit materials are the
 > remaining half and keep `/preview` alone until then.
 >

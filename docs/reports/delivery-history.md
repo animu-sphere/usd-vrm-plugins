@@ -10,7 +10,7 @@ work.
 bundle. The workspace split (§D, §E) landed in
 [v0.2.0](../releases/v0.2.0.md) and the negative corpus (§G) in
 [v0.3.0](../releases/v0.3.0.md); everything logged here is released as of
-[v0.9.0](../releases/v0.9.0.md).
+[v0.10.0](../releases/v0.10.0.md).
 
 This is not a description of current behavior — see [architecture/](../architecture/)
 and [reference/](../reference/) for that — nor of planned work, which is in the
@@ -445,3 +445,31 @@ The plan and every measurement behind these rows are in
   declarations.
 - ✅ **Fourteen boundary findings** recorded for the motion migration, one of
   them (the rest decomposition) closed in the release itself.
+
+## O. Canonical materials reach Hydra (v0.10.0)
+
+The steps and their done-when are in the
+[imaging track](../roadmap/imaging-track.md), the
+[material track](../roadmap/material-track.md) and the
+[export track](../roadmap/export-track.md); the summary is the
+[v0.10.0 record](../releases/v0.10.0.md).
+
+- ✅ **Material track Steps 3–7**: `VrmMaterialAPI`, `VrmMToonAPI` and
+  `VrmTextureInfoAPI:<role>` as Material interface inputs; VRM 0.x and 1.0
+  canonicalized into them as UniVRM's migration does; `/preview` and `/mtlx`
+  generated from them alone; expression colours baked onto their slots and
+  read through an interface connection.
+- ✅ **Imaging track Steps I0–I2**: `vrmImaging` exposes every canonical value
+  to Hydra under the frozen `vrm` locators, with per-field invalidation.
+- ✅ **Step I3**: `hydra-toon` selects MToon from that data, in its own
+  session and in an `ost` Formation's `testusdview`.
+- ✅ **Step I4**: an expression bake reaches Hydra as time, in this
+  repository's suites and as a live `hydra-toon` slot (renderer report 11).
+- ✅ **Step I5**: a bundle and product member, discovery in every workspace
+  cell, every §17.4 invalidation case, a `.vrm` integration fixture, the
+  suites against the installed product, a compatibility statement, `VRM300`,
+  and a `lookdev` package built for the registry.
+- ✅ **Export track Step 1**: `vrm_export` writes native `.usda`, `.usdc` and
+  `.usdz` that open with no VRM plugin.
+- ✅ **The motion split**: MIG-1 to MIG-5 consumed or moved every generic motion
+  and live-input identity; the product builds VRM and VRMA only.

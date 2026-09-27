@@ -126,6 +126,12 @@ one.
 `vrmRetarget`'s `TargetJoint::restScale` and `DecomposeRestTransform`, which
 `execVrm` and `motion_retarget` both call (the scale policy).
 
+*Applied at v0.10.0 (2026-09-27)*: a minor bump, every range moved to
+`>=0.10,<0.11`. Since v0.9.0, `vrmSchema` gained `VrmMaterialAPI`,
+`VrmMToonAPI`, `VrmTextureInfoAPI` and `vrm:materialColorTargetIndices`, which
+`usdVrmFileFormat`, `vrmImaging` and `motion_retarget` use, and `vrmRig` is a
+package the tagged 0.9.0 release does not have.
+
 ## 4. The packages
 
 ### 4.1 Plugin bundles
