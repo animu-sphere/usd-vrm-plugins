@@ -94,6 +94,53 @@ leaves add beyond that is evidence: their producer verified loader, physical
 device and render, where the runtimes they replace recorded `not-run` for all
 three.
 
+## Hydra imaging (`vrmImaging`)
+
+`vrmImaging` exposes the canonical material semantics to Hydra: it is three
+UsdImaging API-schema adapters, one each for `VrmMaterialAPI`, `VrmMToonAPI`
+and `VrmTextureInfoAPI:<role>`
+([imaging policy](../design/VRM_IMAGING_POLICY.md)). It ships no renderer and
+no shader. What it is verified against is narrower than the rest of the
+product, and each limit below comes from something measured on 26.08 (policy
+§27, §28).
+
+| | |
+| --- | --- |
+| OpenUSD | **26.08 only** — the one version measured. A second version cell is Product P1's, and it waits on a second published runtime |
+| Imaging SDK | the runtime's own `hd` and `usdImaging`. `plugins/vrmImaging/CMakeLists.txt` refuses a runtime without them at configure time. The `gl` / `metal` leaves this workspace pins carry them, and a `core` leaf is refused before this point (see above) |
+| Population path | **the scene index only**: a host that populates through `UsdImagingStageSceneIndex` |
+| In the session | `vrmSchema` registered (not linked): the adapters read field names from the registered schema definition |
+| Verified by | the `vrmImaging_*` suites, `workspace_expression_bake_imaging`, `workspace_expression_bake_mtoon_imaging` and `workspace_import_imaging`, in every workspace cell (all three OS). On each release, the same suites run against the installed product (`scripts/artifact_only_imaging_smoke.py`) |
+| `lookdev` package | Windows and Linux x86_64 only, against the canonical CY2026 `lookdev` runtime, verified by `ost plugin test` L0–L5. open-strata publishes no macOS `lookdev` runtime |
+
+**The legacy delegate sees nothing.** OpenUSD calls an API-schema adapter
+only when it populates through the stage scene index. `UsdImagingDelegate`
+never calls one, so a host on that path gets no `vrm` data at all, without an
+error. The realizations the importer authors (`/preview`, `/mtlx`) still
+reach a renderer there, because they are ordinary UsdShade networks.
+
+**Three ways to be absent silently.** The adapters contribute nothing, and
+OpenUSD says nothing, when:
+
+- `vrmImaging` is not on `PXR_PLUGINPATH_NAME`;
+- `vrmSchema` is not registered, so no prim's definition includes a `Vrm*API`
+  and UsdImaging never asks the adapter;
+- `USDIMAGING_ENABLE_PLUGINS=0` is set, which drops every UsdImaging adapter
+  not marked internal, these three included.
+
+`validate_vrm.py --check-imaging` reports all three as `VRM300`. It is off by
+default, because a headless deployment may leave `vrmImaging` out on purpose.
+
+**What 26.08 dirties.** Every canonical value is a Material interface input
+(`inputs:vrm:*`). On any *authored* edit of an interface input, OpenUSD 26.08
+dirties the whole `material` locator as well as the adapter's own
+`vrm/<group>/<field>`. A consumer tells a value edit from a network edit by
+the `vrm` locator. A *time* move never dirties the whole `material`: it
+dirties the field's `vrm` locator and each network parameter that reads it.
+This is why expression colours, which `motion_retarget` bakes as time
+samples, cost no network rebuild (policy §28.3). The suites pin both
+behaviours, so a runtime that changes either is noticed.
+
 ## Toolchain
 
 | | |
