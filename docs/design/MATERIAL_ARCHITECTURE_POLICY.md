@@ -985,8 +985,9 @@ must be isolated one at a time:
    `_ShadeColor`, which no realization reads yet. Since Step 4 they are typed —
    `VrmTextureInfoAPI:shadeMultiply` and `inputs:vrm:mtoon:shadeColorFactor`,
    through the 0.x half of §6.6 — and since Step 6 `/mtlx` draws them (§7.5).
-   What is left is comparing the asset itself, which is not in the
-   repository.
+
+**Closed 2026-09-27**, by the maintainer's decision. The last candidate is
+realized, and the issue was closed without a comparison against a VRM viewer.
 
 Do not assume `COLOR_0` must be multiplied into MToon appearance without checking
 the source material and the applicable VRM/MToon specification behavior. That

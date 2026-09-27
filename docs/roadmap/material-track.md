@@ -1,6 +1,6 @@
 # The MToon canonical-semantics track
 
-**Status:** 🚧 in progress — Steps 1–5 and 7 shipped, Step 6 items 1–3 shipped · **Target:**
+**Status:** 🚧 in progress — Steps 1–7 shipped; Step 8 is `hydra-toon`'s · **Target:**
 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7
 
@@ -47,13 +47,12 @@ The reasons are what Steps 1 and 2 left behind:
 - ✅ **Step 5 — `/preview` generated from canonical semantics** (2026-09-25;
   policy §6.5). It is a function of the Material's canonical attributes and
   nothing else, run by the importer on what it reads back from the stage.
-- 🚧 **Step 6 — `/mtlx` generated from canonical semantics** (items 1–3,
-  2026-09-25; policy §5.2.1). Every material carries both realizations, both
-  generated from the canonical attributes alone: lit materials as glTF PBR,
-  unlit ones as emission, MToon ones as a headlight-lit toon approximation —
-  shade, shading shift and toony, MatCap, parametric rim — through the same
-  `gltf_pbr` terminal (policy §11 q13). What is left is the visual comparison
-  on issue #119's asset, which is not in the repository.
+- ✅ **Step 6 — `/mtlx` generated from canonical semantics** (2026-09-25;
+  policy §5.2.1). Every material carries both realizations, both generated
+  from the canonical attributes alone: lit materials as glTF PBR, unlit ones
+  as emission, MToon ones as a headlight-lit toon approximation — shade,
+  shading shift and toony, MatCap, parametric rim — through the same
+  `gltf_pbr` terminal (policy §11 q13). Issue #119 was closed 2026-09-27.
 - ✅ **Step 7 — expression colours drive canonical slots** (2026-09-27;
   policy §6.7). A bind's slot resolves through the schema contract's table
   onto the Material's `inputs:vrm:*`; `motion_retarget` writes it there as
@@ -212,7 +211,7 @@ an expression slot reaches unchanged (policy §11 q12); UsdPreviewSurface has
 no arithmetic node, so anything folded — factor × texture, occlusion and
 normal scale/bias, glTF alpha coverage — is still a generated value.
 
-### Step 6 — `/mtlx` generated from canonical semantics 🚧
+### Step 6 — `/mtlx` generated from canonical semantics ✅
 
 The same re-pointing for MaterialX, and the realization's growth, in this
 order:
@@ -302,8 +301,11 @@ model wherever it is stated. Shown by:
 Viewing a skinned avatar needs `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1`,
 or the toon ramp shows every triangle (policy §5.2.1).
 
-Still open: the comparison on issue #119's asset — the done-when's first
-target — which is not in the repository; the issue has only captures.
+**Issue #119 closed 2026-09-27, by the maintainer's decision.** The
+done-when's first target was a comparison on #119's asset, `AliciaSolid.vrm`.
+That file is not redistributable, so it stays out of the repository. The
+issue's remaining cause was the MToon shade path, which item 3 realizes. No
+comparison against a VRM viewer was run, and none is owed.
 
 ### Step 7 — expression material binds onto canonical slots ✅
 
