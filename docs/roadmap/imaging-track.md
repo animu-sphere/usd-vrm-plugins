@@ -251,7 +251,8 @@ package, which only the tag's run can close
   legacy `UsdImagingDelegate` never calls an API-schema adapter; the runtime's
   usdImaging SDK; and `USDIMAGING_ENABLE_PLUGINS=0` dropping the plugin
   without a word (policy §27).
-- ⬜ **Numbered diagnostics** (policy §18). Proposed, and the user's call:
+- ✅ **Numbered diagnostics** (policy §18). Proposed, and taken by the user
+  on 2026-09-27:
   §18's candidates go into the existing `VRMxxx` catalog
   ([DIAGNOSTICS.md](../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md)),
   not a new `VRMI` series, and only where something can observe them at run
@@ -263,6 +264,15 @@ package, which only the tag's run can close
   candidates are not diagnostics: a missing contribution and a missed
   invalidation are what the suites above assert, and a role the schema does
   not allow is `VRM224`, which `vrmSchema`'s validation already owns.
+  **Landed 2026-09-27.** `validate_vrm.py --check-imaging` finds the
+  adapters the way UsdImaging's registry does, from each plugin's declared
+  `UsdImagingAPISchemaAdapter` types and their `apiSchemaName`, honouring
+  `USDIMAGING_ENABLE_PLUGINS`. It reads the stage's schemas as authored, so a
+  session without `vrmSchema` is caught too. One `VRM300` per stage names each
+  schema left out and why. The rule is held by `usdvrm_validate`
+  (`check_imaging_rules`). `workspace_validate_imaging` holds it against real
+  sessions: with `vrmImaging` (quiet), without it, with the switch off, and
+  without `vrmSchema` over the avatar flattened to `.usda`.
 - ⬜ **A published `lookdev` package of `vrmImaging`**, so that a Formation
   (`hydra-toon`'s VRM session, Step I3) pins it from a registry rather than
   from one workstation. The release lane builds and publishes it

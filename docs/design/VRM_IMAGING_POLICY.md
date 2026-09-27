@@ -846,6 +846,17 @@ numbering policy before freezing them.
 
 Do not duplicate schema validation already owned by `vrmSchema`.
 
+**Settled 2026-09-27 (Step I5).** One code joined the existing catalog, not a
+`VRMI` series: `VRM300` (WARNING, `validate`, opt-in through
+`validate_vrm.py --check-imaging`). A stage's materials apply the canonical
+schemas, and the session would not hand them to Hydra, because no adapter is
+registered for a schema, the schema itself is not registered, or
+`USDIMAGING_ENABLE_PLUGINS` is off. That covers `VRMI001`. `VRMI002`,
+`VRMI003` and `VRMI005` are what the suites assert, not anything a validator
+can observe on a stage. `VRMI004` is `VRM224`, owned by the schema's
+validation. The check is opt-in because a headless deployment may leave
+`vrmImaging` out on purpose (§19).
+
 ---
 
 ## 19. CMake / packaging

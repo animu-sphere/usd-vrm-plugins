@@ -310,6 +310,11 @@
       "severity": "ERROR",
       "source": "validate",
       "title": "Schema contract version is unsupported"
+    },
+    "VRM300": {
+      "severity": "WARNING",
+      "source": "validate",
+      "title": "Canonical material semantics cannot reach Hydra in this session"
     }
   },
   "corpusExpectations": {

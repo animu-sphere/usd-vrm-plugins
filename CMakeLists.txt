@@ -414,6 +414,36 @@ else()
         "is not in this build tree; skipping workspace_unicode_paths")
 endif()
 
+# VRM300 against real sessions (imaging track Step I5, numbered diagnostics):
+# `validate_vrm.py --check-imaging` with vrmImaging registered, without it,
+# with USDIMAGING_ENABLE_PLUGINS off, and without vrmSchema. The rule is the
+# importer suite's; what needs the composed build is the validator's discovery
+# seeing the imaging bundle's plugInfo.json, so the importer, the schema and
+# the imaging bundle are all registered here and each case takes out one.
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
+   AND TARGET UsdVrmFileFormat AND TARGET VrmImaging)
+    set(_vi_usd_root "")
+    if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
+        set(_vi_usd_root "${pxr_DIR}")
+    elseif(pxr_DIR)
+        get_filename_component(_vi_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
+    endif()
+    set(_vi_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
+    add_test(NAME workspace_validate_imaging
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/imaging/test_validate_imaging.py"
+            --validator "${_vi_plugins}/usdVrmFileFormat/tools/validate_vrm.py"
+            --vrm "${_vi_plugins}/usdVrmFileFormat/tests/fixtures/mtoon_vrm1.vrm")
+    set_tests_properties(workspace_validate_imaging PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${_vi_usd_root}/bin;PATH=path_list_prepend:${_vi_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_vi_plugins}/vrmSchema/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_vi_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_vi_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_vi_plugins}/vrmSchema/plugin/resources/vrmSchema;PXR_PLUGINPATH_NAME=path_list_prepend:${_vi_plugins}/vrmImaging/plugin/resources/vrmImaging"
+        LABELS "material.imaging")
+else()
+    message(STATUS
+        "usd-vrm-plugins: usdVrmFileFormat or vrmImaging is not in this build "
+        "tree; skipping workspace_validate_imaging")
+endif()
+
 # The OpenExec plan's P0-2 labels, read back from CTest itself. `ost test`
 # reports one flat total, so a member whose suite silently stopped registering
 # reads as passing (usdVrmaFileFormat did, for months); this fails instead,

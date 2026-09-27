@@ -49,7 +49,7 @@ Each item's detail and its done-when are in the
 | 5 | **I5 — a `.vrm` integration fixture.** The committed MToon fixtures imported by `usdVrmFileFormat` and read through `vrmImaging`, compared with the source semantics (policy §17.3). | this repository | ⬜ |
 | 6 | **I5 — the suites against the packaged plugin.** The scene-index suites run against the plugin `ost plugin package` produced, in the release lane, where packaging runs. | this repository | ⬜ |
 | 7 | **I5 — an OpenUSD compatibility statement** in [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md): the scene-index path only, the runtime's usdImaging SDK, the version measured. | this repository | ⬜ |
-| 8 | **I5 — numbered diagnostics** (policy §18), under the existing `VRMxxx` catalog; the proposal is in the track, and it is the user's call. | this repository | ⬜ |
+| 8 | **I5 — numbered diagnostics** (policy §18), under the existing `VRMxxx` catalog; the proposal is in the track, and it is the user's call. | this repository | ✅ `VRM300`, `workspace_validate_imaging` |
 
 ### Cutting the release
 
