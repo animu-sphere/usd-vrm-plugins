@@ -72,8 +72,8 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from artifact_smoke import (  # noqa: E402
-    REPO_ROOT, Failures, apply_product_activation, fail_setup, ost_json,
-    package_product, run, workspace_target)
+    REPO_ROOT, Failures, fail_setup, inside, norm, package_product,
+    product_environment, run, suffix, workspace_target)
 
 # The parity driver's cases, all five, in the order the root suite lists them.
 CASES = ("recorded_fixture", "recorded_root_motion", "generated_thirty_fps",
@@ -101,20 +101,6 @@ DESIGN_MAP = "tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.jso
 # here is that the bundle it embeds answers the parity cases, below.
 
 
-def suffix() -> str:
-    return ".exe" if os.name == "nt" else ""
-
-
-def norm(path: str | pathlib.Path) -> str:
-    """A path in the one spelling two paths are compared in."""
-    return os.path.normcase(os.path.realpath(str(path)))
-
-
-def inside(path: str | pathlib.Path, root: str | pathlib.Path) -> bool:
-    path, root = norm(path), norm(root)
-    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
-
-
 def find_build_dir(given: str | None) -> pathlib.Path:
     """The root build tree that holds the harness.
 
@@ -139,50 +125,6 @@ def find_build_dir(given: str | None) -> pathlib.Path:
 
 def harness_path(build: pathlib.Path) -> pathlib.Path:
     return build / "tests" / "parity" / f"exec_parity{suffix()}"
-
-
-def product_environment(ost: str, platform: str, profile: str,
-                        prefix: pathlib.Path) -> tuple[dict, list[str]]:
-    """The environment the product is run in, and the runtime's roots.
-
-    Built from the caller's, because the host's own loader paths (the C
-    runtime on Windows) are needed -- but nothing that could reach a build
-    tree survives: inherited plugin paths are dropped outright, and every
-    loader-path entry inside this repository is removed before the runtime's
-    and the product's are prepended.
-    """
-    env = dict(os.environ)
-    env.pop("USDVRM_MOTION_PROFILE_PATH", None)
-    env.pop("PXR_PLUGINPATH_NAME", None)
-    for name in ("PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "PYTHONPATH"):
-        if name in env:
-            env[name] = os.pathsep.join(
-                entry for entry in env[name].split(os.pathsep)
-                if entry and not inside(entry, REPO_ROOT))
-
-    runtime_roots = []
-    result = ost_json([ost, "env", platform, "--profile", profile, "--json"])
-    for entry in result["data"]["env"]:
-        name, value = entry["name"], entry["value"]
-        if name == "CMAKE_PREFIX_PATH":
-            runtime_roots.append(value)
-        existing = env.get(name)
-        env[name] = f"{value}{os.pathsep}{existing}" if existing else value
-    if not runtime_roots:
-        fail_setup("`ost env` reported no CMAKE_PREFIX_PATH, so the runtime's "
-                   "root is unknown and a module from it cannot be told from "
-                   "one out of a build tree")
-    apply_product_activation(env, prefix)
-
-    # The claim the rest of the run rests on, checked rather than assumed.
-    for name in ("PXR_PLUGINPATH_NAME", "PATH", "LD_LIBRARY_PATH",
-                 "DYLD_LIBRARY_PATH"):
-        for entry in env.get(name, "").split(os.pathsep):
-            if entry and inside(entry, REPO_ROOT) and not any(
-                    inside(entry, root) for root in runtime_roots):
-                fail_setup(f"{name} still reaches into the repository: "
-                           f"{entry}")
-    return env, runtime_roots
 
 
 def product_library_names(prefix: pathlib.Path) -> set[str]:
