@@ -149,6 +149,9 @@ TestUsdImagingConstructsEachAdapter()
                "the adapter is not the declared type");
     }
     assert(ThePlugin()->IsLoaded() && "constructing an adapter loads the library");
+    // Where it was loaded from, for a caller that has to know which copy
+    // answered: the release lane's run against the installed product.
+    std::printf("loaded: %s\n", ThePlugin()->GetPath().c_str());
 }
 
 } // namespace

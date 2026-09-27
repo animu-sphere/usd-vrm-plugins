@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """What every artifact-only smoke shares: package, install, activate, report.
 
-`artifact_only_exec_smoke.py` and `check_product_libraries.py` drive the
-installed product and nothing else, and they need the same few steps to get
-there -- the workspace's target read from `openstrata.toml`, the product
-packaged, the runtime `ost env` reports and the activation the product declares
-applied, and a failure collector whose exit code says whether the smoke or the
-harness failed. This module is those steps and nothing else.
+`artifact_only_exec_smoke.py`, `artifact_only_imaging_smoke.py` and
+`check_product_libraries.py` drive the installed product and nothing else, and
+they need the same few steps to get there -- the workspace's target read from
+`openstrata.toml`, the product packaged, the runtime `ost env` reports and the
+activation the product declares applied, an environment that reaches nothing
+in the repository but the runtime, and a failure collector whose exit code says
+whether the smoke or the harness failed. This module is those steps and
+nothing else.
 
 It was `artifact_only_bvh_smoke.py` until MIG-3. That smoke drove the product's
 `motion_bvh_convert` over its installed profiles, and both left with the BVH
@@ -145,3 +147,61 @@ def apply_product_activation(env: dict, prefix: pathlib.Path) -> None:
         joined = os.pathsep.join(values)
         existing = env.get(name)
         env[name] = f"{joined}{os.pathsep}{existing}" if existing else joined
+
+
+def suffix() -> str:
+    return ".exe" if os.name == "nt" else ""
+
+
+def norm(path: str | pathlib.Path) -> str:
+    """A path in the one spelling two paths are compared in."""
+    return os.path.normcase(os.path.realpath(str(path)))
+
+
+def inside(path: str | pathlib.Path, root: str | pathlib.Path) -> bool:
+    path, root = norm(path), norm(root)
+    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+
+
+def product_environment(ost: str, platform: str, profile: str,
+                        prefix: pathlib.Path) -> tuple[dict, list[str]]:
+    """The environment the product is run in, and the runtime's roots.
+
+    Built from the caller's, because the host's own loader paths (the C
+    runtime on Windows) are needed -- but nothing that could reach a build
+    tree survives: inherited plugin paths are dropped outright, and every
+    loader-path entry inside this repository is removed before the runtime's
+    and the product's are prepended.
+    """
+    env = dict(os.environ)
+    env.pop("USDVRM_MOTION_PROFILE_PATH", None)
+    env.pop("PXR_PLUGINPATH_NAME", None)
+    for name in ("PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "PYTHONPATH"):
+        if name in env:
+            env[name] = os.pathsep.join(
+                entry for entry in env[name].split(os.pathsep)
+                if entry and not inside(entry, REPO_ROOT))
+
+    runtime_roots = []
+    result = ost_json([ost, "env", platform, "--profile", profile, "--json"])
+    for entry in result["data"]["env"]:
+        name, value = entry["name"], entry["value"]
+        if name == "CMAKE_PREFIX_PATH":
+            runtime_roots.append(value)
+        existing = env.get(name)
+        env[name] = f"{value}{os.pathsep}{existing}" if existing else value
+    if not runtime_roots:
+        fail_setup("`ost env` reported no CMAKE_PREFIX_PATH, so the runtime's "
+                   "root is unknown and a module from it cannot be told from "
+                   "one out of a build tree")
+    apply_product_activation(env, prefix)
+
+    # The claim the rest of the run rests on, checked rather than assumed.
+    for name in ("PXR_PLUGINPATH_NAME", "PATH", "LD_LIBRARY_PATH",
+                 "DYLD_LIBRARY_PATH"):
+        for entry in env.get(name, "").split(os.pathsep):
+            if entry and inside(entry, REPO_ROOT) and not any(
+                    inside(entry, root) for root in runtime_roots):
+                fail_setup(f"{name} still reaches into the repository: "
+                           f"{entry}")
+    return env, runtime_roots
