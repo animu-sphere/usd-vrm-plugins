@@ -1,8 +1,19 @@
+---
+status: historical
+owner: usd-vrm-plugins
+---
+
+> **Historical only — archived 2026-09-27.** This was the Hydra imaging track
+> (v0.10.0), and it was once authoritative. Do not use it to determine current
+> architecture, capabilities, ownership or roadmap: start from
+> [docs/README.md](../../README.md). Its step names are unchanged, so older
+> documents can still cite them. See [the archive index](../README.md).
+
 # The Hydra imaging track
 
-**Status:** 🚧 in progress — Steps I0–I5 done for v0.10.0; the published package waits on the tag · **Target:** v0.10.0
-([status table](README.md#status-at-a-glance)) ·
-**Policy:** [imaging policy](../design/VRM_IMAGING_POLICY.md) §20
+**Status:** ✅ shipped in v0.10.0, tagged 2026-09-27
+([status table](../../roadmap/README.md#status-at-a-glance)) ·
+**Policy:** [imaging policy](../../design/VRM_IMAGING_POLICY.md) §20
 
 `vrmImaging`: the canonical material schemas — `VrmMaterialAPI`,
 `VrmMToonAPI`, `VrmTextureInfoAPI:<role>` — exposed to Hydra as data on the
@@ -14,7 +25,7 @@ internal order, not a phase sequence.
 ## 1. Where it stands
 
 - The schemas it reads shipped with Product P5 Steps 3–4
-  ([material track](material-track.md)): every imported material carries
+  ([material track](../../roadmap/material-track.md)): every imported material carries
   them, VRM 0.x and 1.0 alike, as Material interface inputs `inputs:vrm:*`.
 - All three canonical schemas reach Hydra (Steps I0–I2). Every field is
   under `vrm/material/<field>`, `vrm/mtoon/<field>` or
@@ -234,19 +245,19 @@ creates no pipeline. At 15 the half-red emission is on screen (red over green
 0.99 → 1.62); without `vrmImaging` the material is PreviewSurface and no move
 writes it. The step's done-when is met.
 
-### Step I5 — hardening ⬜
+### Step I5 — hardening ✅
 
 Everything below lands before v0.10.0 is tagged, except the published
 package, which only the tag's run can close
-([current.md](current.md#next-v0100--canonical-materials-reach-hydra-)).
+([current.md](../../roadmap/current.md#next-v0100--canonical-materials-reach-hydra-)).
 
 - ✅ An `ost` plugin kind for a UsdImaging adapter: asked in
-  [ost report 49](../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md),
+  [ost report 49](../../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md),
   delivered in `ost` 0.23.9 as `usd-imaging`.
 - ✅ A `usd`-profile runtime that can select that kind: asked in
-  [ost report 50](../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md) (P1),
+  [ost report 50](../../reports/ost/50-2026-09-26-v0.23.9-the-imaging-kind-arrives-and-the-usd-profile-cannot-select-it.md) (P1),
   delivered in `ost` 0.23.10 and adopted in
-  [report 51](../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md): a descriptor,
+  [report 51](../../reports/ost/51-2026-09-26-v0.23.10-vrmimaging-joins-the-product.md): a descriptor,
   `release_members`, the product (policy §19), and `usdvrm_baseline`'s
   session and frozen types.
 - ✅ **Plugin discovery in CI** (policy §16, §17.1). `ost`'s L2 constructs
@@ -303,7 +314,7 @@ package, which only the tag's run can close
   the product's registration moved aside, discovery has to fail. The
   `lookdev` package is not covered; `ost plugin test` L0–L5 verifies it.
 - ✅ **An OpenUSD compatibility statement** in
-  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md#hydra-imaging-vrmimaging):
+  [SUPPORTED_CONFIGURATIONS.md](../../reference/SUPPORTED_CONFIGURATIONS.md#hydra-imaging-vrmimaging):
   OpenUSD 26.08, the only version measured (a second cell is Product P1's,
   blocked on a published runtime); the scene-index path only, since the
   legacy `UsdImagingDelegate` never calls an API-schema adapter; the runtime's
@@ -317,7 +328,7 @@ package, which only the tag's run can close
 - ✅ **Numbered diagnostics** (policy §18). Proposed, and taken by the user
   on 2026-09-27:
   §18's candidates go into the existing `VRMxxx` catalog
-  ([DIAGNOSTICS.md](../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md)),
+  ([DIAGNOSTICS.md](../../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md)),
   not a new `VRMI` series, and only where something can observe them at run
   time. That is one new code, `VRM300` (WARNING, `validate`): a stage whose
   materials apply `Vrm*API` is validated in a session that has `vrmSchema`
@@ -336,12 +347,15 @@ package, which only the tag's run can close
   (`check_imaging_rules`). `workspace_validate_imaging` holds it against real
   sessions: with `vrmImaging` (quiet), without it, with the switch off, and
   without `vrmSchema` over the avatar flattened to `.usda`.
-- ⬜ **A published `lookdev` package of `vrmImaging`**, so that a Formation
+- ✅ **A published `lookdev` package of `vrmImaging`**, so that a Formation
   (`hydra-toon`'s VRM session, Step I3) pins it from a registry rather than
   from one workstation. The release lane builds and publishes it
-  (`lane: lookdev`, 2026-09-27) and has passed a dry run; no tag has run it.
-  Closed when the v0.10.0 package is public on
-  `ghcr.io/animu-sphere/usd-vrm-plugins` and pulls anonymously.
+  (`lane: lookdev`, 2026-09-27). **Closed 2026-09-27:** the `v0.10.0` run
+  pushed both packages, the package is public on
+  `ghcr.io/animu-sphere/usd-vrm-plugins`, and each pulls with an anonymous
+  token, its archive equal to the `artifact` digest in the release's
+  `lookdev-package-pins.json`. Re-pinning `hydra-toon`'s Formation to those
+  digests is `hydra-toon`'s.
 
 ## 3. Non-goals
 

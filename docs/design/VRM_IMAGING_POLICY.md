@@ -23,8 +23,8 @@ owner: usd-vrm-plugins
 >
 > **This introduces no new phase sequence.** The steps in §20, I0–I5, are the
 > internal order of one track, not a sequence beside Product P0–P6 and
-> Workspace Phase 0–8 ([roadmap](../roadmap/README.md#sequences)). The open
-> steps are the [imaging track](../roadmap/imaging-track.md).
+> Workspace Phase 0–8 ([roadmap](../roadmap/README.md#sequences)). The
+> steps were the [imaging track](../archive/imaging/imaging-track.md), shipped in v0.10.0.
 >
 > **Steps I0–I2 implemented 2026-09-26** (`plugins/vrmImaging`). What
 > Step I0 measured on OpenUSD 26.08 is §27. What Step I1 froze is §28: the
