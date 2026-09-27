@@ -169,7 +169,7 @@ namespaced field. It still names no field except `alphaMode`, and no role.
 **Done when** `VrmMToonAPI` → `vrmImaging` → `ToonMaterial::MToon` works in
 `hydra-toon`.
 
-### Step I4 — animated material semantics ⬜
+### Step I4 — animated material semantics ✅
 
 Unblocked: Product P5 Step 7 landed expression binds on the canonical slots
 (2026-09-27), so an expression bake is time samples on the Material's
@@ -184,8 +184,8 @@ Unblocked: Product P5 Step 7 landed expression binds on the canonical slots
   is bound to. That is policy §28.3's condition met: the values arrive as
   time samples, not as per-frame authored edits, so the whole-material
   dirtying stays lived with.
-- ⬜ **A live `hydra-toon` slot** (`hydra-toon`'s part, recorded as a renderer
-  report): the bake of `expressions_mtoon.vrm` — the same bind on an MToon
+- ✅ **A live `hydra-toon` slot** (`hydra-toon`'s part, recorded as
+  [renderer report 11](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/11-2026-09-27-expression-bake.md)): the bake of `expressions_mtoon.vrm` — the same bind on an MToon
   material — played in its host session changes the MToon parameter slot,
   and the frame rebuilds no geometry, draw packet or pipeline.
   `expressions.vrm`'s `Face_Mat` is a glTF material, which `hydra-toon`
@@ -223,6 +223,15 @@ target, so the bake moves a material slot and the skeleton and nothing of the
 mesh. The samples and the dirtied set are the same, except that `/mtlx` reads
 the slot as the `in2` of MToon's `withEmission` add instead of a surface's
 `emissive`.
+
+**`hydra-toon`'s half, 2026-09-27** ([renderer report 11](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/11-2026-09-27-expression-bake.md)).
+The bake of `expressions_mtoon.vrm`, flattened and played in `testusdview`
+through a Formation of the `lookdev` runtime, `vrmImaging` and `toon`,
+rewrites `Face_Mat`'s parameter slot once per time move, writes the joint
+buffer for the skeleton, and uploads no points, topology, skin or texture and
+creates no pipeline. At 15 the half-red emission is on screen (red over green
+0.99 → 1.62); without `vrmImaging` the material is PreviewSurface and no move
+writes it. The step's done-when is met.
 
 ### Step I5 — hardening ⬜
 
