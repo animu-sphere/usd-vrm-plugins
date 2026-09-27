@@ -13,8 +13,8 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️
 
 **Tagged and published on 2026-09-27** ([release record](../releases/v0.10.0.md)).
 This section stays only as the milestone `check_docs.py` reads, and until the
-next release takes a number. The one step left, `hydra-toon`'s re-pin, is its
-repository's; what the release carried out is under
+next release takes a number. Every step is done, `hydra-toon`'s re-pin
+included; what the release carried out is under
 [Carried over from shipped releases](#carried-over-from-shipped-releases).
 
 **Release boundary:** the canonical material semantics this repository
@@ -79,11 +79,13 @@ In this order; each step is its own pull request unless it says otherwise.
      verified `--from-package`.
 4. ✅ **Tag `v0.10.0` and publish the draft** — tagged on `e6bce65`, the
    tag's run green, published 2026-09-27 with 59 assets.
-5. 🚧 **After the tag:** ✅ the GHCR package
+5. ✅ **After the tag:** ✅ the GHCR package
    `ghcr.io/animu-sphere/usd-vrm-plugins` is public, and both `vrmImaging`
    `lookdev` packages pull with an anonymous token, each archive equal to the
-   release's `lookdev-package-pins.json`; that closed Step I5. ⬜ `hydra-toon`
-   re-pins its VRM Formation to those digests, in its own repository.
+   release's `lookdev-package-pins.json`; that closed Step I5. ✅ `hydra-toon`
+   re-pinned its VRM Formations to the Windows digests, and each run gave its
+   earlier report's numbers
+   ([hydra-toon renderer report 12](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/12-2026-09-28-published-vrmimaging.md)).
 
 ## Release closure and checkable invariants
 
