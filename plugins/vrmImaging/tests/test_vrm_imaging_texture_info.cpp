@@ -19,7 +19,8 @@
 //     exposed;
 //   * invalidation: an authored edit dirties exactly its role's field -- and,
 //     from UsdImaging, the whole `material` (§27 item 6) -- including a
-//     nested field and a `file` appearing and disappearing;
+//     nested field, a `file` appearing and disappearing, and the `matcap`
+//     image replaced, §17.4's texture case;
 //   * time: a time-sampled UV rotation dirties its one locator, and never
 //     the whole `material` (§28.3).
 
@@ -298,6 +299,20 @@ TestAnEditDirtiesItsOwnLocator(Session& session)
         assert(ValueAt(session, "/mtl/Textured",
                        FieldLocator(edit.role, edit.field)) == edit.value);
     }
+
+    // §17.4's texture case: the matcap image replaced, from one that does not
+    // resolve to one that does. Its one locator, no other role's, and the new
+    // path is read resolved -- still with no image loaded.
+    session.recorder.Clear();
+    assert(Attribute(session, "/mtl/Textured",
+                     "inputs:vrm:textureInfo:matcap:file")
+               .Set(SdfAssetPath("./textures/base.png")));
+    session.sceneIndex->ApplyPendingUpdates();
+    ExpectEditDirties(session, "matcap", "file");
+    const SdfAssetPath matcap = AssetAt(session, "/mtl/Textured", "matcap");
+    assert(matcap.GetAssetPath() == "./textures/base.png");
+    assert(TfStringEndsWith(matcap.GetResolvedPath(), "base.png") &&
+           "the replaced matcap image did not resolve");
 
     // A file appearing on a role that had none: its one locator, and the name
     // is listed from then on.
