@@ -98,6 +98,17 @@ Resolving expressions produces values and authors nothing: writing
 does it — it reads the binds off the avatar, hands them here, and authors what
 comes back onto the animation it already binds to the rig.
 
+Live angular observations use `LookAtEvaluator::EvaluateDirection` with a
+finite unit vector in the world basis and an explicit head orientation and
+timestamp. The owner measures it in head space and applies the same range maps
+and bone/expression output rules. Head position, avatar/clip eye offsets and
+the point-only minimum distance do not affect a direction; no target distance
+is invented. Invalid vectors (squared-norm error greater than `1e-6`, zero or
+non-finite components) return no gaze with a diagnostic. Joint-local/world
+conversion remains the caller's job. The additive entry point advertises
+`VRMRIG_LOOKAT_DIRECTION_API`; existing point/pose overloads and value layouts
+are unchanged. Consumers need an owner package rebuilt with this API.
+
 ## Building
 
 It builds as part of the workspace root `CMakeLists.txt`. Standalone:

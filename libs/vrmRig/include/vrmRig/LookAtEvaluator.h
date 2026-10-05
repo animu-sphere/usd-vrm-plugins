@@ -8,6 +8,8 @@
 // clip. This is the layer that has the avatar, so this is where a point becomes
 // either a pair of eye rotations or a set of named expression weights, which is
 // exactly the division `ExpressionResolver` is under.
+// Live angular observations use EvaluateDirection instead; they have no
+// positional parallax and never become a clip's lookAtTarget point.
 //
 // Like the rest of vrmRig this takes plain values: the caller reads the
 // avatar's `/Asset/rig/LookAt` prim off the stage -- its `vrm:type`, its eye
@@ -34,6 +36,9 @@
 #include <optional>
 #include <string>
 #include <vector>
+
+// Feature negotiation for consumers of the additive direction entry point.
+#define VRMRIG_LOOKAT_DIRECTION_API 1
 
 namespace vrmRig
 {
@@ -142,7 +147,7 @@ struct LookAtRig
 // the JSON does not mention keeps the value it already had, so an incomplete
 // block leaves the defaults standing rather than zeroing a curve to nothing.
 VRMRIG_API bool ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
-                                          std::vector<std::string>* warnings = nullptr);
+                                     std::vector<std::string>* warnings = nullptr);
 
 // Where the target avatar's head is for one sample, in the same space as the
 // clip's target point. The caller computes it: on a bake that is the
@@ -294,6 +299,16 @@ class VRMRIG_API LookAtEvaluator
     // accumulates across calls, so a whole clip's report is one object.
     ResolvedLookAt Evaluate(const LookAtInput& input,
                             LookAtDiagnostics* diagnostics = nullptr) const;
+
+    // A finite unit vector in the same world basis as head.orientation.
+    // Translation, avatar/clip eye offsets and minimumGazeDistance do not
+    // affect an angular observation. No target distance is inferred. Invalid
+    // vectors resolve to no gaze with a warning; squared-norm tolerance is
+    // 1e-6. Uses the same owner range maps and output rules as point input.
+    // Additive API: existing value layouts and point/pose overloads are intact.
+    ResolvedLookAt EvaluateDirection(const pxr::GfVec3f& direction, const LookAtHead& head,
+                                     double timestamp,
+                                     LookAtDiagnostics* diagnostics = nullptr) const;
 
     // The same, taking the target and the timestamp off a pose -- the call a
     // consumer walking a retargeted clip actually makes, with `head` the head
