@@ -598,6 +598,38 @@ LookAtEvaluator::Evaluate(const LookAtInput& input, LookAtDiagnostics* diagnosti
 }
 
 ResolvedLookAt
+LookAtEvaluator::EvaluateDirection(const pxr::GfVec3f& direction, const LookAtHead& head,
+                                   double timestamp, LookAtDiagnostics* diagnostics) const
+{
+    LookAtInput input;
+    input.timestamp = timestamp;
+    double norm = 0.0;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (!std::isfinite(direction[i]))
+        {
+            RecordWarning(diagnostics, "a look-at direction must be a finite unit vector");
+            return Evaluate(input, diagnostics);
+        }
+        norm += double(direction[i]) * direction[i];
+    }
+    if (std::abs(norm - 1.0) > 1e-6)
+    {
+        RecordWarning(diagnostics, "a look-at direction must be a finite unit vector");
+        return Evaluate(input, diagnostics);
+    }
+    // Express the already angular observation in an origin-free rig so all
+    // measurement/range-map/output logic stays in the existing evaluator.
+    auto rig = _rig;
+    rig.offsetFromHeadBone = pxr::GfVec3f(0.0f);
+    auto options = _options;
+    options.minimumGazeDistance = 0.0f;
+    input.head.orientation = head.orientation;
+    input.target = direction;
+    return LookAtEvaluator(std::move(rig), options).Evaluate(input, diagnostics);
+}
+
+ResolvedLookAt
 LookAtEvaluator::Evaluate(const openstrata::motion::MotionPose& pose, const LookAtHead& head,
                           LookAtDiagnostics* diagnostics) const
 {

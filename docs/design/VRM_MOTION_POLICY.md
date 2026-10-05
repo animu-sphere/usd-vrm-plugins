@@ -232,6 +232,13 @@ its eye joints and its range-map curves, authored by the importer under
 `/Asset/rig/LookAt`. A gaze joins to nothing but a head, so it needs no key.
 Carry what the producer said; resolve where the rig is.
 
+Live direction observations use the additive `LookAtEvaluator::EvaluateDirection`
+entry point, described in [vrmRig](../../libs/vrmRig/README.md). The caller supplies
+a world unit vector, head orientation and timestamp; the owner applies the same
+range maps without eye-offset parallax or an inferred target distance. This
+does not change clip `lookAtTarget` point semantics. Joint-local observations
+must be converted by the caller using the current bound rig before invocation.
+
 ## 7. The bake and `execVrm`
 
 ### 7.1 `motion_retarget`

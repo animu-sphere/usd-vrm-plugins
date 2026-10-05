@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 #include <initializer_list>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1402,6 +1403,67 @@ TestTheColourSlotsAreVrm10sSixOnTheCanonicalInputs()
     assert(vrmRig::FindMaterialColorSlot("") == nullptr);
 }
 
+void
+TestDirectionUsesOrientationWithoutInventingADistance()
+{
+    for (auto type : {vrmRig::LookAtType::Bone, vrmRig::LookAtType::Expression})
+    {
+        vrmRig::LookAtRig rig;
+        rig.type = type;
+        rig.leftEyeJoint = "left";
+        rig.rightEyeJoint = "right";
+        rig.offsetFromHeadBone = pxr::GfVec3f(20, 30, 40);
+        rig.horizontalInner.outputScale = rig.horizontalOuter.outputScale =
+            type == vrmRig::LookAtType::Bone ? 45.0f : 1.0f;
+        rig.verticalUp.outputScale = rig.verticalDown.outputScale = rig.horizontalOuter.outputScale;
+        vrmRig::LookAtEvaluateOptions options;
+        options.clipOffsetFromHeadBone = pxr::GfVec3f(10);
+        options.minimumGazeDistance = 100;
+        const vrmRig::LookAtEvaluator evaluator(rig, options);
+        vrmRig::LookAtHead head;
+        head.position = pxr::GfVec3f(1e30f);
+        head.orientation = pxr::GfQuatf(std::sqrt(0.5f), pxr::GfVec3f(0, std::sqrt(0.5f), 0));
+        for (float sign : {-1.0f, 1.0f})
+        {
+            // In the rotated head's coordinates this is (+/-X, 0, +Z).
+            const pxr::GfVec3f direction(std::sqrt(0.5f), 0, -sign * std::sqrt(0.5f));
+            vrmRig::LookAtDiagnostics diagnostics;
+            const auto result = evaluator.EvaluateDirection(direction, head, 7.25, &diagnostics);
+            assert(result.hasGaze && result.timestamp == 7.25);
+            assert(NearlyEqual(result.yawDegrees, sign * 45));
+            assert(NearlyEqual(result.pitchDegrees, 0));
+            assert(diagnostics.samplesEvaluated == 1 && diagnostics.samplesWithoutTarget == 0);
+            assert(diagnostics.warnings.empty());
+            if (type == vrmRig::LookAtType::Bone)
+                assert(result.eyeRotations.size() == 2 && result.expressions.entries.empty());
+            else
+            {
+                assert(result.eyeRotations.empty() && result.expressions.entries.size() == 4);
+                assert(NearlyEqual(*result.expressions.Find(sign > 0 ? "lookLeft" : "lookRight"),
+                                   0.5f));
+            }
+        }
+        for (const auto& direction : {pxr::GfVec3f(0), pxr::GfVec3f(0, 0, 2),
+                                      pxr::GfVec3f(std::numeric_limits<float>::quiet_NaN(), 0, 1),
+                                      pxr::GfVec3f(std::numeric_limits<float>::infinity(), 0, 1)})
+        {
+            vrmRig::LookAtDiagnostics diagnostics;
+            const auto result = evaluator.EvaluateDirection(direction, head, 8, &diagnostics);
+            assert(!result.hasGaze && result.timestamp == 8);
+            assert(result.eyeRotations.empty() && result.expressions.entries.empty());
+            assert(diagnostics.samplesEvaluated == 1 && diagnostics.samplesWithoutTarget == 1);
+            assert(diagnostics.warnings.size() == 1);
+        }
+        // No eye-offset fallback warning applies to a direction-only sample.
+        rig.offsetFromHeadBone.reset();
+        vrmRig::LookAtDiagnostics diagnostics;
+        assert(vrmRig::LookAtEvaluator(rig)
+                   .EvaluateDirection(pxr::GfVec3f(1, 0, 0), head, 9, &diagnostics)
+                   .hasGaze);
+        assert(diagnostics.warnings.empty());
+    }
+}
+
 } // namespace
 
 int
@@ -1437,6 +1499,7 @@ main()
     TestAnExpressionWeightOutsideTheRangeIsClampedAndNamed();
     TestABoneRigWithHalfItsEyesDrivesTheOneItNamed();
     TestThePoseOverloadCarriesTheSampleThrough();
+    TestDirectionUsesOrientationWithoutInventingADistance();
     TestBothVrmSpellingsParseToOneValue();
     TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding();
     TestTheRequiredBonesAreVrm10sSeventeenHipsFirst();
