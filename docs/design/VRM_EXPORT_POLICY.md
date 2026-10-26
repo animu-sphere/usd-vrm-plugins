@@ -82,7 +82,7 @@ OpenUSD 26.08 runtime, on 2026-09-25, over the vendored VRM 1.0 sample
   wherever `vrmSchema` is installed.
 - `SdfZipFileWriter` stamps each archive entry with the **local-time
   modification time of the file it was added from**, so two exports of the
-  same `.vrm` are not byte-identical (§9).
+  same `.vrm` are not byte-identical unless those times are pinned (§9).
 
 Measured while Step 1 was built (2026-09-26), against the tool itself:
 
@@ -103,6 +103,16 @@ Measured while Step 1 was built (2026-09-26), against the tool itself:
 - vrmContainer's `HashBytes` — the name the importer gives an embedded
   image — uses the offset basis `1469598103934665603`, which is FNV-1a 64's
   published `14695981039346656037` with its last digit missing (§6.2).
+
+Measured while Step 2's determinism was built (2026-10-26):
+
+- An entry's time is MS-DOS time, in **two-second steps**, so two unpinned
+  exports a moment apart can still match byte for byte. A test of pinning
+  has to put a tick between its two exports.
+- On Windows, the runtime OpenUSD's `localtime()` runs in **does not read
+  `TZ`** from the environment: exports under `TZ=PST8PDT`, `TZ=UTC0` and no
+  `TZ` all encoded the host's own zone. Only Linux and macOS can exercise
+  another time zone from a test.
 
 ## 3. Responsibilities
 
@@ -325,12 +335,17 @@ separate process with no VRM plugin on `PXR_PLUGINPATH_NAME`.
   bit-for-bit. A `.usdc` or `.usdz` holds every value numerically: the crate
   writer drops the sign of zero in integer-valued vectors and float arrays
   (§2). Step 1's tests compare accordingly.
-- `.usdz`: **not byte-identical in Step 1.** Each entry carries the
-  modification time of the temporary file it was packaged from, encoded in
-  local time (§2). Pinning those times before packaging makes repeated
-  exports on one host identical; identity across hosts also needs the time
-  zone out of the encoding, which is OpenUSD's to change. Which of the two
-  levels is guaranteed is Step 2's decision (§12 q2).
+- `.usdz`: **byte-identical across hosts and time zones** (q2, decided
+  2026-10-26). Each entry carries the modification time of the temporary
+  file it was packaged from, converted with `localtime()` (§2), so before
+  packaging every staged file is given the modification time that *is*
+  2000-01-01 00:00:00 in the host's local time (`mktime`). Whatever the time
+  zone, the entry then encodes that same date, and a package's bytes depend
+  on its contents alone — with no change to OpenUSD. Step 2's tests assert
+  every entry's date and a second export, at least one two-second ZIP tick
+  later and in another time zone, byte for byte. Across operating systems
+  the same input is also expected to give the same bytes; the end-to-end
+  test prints every package's SHA-256 so the lanes can be compared.
 - Localized names are content hashes and the archive order is OpenUSD's, so
   neither depends on traversal order or on the machine.
 
@@ -369,14 +384,18 @@ are not Product P0–P3. Status is the
 
 ## 12. Open questions
 
-- **q1 — `package_vrm.py`.** The importer's Python tool
+- **q1 — `package_vrm.py`.** *Decided 2026-10-26: it stays, as a
+  development tool of the importer.* The importer's Python tool
   ([`tools/package_vrm.py`](../../plugins/usdVrmFileFormat/tools/package_vrm.py))
-  already writes a `.usda` with a `textures/` directory and a JSON inventory,
-  and `vrm_report.py` imports its asset enumeration. Once Step 1 ships it is a
-  second exporter. Retire it, keep it as a development tool, or make its
-  report Step 2's dependency report?
-- **q2 — `.usdz` byte reproducibility.** Per host (pinned modification
-  times), across hosts (needs OpenUSD), or stage-semantic equality only (§9)?
+  writes a `.usda` with a `textures/` directory and a JSON inventory, and
+  `vrm_report.py` imports its asset enumeration. `vrm_export` is the one
+  shipped exporter; Step 2's dependency report is `vrm_export`'s own, not
+  `package_vrm.py`'s inventory adopted. Whether to retire `package_vrm.py` is
+  a later call, once nothing in the importer's tooling leans on it.
+- **q2 — `.usdz` byte reproducibility.** *Decided 2026-10-26: byte-identical
+  across hosts and time zones*, by pinning the staged files' modification
+  times in local terms (§9). The alternatives were per host only, or
+  stage-semantic equality only.
 - **q3 — who authors Step 3's binding layer.** The same question the backlog
   holds for any avatar + clip composition
   ([VRM motion open questions](../roadmap/backlog.md#vrm-motion-open-questions));

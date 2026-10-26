@@ -16,7 +16,9 @@ this process with the plugins loaded:
 
 Then what each format promises on its own: a `.usda` names no path of this
 machine and is byte-identical when exported twice (policy §7, §9); a
-`.usdz` holds its root layer first, textures after, and no `.vrm`; the
+`.usdz` holds its root layer first, textures after, and no `.vrm`, every
+entry stamped 2000-01-01 00:00, and is byte-identical when exported again
+in another time zone (§9); the
 temporary directory a `.usdz` is assembled in is gone afterwards (§6.3). And
 the refusals of policy §5.3, from the command line, including the two that
 name a missing plugin.
@@ -36,9 +38,17 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 FORMATS = ("usda", "usdc", "usdz")
+
+# A zone neither a developer's host nor a CI runner is likely to be in, with a
+# DST rule.
+OTHER_TIME_ZONE = "PST8PDT"
+
+# Seconds: a ZIP entry's time is MS-DOS time, in two-second steps.
+ZIP_TIME_RESOLUTION = 2.1
 
 # Read in whichever process runs it: this one for a source `.vrm`, a
 # plugin-free child for an export. Printed as JSON.
@@ -228,6 +238,7 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                  work: pathlib.Path, failures: Failures) -> None:
     full = plugin_env(plugins, ("fileformat", "resolver", "schema"))
     bare = plugin_env(plugins, ())
+    packages: list[tuple[pathlib.Path, pathlib.Path]] = []
     for source_path in inputs:
         # Read with the plugins, in a child like every export is, so both
         # sides of each comparison come through the same code.
@@ -245,13 +256,21 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
 
             if fmt == "usdz":
                 with zipfile.ZipFile(output) as package:
-                    names = package.namelist()
+                    infos = package.infolist()
+                names = [i.filename for i in infos]
                 failures.check(names and names[0] == "defaultLayer.usdc",
                                f"{label}: the first entry is {names[:1]}, not the root layer")
                 failures.check(all(n.startswith("textures/") for n in names[1:]),
                                f"{label}: entries outside textures/: {names[1:4]}")
                 failures.check(not any(n.lower().endswith(".vrm") for n in names),
                                f"{label}: the package holds the source .vrm")
+                failures.check(all(i.date_time == (2000, 1, 1, 0, 0, 0) for i in infos),
+                               f"{label}: entries stamped "
+                               f"{sorted({i.date_time for i in infos})[:2]}, not 2000-01-01")
+                # Printed so the lanes' logs can be compared across OS.
+                print(f"sha256 {output.name} "
+                      f"{hashlib.sha256(output.read_bytes()).hexdigest()}")
+                packages.append((source_path, output))
             else:
                 textures = out_dir / "textures"
                 count = len(list(textures.iterdir())) if textures.is_dir() else 0
@@ -280,6 +299,23 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                 failures.check(result.returncode == 0 and again.read_bytes() ==
                                output.read_bytes(),
                                f"{label}: a second export is not byte-identical")
+
+    # Determinism of a package (policy §9, q2): each `.usdz` exported again,
+    # elsewhere, is the same bytes. An entry's time has a two-second
+    # resolution, so the second pass starts two seconds after the first ended
+    # -- otherwise an unpinned time can match by landing in the same tick. It
+    # runs in another time zone too, which the MSVC runtime OpenUSD's
+    # localtime() runs in on Windows does not read from TZ (measured
+    # 2026-10-26); Linux and macOS do.
+    time.sleep(ZIP_TIME_RESOLUTION)
+    for source_path, output in packages:
+        label = f"{source_path.name} -> .usdz"
+        again = work / f"{source_path.stem}-usdz-again" / output.name
+        result = run(tool, [str(source_path), "-o", str(again)],
+                     dict(full, TZ=OTHER_TIME_ZONE))
+        failures.check(result.returncode == 0 and again.read_bytes() == output.read_bytes(),
+                       f"{label}: a second export, in TZ={OTHER_TIME_ZONE}, is not "
+                       f"byte-identical")
 
 
 def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,

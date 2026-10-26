@@ -13,6 +13,18 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Changed
+
+- **`vrm_export` writes the same `.usdz` bytes on every host** ([export
+  track](docs/roadmap/export-track.md) Step 2; export policy §9, q2). OpenUSD's
+  packaging stamps each entry with its file's modification time in local
+  time, so two exports of one `.vrm` differed. Every staged file now gets the
+  time that is 2000-01-01 00:00:00 in local time before packaging, which
+  encodes identically in any time zone. `vrm_export_end_to_end` asserts each
+  entry's date and a re-export two seconds later, in another time zone, byte
+  for byte. Policy q1 is decided too: `package_vrm.py` stays the importer's
+  development tool, and Step 2's dependency report will be `vrm_export`'s own.
+
 ## [0.10.0] — 2026-09-27
 
 > **Canonical materials reach Hydra.** VRM 0.x and 1.0 materials import to one
