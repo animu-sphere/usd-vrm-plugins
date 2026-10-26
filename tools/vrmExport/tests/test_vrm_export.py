@@ -278,8 +278,11 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                 expected = PACKAGE_SHA256.get(source_path.name)
                 if expected:
                     digest = hashlib.sha256(output.read_bytes()).hexdigest()
+                    # Which entry differs, when one does: name, size, CRC-32.
+                    entries = [(i.filename, i.file_size, f"{i.CRC:08x}") for i in infos]
                     failures.check(digest == expected,
-                                   f"{label}: SHA-256 {digest}, expected {expected}")
+                                   f"{label}: SHA-256 {digest}, expected {expected}; "
+                                   f"entries {entries}")
                 packages.append((source_path, output))
             else:
                 textures = out_dir / "textures"
