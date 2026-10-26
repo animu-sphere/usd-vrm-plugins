@@ -103,6 +103,11 @@ second one exists (policy §4).
   Registered only in the composed root build, which has the three bundles.
 - `workspace_unicode_paths` (root) — both formats from a directory no ANSI
   code page can spell.
+- `scripts/artifact_only_export_smoke.py` (release lane) — the *installed
+  product's* `vrm_export` exports `Seed-san.vrm` and a VRM 0.x fixture to
+  `.usdz`. Each package is read back with no VRM plugin registered, and the
+  export must refuse once the product's importer registration is moved
+  aside.
 
 ```sh
 ost build

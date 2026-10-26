@@ -71,8 +71,10 @@ rather than embedded. Step 2 covers it.
   `package_vrm.py` as the importer's development tool rather than adopting
   its inventory.
 - ⬜ Richer diagnostics.
-- ⬜ The product's `vrm_export` exporting a `.vrm` from the release artifact,
-  in the artifact-only smoke.
+- 🚧 The product's `vrm_export` exporting a `.vrm` from the release artifact,
+  in the artifact-only smoke: `scripts/artifact_only_export_smoke.py`, a step
+  of `release.yml`'s workspace lanes. It passed locally against the installed
+  v0.10.0 product; it is ✅ once a release dry run is green with it.
 
 ### Step 3 — motion assembly ⬜
 

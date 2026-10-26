@@ -15,6 +15,16 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The product's `vrm_export` is run from the release artifact** ([export
+  track](docs/roadmap/export-track.md) Step 2). A new release lane step,
+  `scripts/artifact_only_export_smoke.py`, installs the product outside the
+  repository and exports `Seed-san.vrm` and `mtoon_vrm0.vrm` to `.usdz` with
+  the product's own tool and bundles. Each package is read back in a process
+  with no VRM plugin registered, where every texture has to resolve inside
+  the package. Then the product's `usdVrmFileFormat` registration is moved
+  aside, and the export has to refuse with exit 3. Until now only the build
+  tree's `vrm_export` was tested.
+
 - **`vrm_export --flatten`** ([export track](docs/roadmap/export-track.md)
   Step 2; export policy §6.1). Writes the composed stage flattened into one
   layer, as an explicit opt-in, and with no source-file comment: the one
