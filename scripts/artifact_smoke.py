@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """What every artifact-only smoke shares: package, install, activate, report.
 
-`artifact_only_exec_smoke.py`, `artifact_only_imaging_smoke.py` and
-`check_product_libraries.py` drive the installed product and nothing else, and
+`artifact_only_exec_smoke.py`, `artifact_only_imaging_smoke.py`,
+`artifact_only_export_smoke.py` and `check_product_libraries.py` drive the installed product and nothing else, and
 they need the same few steps to get there -- the workspace's target read from
 `openstrata.toml`, the product packaged, the runtime `ost env` reports and the
 activation the product declares applied, an environment that reaches nothing

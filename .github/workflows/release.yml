@@ -475,6 +475,22 @@ jobs:
             echo "::error title=release packaging::workspace product archive is missing" ; exit 1
           fi
           python scripts/artifact_only_imaging_smoke.py --product "$(dirname "$product")"
+      # Export track Step 2: the product's `vrm_export`, installed outside the
+      # repository, exports a real `.vrm` to `.usdz` with the product's bundles,
+      # and the package is read back in a process with no VRM plugin. The smoke
+      # requires a refusal with the product's importer registration moved
+      # aside. `vrm_export_end_to_end` runs the build tree's executable only.
+      - name: Export a .vrm with the product's vrm_export alone
+        if: ${{ matrix.lane == 'workspace' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$(jq -r '.data.product.archive // empty' .ost-ci/package.json)"
+          if command -v cygpath > /dev/null; then product="$(cygpath -u "$product")"; fi
+          if [ -z "$product" ] || [ ! -f "$product" ]; then
+            echo "::error title=release packaging::workspace product archive is missing" ; exit 1
+          fi
+          python scripts/artifact_only_export_smoke.py --product "$(dirname "$product")"
       - name: Verify the packaged VRMA reader independently
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
