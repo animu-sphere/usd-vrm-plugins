@@ -28,6 +28,15 @@ Current schema contract version: **1**.
   layer, from the importer's computed values. Policy q1 is decided too: `package_vrm.py` stays the importer's
   development tool, and Step 2's dependency report will be `vrm_export`'s own.
 
+- **`vrm_export` is tested on a `.vrm` with external images** ([export
+  track](docs/roadmap/export-track.md) Step 2; export policy §6.2). Every
+  committed fixture embeds its images, so the half of localization that reads
+  a file beside the `.vrm` had no test. `vrm_export_end_to_end` now writes a
+  `.vrm` with one embedded and two external images at run time, one of them
+  the embedded image's bytes. It holds that input to every check the fixtures
+  get, expects two localized files for three images, and expects exit 4 naming
+  the file once an external image is gone.
+
 ## [0.10.0] — 2026-09-27
 
 > **Canonical materials reach Hydra.** VRM 0.x and 1.0 materials import to one

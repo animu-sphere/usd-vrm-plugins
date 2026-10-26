@@ -53,8 +53,7 @@ every CI lane, and the result opens in a plugin-free OpenUSD session with its
 textures resolved. `vrm_export_end_to_end` is that claim, over every fixture.
 
 Not covered by Step 1's tests: a `.vrm` whose image is an **external** file
-rather than embedded. The localization path is the same `Ar` read, but no
-fixture states one.
+rather than embedded. Step 2 covers it.
 
 ### Step 2 — validation and usability ⬜
 
@@ -62,8 +61,10 @@ fixture states one.
   zones of one CPU architecture), the staged files' times pinned, a
   re-export asserted equal byte for byte, and two fixtures' packages held to
   a committed digest per architecture (policy §9).
-- ⬜ A fixture with an external (non-embedded) image, so the other half of
-  localization is tested.
+- ✅ A `.vrm` with external (non-embedded) images, so the other half of
+  localization is tested: written by `vrm_export_end_to_end` at run time, held
+  to everything the committed fixtures are, and refused with exit 4 once an
+  image is taken away.
 - ⬜ `--flatten`, as an explicit opt-in (policy §6.1).
 - ⬜ A package dependency report, `vrm_export`'s own: policy q1 keeps
   `package_vrm.py` as the importer's development tool rather than adopting
