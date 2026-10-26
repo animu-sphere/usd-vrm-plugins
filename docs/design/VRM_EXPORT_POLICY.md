@@ -113,6 +113,13 @@ Measured while Step 2's determinism was built (2026-10-26):
   `TZ`** from the environment: exports under `TZ=PST8PDT`, `TZ=UTC0` and no
   `TZ` all encoded the host's own zone. Only Linux and macOS can exercise
   another time zone from a test.
+- Across lanes, the same two fixtures packaged to the **same bytes on
+  Windows and Linux x86-64**, and to other bytes on **macOS arm64**. There,
+  the texture entry was identical (size and CRC-32) and only
+  `defaultLayer.usdc` differed (5180 bytes against 5187 for `minimal.vrm`).
+  The difference is in the values the importer computed, then, not in the
+  packaging. Floating-point contraction on arm64 is the likely cause and was
+  not isolated.
 
 ## 3. Responsibilities
 
@@ -335,17 +342,19 @@ separate process with no VRM plugin on `PXR_PLUGINPATH_NAME`.
   bit-for-bit. A `.usdc` or `.usdz` holds every value numerically: the crate
   writer drops the sign of zero in integer-valued vectors and float arrays
   (§2). Step 1's tests compare accordingly.
-- `.usdz`: **byte-identical across hosts and time zones** (q2, decided
-  2026-10-26). Each entry carries the modification time of the temporary
+- `.usdz`: **byte-identical across hosts and time zones of one CPU
+  architecture** (q2, decided 2026-10-26). Each entry carries the modification time of the temporary
   file it was packaged from, converted with `localtime()` (§2), so before
   packaging every staged file is given the modification time that *is*
   2000-01-01 00:00:00 in the host's local time (`mktime`). Whatever the time
   zone, the entry then encodes that same date, and a package's bytes depend
   on its contents alone — with no change to OpenUSD. Step 2's tests assert
   every entry's date and a second export, at least one two-second ZIP tick
-  later and in another time zone, byte for byte. Across operating systems
-  the same input gives the same bytes too: the packages of two fixtures are
-  held to a committed SHA-256 on every lane.
+  later and in another time zone, byte for byte, and hold the packages of
+  two fixtures to a committed SHA-256 per architecture on every lane. Across
+  architectures the packaging adds nothing host-dependent — every texture
+  entry and the archive's layout are the same — but the root layer is the
+  importer's computed values, and those differ between x86-64 and arm64 (§2).
 - Localized names are content hashes and the archive order is OpenUSD's, so
   neither depends on traversal order or on the machine.
 
@@ -394,8 +403,9 @@ are not Product P0–P3. Status is the
   a later call, once nothing in the importer's tooling leans on it.
 - **q2 — `.usdz` byte reproducibility.** *Decided 2026-10-26: byte-identical
   across hosts and time zones*, by pinning the staged files' modification
-  times in local terms (§9). The alternatives were per host only, or
-  stage-semantic equality only.
+  times in local terms (§9). Measured afterwards: that holds within one CPU
+  architecture, because x86-64 and arm64 import different values (§2). The
+  alternatives were per host only, or stage-semantic equality only.
 - **q3 — who authors Step 3's binding layer.** The same question the backlog
   holds for any avatar + clip composition
   ([VRM motion open questions](../roadmap/backlog.md#vrm-motion-open-questions));

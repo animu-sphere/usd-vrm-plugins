@@ -35,6 +35,7 @@ import hashlib
 import json
 import os
 import pathlib
+import platform
 import subprocess
 import sys
 import tempfile
@@ -47,13 +48,23 @@ FORMATS = ("usda", "usdc", "usdz")
 # DST rule.
 OTHER_TIME_ZONE = "PST8PDT"
 
-# A `.usdz` export's SHA-256, the same on every lane (policy §9): measured on
-# Windows, 2026-10-26. A digest changes whenever what the importer authors for
-# that fixture does; a failure prints the new one.
+# A `.usdz` export's SHA-256 per CPU architecture (policy §9), measured
+# 2026-10-26: Windows and Linux x86-64 agree; macOS arm64 writes the same
+# texture entries and a different `defaultLayer.usdc` -- the values the
+# importer computed, not the packaging. A digest changes whenever what the
+# importer authors for that fixture does; a failure prints the new one.
 PACKAGE_SHA256 = {
-    "minimal.vrm": "64ae23a997d4bc0b87e1e1f2ce97f6e2c9a1064240d79f2eb037e0f9cb786126",
-    "textures.vrm": "3e355e9b1dfd1e2a0d10dc84be5b3a6f8395e5e536c6ec80164d3f4754bacfac",
+    "x86_64": {
+        "minimal.vrm": "64ae23a997d4bc0b87e1e1f2ce97f6e2c9a1064240d79f2eb037e0f9cb786126",
+        "textures.vrm": "3e355e9b1dfd1e2a0d10dc84be5b3a6f8395e5e536c6ec80164d3f4754bacfac",
+    },
+    "arm64": {
+        "minimal.vrm": "47d1b3a414789ac7b57c1721b6a53b416f5d395d19002d8fecdd73f15df1ecd2",
+        "textures.vrm": "89d41350bf1de5049bceca34713d1ec94b461fee7f74d549ef8f40d2b48f2ae9",
+    },
 }
+ARCHITECTURE = {"amd64": "x86_64", "x86_64": "x86_64",
+                "arm64": "arm64", "aarch64": "arm64"}.get(platform.machine().lower(), "")
 
 # Seconds: a ZIP entry's time is MS-DOS time, in two-second steps.
 ZIP_TIME_RESOLUTION = 2.1
@@ -275,7 +286,7 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                 failures.check(all(i.date_time == (2000, 1, 1, 0, 0, 0) for i in infos),
                                f"{label}: entries stamped "
                                f"{sorted({i.date_time for i in infos})[:2]}, not 2000-01-01")
-                expected = PACKAGE_SHA256.get(source_path.name)
+                expected = PACKAGE_SHA256.get(ARCHITECTURE, {}).get(source_path.name)
                 if expected:
                     digest = hashlib.sha256(output.read_bytes()).hexdigest()
                     # Which entry differs, when one does: name, size, CRC-32.

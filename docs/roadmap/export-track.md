@@ -20,7 +20,7 @@ left to build. The steps are this track's internal order, not Product P0–P3.
   already writes a loose `.usda` + `textures/`. It is the predecessor, and
   stays as the importer's development tool (policy q1, decided 2026-10-26).
 - **Step 2 is under way:** `.usdz` exports are byte-identical across hosts
-  and time zones (2026-10-26).
+  and time zones of one CPU architecture (2026-10-26).
 
 ## 2. Steps
 
@@ -59,8 +59,9 @@ fixture states one.
 ### Step 2 — validation and usability ⬜
 
 - ✅ Determinism: policy q2 decided (byte-identical across hosts and time
-  zones), the staged files' times pinned, and a re-export asserted equal
-  byte for byte (policy §9).
+  zones of one CPU architecture), the staged files' times pinned, a
+  re-export asserted equal byte for byte, and two fixtures' packages held to
+  a committed digest per architecture (policy §9).
 - ⬜ A fixture with an external (non-embedded) image, so the other half of
   localization is tested.
 - ⬜ `--flatten`, as an explicit opt-in (policy §6.1).
