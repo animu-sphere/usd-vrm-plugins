@@ -22,7 +22,8 @@ Current schema contract version: **1**.
   time that is 2000-01-01 00:00:00 in local time before packaging, which
   encodes identically in any time zone. `vrm_export_end_to_end` asserts each
   entry's date and a re-export two seconds later, in another time zone, byte
-  for byte. Policy q1 is decided too: `package_vrm.py` stays the importer's
+  for byte. Two fixtures' packages are also held to one committed SHA-256 on
+  every lane, which makes the same bytes on every OS a test. Policy q1 is decided too: `package_vrm.py` stays the importer's
   development tool, and Step 2's dependency report will be `vrm_export`'s own.
 
 ## [0.10.0] — 2026-09-27

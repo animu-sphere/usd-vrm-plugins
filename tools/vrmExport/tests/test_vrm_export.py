@@ -47,6 +47,14 @@ FORMATS = ("usda", "usdc", "usdz")
 # DST rule.
 OTHER_TIME_ZONE = "PST8PDT"
 
+# A `.usdz` export's SHA-256, the same on every lane (policy §9): measured on
+# Windows, 2026-10-26. A digest changes whenever what the importer authors for
+# that fixture does; a failure prints the new one.
+PACKAGE_SHA256 = {
+    "minimal.vrm": "64ae23a997d4bc0b87e1e1f2ce97f6e2c9a1064240d79f2eb037e0f9cb786126",
+    "textures.vrm": "3e355e9b1dfd1e2a0d10dc84be5b3a6f8395e5e536c6ec80164d3f4754bacfac",
+}
+
 # Seconds: a ZIP entry's time is MS-DOS time, in two-second steps.
 ZIP_TIME_RESOLUTION = 2.1
 
@@ -267,9 +275,11 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                 failures.check(all(i.date_time == (2000, 1, 1, 0, 0, 0) for i in infos),
                                f"{label}: entries stamped "
                                f"{sorted({i.date_time for i in infos})[:2]}, not 2000-01-01")
-                # Printed so the lanes' logs can be compared across OS.
-                print(f"sha256 {output.name} "
-                      f"{hashlib.sha256(output.read_bytes()).hexdigest()}")
+                expected = PACKAGE_SHA256.get(source_path.name)
+                if expected:
+                    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+                    failures.check(digest == expected,
+                                   f"{label}: SHA-256 {digest}, expected {expected}")
                 packages.append((source_path, output))
             else:
                 textures = out_dir / "textures"

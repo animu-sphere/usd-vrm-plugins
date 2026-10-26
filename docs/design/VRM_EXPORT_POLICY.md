@@ -344,8 +344,8 @@ separate process with no VRM plugin on `PXR_PLUGINPATH_NAME`.
   on its contents alone — with no change to OpenUSD. Step 2's tests assert
   every entry's date and a second export, at least one two-second ZIP tick
   later and in another time zone, byte for byte. Across operating systems
-  the same input is also expected to give the same bytes; the end-to-end
-  test prints every package's SHA-256 so the lanes can be compared.
+  the same input gives the same bytes too: the packages of two fixtures are
+  held to a committed SHA-256 on every lane.
 - Localized names are content hashes and the archive order is OpenUSD's, so
   neither depends on traversal order or on the machine.
 
