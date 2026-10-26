@@ -174,7 +174,8 @@ v0.9.0 proved the mechanism on an exec-computed `UsdGeomXformable` instead
 
 ## 5. Deferred past this track
 
-Spring-bone simulation proper, full-body IK, foot locking, contact solving,
+Spring-bone simulation (never an OpenExec computation; it is `vrmRig`'s, on
+the [spring-bone track](springbone-track.md)), full-body IK, foot locking, contact solving,
 GPU computation, per-frame stage write-back, editor UI, Python computation
 registration, production-grade arbitrary rig authoring, and realtime skinned
 display (§3). Several are permanent non-goals

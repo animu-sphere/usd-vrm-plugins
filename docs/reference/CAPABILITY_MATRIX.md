@@ -52,7 +52,9 @@ simulates:
 
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
   schema data on the stage. Their runtime evaluation/simulation is a **separate
-  layer** (`execVrm`), never run by this importer. `execVrm` evaluates
+  layer**, never run by this importer: `execVrm` for look-at and constraints,
+  and `vrmRig`, stepped by a runtime outside this repository, for spring bones
+  ([spring-bone track](../roadmap/springbone-track.md)). `execVrm` evaluates
   retargeting only — the target rig, the humanoid map, rest-pose correction,
   one sample's retarget and its diagnostics — and none of these three yet;
   they follow on [the `ExecIr` track](../roadmap/execir-track.md).
