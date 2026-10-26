@@ -35,10 +35,17 @@
 #include "pxr/usdValidation/usdValidation/registry.h"
 
 #include <cstdio>
+#include <ctime>
 #include <map>
 #include <memory>
 #include <set>
 #include <utility>
+
+#if defined(ARCH_OS_WINDOWS)
+#include <sys/utime.h>
+#else
+#include <utime.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -261,6 +268,51 @@ class TemporaryDirectory
     std::string _path;
 };
 
+// Gives every file under `dir` the modification time that is 2000-01-01
+// 00:00:00 in this host's local time. SdfZipFileWriter stamps each entry with
+// its file's modification time, converted with localtime() (policy §2), so a
+// time pinned in local terms encodes the same in every time zone: a package's
+// bytes then depend on its contents alone (policy §9).
+bool
+PinModificationTimes(const std::string& dir, std::string* error)
+{
+    std::tm local = {};
+    local.tm_year = 2000 - 1900;
+    local.tm_mon = 0;
+    local.tm_mday = 1;
+    local.tm_isdst = -1;
+    const std::time_t pinned = std::mktime(&local);
+    if (pinned == static_cast<std::time_t>(-1))
+    {
+        *error = "cannot compute the time a package's entries are stamped with";
+        return false;
+    }
+
+    bool ok = true;
+    TfWalkDirs(dir, [&](const std::string& dirPath, std::vector<std::string>*,
+                        const std::vector<std::string>& fileNames) {
+        for (const std::string& name : fileNames)
+        {
+            const std::string path = TfStringCatPaths(dirPath, name);
+#if defined(ARCH_OS_WINDOWS)
+            __utimbuf64 times = {pinned, pinned};
+            const bool pinnedThis = _wutime64(ArchWindowsUtf8ToUtf16(path).c_str(), &times) == 0;
+#else
+            utimbuf times = {pinned, pinned};
+            const bool pinnedThis = utime(path.c_str(), &times) == 0;
+#endif
+            if (!pinnedThis)
+            {
+                *error = "cannot set the modification time of " + path;
+                ok = false;
+                return false;
+            }
+        }
+        return true;
+    });
+    return ok;
+}
+
 // Every asset path authored in `layer`, as authored: attribute defaults and
 // time samples, single values and arrays.
 std::vector<std::string>
@@ -454,6 +506,11 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
 
     if (format == OutputFormat::Usdz)
     {
+        std::string error;
+        if (!PinModificationTimes(rootDir, &error))
+        {
+            return Fail(Status::PackagingFailure, error);
+        }
         const ArResolverContextBinder binder(
             ArGetResolver().CreateDefaultContextForAsset(layerPath));
         if (!UsdUtilsCreateNewUsdzPackage(SdfAssetPath(layerPath), outputPath))

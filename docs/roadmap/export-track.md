@@ -18,7 +18,9 @@ left to build. The steps are this track's internal order, not Product P0–P3.
 - The importer's Python
   [`package_vrm.py`](../../plugins/usdVrmFileFormat/tools/package_vrm.py)
   already writes a loose `.usda` + `textures/`. It is the predecessor, and
-  what becomes of it is policy q1.
+  stays as the importer's development tool (policy q1, decided 2026-10-26).
+- **Step 2 is under way:** `.usdz` exports are byte-identical across hosts
+  and time zones of one CPU architecture (2026-10-26).
 
 ## 2. Steps
 
@@ -56,12 +58,16 @@ fixture states one.
 
 ### Step 2 — validation and usability ⬜
 
-- ⬜ Determinism: decide policy q2, then assert it.
+- ✅ Determinism: policy q2 decided (byte-identical across hosts and time
+  zones of one CPU architecture), the staged files' times pinned, a
+  re-export asserted equal byte for byte, and two fixtures' packages held to
+  a committed digest per architecture (policy §9).
 - ⬜ A fixture with an external (non-embedded) image, so the other half of
   localization is tested.
 - ⬜ `--flatten`, as an explicit opt-in (policy §6.1).
-- ⬜ A package dependency report — possibly `package_vrm.py`'s inventory
-  (policy q1).
+- ⬜ A package dependency report, `vrm_export`'s own: policy q1 keeps
+  `package_vrm.py` as the importer's development tool rather than adopting
+  its inventory.
 - ⬜ Richer diagnostics.
 - ⬜ The product's `vrm_export` exporting a `.vrm` from the release artifact,
   in the artifact-only smoke.

@@ -89,7 +89,9 @@ second one exists (policy §4).
   formats with `--check`; each output reopened **in a process with no VRM
   plugin** and compared with the source stage prim by prim, attribute by
   attribute, and texture byte by texture byte. Also: a `.usda` names no local
-  path and is byte-identical when exported twice; a `.usdz`'s entries; the
+  path and is byte-identical when exported twice; a `.usdz`'s entries, every
+  one stamped 2000-01-01, and the package byte-identical when exported again
+  in another time zone (policy §9); the
   temporary directory removed; and every exit code from the command line.
   Registered only in the composed root build, which has the three bundles.
 - `workspace_unicode_paths` (root) — both formats from a directory no ANSI
