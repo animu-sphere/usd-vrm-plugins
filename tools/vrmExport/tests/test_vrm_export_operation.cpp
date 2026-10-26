@@ -104,8 +104,10 @@ TestParseOptions()
     assert(!Parse({"a.vrm", "a.usdz"}, &options, &error) && Contains(error, "-o"));
     assert(!Parse({"a.vrm", "-o"}, &options, &error) && Contains(error, "needs a path"));
     assert(!Parse({"a.vrm", "-o", "x.usda", "-o", "y.usda"}, &options, &error));
-    assert(!Parse({"a.vrm", "-o", "x.usda", "--flatten"}, &options, &error) &&
-           Contains(error, "--flatten"));
+    assert(Parse({"a.vrm", "-o", "x.usda", "--flatten"}, &options, &error) && options.flatten);
+    assert(Parse({"a.vrm", "-o", "x.usda"}, &options, &error) && !options.flatten);
+    assert(!Parse({"a.vrm", "-o", "x.usda", "--motion"}, &options, &error) &&
+           Contains(error, "--motion"));
 }
 
 // Everything refused before a stage is opened, in the order the export

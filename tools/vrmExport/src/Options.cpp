@@ -18,6 +18,7 @@ GetUsage()
            "  -o, --output <path>  the output file (required)\n"
            "  --check              reopen and validate the output\n"
            "  --overwrite          replace an existing output file\n"
+           "  --flatten            write the composed stage flattened into one layer\n"
            "  --verbose            report each localized texture and each check\n"
            "  --help               print this and exit\n"
            "  --version            print the version and exit\n"
@@ -65,6 +66,10 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, std::s
         else if (argument == "--overwrite")
         {
             options->overwrite = true;
+        }
+        else if (argument == "--flatten")
+        {
+            options->flatten = true;
         }
         else if (argument == "--verbose")
         {

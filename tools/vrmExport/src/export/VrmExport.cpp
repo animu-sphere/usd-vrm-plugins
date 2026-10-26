@@ -451,13 +451,28 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
 
     // Materialize (policy §6.1): the root layer's content into a new layer, so
     // the source layer is never edited. The session layer is not the asset.
+    // Flattened only when asked, and then with no source-file comment, which
+    // would name the input's absolute path (policy §7).
     const SdfLayerHandle source = stage->GetRootLayer();
-    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous("vrm_export.usda");
+    SdfLayerRefPtr layer;
+    if (options.flatten)
+    {
+        layer = stage->Flatten(/* addSourceFileComment = */ false);
+    }
+    else
+    {
+        layer = SdfLayer::CreateAnonymous("vrm_export.usda");
+        if (layer)
+        {
+            layer->TransferContent(source);
+        }
+    }
     if (!layer)
     {
-        return Fail(Status::ExportFailure, "cannot create a layer to export into");
+        const std::string errors = TakeErrors(&mark);
+        return Fail(Status::ExportFailure, "cannot create a layer to export into" +
+                                               (errors.empty() ? "" : ": " + errors));
     }
-    layer->TransferContent(source);
 
     ExportResult result;
 

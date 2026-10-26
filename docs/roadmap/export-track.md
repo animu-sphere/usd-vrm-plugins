@@ -65,7 +65,8 @@ rather than embedded. Step 2 covers it.
   localization is tested: written by `vrm_export_end_to_end` at run time, held
   to everything the committed fixtures are, and refused with exit 4 once an
   image is taken away.
-- ⬜ `--flatten`, as an explicit opt-in (policy §6.1).
+- ✅ `--flatten`, as an explicit opt-in (policy §6.1), with no source-file
+  comment.
 - ⬜ A package dependency report, `vrm_export`'s own: policy q1 keeps
   `package_vrm.py` as the importer's development tool rather than adopting
   its inventory.

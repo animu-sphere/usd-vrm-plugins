@@ -28,7 +28,8 @@ The **output** needs none of them.
 ## What it writes
 
 - The imported stage's root layer, as the importer authored it — not
-  flattened, not re-laid-out. The session layer is not part of it.
+  flattened unless `--flatten` asks, not re-laid-out. The session layer is
+  not part of it.
 - Every texture, copied to `textures/<hash>.<ext>` and referenced as
   `./textures/<hash>.<ext>`. `<hash>` is the importer's own name for an
   embedded image, so the same image has the same name everywhere. For a
@@ -47,6 +48,7 @@ No output names a path of the machine that wrote it.
 | `-o`, `--output <path>` | The output. Required. |
 | `--check` | Reopen the output and validate it: a `defaultPrim`, every dependency resolved, no absolute path or path into a `.vrm`, and for `.usdz` OpenUSD's five `usdUtilsValidators`. |
 | `--overwrite` | Replace an existing output. Without it, one is refused. |
+| `--flatten` | Write the composed stage flattened into one layer. For a `.vrm`, whose layer has no composition arcs, the stage is the same either way. |
 | `--verbose` | Report each localized texture and each check. |
 | `--help`, `--version` | |
 
@@ -96,6 +98,8 @@ second one exists (policy §4).
   One more input is written at run time: a `.vrm` with one embedded and two
   external images, one of them the embedded image's bytes — two files
   localized for three images, and exit 4 once an external image is gone.
+  Every input is also exported with `--flatten`, and held to the same stage
+  and the same absence of local paths.
   Registered only in the composed root build, which has the three bundles.
 - `workspace_unicode_paths` (root) — both formats from a directory no ANSI
   code page can spell.

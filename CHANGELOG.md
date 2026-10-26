@@ -13,6 +13,18 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Added
+
+- **`vrm_export --flatten`** ([export track](docs/roadmap/export-track.md)
+  Step 2; export policy §6.1). Writes the composed stage flattened into one
+  layer, as an explicit opt-in, and with no source-file comment: the one
+  `UsdStage::Flatten` adds by default names the input's absolute path. For a
+  `.vrm` the stage is the same either way; it matters once Step 3 composes a
+  clip. `vrm_export_end_to_end` exports every input with it. The test's
+  check that a `.usda` names no local path now also looks for a Windows path
+  with its backslashes escaped, the way a `.usda` string writes one. Before
+  this it missed that spelling.
+
 ### Changed
 
 - **`vrm_export` writes the same `.usdz` bytes on every host of an architecture** ([export

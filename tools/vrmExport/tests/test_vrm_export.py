@@ -257,6 +257,21 @@ def compare(source: dict, exported: dict, label: str, failures: Failures,
                            f"{label}: {attr} carries different bytes")
 
 
+def check_no_local_path(output: pathlib.Path, source_path: pathlib.Path, label: str,
+                        failures: Failures) -> None:
+    """A `.usda` names no path of this machine (policy §7)."""
+    text = output.read_bytes().decode("utf-8", errors="replace")
+    source_dir = str(source_path.resolve().parent)
+    # A `.usda` string escapes a backslash, so a Windows path is written with
+    # doubled ones.
+    for form in {source_dir, source_dir.replace("\\", "/"), source_dir.replace("\\", "\\\\")}:
+        failures.check(form not in text,
+                       f"{label}: the output names the source directory {form}")
+    failures.check(".vrm[" not in text, f"{label}: the output still points into a .vrm")
+    failures.check(tempfile.gettempdir() not in text and "vrm_export_" not in text,
+                   f"{label}: the output names a temporary directory")
+
+
 def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                  work: pathlib.Path, failures: Failures) -> None:
     full = plugin_env(plugins, ("fileformat", "resolver", "schema"))
@@ -309,16 +324,7 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                                f"{len(assets)} distinct image(s)")
 
             if fmt == "usda":
-                text = output.read_bytes().decode("utf-8", errors="replace")
-                source_dir = str(source_path.resolve().parent)
-                for form in {source_dir, source_dir.replace("\\", "/")}:
-                    failures.check(form not in text,
-                                   f"{label}: the output names the source directory {form}")
-                failures.check(".vrm[" not in text,
-                               f"{label}: the output still points into a .vrm")
-                failures.check(tempfile.gettempdir() not in text
-                               and "vrm_export_" not in text,
-                               f"{label}: the output names a temporary directory")
+                check_no_local_path(output, source_path, label, failures)
 
                 # Determinism (policy §9): a second export, elsewhere, is the
                 # same bytes.
@@ -327,6 +333,18 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                 failures.check(result.returncode == 0 and again.read_bytes() ==
                                output.read_bytes(),
                                f"{label}: a second export is not byte-identical")
+
+        # --flatten (policy §6.1): the composed stage in one layer. A `.vrm`
+        # authors no composition arc, so it is the same stage; and like any
+        # output it names no path of this machine, which the source-file
+        # comment UsdStage::Flatten writes by default would.
+        label = f"{source_path.name} -> --flatten .usda"
+        flat = work / f"{source_path.stem}-flatten" / f"{source_path.stem}.usda"
+        result = run(tool, [str(source_path), "-o", str(flat), "--flatten", "--check"], full)
+        if failures.check(result.returncode == 0,
+                          f"{label}: exit {result.returncode}: {result.stderr.strip()}"):
+            compare(source, summarize(flat, bare), label, failures, zero_sign=True)
+            check_no_local_path(flat, source_path, label, failures)
 
     # Determinism of a package (policy §9, q2): each `.usdz` exported again,
     # elsewhere, is the same bytes. An entry's time has a two-second
@@ -367,7 +385,7 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
     expect([], 2, "no arguments", needle="no input")
     expect([str(vrm), str(cases_dir / "a.usdz")], 2, "a positional output", needle="-o")
     expect([str(vrm), "-o", str(cases_dir / "a.obj")], 2, "an unknown extension")
-    expect([str(vrm), "-o", str(cases_dir / "a.usda"), "--flatten"], 2, "an unknown option")
+    expect([str(vrm), "-o", str(cases_dir / "a.usda"), "--motion"], 2, "an unknown option")
     expect([str(cases_dir / "missing.vrm"), "-o", str(cases_dir / "a.usda")], 3,
            "a missing input")
 

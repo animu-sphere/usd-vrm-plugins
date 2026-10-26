@@ -55,6 +55,9 @@ struct ExportOptions
     bool check = false;
     // Replace an existing output file. Without it, one is refused.
     bool overwrite = false;
+    // Write the composed stage flattened into one layer, rather than the root
+    // layer's content (policy §6.1). Opt-in: a package is not a flatten.
+    bool flatten = false;
 };
 
 // One dependency copied into the output: where it was read from, as the

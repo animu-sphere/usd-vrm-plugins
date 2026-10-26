@@ -195,7 +195,7 @@ lane ([WORKSPACE.md](../architecture/WORKSPACE.md) §5).
 ### 5.1 Synopsis
 
 ```text
-vrm_export <input.vrm> -o <output.{usda,usdc,usdz}> [--check] [--overwrite] [--verbose]
+vrm_export <input.vrm> -o <output.{usda,usdc,usdz}> [--check] [--overwrite] [--flatten] [--verbose]
 vrm_export --help | --version
 ```
 
@@ -249,6 +249,11 @@ edited in place. The session layer is not part of the output.
   package is not a flatten: they are two operations. Step 1's input is a
   `.vrm`, whose layer has no composition arcs (§2), so the distinction first
   matters at Step 3; `--flatten` arrives with Step 2 as an explicit opt-in.
+- **`--flatten`** writes `UsdStage::Flatten` of the opened stage in place of
+  the root layer's content, **with no source-file comment**: the comment
+  OpenUSD adds by default names the input's absolute path (§7). For a `.vrm`
+  it is the same stage either way, and Step 2's tests hold it to that; it
+  changes an output once Step 3 composes a clip onto the avatar.
 - **No re-layout.** The prim hierarchy the importer authored — `/Asset`,
   `geo`, `mtl`, `skel`, `rig` — is written as authored.
 - **Step 1 accepts `.vrm` input only.** An arbitrary USD input is a

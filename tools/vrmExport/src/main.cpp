@@ -45,6 +45,7 @@ main(int argc, char** argv)
     vrmExport::ExportOptions exportOptions;
     exportOptions.check = options.check;
     exportOptions.overwrite = options.overwrite;
+    exportOptions.flatten = options.flatten;
 
     vrmExport::ExportResult result;
     try
