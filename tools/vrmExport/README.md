@@ -93,6 +93,9 @@ second one exists (policy §4).
   one stamped 2000-01-01, and the package byte-identical when exported again
   in another time zone (policy §9); the
   temporary directory removed; and every exit code from the command line.
+  One more input is written at run time: a `.vrm` with one embedded and two
+  external images, one of them the embedded image's bytes — two files
+  localized for three images, and exit 4 once an external image is gone.
   Registered only in the composed root build, which has the three bundles.
 - `workspace_unicode_paths` (root) — both formats from a directory no ANSI
   code page can spell.

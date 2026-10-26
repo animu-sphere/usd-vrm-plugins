@@ -69,6 +69,10 @@ ARCHITECTURE = {"amd64": "x86_64", "x86_64": "x86_64",
 # Seconds: a ZIP entry's time is MS-DOS time, in two-second steps.
 ZIP_TIME_RESOLUTION = 2.1
 
+# The importer's fixture builder, for the one input written at test time.
+FIXTURE_LIB = (pathlib.Path(__file__).resolve().parents[3]
+               / "plugins" / "usdVrmFileFormat" / "tools")
+
 # Read in whichever process runs it: this one for a source `.vrm`, a
 # plugin-free child for an export. Printed as JSON.
 SUMMARY = r'''
@@ -400,6 +404,102 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
     failures.check(not left, f"the temporary directory was left behind: {left[:3]}")
 
 
+def write_external_image_vrm(directory: pathlib.Path) -> pathlib.Path:
+    """A `.vrm` whose images are one embedded and two external files.
+
+    An external image is authored as a plain file path beside the `.vrm`
+    rather than a path into it, which is the other half of localization
+    (policy §6.2). `maps/red.png` holds the embedded image's bytes, so the
+    export writes two files for three images. Written here rather than
+    committed among the importer's fixtures, which `baseline_freeze.py`
+    freezes the import of.
+    """
+    sys.path.insert(0, str(FIXTURE_LIB))
+    from vrm_fixture_lib import (ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER, FLOAT, TRI_INDICES,
+                                 TRI_POSITIONS, U16, GlbBuilder, solid_png, vrm1_extension)
+
+    red, blue = solid_png(200, 40, 40), solid_png(40, 40, 200)
+    maps = directory / "maps"
+    maps.mkdir(parents=True)
+    (maps / "red.png").write_bytes(red)
+    (maps / "blue.png").write_bytes(blue)
+
+    b = GlbBuilder()
+    pos = b.add(FLOAT, "VEC3", TRI_POSITIONS, ARRAY_BUFFER, minmax=True)
+    uv = b.add(FLOAT, "VEC2", [(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)], ARRAY_BUFFER)
+    idx = b.add(U16, "SCALAR", TRI_INDICES, ELEMENT_ARRAY_BUFFER)
+    gltf = {
+        "asset": {"version": "2.0", "generator": "vrm_export tests"},
+        "scene": 0, "scenes": [{"nodes": [0]}],
+        "nodes": [{"name": "Body", "mesh": 0}],
+        "meshes": [{"name": "Body", "primitives": [{
+            "attributes": {"POSITION": pos, "TEXCOORD_0": uv},
+            "indices": idx, "material": 0}]}],
+        "images": [
+            {"name": "embedded", "bufferView": b.add_bytes(red), "mimeType": "image/png"},
+            {"name": "external", "uri": "maps/blue.png"},
+            {"name": "external_same_bytes", "uri": "maps/red.png"},
+        ],
+        "textures": [{"source": 0}, {"source": 1}, {"source": 2}],
+        "materials": [{
+            "name": "Skin",
+            "pbrMetallicRoughness": {"baseColorTexture": {"index": 0}},
+            "emissiveTexture": {"index": 1},
+            "emissiveFactor": [1.0, 1.0, 1.0],
+            "normalTexture": {"index": 2},
+        }],
+        "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": vrm1_extension({})},
+    }
+    path = directory / "external_images.vrm"
+    path.write_bytes(b.build(gltf))
+    return path
+
+
+def test_external_images(tool: str, plugins: dict[str, str], work: pathlib.Path,
+                         failures: Failures) -> pathlib.Path:
+    """The external-image `.vrm`: every format, then the image taken away.
+
+    Returns the input, for test_exports to hold to everything it holds the
+    committed fixtures to.
+    """
+    full = plugin_env(plugins, ("fileformat", "resolver", "schema"))
+    vrm = write_external_image_vrm(work / "external")
+
+    # Both external files are read, and the duplicate of the embedded image
+    # is written once.
+    output = work / "external-usda" / "external_images.usda"
+    result = run(tool, [str(vrm), "-o", str(output), "--verbose"], full)
+    if failures.check(result.returncode == 0,
+                      f"external images: exit {result.returncode}: {result.stderr.strip()}"):
+        localized = [line for line in result.stderr.splitlines()
+                     if line.startswith("vrm_export: localized ")]
+        failures.check(len(localized) == 3,
+                       f"external images: {len(localized)} localized line(s), expected 3")
+        written = sorted(p.name for p in (output.parent / "textures").iterdir())
+        failures.check(len(written) == 2,
+                       f"external images: textures/ holds {written}, expected two files")
+
+    # An external image that is gone fails the export, and names the path
+    # (policy §6.2), rather than writing an output that lost a texture.
+    missing = work / "external-missing"
+    missing.mkdir()
+    missing_vrm = missing / vrm.name
+    missing_vrm.write_bytes(vrm.read_bytes())
+    (missing / "maps").mkdir()
+    (missing / "maps" / "red.png").write_bytes((vrm.parent / "maps" / "red.png").read_bytes())
+    gone = work / "external-missing-out" / "gone.usdz"
+    result = run(tool, [str(missing_vrm), "-o", str(gone)], full)
+    failures.check(result.returncode == 4,
+                   f"a missing external image: exit {result.returncode}, expected 4: "
+                   f"{result.stderr.strip()[:300]}")
+    failures.check("blue.png" in result.stderr,
+                   f"a missing external image: the message does not name it: "
+                   f"{result.stderr.strip()[:300]}")
+    failures.check(not gone.exists(), "a missing external image left an output behind")
+    return vrm
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--tool", required=True)
@@ -419,6 +519,7 @@ def main() -> int:
     failures = Failures()
     with tempfile.TemporaryDirectory(prefix="vrm_export_test_") as scratch:
         work = pathlib.Path(scratch)
+        inputs.append(test_external_images(args.tool, plugins, work, failures))
         test_exports(args.tool, inputs, plugins, work, failures)
         test_command_line(args.tool, inputs[0], pathlib.Path(args.textured), plugins, work,
                           failures)
