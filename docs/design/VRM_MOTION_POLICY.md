@@ -7,7 +7,8 @@ owner: usd-vrm-plugins
 
 How VRM and VRMA use motion: what `.vrma` import authors, how VRMA and VRM
 compose on a stage, and what a VRM rig adds when motion is applied to it —
-the humanoid binding, expressions, look-at, the bake, and `execVrm`.
+the humanoid binding, expressions, look-at, the bake, `execVrm`, and spring
+bones.
 
 Generic motion is not defined here. This repository **consumes** it, and
 links to the repository that owns each contract instead of restating it
@@ -353,3 +354,92 @@ is [roadmap/execir-track.md](../roadmap/execir-track.md).
    never a prerequisite.
 8. An upstream display limitation bounds a display claim, not the motion
    pipeline: OpenUSD 26.08 cannot register a `UsdSkel` exec imaging adapter.
+9. Spring bones are solved by `vrmRig` over plain values and stepped by a
+   runtime outside this repository; never as a rigid-body world, and never as
+   an OpenExec computation (§10).
+
+## 10. Spring bones on a rig
+
+> Decided 2026-10-27. None of this is implemented yet; the work is the
+> [spring-bone track](../roadmap/springbone-track.md).
+
+What `VrmSpringBoneAPI` and `VrmColliderAPI` mean is VRM vocabulary
+([scope policy §4](INTEGRATION_SCOPE_POLICY.md#4-canonical-motion-is-the-only-confluence)):
+chains, collider groups, the center, stiffness, drag, gravity and hit radius.
+Evaluating them is therefore this repository's, in the same place expressions
+and look-at are evaluated. It is neither rigid-body physics nor an update
+loop.
+
+### 10.1 Where it lives
+
+`vrmRig` owns the solver, in the shape `ExpressionResolver` and
+`LookAtEvaluator` already have: plain values in and plain values out, with
+the rig read off the stage by the caller. The library opens no stage and
+gains no dependency: no OpenExec, no physics backend.
+
+| Concern | Owner |
+| --- | --- |
+| What a spring declares on the stage | this repository: `vrmSchema`, [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) |
+| The solver, its state, and what reset restores | this repository: `vrmRig` |
+| When the solver steps: the fixed tick, pause, reset, seek, and its order relative to other evaluators and to a rigid-body world | `usd-avatar-runtime` [EVALUATOR.md §5](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/contracts/EVALUATOR.md#5-shared-world-physics-orchestration) and [FRAME_LIFECYCLE.md §5](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
+| Reading a stage into `vrmRig` values, the adapter, and the host | `usd-avatar-runtime` |
+| A format-neutral secondary-motion solver, if one is ever extracted | `usd-physics-plugins` [SECONDARY_MOTION_CONTRACT.md](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/design/SECONDARY_MOTION_CONTRACT.md) |
+
+Two consequences follow:
+
+- **There is no rigid-body world.** A spring chain is not a set of bodies, and
+  the solver needs no physics package. Colliders that are not the avatar's
+  own, such as the environment or another avatar, wait on the physics
+  repository's shared-collider question (SM-O1 there).
+- **There is no `execVrm` computation.** A spring's state is its history, and
+  an OpenExec computation evaluates an immutable snapshot (§7.2). Spring bones
+  are outside the [`ExecIr` track](../roadmap/execir-track.md) permanently,
+  not deferred by it.
+
+### 10.2 What a spring declares
+
+VRM 1.0 and VRM 0.x declare a spring's structure differently. The stage keeps
+each declaration as written, and does not convert one into the other:
+
+- **VRM 1.0** (`VRMC_springBone`): `springs[].joints` is one ordered chain,
+  each joint the parent of the next. `vrm:joints` holds it, with the per-joint
+  parameters parallel to it.
+- **VRM 0.x** (`secondaryAnimation.boneGroups`): `bones` lists the **roots**
+  of subtrees. Every descendant of each root moves, branches included, with
+  the group's parameters. The schema will hold these roots as
+  `vrm:rootJoints`, with the parameters parallel to it, under a schema
+  contract version bump.
+
+Until that change lands, the importer writes a VRM 0.x spring's roots into
+`vrm:joints`, which the schema documents as one chain. A reader must not take
+that array as a chain.
+
+`vrmRig` expands roots into a joint tree against the skeleton's topology. The
+importer does not expand them: splitting a branching tree into chains would
+put each branch joint into two chains, and the solver would move it twice.
+The solver's input is that tree, each joint with a parent index, and a
+VRM 1.0 chain is a tree without branches.
+
+### 10.3 What the solver decides
+
+The stage does not state how the specification is interpreted at run time.
+That interpretation belongs to `vrmRig`, and is documented in its README:
+
+- **The end of a chain.** VRM 1.0's last listed joint ends its chain. A
+  VRM 0.x leaf has no child and gets a virtual tail, following UniVRM. The
+  exact rules are fixed against the reference implementations (§10.4), not
+  here.
+- **Time.** The caller supplies each step's duration. The solver keeps no
+  accumulator, because the runtime keeps the only one.
+- **Reset.** Reset restores the solver's state from the current animated
+  pose. A teleport, a seek and a loop wrap are each a reset, never a large
+  step.
+- **Determinism.** The same inputs on the same build give the same results.
+
+### 10.4 What it is measured against
+
+The references are the two maintained implementations of the specification:
+three-vrm for both versions, and UniVRM for VRM 0.x. A solver test compares
+joint trajectories on a shared input within a stated tolerance, never
+bitwise. Reference output is committed as data along with the script that
+regenerates it. The references' code is never committed.

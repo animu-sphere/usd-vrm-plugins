@@ -42,9 +42,9 @@ to that bake. What remains:
   expression and look-at as computations, and skinned display.
 - ⬜ **VRMA export investigation.** Whether a baked or recorded clip can be
   written back as `.vrma`, and what is lost. Research, like Product P6.
-- ⬜ **VRM-specific advanced items** as they arise — spring-bone evaluation
-  above all. Generic ones (IK-assisted retarget, contacts, blending) are
-  `usd-motion-plugins`'.
+- ⬜ **Spring-bone evaluation** — the [spring-bone track](springbone-track.md).
+- ⬜ **Other VRM-specific advanced items** as they arise. Generic ones
+  (IK-assisted retarget, contacts, blending) are `usd-motion-plugins`'.
 
 **Boundaries** ([WORKSPACE.md](../architecture/WORKSPACE.md) §2): `execVrm`
 reads the schema contract from the stage only — never importer internals,
@@ -147,7 +147,9 @@ plugin, or a sibling repository (design policy §15, §19). These are the
 individual cases of one boundary,
 [scope policy §2](../design/INTEGRATION_SCOPE_POLICY.md#2-what-this-repository-does-not-own).
 
-- Full VRM runtime physics execution → `execVrm` or a physics repository
+- A rigid-body physics world, or the loop that steps a simulation →
+  `usd-physics-plugins`, `usd-avatar-runtime` (spring-bone evaluation itself
+  is this repository's: [motion policy §10](../design/VRM_MOTION_POLICY.md#10-spring-bones-on-a-rig))
 - Pixel-perfect MToon across all renderers
 - A native MToon renderer, outline pass or GPU pipeline → `hydra-toon`
   ([material policy §5.3](../design/MATERIAL_ARCHITECTURE_POLICY.md#53-renderer-specific-realization))

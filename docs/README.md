@@ -28,7 +28,7 @@ contract wins — structural changes go there first, in their own PR.
 | --- | --- |
 | How far this repository goes, and what it does not own | [design/INTEGRATION_SCOPE_POLICY.md](design/INTEGRATION_SCOPE_POLICY.md) |
 | The `.vrm` importer, the canonical model, the import / evaluation boundary, Product P0–P6 | [design/DESIGN_POLICY.md](design/DESIGN_POLICY.md) |
-| How VRM and VRMA use motion: `.vrma` import, composition, the VRM rig binding, expressions, look-at, the bake, `execVrm`, `ExecIr` | [design/VRM_MOTION_POLICY.md](design/VRM_MOTION_POLICY.md) |
+| How VRM and VRMA use motion: `.vrma` import, composition, the VRM rig binding, expressions, look-at, the bake, `execVrm`, `ExecIr`, spring bones | [design/VRM_MOTION_POLICY.md](design/VRM_MOTION_POLICY.md) |
 | The `/Asset/mtl` hierarchy and MToon | [design/MATERIAL_ARCHITECTURE_POLICY.md](design/MATERIAL_ARCHITECTURE_POLICY.md) |
 | Writing an imported `.vrm` as a native `.usda` / `.usdc` / `.usdz` (`vrm_export`) | [design/VRM_EXPORT_POLICY.md](design/VRM_EXPORT_POLICY.md) |
 | Exposing the canonical material schemas to Hydra (`vrmImaging`) | [design/VRM_IMAGING_POLICY.md](design/VRM_IMAGING_POLICY.md) |
