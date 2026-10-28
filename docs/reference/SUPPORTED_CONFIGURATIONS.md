@@ -271,7 +271,7 @@ the required bundle's `plugin/resources/<bundle>` directory to
 - The **package version** is the single value in the repo-root
   [`VERSION`](../../VERSION) file. CMake reads it; the git tag (`vX.Y.Z`), the
   [`CHANGELOG`](../../CHANGELOG.md), and the `ost` bundle manifest mirror it.
-- The **schema contract version** is independent (currently `1`) and changes only
+- The **schema contract version** is independent (currently `2`) and changes only
   under the policy in
   [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
 

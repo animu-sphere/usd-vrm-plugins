@@ -21,7 +21,7 @@ schema:
   # Authored-data contract version, independent from plugin.version
   # (docs/architecture/WORKSPACE.md §3). Bumps only on breaking
   # type/property/token changes, with authored-data migration notes.
-  contract: 1
+  contract: 2
 provides:
   - usd-schema:VrmColliderAPI
   - usd-schema:VrmConstraintAPI

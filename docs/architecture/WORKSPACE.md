@@ -306,8 +306,8 @@ their namespaces.
 requires:
   bundles:
     - id: vrmSchema
-      version: ">=0.2,<0.3"
-      contract: 1
+      version: ">=0.10,<0.11"
+      contract: 2
 ```
 
 - `execVrm` reads the schema contract from the stage only — never importer

@@ -9935,7 +9935,7 @@
     "metaName": "VRM1_Constraint_Twist_Sample",
     "metaSha256": "130d250560210412143cbf4035ba7b542ab974e8ed0fd588ee1d36c4de9cd5a0",
     "rawExtensionSha256": "4a6baa530e661294ab44c7ead646ada3d431c8a55d8dba712d6a81190f1c8d10",
-    "schemaContractVersion": 1,
+    "schemaContractVersion": 2,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",
     "sourceVersion": "1.0",

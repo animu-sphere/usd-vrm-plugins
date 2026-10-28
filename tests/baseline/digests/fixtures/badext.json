@@ -166,7 +166,7 @@
   "vrm": {
     "frontAxisNormalized": false,
     "rawExtensionSha256": "c9b11a06dedd39c6875b9763e83ef659c2e0e13d329b019463c8f611c0aba7bd",
-    "schemaContractVersion": 1,
+    "schemaContractVersion": 2,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",
     "sourceVersion": "1.0",

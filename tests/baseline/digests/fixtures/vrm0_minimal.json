@@ -168,7 +168,7 @@
     "metaName": null,
     "metaSha256": "e9b524f3093a365c3e9f0c6d158818491af0de76e46e4ba443abdc64711916ba",
     "rawExtensionSha256": "6dd1e14563098c4d0c092326b7184bfc8165b47607b19ee1d7ad705fc420cdb1",
-    "schemaContractVersion": 1,
+    "schemaContractVersion": 2,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "-Z",
     "sourceVersion": "0.x",

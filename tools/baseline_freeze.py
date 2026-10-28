@@ -539,7 +539,7 @@ def gen_schema() -> dict[str, str]:
 
     contract = {
         "baselineSchemaVersion": BASELINE_SCHEMA_VERSION,
-        "schemaContractVersion": 1,
+        "schemaContractVersion": 2,
         "generatedSchemaSha256": _sha256_text(
             gen_path.read_text("utf-8").replace("\r\n", "\n")),
         "schemas": schemas,

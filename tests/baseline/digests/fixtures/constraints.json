@@ -180,7 +180,7 @@
     "metaName": "usdVrm Fixture",
     "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
     "rawExtensionSha256": "e903d33cf3bea6e7c84edcd8332bba04d6d9660951d3a92883731d9899b6ac7c",
-    "schemaContractVersion": 1,
+    "schemaContractVersion": 2,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",
     "sourceVersion": "1.0",

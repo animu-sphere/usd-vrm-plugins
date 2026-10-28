@@ -19,7 +19,7 @@ def SkelRoot "Asset" (
     "title": "usdVrm 0.x Fixture"
 }'''
             string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm 0.x Fixture","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[{"bone":"hips","node":1},{"bone":"spine","node":2}]},"secondaryAnimation":{"boneGroups":[{"comment":"Wind","bones":[2],"gravityDir":[1.0,0.0,0.0],"gravityPower":0.5,"stiffiness":1.0,"dragForce":0.4,"hitRadius":0.0}],"colliderGroups":[]}}'
-            int schemaContractVersion = 1
+            int schemaContractVersion = 2
             string sourceFormat = "VRM"
             string sourceFrontAxis = "-Z"
             string sourceVersion = "0.x"
@@ -207,7 +207,7 @@ def SkelRoot "Asset" (
                     uniform float3[] vrm:gravityDir = [(-1, 0, -1.2246469e-16)]
                     uniform float[] vrm:gravityPower = [0.5]
                     uniform float[] vrm:hitRadius = [0]
-                    uniform token[] vrm:joints = ["hips/spine"]
+                    uniform token[] vrm:rootJoints = ["hips/spine"]
                     uniform float[] vrm:stiffness = [1]
                 }
             }

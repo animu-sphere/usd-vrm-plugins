@@ -47,6 +47,11 @@ Aligned with the design policy's §11 fidelity vocabulary:
 
 ## Import / evaluation / simulation boundary
 
+Spring declarations in contract v2 use `vrm:rootJoints` for VRM 0.x subtree
+roots and `vrm:joints` for VRM 1.0 ordered chains. The fixture and corpus smoke
+tests assert this distinction; the validator checks exclusive authorship and
+parameter-array lengths. The solver remains unimplemented.
+
 The `usdVrmFileFormat` file-format plugin **authors data only**. It never evaluates or
 simulates:
 
@@ -97,5 +102,5 @@ What this product shipped of either before the split is in its
 
 - [roadmap/](../roadmap/) — incomplete work.
 - [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md) — platforms, OpenUSD, build.
-- [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v1.
+- [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v2.
 - [`../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`](../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md) — diagnostic codes.

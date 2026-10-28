@@ -1,4 +1,4 @@
-# usdVrm schema contract v1
+# usdVrm schema contract v2
 
 This document freezes the public interpretation contract for the typed VRM
 control schemas authored by the usdVrm importer. Downstream tools should read
@@ -11,14 +11,26 @@ that source.
 
 ## Contract version
 
-Current contract version: `1`.
+Current contract version: `2`. All v1 rules remain in force except the spring
+declaration change below.
 
 New importer output writes:
 
 | Location | Value |
 | --- | --- |
-| `/Asset.customData.vrm:schemaContractVersion` | `1` |
-| `vrm_report.py --json compatibility.schemaContractVersion` | `1` |
+| `/Asset.customData.vrm:schemaContractVersion` | `2` |
+| `vrm_report.py --json compatibility.schemaContractVersion` | `2` |
+
+### Migrating v1 spring declarations
+
+Contract v2 distinguishes a VRM 1.0 ordered chain from VRM 0.x subtree roots.
+Reimport a `.vrm` to migrate. For an already exported v1 stage whose
+`/Asset.customData.vrm:specVersion` is `0.x`, move each spring's authored
+`vrm:joints` value to `vrm:rootJoints` and remove its `vrm:joints` value opinion.
+Keep the parameter arrays, center and collider-group relationship unchanged;
+do not expand roots into chains. For a VRM 1.0 stage, keep `vrm:joints`.
+Then set the asset's contract version to `2`. Do not merely change that version
+on an unmigrated VRM 0.x stage: it would label subtree roots as a chain.
 
 Versioning policy:
 
@@ -31,7 +43,8 @@ Versioning policy:
 | Move a shipped control prim to a new canonical path | Requires a new contract version unless the old path remains authoritative. |
 
 The validator treats a missing version as an old/exported-stage warning
-(`VRM270`) and an unknown version as a contract error (`VRM271`).
+(`VRM270`) and a version other than its current v2 as a contract error
+(`VRM271`), including v1 stages awaiting migration.
 
 ## Stage layout decisions
 
@@ -399,15 +412,23 @@ lossless.
 | `VrmHumanoidAPI` | `/Asset/rig/Humanoid` | `vrm:skeleton`, authored `vrm:humanBones:<bone>` tokens | `/Asset.customData.vrm:rawExtension` |
 | `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:overrideBlink`, `vrm:overrideLookAt`, `vrm:overrideMouth`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` (each material once) plus parallel `vrm:materialColorTargetIndices`, `vrm:materialColorTypes` and `vrm:materialColorValues` ([expression colours](#expression-colours-drive-canonical-slots)) | `/Asset.customData.vrm:rawExtension` |
 | `VrmLookAtAPI` | `/Asset/rig/LookAt` | `vrm:type`; optional `vrm:skeleton`, `vrm:leftEye`, `vrm:rightEye` joint tokens | `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
-| `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | `vrm:joints` plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
+| `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | Exactly one of `vrm:joints` (ordered chain) or `vrm:rootJoints` (subtree roots), plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmColliderAPI` | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` | `vrm:shape`, `vrm:node`, `vrm:offset`, `vrm:radius`; `vrm:tail` for capsules | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmConstraintAPI` | `/Asset/rig/Constraints/<name>` | `vrm:type`, `vrm:constrained`, `vrm:source`, optional `vrm:axis`, `vrm:weight` | `/Asset/rig/Constraints/<name>.customData.vrm:constraint:raw` |
 | `VrmMaterialAPI` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only) | `inputs:vrm:material:*` — every property a realization connects to is authored | none on the stage: the glTF core is typed, and what is not (sampler filters, other extensions) lives only in the source file |
 | `VrmMToonAPI` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), with `vrm:shaderModel = "MToon"` | `inputs:vrm:mtoon:*` — every property a realization connects to is authored | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` |
 | `VrmTextureInfoAPI:<role>` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), one of eleven roles | `inputs:vrm:textureInfo:<role>:file`, `texCoord`; the rest where the source states them | as for the API that owns the role |
 
+A spring authors exactly one joint array, even though both are schema builtins.
+VRM 1.0's `vrm:joints` is ordered parent to child. VRM 0.x's `vrm:rootJoints`
+lists subtree roots; every descendant participates, including branches. Each
+parameter entry applies to the root at that index and its descendants. The
+importer preserves roots without expansion. The runtime solver expands them
+against the skeleton topology and visits each joint once. An explicitly authored
+empty array is an empty declaration; all five parameter arrays must also be empty.
+
 Array ordering is part of the contract: every parallel array listed above uses
-the same index order as its relationship or `vrm:joints` token array — except
+the same index order as its relationship or selected joint token array — except
 the material-colour arrays, which are parallel to
 `vrm:materialColorTargetIndices` (a relationship holds a target once, so it
 cannot carry one entry per bind).
@@ -443,6 +464,7 @@ Schema-contract-specific validator rules:
 | `VRM240`-`VRM244` | Expression relationships resolve and all parallel arrays line up with their target relationships — the material-colour arrays with `vrm:materialColorTargetIndices` where it is authored, each index naming a target. |
 | `VRM245`-`VRM247` | LookAt prim applies `VrmLookAtAPI`; eye tokens resolve when a skeleton relationship is authored. |
 | `VRM250`-`VRM255` | Spring-bone joint tokens, collider group targets, parallel arrays, collider API application, and collider shape tokens are valid. |
+| `VRM256` | A spring authors exactly one of `vrm:joints` or `vrm:rootJoints`. |
 | `VRM262`-`VRM264` | Constraint prims apply `VrmConstraintAPI`, use known constraint type tokens, and hierarchical joint tokens resolve. |
 
 The complete diagnostic catalog is in `DIAGNOSTICS.md`.

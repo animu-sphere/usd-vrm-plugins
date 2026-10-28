@@ -15,7 +15,7 @@ def SkelRoot "Asset" (
     "title": "usdVrm dup-bone negative"
 }'''
             string rawExtension = '{"specVersion":"0.0","meta":{"title":"usdVrm dup-bone negative","author":"usd-vrm-plugins","licenseName":"Redistribution_Prohibited"},"humanoid":{"humanBones":[{"bone":"hips","node":1},{"bone":"hips","node":2},{"bone":"spine","node":2}]}}'
-            int schemaContractVersion = 1
+            int schemaContractVersion = 2
             string sourceFormat = "VRM"
             string sourceFrontAxis = "-Z"
             string sourceVersion = "0.x"

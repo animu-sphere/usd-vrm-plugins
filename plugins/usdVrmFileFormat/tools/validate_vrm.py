@@ -40,7 +40,7 @@ LOOKAT_PATH = "/Asset/rig/LookAt"
 SPRINGBONES_PATH = "/Asset/rig/SecondaryMotion/SpringBones"
 COLLIDERS_PATH = "/Asset/rig/SecondaryMotion/Colliders"
 CONSTRAINTS_PATH = "/Asset/rig/Constraints"
-SCHEMA_CONTRACT_VERSION = 1
+SCHEMA_CONTRACT_VERSION = 2
 
 # The canonical material schemas (material policy §6; schema contract). Where
 # they may apply and which texture roles exist are read from the schema
@@ -493,7 +493,17 @@ def _check_springbones(stage: Usd.Stage, out: list[Diagnostic]) -> None:
             out.append(diag.make(
                 "VRM252", "spring-bone prim does not apply VrmSpringBoneAPI", path))
 
-        joints_attr = spring.GetAttribute("vrm:joints")
+        # Both properties are schema builtins, even when neither is authored.
+        # Select by value opinion, not by attribute existence or array length.
+        authored = [name for name in ("vrm:joints", "vrm:rootJoints")
+                    if spring.GetAttribute(name) and
+                    spring.GetAttribute(name).HasAuthoredValueOpinion()]
+        if len(authored) != 1:
+            out.append(diag.make(
+                "VRM256", "spring must author exactly one of vrm:joints or "
+                "vrm:rootJoints", path))
+        joint_attr_name = authored[0] if authored else "vrm:joints"
+        joints_attr = spring.GetAttribute(joint_attr_name)
         joint_values = joints_attr.Get() if joints_attr and joints_attr.IsValid() else []
         joint_values = joint_values or []
         for value in joint_values:
@@ -511,10 +521,10 @@ def _check_springbones(stage: Usd.Stage, out: list[Diagnostic]) -> None:
         joint_count = len(joint_values)
         for attr_name in ("vrm:stiffness", "vrm:gravityPower", "vrm:dragForce",
                           "vrm:hitRadius", "vrm:gravityDir"):
-            if joint_count and _array_len(spring.GetAttribute(attr_name)) != joint_count:
+            if _array_len(spring.GetAttribute(attr_name)) != joint_count:
                 out.append(diag.make(
                     "VRM253",
-                    f"{attr_name} is not parallel to vrm:joints",
+                    f"{attr_name} is not parallel to {joint_attr_name}",
                     path))
 
         cg_rel = spring.GetRelationship("vrm:colliderGroups")

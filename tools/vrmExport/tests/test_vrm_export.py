@@ -53,10 +53,12 @@ OTHER_TIME_ZONE = "PST8PDT"
 # texture entries and a different `defaultLayer.usdc` -- the values the
 # importer computed, not the packaging. A digest changes whenever what the
 # importer authors for that fixture does; a failure prints the new one.
+# Contract v2's x86-64 pins were remeasured on Windows on 2026-10-27.
+# The arm64 pins still describe v1 and must be remeasured on macOS before merge.
 PACKAGE_SHA256 = {
     "x86_64": {
-        "minimal.vrm": "64ae23a997d4bc0b87e1e1f2ce97f6e2c9a1064240d79f2eb037e0f9cb786126",
-        "textures.vrm": "3e355e9b1dfd1e2a0d10dc84be5b3a6f8395e5e536c6ec80164d3f4754bacfac",
+        "minimal.vrm": "1e0b2db7995e385e558b62f8fd46d58d6eb631b393cf4e9858194118d441d90f",
+        "textures.vrm": "8aa3d1267d4697d2e7643f4e5f7c128247847776fe8890c9806bbad9ae215428",
     },
     "arm64": {
         "minimal.vrm": "47d1b3a414789ac7b57c1721b6a53b416f5d395d19002d8fecdd73f15df1ecd2",

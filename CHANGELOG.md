@@ -9,7 +9,7 @@ is the single value in the repo-root [`VERSION`](VERSION) file; the git tag
 The **schema contract version** is tracked separately from the package version
 (it changes only when the typed `Vrm*API` interpretation contract changes — see
 [`plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
-Current schema contract version: **1**.
+Current schema contract version: **2**.
 
 ## [Unreleased]
 
@@ -36,6 +36,17 @@ Current schema contract version: **1**.
   this it missed that spelling.
 
 ### Changed
+
+- **Schema contract v2 distinguishes spring roots from chains.** VRM 0.x
+  `secondaryAnimation.boneGroups[].bones` now authors `vrm:rootJoints` on
+  `VrmSpringBoneAPI`; VRM 1.0 keeps `vrm:joints`. Parameter arrays are parallel
+  to the authored array, and root expansion belongs to the future `vrmRig`
+  solver. Reimport VRM 0.x assets or follow the
+  [migration notes](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#migrating-v1-spring-declarations)
+  before marking an exported stage v2. The importer stamps v2 for both source
+  versions; all other authored semantics remain unchanged.
+  The validator reports `VRM256` for both/neither joint arrays and checks
+  parameters against the selected array, including empty declarations.
 
 - **`vrm_export` writes the same `.usdz` bytes on every host of an architecture** ([export
   track](docs/roadmap/export-track.md) Step 2; export policy §9, q2). OpenUSD's

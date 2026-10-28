@@ -1,6 +1,6 @@
 # The spring-bone track
 
-**Status:** ⬜ not started · **Target:** unscheduled
+**Status:** 🚧 Step 0 implemented locally; cross-platform export pins pending · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [VRM motion policy](../design/VRM_MOTION_POLICY.md) §10
 
@@ -19,34 +19,36 @@ Product P0–P6.
   collider-group index that is out of range.
 - **Nothing evaluates them.** No library, plugin or tool here moves a spring
   joint.
-- **A VRM 0.x spring's `vrm:joints` holds subtree roots, not a chain**
-  (policy §10.2). Step 0 fixes this.
-- **Order:** the track starts after the [export track](export-track.md)'s
-  Step 2 closes. Step 0 changes importer output that the export track's
-  integration tests reopen and compare. Changing it while those tests are
-  still being settled would mean settling them twice.
+- **Schema contract v2 separates roots and chains** (policy §10.2).
+  Step 0's implementation is present; its remaining acceptance is below.
+- **Order adjusted 2026-10-27:** Step 0 was brought forward while the
+  [export track](export-track.md)'s Step 2 remains open, to advance secondary
+  motion. Its export reopening tests also run against the schema change.
 
 ## 2. Steps
 
-### Step 0: VRM 0.x springs state their roots ⬜
+### Step 0: VRM 0.x springs state their roots 🚧
 
-- ⬜ `vrm:rootJoints` on `VrmSpringBoneAPI`. The per-joint parameter arrays
+- ✅ `vrm:rootJoints` on `VrmSpringBoneAPI`. The per-joint parameter arrays
   are parallel to whichever of `vrm:joints` or `vrm:rootJoints` is authored,
   and a spring authors exactly one of them. The schema is regenerated with
   `plugins/vrmSchema/tools/generate_schema.py`.
-- ⬜ [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)
+- ✅ [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)
   states the two shapes, and the schema contract version is bumped, because
   what a VRM 0.x stage authors changes meaning.
-- ⬜ The importer writes a VRM 0.x group's `bones` into `vrm:rootJoints`.
-  VRM 1.0 output does not change.
-- ⬜ The validator reports a spring that authors both arrays or neither. The
-  diagnostic takes a number in the existing `VRMxxx` catalog, and the number
-  is the user's call.
-- ⬜ Affected fixture goldens and corpus digests are regenerated, and the
+- ✅ The importer writes a VRM 0.x group's `bones` into `vrm:rootJoints`.
+  VRM 1.0 spring data does not change; both versions carry contract v2.
+- ✅ The validator reports a spring that authors both arrays or neither as
+  `VRM256` (allocation approved 2026-10-28).
+  `VRM253` checks the selected array, including empty declarations.
+- ✅ Affected fixture goldens and corpus digests are regenerated, and the
   CHANGELOG states the stage change.
+- ⬜ Remeasure the two `vrm_export_end_to_end` package SHA-256 pins on macOS
+  arm64 before merge. The existing arm64 pins still describe contract v1;
+  Windows x86-64 v2 pins are measured. Recheck Linux x86-64 against those pins.
 
 **Done when** every VRM 0.x fixture and corpus avatar authors its roots in
-`vrm:rootJoints` and no `vrm:joints`, every VRM 1.0 one is unchanged, and a
+`vrm:rootJoints` and no `vrm:joints`, every VRM 1.0 spring is unchanged, and a
 reader can tell a chain from a set of roots without knowing the source
 version.
 
