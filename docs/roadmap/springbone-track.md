@@ -1,6 +1,6 @@
 # The spring-bone track
 
-**Status:** 🚧 Solver implemented; hosted verification and runtime integration pending · **Target:** unscheduled
+**Status:** 🚧 Solver verified on all three OS; runtime integration pending · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [VRM motion policy](../design/VRM_MOTION_POLICY.md) §10
 
@@ -18,9 +18,9 @@ Product P0–P6.
   `missing_spring_collider_group` holds the warning (`VRM190`) for a
   collider-group index that is out of range.
 - **`vrmRig` evaluates plain rig/pose values.** The solver and its unit and
-  reference-comparison suites are implemented and measured on Windows. Hosted
-  cross-platform verification is still owed; no stage reader or live adapter
-  is implemented here.
+  reference-comparison suites pass on hosted Windows, Linux and macOS arm64
+  ([source CI](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250),
+  `14efdec`). No stage reader or live adapter is implemented here.
 - **Schema contract v2 separates roots and chains** (policy §10.2).
   Step 0 supplies the stage declaration the solver will consume.
 - **Order adjusted 2026-10-27:** Step 0 was brought forward while the
@@ -55,7 +55,7 @@ Product P0–P6.
 reader can tell a chain from a set of roots without knowing the source
 version.
 
-### Step 1: the solver in `vrmRig` 🚧
+### Step 1: the solver in `vrmRig` ✅
 
 - ✅ A header beside `ExpressionResolver.h` and `LookAtEvaluator.h`. It holds
   the rig values (a joint tree with parent indices, rest transforms,
@@ -84,10 +84,12 @@ version.
   measurement runs its unmodified system with a rigid math shim, not a Unity
   player; three-vrm's joints receive refreshed child matrices each step.
 - ✅ `vrmRig`'s boundary check unchanged: the solver adds no dependency.
-- ⬜ Hosted Windows/Linux/macOS suites pass, including the updated installed
-  consumer which configures, resets and steps the solver. Local Windows
-  unit/reference suites and the external installed-consumer run pass; no
-  hosted result is claimed.
+- ✅ Hosted Windows/Linux/macOS suites pass, including the updated installed
+  consumer which configures, resets and steps the solver. Measured 2026-10-28
+  on `14efdec`: the three `vrmRig_spring_*` tests in every
+  [workspace cell](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250),
+  the three-platform [installed-consumer lane](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536217),
+  and [plain CMake](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536305).
 
 **Done when** the solver passes the unit tests and the reference comparison
 on every CI lane, and an installed `vrmRig` package exposes it.
