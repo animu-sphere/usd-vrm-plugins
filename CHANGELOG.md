@@ -15,6 +15,17 @@ Current schema contract version: **2**.
 
 ### Added
 
+- **`vrmRig::SpringBoneSolver`** ([spring-bone track](docs/roadmap/springbone-track.md)
+  Step 1): a plain-value, stateful solver for VRM 1.0 chains and VRM 0.x
+  root subtrees, including branching and 7 cm virtual tails, sphere/capsule
+  colliders, center-space history and explicit reset. It returns absolute
+  joint-local rotations, takes caller-scheduled positive ticks, and adds no
+  dependency. `VRMRIG_SPRING_BONE_API` advertises the installed API. Unit
+  tests and committed trajectories from pinned three-vrm and UniVRM run in
+  the workspace suite; the installed-consumer fixture steps the public API.
+  Inputs currently require rigid metre transforms and fixed rest translations;
+  the stage reader, scaling decisions and runtime adapter remain open.
+
 - **The product's `vrm_export` is run from the release artifact** ([export
   track](docs/roadmap/export-track.md) Step 2). A new release lane step,
   `scripts/artifact_only_export_smoke.py`, installs the product outside the

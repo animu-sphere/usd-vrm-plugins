@@ -8,6 +8,27 @@ target_compile_options(vrmRig_tests
     PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 add_test(NAME vrmRig_unit COMMAND vrmRig_tests)
 
+add_executable(vrmRig_spring_tests test_spring_bone.cpp)
+target_link_libraries(vrmRig_spring_tests PRIVATE vrmRig::vrmRig)
+target_compile_options(vrmRig_spring_tests
+    PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
+add_test(NAME vrmRig_spring_unit COMMAND vrmRig_spring_tests)
+
+add_executable(vrmRig_spring_reference_tests test_spring_reference.cpp)
+target_link_libraries(vrmRig_spring_reference_tests PRIVATE vrmRig::vrmRig)
+target_compile_options(vrmRig_spring_reference_tests
+    PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
+foreach(_reference three-vrm univrm)
+    set(_scope all)
+    if(_reference STREQUAL "univrm")
+        set(_scope vrm0)
+    endif()
+    add_test(NAME vrmRig_spring_${_reference}
+        COMMAND vrmRig_spring_reference_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/springbone/cases.json"
+            "${CMAKE_CURRENT_SOURCE_DIR}/springbone/${_reference}.csv" "${_scope}")
+endforeach()
+
 if(WIN32)
     if(TARGET gf)
         set(_vrm_rig_gf gf)
@@ -26,7 +47,8 @@ if(WIN32)
         list(APPEND _vrm_rig_test_path
              "PATH=path_list_prepend:${_vrm_rig_python_dir}")
     endif()
-    set_tests_properties(vrmRig_unit PROPERTIES
+    set_tests_properties(vrmRig_unit vrmRig_spring_unit
+        vrmRig_spring_three-vrm vrmRig_spring_univrm PROPERTIES
         ENVIRONMENT_MODIFICATION "${_vrm_rig_test_path}")
 endif()
 

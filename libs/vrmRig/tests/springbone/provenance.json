@@ -1,0 +1,13 @@
+{
+  "three-vrm": "3.4.5",
+  "three": "0.170.0",
+  "UniVRM": "v0.128.1",
+  "UniVRM_source_sha256": {
+    "SceneInfo.cs": "275c356bab68c535a315ed2c8598e898c144cbfdcfc1d09de9bfd77750e1b5e2",
+    "SphereCollider.cs": "69167ecd05d4f9cf54fa40117feb4de0cba134154650fcc3709238d47bc41a74",
+    "SpringBoneJointInit.cs": "66cd745c5aeb7ce52ba2227b383bfb0ceb081220b790edb456261b3830998eba",
+    "SpringBoneJointState.cs": "b724c412db850d0cffbc2ce52ab23d9c54885ca26ee35f011c0fa287d3cf9c0a",
+    "SpringBoneSettings.cs": "5f8a1e8bc73af33598593db100c576183e4f6b8229dd46fd25c424d2d24b25c6",
+    "SpringBoneSystem.cs": "b336d6e4194369295cd3a0e7762506fba6987913a143734511dad59ad858ef72"
+  }
+}

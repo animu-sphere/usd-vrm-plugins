@@ -1,6 +1,7 @@
 # OpenStrata plain-library descriptor. vrmRig is what a VRM rig adds to a
-# retarget -- expressions, look-at, the required bones -- as plain values, with
-# no OpenExec node (motion policy §18.12). The retarget is `motionRetarget`'s.
+# retarget -- expressions, look-at, required bones, spring bones -- as plain
+# values, with no OpenExec node (motion policy §18.12). The retarget is
+# `motionRetarget`'s.
 schema: openstrata.library/v1alpha1
 library:
   id: vrmRig

@@ -4,7 +4,7 @@ What a VRM rig adds to a retarget, and none of it retargets. The retarget
 itself — expanding semantic humanoid poses into one rig's joint order,
 correcting for the two rigs' rest poses, resolving where root motion lands — is
 `usd-motion-plugins`' [`motionRetarget`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/libs/motionRetarget),
-consumed here as a published package. This library is the three things that
+consumed here as a published package. This library holds the things that
 only a VRM avatar knows:
 
 - **the bones a VRM 1.0 avatar must bind**, which every caller here hands the
@@ -13,6 +13,8 @@ only a VRM avatar knows:
   blend-shape weights and material colours that name means on this avatar;
 - **its gaze** — the place a clip looks at becomes this rig's eye rotations, or
   the four gaze expressions an expression-driven rig aims with instead.
+- **its spring bones** — VRM chains and root subtrees, stepped as stateful
+  secondary motion with the avatar's sphere and capsule colliders.
 
 It was the VRM half of `vrmRetarget` until 2026-09-23, when the generic half
 left for `usd-motion-plugins` along the line
@@ -29,7 +31,8 @@ See [WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §1–2.
 
 ## It never opens a stage
 
-The rig arrives as plain values — an `ExpressionRig`, a `LookAtRig` — not as
+The rig arrives as plain values — an `ExpressionRig`, a `LookAtRig`, a
+`SpringBoneRig` — not as
 prims. Reading those off a stage is the caller's job
 ([`tools/motionRetarget`](../../tools/motionRetarget/) does it for the CLI).
 That keeps the library testable without USD composition and usable by a live
@@ -43,6 +46,7 @@ source that has no stage at all.
 | `vrmRig/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
 | `vrmRig/MaterialColorSlots.h` | `MaterialColorSlot`, `GetMaterialColorSlots`, `FindMaterialColorSlot` — the schema contract's table from a VRM colour slot to the canonical Material input it drives |
 | `vrmRig/LookAtEvaluator.h` | `LookAtRangeMap`, `LookAtCurveKey`, `LookAtType`, `LookAtRig`, `ParseLookAtRangeMaps`, `LookAtHead`, `LookAtInput`, `LookAtEvaluator`, `ResolvedLookAt`, `LookAtDiagnostics` |
+| `vrmRig/SpringBoneSolver.h` | Rigid rig/pose values, spring parameters, sphere/capsule colliders, collider groups, `SpringBoneSolver`, `SpringBoneResult`; `VRMRIG_SPRING_BONE_API` feature macro |
 
 ## Four decisions worth knowing
 
@@ -108,6 +112,70 @@ non-finite components) return no gaze with a diagnostic. Joint-local/world
 conversion remains the caller's job. The additive entry point advertises
 `VRMRIG_LOOKAT_DIRECTION_API`; existing point/pose overloads and value layouts
 are unchanged. Consumers need an owner package rebuilt with this API.
+
+## Spring bones
+
+`Configure` validates a `SpringBoneRig`, `Reset` seeds the current and previous
+tails from the supplied animated pose, and `Step(seconds, pose, result)` takes
+one caller-scheduled tick. There is no accumulator. Reconfigure requires a
+reset; seeking, teleporting and wrapping a clip require the caller to reset at
+the new pose. Each tick supplies the unsimulated animation, never the previous
+solver result. Stiffness aims toward that tick's animated local rotation.
+
+The result contains **absolute joint-local rotations in full skeleton order**,
+including the input rotations of unsimulated joints, and world-space tail
+positions for the simulated joints. Translations are unchanged. A caller
+combines the returned rotations with its pose; the solver authors nothing.
+Calls return `false` with an optional error string on invalid input and leave
+both state and the caller's result unchanged. Error strings are library
+diagnostics, not importer `VRMxxx` codes.
+
+The numerical conventions are:
+
+- VRM 1.0's `joints` is an ordered direct-child chain. The final joint is
+  only a tail: its rotation and parameters are not simulated. A one-joint
+  declaration therefore has no moving joint. Skipped intermediate joints are
+  diagnosed; this API does not yet implement the specification's ancestor-only
+  chain extension.
+- VRM 0.x's `rootJoints` expands all descendants. A branch uses its first
+  child in skeleton order as its tail, then independently solves every child
+  subtree. Each joint is solved once. Nested roots within one declaration use
+  the highest declared ancestor's parameters regardless of declaration order;
+  duplicate roots and overlaps between springs are errors.
+- A VRM 0.x leaf gets a **0.07 m virtual tail** continuing its incoming rest
+  direction, expressed in the leaf's local rest frame (UniVRM's rule). A
+  zero-length child or incoming direction is an error. three-vrm's leaf rule
+  uses the local translation direction directly; the reference cases use
+  identity leaf rotations where the two coincide.
+- Tails use damped Verlet integration, with stiffness and world gravity
+  multiplied by the supplied duration, followed by fixed-length projection.
+  Each selected collider pushes the tail outside the sum of collider and hit
+  radii, then projects onto the bone-length sphere again. Collider and group
+  order is declaration order, duplicate collider references are applied once,
+  and a zero-length capsule is a sphere. This is a single sequential projection
+  pass, as in the references: conflicting constraints can leave penetration.
+  A coincident tail/collider center uses a deterministic perpendicular normal.
+- History is kept in the selected center's space. Each tick uses the center's
+  current **animated** transform, including rotation. A center must be a common
+  ancestor (or the spring root itself), with no simulated strict ancestor.
+  Colliders attach to a world transform (`joint == -1`) or an animated skeleton
+  joint outside all simulated subtrees; dependent spring-driven colliders are
+  diagnosed. This avoids silently choosing an order for cyclic dependencies.
+- Inputs are rigid transforms in **metres**, with unit quaternions and fixed
+  rest translations, in one caller-selected world basis. Non-unit placement
+  scale, joint scale and non-metre stages must be converted by a future stage
+  reader; this API does not infer or support those conversions (track SB-O2).
+  Gravity direction is used as supplied, without normalization. Parameters
+  must be finite and nonnegative, with drag in `[0,1]`; step duration must be
+  finite and positive. Same inputs on the same build give identical results.
+
+`vrmRig_spring_unit` covers gravity settling, stiffness, sphere/capsule
+collisions, tree expansion, reset, determinism, center motion and rejected
+inputs. `vrmRig_spring_three-vrm` and `vrmRig_spring_univrm` compare committed
+trajectories with pinned upstream implementations at a tolerance of `1e-4 m`
+for tails and `1e-4` Euclidean distance for unit quaternions, sign aligned.
+[The reference harness](tests/springbone/README.md) records its scope,
+provenance and regeneration command. No reference source is vendored.
 
 ## Building
 

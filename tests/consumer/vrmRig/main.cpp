@@ -20,6 +20,11 @@
 // onto its one bind, and is the required set the one a VRM 1.0 avatar states.
 #include <vrmRig/ExpressionResolver.h>
 #include <vrmRig/RequiredBones.h>
+#include <vrmRig/SpringBoneSolver.h>
+
+#if !defined(VRMRIG_SPRING_BONE_API) || VRMRIG_SPRING_BONE_API < 1
+#error "This consumer requires vrmRig's spring-bone API; rebuild the owner package."
+#endif
 
 #include <cstdio>
 
@@ -57,9 +62,27 @@ main()
         return 1;
     }
 
+    vrmRig::SpringBoneRig springRig;
+    springRig.parents = {-1, 0};
+    springRig.restTransforms.resize(2);
+    springRig.restTransforms[1].translation = pxr::GfVec3f(0, 0.1f, 0);
+    vrmRig::SpringBoneSpring spring;
+    spring.joints = {0, 1};
+    spring.parameters.resize(2);
+    springRig.springs = {spring};
+    vrmRig::SpringBoneSolver solver;
+    vrmRig::SpringBoneResult result;
+    const vrmRig::SpringBonePose pose{springRig.restTransforms, {}};
+    if (!solver.Configure(springRig) || !solver.Reset(pose, &result) ||
+        !solver.Step(1.0f / 60.0f, pose, &result) || result.tails.size() != 1)
+    {
+        std::fprintf(stderr, "consumer: the installed spring solver did not step\n");
+        return 1;
+    }
+
     std::fprintf(stdout,
                  "consumer: resolved an expression onto %zu bind(s), and %zu "
-                 "required bones, through the installed package\n",
+                 "required bones, and stepped a spring through the installed package\n",
                  resolved.morphTargets.size(), required.size());
     return 0;
 }
