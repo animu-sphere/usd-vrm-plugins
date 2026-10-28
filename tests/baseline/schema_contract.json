@@ -1,6 +1,6 @@
 {
   "baselineSchemaVersion": 1,
-  "generatedSchemaSha256": "11ca0d8eecc9bc53bebb72d0abc7816fa7d218d1357a2b679f4e9288d18909f7",
+  "generatedSchemaSha256": "09446f25a3020c936f93c9539167c12a5e954f9b39f8d833d81e6ee58f00e33d",
   "registryVisible": {
     "VrmColliderAPI": true,
     "VrmConstraintAPI": true,
@@ -12,7 +12,7 @@
     "VrmSpringBoneAPI": true,
     "VrmTextureInfoAPI": true
   },
-  "schemaContractVersion": 1,
+  "schemaContractVersion": 2,
   "schemas": {
     "VrmColliderAPI": {
       "apiSchemaType": null,
@@ -568,6 +568,10 @@
           "variability": "Sdf.VariabilityUniform"
         },
         "vrm:joints": {
+          "typeName": "VtArray<TfToken>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:rootJoints": {
           "typeName": "VtArray<TfToken>",
           "variability": "Sdf.VariabilityUniform"
         },

@@ -76,7 +76,7 @@ def check_valid_fixtures():
     """Every committed fixture must import to a contract-valid stage."""
     for name in ("minimal.vrm", "vrm0_minimal.vrm", "multiskin_ibm.vrm",
                  "unordered_skel.vrm", "expressions.vrm", "expressions_mtoon.vrm",
-                 "springbone.vrm",
+                 "springbone.vrm", "vrm0_frontbake.vrm",
                  "lookat.vrm", "constraints.vrm", "textures.vrm", "animation.vrm",
                  "materials.vrm", "names.vrm"):
         stage = _open(name)
@@ -87,7 +87,7 @@ def check_valid_fixtures():
 
 
 def check_schema_contract_version_and_apis():
-    """Imported stages carry schema contract v1 and the registered Vrm* APIs."""
+    """Imported stages carry the current contract and registered Vrm* APIs."""
     stage = _open("minimal.vrm")
     vrm = stage.GetDefaultPrim().GetCustomData().get("vrm", {})
     assert vrm.get("schemaContractVersion") == validate_vrm.SCHEMA_CONTRACT_VERSION
@@ -195,6 +195,59 @@ def check_schema_parallel_array_rules():
     hair = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Hair")
     hair.GetAttribute("vrm:stiffness").Set(Vt.FloatArray([1.0]))
     assert "VRM253" in _codes(validate_vrm.validate_stage(stage))
+
+
+def check_spring_declaration_shapes():
+    """Distinguish roots from chains by authored opinions, including empties."""
+    for fixture, path, selected, other in (
+            ("springbone.vrm", "Hair", "vrm:joints", "vrm:rootJoints"),
+            ("vrm0_frontbake.vrm", "Wind", "vrm:rootJoints", "vrm:joints")):
+        def fresh():
+            stage = _open(fixture)
+            stage.SetEditTarget(stage.GetSessionLayer())
+            spring = stage.GetPrimAtPath(
+                validate_vrm.SPRINGBONES_PATH + "/" + path)
+            return stage, spring
+
+        stage, spring = fresh()
+        assert spring.GetAttribute(selected).HasAuthoredValueOpinion()
+        assert not spring.GetAttribute(other).HasAuthoredValueOpinion()
+        assert "VRM256" not in _codes(validate_vrm.validate_stage(stage))
+
+        # Even an empty second array is an ambiguous authored declaration.
+        spring.GetAttribute(other).Set(Vt.TokenArray([]))
+        diagnostics = validate_vrm.validate_stage(stage)
+        shape_errors = [d for d in diagnostics if d.code == "VRM256"]
+        assert len(shape_errors) == 1, diagnostics
+        assert shape_errors[0].prim_path == spring.GetPath().pathString
+        assert shape_errors[0].severity is Severity.ERROR
+
+        # A schema prim with both builtins but no values is also invalid.
+        stage = Usd.Stage.CreateInMemory()
+        spring = stage.DefinePrim(validate_vrm.SPRINGBONES_PATH + "/Empty", "Scope")
+        spring.ApplyAPI("VrmSpringBoneAPI")
+        diagnostics = []
+        validate_vrm._check_springbones(stage, diagnostics)
+        assert "VRM256" in _codes(diagnostics), diagnostics
+
+        stage, spring = fresh()
+        spring.GetAttribute("vrm:stiffness").Set(Vt.FloatArray([]))
+        diagnostics = validate_vrm.validate_stage(stage)
+        parallel = [d for d in diagnostics if d.code == "VRM253"]
+        assert len(parallel) == 1 and selected in parallel[0].message, diagnostics
+
+        stage, spring = fresh()
+        spring.GetAttribute(selected).Set(Vt.TokenArray(["bogus/missing/joint"]))
+        assert "VRM250" in _codes(validate_vrm.validate_stage(stage))
+
+        stage, spring = fresh()
+        spring.GetAttribute(selected).Set(Vt.TokenArray([]))
+        assert "VRM253" in _codes(validate_vrm.validate_stage(stage))
+        for name in ("vrm:stiffness", "vrm:gravityPower", "vrm:dragForce",
+                     "vrm:hitRadius"):
+            spring.GetAttribute(name).Set(Vt.FloatArray([]))
+        spring.GetAttribute("vrm:gravityDir").Set(Vt.Vec3fArray([]))
+        assert not ({"VRM253", "VRM256"} & _codes(validate_vrm.validate_stage(stage)))
 
 
 def check_schema_token_rules():
@@ -428,6 +481,7 @@ def main() -> int:
                   check_broken_humanoid_bone,
                   check_springbone_end_node_vs_broken_path,
                   check_schema_parallel_array_rules,
+                  check_spring_declaration_shapes,
                   check_schema_token_rules,
                   check_material_semantics_rules,
                   check_imaging_rules,

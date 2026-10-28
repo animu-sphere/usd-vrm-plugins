@@ -10,7 +10,7 @@ def SkelRoot "Asset" (
         dictionary vrm = {
             bool frontAxisNormalized = 0
             string rawExtension = '{"specVersion":"1.0","meta":"this should be an object","humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":999}}}}'
-            int schemaContractVersion = 1
+            int schemaContractVersion = 2
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
             string sourceVersion = "1.0"

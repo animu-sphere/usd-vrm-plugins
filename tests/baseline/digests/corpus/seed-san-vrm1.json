@@ -10588,7 +10588,7 @@
     "metaName": "Seed-san",
     "metaSha256": "a117f90fdb7110c9f64c5ca32063aca487263cf1e3b40c55ca1ac1b1fa4e4596",
     "rawExtensionSha256": "9c25a8f3d18e56b02721bf6360f4003156da91f9078605ebaa428a27da57b421",
-    "schemaContractVersion": 1,
+    "schemaContractVersion": 2,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",
     "sourceVersion": "1.0",

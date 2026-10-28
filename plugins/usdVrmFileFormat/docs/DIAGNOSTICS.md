@@ -95,6 +95,7 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | VRM253 | ERROR | validate | Spring-bone parameter arrays are not parallel |
 | VRM254 | ERROR | validate | Collider prim does not apply VrmColliderAPI |
 | VRM255 | ERROR | validate | Collider shape token is invalid |
+| VRM256 | ERROR | validate | Spring must author exactly one chain or root-joint array |
 | VRM260 | INFO | validate | Lossless raw VRM extension block is absent |
 | VRM262 | ERROR | validate | Constraint prim does not apply VrmConstraintAPI |
 | VRM263 | ERROR | validate | Constraint type token is invalid |

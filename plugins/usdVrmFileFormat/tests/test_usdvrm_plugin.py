@@ -85,7 +85,7 @@ def check_minimal():
 
     vrm = dp.GetCustomData().get("vrm", {})
     assert vrm.get("sourceFormat") == "VRM", vrm
-    assert vrm.get("schemaContractVersion") == 1, vrm
+    assert vrm.get("schemaContractVersion") == 2, vrm
     assert vrm.get("specVersion") == "1.0", vrm
     assert vrm.get("meta"), "VRM meta should be preserved on /Asset"
     assert vrm.get("rawExtension"), "VRM rawExtension should be preserved"
@@ -907,6 +907,7 @@ def check_springbone():
     assert "VrmSpringBoneAPI" in hair.GetAppliedSchemas(), hair.GetAppliedSchemas()
     assert list(hair.GetAttribute("vrm:joints").Get()) == \
         ["hips/spine/hair1", "hips/spine/hair1/hair2"]
+    assert not hair.GetAttribute("vrm:rootJoints").HasAuthoredValueOpinion()
     stiff = list(hair.GetAttribute("vrm:stiffness").Get())
     assert abs(stiff[0] - 1.0) < 1e-6 and abs(stiff[1] - 0.8) < 1e-6, stiff
     assert abs(hair.GetAttribute("vrm:gravityPower").Get()[0] - 0.5) < 1e-6
@@ -1235,6 +1236,8 @@ def check_vrm0_frontbake():
     # the "wind" (1,0,0) becomes (-1,0,0) for the now-+Z avatar.
     spring = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Wind")
     assert spring.IsValid(), "expected baked spring at .../SpringBones/Wind"
+    assert list(spring.GetAttribute("vrm:rootJoints").Get()) == ["hips/spine"]
+    assert not spring.GetAttribute("vrm:joints").HasAuthoredValueOpinion()
     gdir = spring.GetAttribute("vrm:gravityDir").Get()
     assert gdir and _vclose(gdir[0], (-1.0, 0.0, 0.0)), list(gdir)
 

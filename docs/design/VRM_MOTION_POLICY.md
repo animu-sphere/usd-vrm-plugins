@@ -360,7 +360,7 @@ is [roadmap/execir-track.md](../roadmap/execir-track.md).
 
 ## 10. Spring bones on a rig
 
-> Decided 2026-10-27. None of this is implemented yet; the work is the
+> Decided 2026-10-27. The remaining work is the
 > [spring-bone track](../roadmap/springbone-track.md).
 
 What `VrmSpringBoneAPI` and `VrmColliderAPI` mean is VRM vocabulary
@@ -406,13 +406,12 @@ each declaration as written, and does not convert one into the other:
   parameters parallel to it.
 - **VRM 0.x** (`secondaryAnimation.boneGroups`): `bones` lists the **roots**
   of subtrees. Every descendant of each root moves, branches included, with
-  the group's parameters. The schema will hold these roots as
+  the group's parameters. The schema holds these roots as
   `vrm:rootJoints`, with the parameters parallel to it, under a schema
   contract version bump.
 
-Until that change lands, the importer writes a VRM 0.x spring's roots into
-`vrm:joints`, which the schema documents as one chain. A reader must not take
-that array as a chain.
+Contract v1 wrote a VRM 0.x spring's roots into `vrm:joints`, which documented
+one chain. Contract v2 separates them; see the schema contract's migration notes.
 
 `vrmRig` expands roots into a joint tree against the skeleton's topology. The
 importer does not expand them: splitting a branching tree into chains would

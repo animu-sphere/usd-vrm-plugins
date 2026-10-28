@@ -144,6 +144,7 @@
 ?CreateVrmOverrideMouthAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmRadiusAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmRightEyeAttr@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
+?CreateVrmRootJointsAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmShapeAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmSkeletonRel@UsdVrmHumanoidAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?CreateVrmSkeletonRel@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
@@ -293,6 +294,7 @@
 ?GetVrmOverrideMouthAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmRadiusAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmRightEyeAttr@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
+?GetVrmRootJointsAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmShapeAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmSkeletonRel@UsdVrmHumanoidAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?GetVrmSkeletonRel@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ

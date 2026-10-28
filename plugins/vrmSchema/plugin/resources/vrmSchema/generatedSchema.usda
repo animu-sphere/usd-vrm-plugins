@@ -394,7 +394,7 @@ class "VrmLookAtAPI" (
 
 class "VrmSpringBoneAPI" (
     customData = {
-        string userDocBrief = "A VRM SpringBone chain (secondary motion, data only - no simulation)."
+        string userDocBrief = "A VRM spring declaration (secondary motion, data only - no simulation)."
     }
 )
 {
@@ -410,32 +410,37 @@ class "VrmSpringBoneAPI" (
     )
     uniform float[] vrm:dragForce (
         customData = {
-            string userDocBrief = "Per-joint drag force, parallel to vrm:joints."
+            string userDocBrief = "Drag force, parallel to the authored vrm:joints or vrm:rootJoints."
         }
     )
     uniform float3[] vrm:gravityDir (
         customData = {
-            string userDocBrief = "Per-joint gravity direction (model space), parallel to vrm:joints."
+            string userDocBrief = "Gravity direction (model space), parallel to the authored vrm:joints or vrm:rootJoints."
         }
     )
     uniform float[] vrm:gravityPower (
         customData = {
-            string userDocBrief = "Per-joint gravity power, parallel to vrm:joints."
+            string userDocBrief = "Gravity power, parallel to the authored vrm:joints or vrm:rootJoints."
         }
     )
     uniform float[] vrm:hitRadius (
         customData = {
-            string userDocBrief = "Per-joint hit radius, parallel to vrm:joints."
+            string userDocBrief = "Hit radius, parallel to the authored vrm:joints or vrm:rootJoints."
         }
     )
     uniform token[] vrm:joints (
         customData = {
-            string userDocBrief = "Ordered joint path tokens forming the spring chain."
+            string userDocBrief = "Ordered joint path tokens forming a VRM 1.0 spring chain."
+        }
+    )
+    uniform token[] vrm:rootJoints (
+        customData = {
+            string userDocBrief = "VRM 0.x subtree root joint tokens."
         }
     )
     uniform float[] vrm:stiffness (
         customData = {
-            string userDocBrief = "Per-joint stiffness, parallel to vrm:joints."
+            string userDocBrief = "Stiffness, parallel to the authored vrm:joints or vrm:rootJoints."
         }
     )
 }

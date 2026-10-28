@@ -17,7 +17,7 @@ def Xform "Asset" (
     "version": "1.0"
 }'''
             string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{}},"expressions":{"preset":{"happy":{"isBinary":false,"materialColorBinds":[{"material":1,"type":"color","targetValue":[1.0,0.21404114,0.21404114,0.75]},{"material":1,"type":"emissionColor","targetValue":[0.5,0.25,0.0,1.0]},{"material":0,"type":"shadeColor","targetValue":[0.05087609,0.21404114,1.0,1.0]},{"material":0,"type":"rimColor","targetValue":[0.21404114,0.21404114,0.21404114,1.0]},{"material":0,"type":"outlineColor","targetValue":[0.0,0.05087609,1.0,0.5]},{"material":5,"type":"color","targetValue":[0.21404114,0.21404114,0.21404114,1.0]}],"textureTransformBinds":[{"material":1,"scale":[2.0,2.0],"offset":[0.0,-1.0]}]}}}}'
-            int schemaContractVersion = 1
+            int schemaContractVersion = 2
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
             string sourceVersion = "1.0"

@@ -55,7 +55,7 @@ USD is authored, and every importer produces this shape:
 ```
 
 Every `/Asset/rig/*` control prim carries typed schema data from the
-`vrmSchema` bundle (schema contract v1); raw VRM blocks stay in `customData`
+`vrmSchema` bundle (schema contract v2); raw VRM blocks stay in `customData`
 as the lossless fallback. The importer **authors data only**: LookAt, node
 constraints and spring bones are written as typed schema data and never
 executed, and the same bytes always produce the same stage.
@@ -115,7 +115,7 @@ executed, and the same bytes always produce the same stage.
   `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion), and `VrmConstraintAPI`
   (Constraints). All are owned, generated, and registered by the `vrmSchema`
   bundle (workspace Phase 1 split); this importer links its typed API via
-  `find_package(vrmSchema)`. The public **schema contract v1**, versioning
+  `find_package(vrmSchema)`. The public **schema contract v2**, versioning
   policy, raw-to-typed correspondence table, and validator rules are in
   [`../vrmSchema/docs/SCHEMA_CONTRACT.md`](../vrmSchema/docs/SCHEMA_CONTRACT.md).
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw

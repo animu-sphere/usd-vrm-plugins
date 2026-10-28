@@ -35,10 +35,12 @@ class SdfAssetPath;
 
 /// \class UsdVrmSpringBoneAPI
 ///
-/// A VRM SpringBone chain (secondary motion, data only - no simulation).
-/// Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. The per-joint
-/// parameter arrays are parallel to vrm:joints. gravityDir is model-space (it takes
-/// the VRM-0.x front bake). Colliders are referenced by relationship.
+/// A VRM spring declaration (secondary motion, data only - no simulation).
+/// Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. Author exactly
+/// one of vrm:joints (an ordered chain) or vrm:rootJoints (subtree roots). Parameter
+/// arrays are parallel to the authored array; a root's parameters apply to its
+/// descendants. gravityDir is model-space (it takes the VRM-0.x front bake).
+/// Colliders are referenced by relationship.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdVrmTokens.
@@ -150,7 +152,7 @@ class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMJOINTS
     // --------------------------------------------------------------------- //
-    /// Ordered joint path tokens forming the spring chain.
+    /// Ordered joint path tokens forming a VRM 1.0 spring chain. Mutually exclusive with vrm:rootJoints.
     ///
     /// | ||
     /// | -- | -- |
@@ -172,9 +174,33 @@ class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
 
   public:
     // --------------------------------------------------------------------- //
+    // VRMROOTJOINTS
+    // --------------------------------------------------------------------- //
+    /// VRM 0.x subtree root joint tokens. Each root's descendants participate, including branches. Mutually exclusive with vrm:joints.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] vrm:rootJoints` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDVRM_API
+    UsdAttribute GetVrmRootJointsAttr() const;
+
+    /// See GetVrmRootJointsAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateVrmRootJointsAttr(VtValue const& defaultValue = VtValue(),
+                                         bool writeSparsely = false) const;
+
+  public:
+    // --------------------------------------------------------------------- //
     // VRMSTIFFNESS
     // --------------------------------------------------------------------- //
-    /// Per-joint stiffness, parallel to vrm:joints.
+    /// Stiffness, parallel to the authored vrm:joints or vrm:rootJoints.
     ///
     /// | ||
     /// | -- | -- |
@@ -198,7 +224,7 @@ class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMGRAVITYPOWER
     // --------------------------------------------------------------------- //
-    /// Per-joint gravity power, parallel to vrm:joints.
+    /// Gravity power, parallel to the authored vrm:joints or vrm:rootJoints.
     ///
     /// | ||
     /// | -- | -- |
@@ -222,7 +248,7 @@ class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMDRAGFORCE
     // --------------------------------------------------------------------- //
-    /// Per-joint drag force, parallel to vrm:joints.
+    /// Drag force, parallel to the authored vrm:joints or vrm:rootJoints.
     ///
     /// | ||
     /// | -- | -- |
@@ -246,7 +272,7 @@ class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMHITRADIUS
     // --------------------------------------------------------------------- //
-    /// Per-joint hit radius, parallel to vrm:joints.
+    /// Hit radius, parallel to the authored vrm:joints or vrm:rootJoints.
     ///
     /// | ||
     /// | -- | -- |
@@ -270,7 +296,7 @@ class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
     // --------------------------------------------------------------------- //
     // VRMGRAVITYDIR
     // --------------------------------------------------------------------- //
-    /// Per-joint gravity direction (model space), parallel to vrm:joints.
+    /// Gravity direction (model space), parallel to the authored vrm:joints or vrm:rootJoints.
     ///
     /// | ||
     /// | -- | -- |

@@ -84,7 +84,7 @@ def check_model(model: dict) -> None:
 
     vrm = dp.GetCustomData().get("vrm", {})
     assert vrm.get("sourceFormat") == "VRM", vrm.get("sourceFormat")
-    assert vrm.get("schemaContractVersion") == 1, vrm
+    assert vrm.get("schemaContractVersion") == 2, vrm
     assert vrm.get("specVersion") == model["vrmVersion"], \
         f"{rel}: specVersion {vrm.get('specVersion')} != manifest {model['vrmVersion']}"
     assert vrm.get("rawExtension"), "raw VRM block should be preserved as fallback"
@@ -126,6 +126,21 @@ def check_model(model: dict) -> None:
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")
     assert humanoid.IsValid(), f"{rel}: missing /Asset/rig/Humanoid"
     assert "VrmHumanoidAPI" in humanoid.GetAppliedSchemas(), humanoid.GetAppliedSchemas()
+
+    # Every spring keeps the source declaration's structure: VRM 0.x roots
+    # are not chains, and consumers need no source-version check to tell them.
+    spring_scope = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones")
+    if spring_scope:
+        roots = model["vrmVersion"].startswith("0")
+        selected, other = (("vrm:rootJoints", "vrm:joints") if roots else
+                           ("vrm:joints", "vrm:rootJoints"))
+        for spring in spring_scope.GetChildren():
+            assert spring.GetAttribute(selected).HasAuthoredValueOpinion(), rel
+            assert not spring.GetAttribute(other).HasAuthoredValueOpinion(), rel
+            count = len(spring.GetAttribute(selected).Get())
+            for name in ("vrm:stiffness", "vrm:gravityPower", "vrm:dragForce",
+                         "vrm:hitRadius", "vrm:gravityDir"):
+                assert len(spring.GetAttribute(name).Get()) == count, (rel, name)
 
     # The rig scopes the model declares are authored.
     for scope in exp.get("rigScopes", []):

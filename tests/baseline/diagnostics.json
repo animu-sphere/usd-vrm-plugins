@@ -281,6 +281,11 @@
       "source": "validate",
       "title": "Collider shape token is invalid"
     },
+    "VRM256": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Spring must author exactly one chain or root-joint array"
+    },
     "VRM260": {
       "severity": "INFO",
       "source": "validate",

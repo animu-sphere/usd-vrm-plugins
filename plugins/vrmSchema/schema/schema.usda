@@ -229,20 +229,25 @@ class "VrmSpringBoneAPI" (
     customData = {
         token apiSchemaType = "singleApply"
     }
-    doc = """A VRM SpringBone chain (secondary motion, data only - no simulation).
-    Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. The per-joint
-    parameter arrays are parallel to vrm:joints. gravityDir is model-space (it takes
-    the VRM-0.x front bake). Colliders are referenced by relationship."""
+    doc = """A VRM spring declaration (secondary motion, data only - no simulation).
+    Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. Author exactly
+    one of vrm:joints (an ordered chain) or vrm:rootJoints (subtree roots). Parameter
+    arrays are parallel to the authored array; a root's parameters apply to its
+    descendants. gravityDir is model-space (it takes the VRM-0.x front bake).
+    Colliders are referenced by relationship."""
 )
 {
     uniform token[] vrm:joints (
-        doc = "Ordered joint path tokens forming the spring chain."
+        doc = "Ordered joint path tokens forming a VRM 1.0 spring chain. Mutually exclusive with vrm:rootJoints."
     )
-    uniform float[] vrm:stiffness (doc = "Per-joint stiffness, parallel to vrm:joints.")
-    uniform float[] vrm:gravityPower (doc = "Per-joint gravity power, parallel to vrm:joints.")
-    uniform float[] vrm:dragForce (doc = "Per-joint drag force, parallel to vrm:joints.")
-    uniform float[] vrm:hitRadius (doc = "Per-joint hit radius, parallel to vrm:joints.")
-    uniform float3[] vrm:gravityDir (doc = "Per-joint gravity direction (model space), parallel to vrm:joints.")
+    uniform token[] vrm:rootJoints (
+        doc = "VRM 0.x subtree root joint tokens. Each root's descendants participate, including branches. Mutually exclusive with vrm:joints."
+    )
+    uniform float[] vrm:stiffness (doc = "Stiffness, parallel to the authored vrm:joints or vrm:rootJoints.")
+    uniform float[] vrm:gravityPower (doc = "Gravity power, parallel to the authored vrm:joints or vrm:rootJoints.")
+    uniform float[] vrm:dragForce (doc = "Drag force, parallel to the authored vrm:joints or vrm:rootJoints.")
+    uniform float[] vrm:hitRadius (doc = "Hit radius, parallel to the authored vrm:joints or vrm:rootJoints.")
+    uniform float3[] vrm:gravityDir (doc = "Gravity direction (model space), parallel to the authored vrm:joints or vrm:rootJoints.")
     uniform token vrm:center (
         doc = "Optional center joint token for inertial reference."
     )

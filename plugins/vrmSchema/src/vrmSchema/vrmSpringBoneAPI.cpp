@@ -99,6 +99,20 @@ UsdVrmSpringBoneAPI::CreateVrmJointsAttr(VtValue const& defaultValue, bool write
 }
 
 UsdAttribute
+UsdVrmSpringBoneAPI::GetVrmRootJointsAttr() const
+{
+    return GetPrim().GetAttribute(UsdVrmTokens->vrmRootJoints);
+}
+
+UsdAttribute
+UsdVrmSpringBoneAPI::CreateVrmRootJointsAttr(VtValue const& defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmRootJoints, SdfValueTypeNames->TokenArray,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
+}
+
+UsdAttribute
 UsdVrmSpringBoneAPI::GetVrmStiffnessAttr() const
 {
     return GetPrim().GetAttribute(UsdVrmTokens->vrmStiffness);
@@ -214,9 +228,9 @@ const TfTokenVector&
 UsdVrmSpringBoneAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdVrmTokens->vrmJoints,    UsdVrmTokens->vrmStiffness, UsdVrmTokens->vrmGravityPower,
-        UsdVrmTokens->vrmDragForce, UsdVrmTokens->vrmHitRadius, UsdVrmTokens->vrmGravityDir,
-        UsdVrmTokens->vrmCenter,
+        UsdVrmTokens->vrmJoints,       UsdVrmTokens->vrmRootJoints, UsdVrmTokens->vrmStiffness,
+        UsdVrmTokens->vrmGravityPower, UsdVrmTokens->vrmDragForce,  UsdVrmTokens->vrmHitRadius,
+        UsdVrmTokens->vrmGravityDir,   UsdVrmTokens->vrmCenter,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(UsdAPISchemaBase::GetSchemaAttributeNames(true), localNames);

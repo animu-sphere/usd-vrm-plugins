@@ -537,6 +537,10 @@ struct UsdVrmTokensType
     ///
     /// UsdVrmLookAtAPI
     const TfToken vrmRightEye;
+    /// \brief "vrm:rootJoints"
+    ///
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmRootJoints;
     /// \brief "vrm:shape"
     ///
     /// UsdVrmColliderAPI

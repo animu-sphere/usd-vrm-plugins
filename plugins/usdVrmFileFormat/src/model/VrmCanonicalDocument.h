@@ -302,8 +302,9 @@ struct VrmColliderGroup
     std::vector<int> colliderIndices; // into VrmSecondaryMotion::colliders
 };
 
-// One spring-chain joint with its physics parameters (VRM 1.0 stores these per
-// joint; VRM 0.x per group — the reader replicates the group values per joint).
+// One declared spring joint/root with its parameters (VRM 1.0 stores an ordered
+// chain; VRM 0.x stores subtree roots and the reader repeats group values per
+// root). Descendants are not expanded here.
 struct VrmSpringJoint
 {
     int jointIndex = -1;

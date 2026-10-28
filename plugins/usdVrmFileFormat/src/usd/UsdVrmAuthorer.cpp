@@ -92,7 +92,7 @@ _VrmHumanoidSchemaBones()
 }
 
 const TfToken _kAssetName("Asset");
-constexpr int _kSchemaContractVersion = 1;
+constexpr int _kSchemaContractVersion = 2;
 
 // Build the relative joint path (e.g. "Hips/Spine/Chest") for every joint, in
 // canonical (skin) order, resolving parents via memoized recursion so the input
@@ -930,7 +930,9 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outU
             }
             auto arr = [&](const char* n, const SdfValueTypeName& t, const VtValue& v)
             { sp.CreateAttribute(TfToken(n), t, false, SdfVariabilityUniform).Set(v); };
-            arr("vrm:joints", SdfValueTypeNames->TokenArray, VtValue(jtoks));
+            // VRM 0.x lists subtree roots, not an ordered spring chain.
+            arr(doc.version == VrmVersion::Vrm0 ? "vrm:rootJoints" : "vrm:joints",
+                SdfValueTypeNames->TokenArray, VtValue(jtoks));
             arr("vrm:stiffness", SdfValueTypeNames->FloatArray, VtValue(stiff));
             arr("vrm:gravityPower", SdfValueTypeNames->FloatArray, VtValue(gpow));
             arr("vrm:dragForce", SdfValueTypeNames->FloatArray, VtValue(drag));

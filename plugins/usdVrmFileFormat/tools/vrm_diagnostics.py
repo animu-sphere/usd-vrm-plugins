@@ -180,6 +180,8 @@ _VALIDATE_SPECS = [
           "Collider prim does not apply VrmColliderAPI"),
     _spec("VRM255", Severity.ERROR, "validate",
           "Collider shape token is invalid"),
+    _spec("VRM256", Severity.ERROR, "validate",
+          "Spring must author exactly one chain or root-joint array"),
     _spec("VRM260", Severity.INFO, "validate",
           "Lossless raw VRM extension block is absent"),
     _spec("VRM262", Severity.ERROR, "validate",
