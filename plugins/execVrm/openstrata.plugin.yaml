@@ -80,7 +80,7 @@ requires:
   bundles:
     - id: vrmSchema
       version: ">=0.10,<0.11"
-      contract: 1
+      contract: 2
     # execMotion, for the pose a retarget reads. Not linked either:
     # `vrm.computeBoundPose` reads `motion.sampleAnimation` by name across a
     # skeleton's `skel:animationSource`, and that computation is registered by

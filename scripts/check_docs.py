@@ -161,12 +161,25 @@ def check_schema_contract(failures: list[str]) -> None:
         failures.append(
             f"SCHEMA_CONTRACT.md's title does not name contract version "
             f"{contract} (from the vrmSchema manifest): {doc.splitlines()[0]!r}")
-    ffmt = read("plugins/usdVrmFileFormat/openstrata.plugin.yaml")
-    pinned = scalar(ffmt, "contract")
-    if pinned != contract:
-        failures.append(
-            f"usdVrmFileFormat pins schema contract {pinned!r} but vrmSchema "
-            f"provides {contract!r}")
+    bundles, _ = discover()
+    for name, path in bundles.items():
+        lines = read(path).splitlines()
+        for index, line in enumerate(lines):
+            requirement = re.fullmatch(r"( +)- id: vrmSchema\s*", line)
+            if not requirement:
+                continue
+            indent = len(requirement.group(1))
+            fields = []
+            for field in lines[index + 1:]:
+                if field.strip() and not field.lstrip().startswith("#"):
+                    if len(field) - len(field.lstrip()) <= indent:
+                        break
+                fields.append(field)
+            pinned = scalar("\n".join(fields), "contract")
+            if pinned != contract:
+                failures.append(
+                    f"{name} pins schema contract {pinned!r} but vrmSchema "
+                    f"provides {contract!r}")
 
 
 # --- one rig, described in three places --------------------------------------
