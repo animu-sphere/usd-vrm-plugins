@@ -9,7 +9,8 @@ the handful of facts that silently rot when the workspace changes shape:
    component table and in WORKSPACE.md's identity table;
 2. no current-state document describes `usdVrm` as a bundle id or points at the
    pre-rename `plugins/usdVrm/` path (history is exempt — see HISTORY);
-3. the schema contract version in the docs matches vrmSchema's manifest;
+3. the schema contract version in the docs and every consumer's requirement
+   matches vrmSchema's manifest;
 4. *(retired: the mocopi rig agreement left with the adapter and the profile;
    see the comment where it stood)*;
 5. the OpenUSD pin agrees across the bundle manifests, the configure-time

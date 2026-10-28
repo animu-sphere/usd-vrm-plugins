@@ -54,7 +54,7 @@ table.
 | MToon canonical semantics (Product P5) | In progress | v0.10.0 carries Steps 3–7; the rest unscheduled |
 | Native USD export (`vrm_export`) | In progress | v0.10.0 carries Step 1; the rest unscheduled |
 | Hydra imaging (`vrmImaging`) | Shipped | v0.10.0 |
-| Spring bones (`vrmRig` solver) | In progress | unscheduled; Step 0 acceptance in the spring-bone track |
+| Spring bones (`vrmRig` solver) | In progress | unscheduled; Step 0 implemented, solver next |
 
 How the motion tracks were ordered before they left this repository is
 [archive/motion-split/roadmap-orderings.md](../archive/motion-split/roadmap-orderings.md).

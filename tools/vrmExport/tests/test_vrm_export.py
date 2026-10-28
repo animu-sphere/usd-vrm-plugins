@@ -53,16 +53,17 @@ OTHER_TIME_ZONE = "PST8PDT"
 # texture entries and a different `defaultLayer.usdc` -- the values the
 # importer computed, not the packaging. A digest changes whenever what the
 # importer authors for that fixture does; a failure prints the new one.
-# Contract v2's x86-64 pins were remeasured on Windows on 2026-10-27.
-# The arm64 pins still describe v1 and must be remeasured on macOS before merge.
+# Contract v2's x86-64 pins were remeasured on Windows on 2026-10-27 and
+# verified on Linux; arm64 pins were measured on hosted macOS on 2026-10-28
+# (run 40620009249, job 122591483785).
 PACKAGE_SHA256 = {
     "x86_64": {
         "minimal.vrm": "1e0b2db7995e385e558b62f8fd46d58d6eb631b393cf4e9858194118d441d90f",
         "textures.vrm": "8aa3d1267d4697d2e7643f4e5f7c128247847776fe8890c9806bbad9ae215428",
     },
     "arm64": {
-        "minimal.vrm": "47d1b3a414789ac7b57c1721b6a53b416f5d395d19002d8fecdd73f15df1ecd2",
-        "textures.vrm": "89d41350bf1de5049bceca34713d1ec94b461fee7f74d549ef8f40d2b48f2ae9",
+        "minimal.vrm": "30869af204e09c3041894c3bd2a1b8f9d110fb90a52524cd597765528abd13c1",
+        "textures.vrm": "62e47cd0ba9850496d8f14b15f4de2327b6641286b37b81907bbf8df21b45506",
     },
 }
 ARCHITECTURE = {"amd64": "x86_64", "x86_64": "x86_64",
