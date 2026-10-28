@@ -258,6 +258,12 @@ The rows that remain are what this workspace still *installs*. A consumed
 package has no row here and never will: this document is about what a consumer
 of **this** repository resolves.
 
+`vrmRig` also installs `SpringBoneSolver.h`, advertising
+`VRMRIG_SPRING_BONE_API`. Its consumer fixture configures a two-joint chain,
+resets and steps it through the installed static library. That path is measured
+on Windows x86-64; its dependency closure is unchanged, and hosted Linux/macOS
+verification of this additive API is still pending.
+
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
 and defines a `<NAME>_STATIC` compile definition `PUBLIC`, which a consumer
 inherits from the imported target and must not set by hand.

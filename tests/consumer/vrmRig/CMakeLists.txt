@@ -3,8 +3,8 @@
 # A consumer of the installed `vrmRig` package, and nothing else.
 #
 # What a VRM rig adds to a retarget: the expression resolve, the look-at and
-# VRM 1.0's required bones. Its one edge beyond OpenUSD is the value contract,
-# `motionCore`, published by usd-motion-plugins and resolved from a prefix the
+# VRM 1.0's required bones, and the stateful spring solver. Its one edge beyond
+# OpenUSD is the value contract, `motionCore`, resolved from a prefix the
 # consumer is handed like OpenUSD. The retarget itself is that repository's
 # `motionRetarget` and is not an edge of this package: the VRM half includes
 # nothing from the generic half (WORKSPACE.md §9.5).

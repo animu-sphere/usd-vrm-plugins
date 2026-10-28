@@ -1,6 +1,6 @@
 # The spring-bone track
 
-**Status:** 🚧 Step 0 implemented; solver not started · **Target:** unscheduled
+**Status:** 🚧 Solver implemented; hosted verification and runtime integration pending · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [VRM motion policy](../design/VRM_MOTION_POLICY.md) §10
 
@@ -17,8 +17,10 @@ Product P0–P6.
   and `vrm0_frontbake` fixtures hold them, and the negative fixture
   `missing_spring_collider_group` holds the warning (`VRM190`) for a
   collider-group index that is out of range.
-- **Nothing evaluates them.** No library, plugin or tool here moves a spring
-  joint.
+- **`vrmRig` evaluates plain rig/pose values.** The solver and its unit and
+  reference-comparison suites are implemented and measured on Windows. Hosted
+  cross-platform verification is still owed; no stage reader or live adapter
+  is implemented here.
 - **Schema contract v2 separates roots and chains** (policy §10.2).
   Step 0 supplies the stage declaration the solver will consume.
 - **Order adjusted 2026-10-27:** Step 0 was brought forward while the
@@ -53,32 +55,39 @@ Product P0–P6.
 reader can tell a chain from a set of roots without knowing the source
 version.
 
-### Step 1: the solver in `vrmRig` ⬜
+### Step 1: the solver in `vrmRig` 🚧
 
-- ⬜ A header beside `ExpressionResolver.h` and `LookAtEvaluator.h`. It holds
+- ✅ A header beside `ExpressionResolver.h` and `LookAtEvaluator.h`. It holds
   the rig values (a joint tree with parent indices, rest transforms,
   per-joint parameters, colliders, collider groups and the center) and a
   stateful solver with a reset and a fixed step. The output convention is
-  decided in that PR and stated in the
-  [vrmRig README](../../libs/vrmRig/README.md). The candidate is joint-local
-  rotations in the rig's joint order.
-- ⬜ Root expansion: VRM 0.x roots into a joint tree, given the skeleton's
+  absolute joint-local rotations in the full skeleton's joint order, stated in
+  the [vrmRig README](../../libs/vrmRig/README.md#spring-bones).
+- ✅ Root expansion: VRM 0.x roots into a joint tree, given the skeleton's
   topology. Each joint appears once (policy §10.2).
-- ⬜ The end-of-chain rules for both versions, fixed against the references
+- ✅ The end-of-chain rules for both versions, fixed against the references
   (policy §10.3).
-- ⬜ A feature macro in the installed headers, as
+- ✅ `VRMRIG_SPRING_BONE_API` in the installed headers, as
   `VRMRIG_LOOKAT_DIRECTION_API` is for look-at directions, so that a consumer
   built against an older install fails with a clear message.
-- ⬜ Unit tests on constructed rigs:
+- ✅ Unit tests on constructed rigs (`vrmRig_spring_unit`):
   - a chain settles under gravity, and stiffness returns it to rest;
   - a sphere collider and a capsule collider each push a joint out;
   - a VRM 0.x branching tree moves each joint exactly once;
   - a reset restores the same state, and a repeated run is identical.
-- ⬜ A reference comparison: joint trajectories from three-vrm (both
+- ✅ A reference comparison: joint trajectories from three-vrm (both
   versions) and UniVRM (VRM 0.x) on generated inputs. They are committed as
   data with the script that regenerates them, and compared within a stated
-  tolerance (policy §10.4).
-- ⬜ `vrmRig`'s boundary check unchanged: the solver adds no dependency.
+  tolerance (policy §10.4). [Harness and scope](../../libs/vrmRig/tests/springbone/README.md):
+  672 three-vrm and 416 UniVRM joint samples, rigid unit-scale inputs,
+  `1e-4 m` position and `1e-4` sign-aligned quaternion distance. The UniVRM
+  measurement runs its unmodified system with a rigid math shim, not a Unity
+  player; three-vrm's joints receive refreshed child matrices each step.
+- ✅ `vrmRig`'s boundary check unchanged: the solver adds no dependency.
+- ⬜ Hosted Windows/Linux/macOS suites pass, including the updated installed
+  consumer which configures, resets and steps the solver. Local Windows
+  unit/reference suites and the external installed-consumer run pass; no
+  hosted result is claimed.
 
 **Done when** the solver passes the unit tests and the reference comparison
 on every CI lane, and an installed `vrmRig` package exposes it.

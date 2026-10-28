@@ -50,7 +50,10 @@ Aligned with the design policy's §11 fidelity vocabulary:
 Spring declarations in contract v2 use `vrm:rootJoints` for VRM 0.x subtree
 roots and `vrm:joints` for VRM 1.0 ordered chains. The fixture and corpus smoke
 tests assert this distinction; the validator checks exclusive authorship and
-parameter-array lengths. The solver remains unimplemented.
+parameter-array lengths. `vrmRig::SpringBoneSolver` evaluates the declarations
+over plain rigid values; its adapter and live-avatar evidence remain in the
+runtime's scope. The solver is measured locally on Windows, with the same unit
+and reference-comparison suites registered on every workspace CI lane.
 
 The `usdVrmFileFormat` file-format plugin **authors data only**. It never evaluates or
 simulates:
@@ -81,7 +84,7 @@ motion is implemented by the components below; the contract is
 | Component | Implemented |
 | --- | --- |
 | `usdVrmaFileFormat` | A `VRMC_vrm_animation` 1.0 clip → an avatar-independent semantic clip: humanoid rotations and the hips translation from the first animation (`LINEAR`, `STEP`; `CUBICSPLINE` linearised with a warning), 30 time codes per second, `vrma` provenance; expressions as `/Animation/Expressions/<name>` weights, unclamped and unexpanded; look-at as `/Animation/LookAt`, a placed target point and the head-bone offset. Scale channels and translations other than the hips are ignored with a warning |
-| `vrmRig` | VRM 1.0's required bones; `ExpressionResolver` (named weights onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName`, with `overrideBlink` / `overrideLookAt` / `overrideMouth` arbitration); `LookAtEvaluator` (a target point onto a `bone`- or `expression`-type rig's own range maps) |
+| `vrmRig` | VRM 1.0's required bones; `ExpressionResolver` (named weights onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName`, with `overrideBlink` / `overrideLookAt` / `overrideMouth` arbitration); `LookAtEvaluator` (a target point onto a `bone`- or `expression`-type rig's own range maps); `SpringBoneSolver` (VRM 1.0 chains, VRM 0.x root subtrees and virtual tails, sphere/capsule colliders, center-space history and reset, returning joint-local rotations; rigid metre inputs, fixed rest translations; [API conventions](../../libs/vrmRig/README.md#spring-bones)) |
 | `motion_retarget` | Bakes a semantic clip onto a VRM rig as `UsdSkelAnimation` bound through `skel:animationSource`; authors expression `blendShapeWeights` and gaze; carries each joint's rest scale; frozen exit codes; `--load-report`, `--build-info`, `--version`. authors expression **material colours as time samples on the Material's canonical inputs** (the schema contract's slot table), which `/mtlx` and `/preview` read |
 | `execVrm` | OpenExec computations over the applied `VrmHumanoidAPI`: target skeleton, humanoid map, rest-pose correction, one sample's retarget, joint-local transforms, and the retarget's diagnostics as values — equal to `motion_retarget`'s bake bit for bit on the parity cases |
 

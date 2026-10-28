@@ -12,7 +12,7 @@ endif()
 
 project(vrmRig
     VERSION ${_vrm_rig_version}
-    DESCRIPTION "What a VRM rig adds to a retarget: expressions, look-at, required bones"
+    DESCRIPTION "VRM rig values: expressions, look-at, required bones, spring bones"
     LANGUAGES CXX)
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -49,6 +49,7 @@ add_library(vrmRig STATIC
     src/ExpressionResolver.cpp
     src/LookAtEvaluator.cpp
     src/MaterialColorSlots.cpp
+    src/SpringBoneSolver.cpp
     src/RequiredBones.cpp)
 add_library(vrmRig::vrmRig ALIAS vrmRig)
 set_target_properties(vrmRig PROPERTIES
