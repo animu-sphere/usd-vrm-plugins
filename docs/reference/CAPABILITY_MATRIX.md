@@ -52,8 +52,11 @@ roots and `vrm:joints` for VRM 1.0 ordered chains. The fixture and corpus smoke
 tests assert this distinction; the validator checks exclusive authorship and
 parameter-array lengths. `vrmRig::SpringBoneSolver` evaluates the declarations
 over plain rigid values; its adapter and live-avatar evidence remain in the
-runtime's scope. The solver is measured locally on Windows, with the same unit
-and reference-comparison suites registered on every workspace CI lane.
+runtime's scope. The unit and reference-comparison suites pass on hosted
+Windows, Linux and macOS arm64, as does the installed consumer which configures,
+resets and steps the solver ([source CI](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250),
+[package consumer](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536217),
+`14efdec`, 2026-10-28).
 
 The `usdVrmFileFormat` file-format plugin **authors data only**. It never evaluates or
 simulates:
