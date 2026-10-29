@@ -51,6 +51,14 @@ Current schema contract version: **2**.
   with its backslashes escaped, the way a `.usda` string writes one. Before
   this it missed that spelling.
 
+### Fixed
+
+- VRM 0.x spring collider offsets now convert their left-handed source-local
+  Z coordinate into the glTF joint-local basis. The missing conversion could
+  push AliciaSolid's fringe against the wrong side of its head collider.
+  Radius, collider membership and raw source JSON are preserved; VRM 1.0
+  collider offsets are unchanged. The front-direction bake remains separate.
+
 ### Changed
 
 - **Schema contract v2 distinguishes spring roots from chains.** VRM 0.x

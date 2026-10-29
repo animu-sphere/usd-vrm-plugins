@@ -419,6 +419,13 @@ lossless.
 | `VrmMToonAPI` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), with `vrm:shaderModel = "MToon"` | `inputs:vrm:mtoon:*` — every property a realization connects to is authored | `/Asset/mtl/<material>.customData.vrm:mtoon:raw` |
 | `VrmTextureInfoAPI:<role>` | `/Asset/mtl/<material>` (a `UsdShadeMaterial` only), one of eleven roles | `inputs:vrm:textureInfo:<role>:file`, `texCoord`; the rest where the source states them | as for the API that owns the role |
 
+Collider `vrm:offset` and capsule `vrm:tail` are positions in the attached
+joint's right-handed glTF local basis. The VRM 0.x importer converts its
+left-handed source collider offset by negating Z before authoring; VRM 1.0
+collider positions already use the glTF basis. A model front-direction bake
+changes the skeleton's root placement, not these joint-local values. The raw
+secondary-motion JSON retains the source coordinates.
+
 A spring authors exactly one joint array, even though both are schema builtins.
 VRM 1.0's `vrm:joints` is ordered parent to child. VRM 0.x's `vrm:rootJoints`
 lists subtree roots; every descendant participates, including branches. Each

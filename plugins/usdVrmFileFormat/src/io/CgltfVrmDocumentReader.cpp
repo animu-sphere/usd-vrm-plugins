@@ -2279,6 +2279,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath, const std::vector<
                                 c.sourceNodeName = nodeName(ni);
                                 c.jointIndex = nodeJoint(ni);
                                 c.offset = vec3(_Find(*co, "offset"), GfVec3f(0));
+                                // VRM 0.x stores collider offsets in Unity's
+                                // left-handed local space. Normalize to the
+                                // glTF joint-local basis before stage authoring;
+                                // the model's front-facing bake is separate.
+                                if (c.offset[2] != 0.0f)
+                                    c.offset[2] = -c.offset[2];
                                 c.radius = fval(_Find(*co, "radius"), 0);
                                 grp.colliderIndices.push_back(
                                     static_cast<int>(sm.colliders.size()));
