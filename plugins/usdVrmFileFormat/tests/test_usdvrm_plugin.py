@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import re
+import struct
 import sys
 import tempfile
 
@@ -924,6 +925,60 @@ def check_springbone():
     assert col.GetAttribute("vrm:node").Get() == "hips/spine"
 
 
+def check_spring_collider_coordinates():
+    """VRM 0.x collider offsets enter joint-local glTF space before front bake."""
+    offsets = [(0.012, 0.034, 0.056), (-0.021, 0.043, -0.065), (0, 0, 0)]
+    with tempfile.TemporaryDirectory() as tmp:
+        for legacy in (True, False):
+            gltf, binary = material_oracle.read_glb(
+                FIXTURES / ("vrm0_frontbake.vrm" if legacy else "springbone.vrm"))
+            # A rotated attachment catches treating this as a model-space
+            # vector or baking the front rotation into the offset a second time.
+            gltf["nodes"][2]["rotation"] = [0, 2**-0.5, 0, 2**-0.5]
+            if legacy:
+                secondary = gltf["extensions"]["VRM"]["secondaryAnimation"]
+                secondary["colliderGroups"] = [{"node": 2, "colliders": [
+                    {"offset": dict(zip(("x", "y", "z"), offset)), "radius": 0.084}
+                    if i < 2 else {"radius": 0.084}
+                    for i, offset in enumerate(offsets)]}]
+                secondary["boneGroups"][0]["colliderGroups"] = [0]
+                group = "ColliderGroup_0"
+            else:
+                secondary = gltf["extensions"]["VRMC_springBone"]
+                secondary["colliders"] = [
+                    {"node": 2, "shape": {"sphere": {"offset": list(offset), "radius": 0.084}}}
+                    for offset in offsets]
+                secondary["colliderGroups"][0]["colliders"] = list(range(len(offsets)))
+                group = "Head"
+            # Preserve the original geometry/accessor BIN while changing only
+            # the synthetic source declarations in a temporary GLB.
+            encoded = json.dumps(gltf, separators=(",", ":")).encode()
+            encoded += b" " * (-len(encoded) % 4)
+            chunks = struct.pack("<I4s", len(encoded), b"JSON") + encoded
+            chunks += struct.pack("<I4s", len(binary), b"BIN\0") + binary
+            path = pathlib.Path(tmp) / ("legacy.vrm" if legacy else "current.vrm")
+            path.write_bytes(struct.pack("<4sII", b"glTF", 2, 12 + len(chunks)) + chunks)
+            stage = Usd.Stage.Open(str(path))
+            assert stage
+            skel = UsdSkel.Skeleton(stage.GetPrimAtPath("/Asset/skel/Skeleton"))
+            rest = skel.GetRestTransformsAttr().Get()
+            joint_world = rest[1] * rest[0]
+            for i, source in enumerate(offsets):
+                col = stage.GetPrimAtPath(
+                    f"/Asset/rig/SecondaryMotion/Colliders/{group}/Collider_{i}")
+                offset = col.GetAttribute("vrm:offset").Get()
+                expected = (source[0], source[1], -source[2] if legacy else source[2])
+                assert _vclose(offset, expected), (legacy, i, offset, expected)
+                assert col.GetAttribute("vrm:node").Get() == "hips/spine"
+                assert abs(col.GetAttribute("vrm:radius").Get() - 0.084) < 1e-6
+                # Ry(90) at the joint, then VRM 0.x's Ry(180) at the root.
+                world_expected = ((source[2], 0.8 + source[1], source[0]) if legacy else
+                                  (source[2], 0.8 + source[1], -source[0]))
+                assert _vclose(joint_world.Transform(Gf.Vec3d(offset)), world_expected)
+            raw = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion").GetCustomData()["vrm"]["springBone"]["raw"]
+            assert json.loads(raw) == secondary, "raw source declarations must remain untouched"
+
+
 def check_shared_accessor():
     """Two primitives sharing one accessor are compacted to their used verts."""
     stage = _open("shared_accessor.vrm")
@@ -1287,7 +1342,8 @@ def main() -> int:
                   check_expressions_mtoon,
                   check_vrm0_expressions, check_vrm0_frontbake,
                   check_textures, check_portable_package, check_animation,
-                  check_lookat, check_springbone, check_names, check_materials,
+                  check_lookat, check_springbone, check_spring_collider_coordinates,
+                  check_names, check_materials,
                   check_material_hierarchy, check_mtlx_textured_unlit,
                   check_mtlx_lit, check_mtlx_mtoon,
                   check_texture_transform, check_mtlx_node_ids,

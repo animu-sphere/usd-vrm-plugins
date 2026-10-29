@@ -58,7 +58,11 @@ roots and `vrm:joints` for VRM 1.0 ordered chains. The fixture and corpus smoke
 tests assert this distinction; the validator checks exclusive authorship and
 parameter-array lengths. `vrmRig::SpringBoneSolver` evaluates the declarations
 over plain rigid values; its adapter and live-avatar evidence remain in the
-runtime's scope. The unit and reference-comparison suites pass on hosted
+runtime's scope. VRM 0.x collider offsets are normalized from the source's
+left-handed coordinates into glTF joint-local coordinates by negating Z once,
+before any model front-direction bake. The smoke regression covers positive,
+negative and omitted Z, a rotated attachment, raw-source retention and unchanged
+VRM 1.0 values. The unit and reference-comparison suites pass on hosted
 Windows, Linux and macOS arm64, as does the installed consumer which configures,
 resets and steps the solver ([source CI](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250),
 [package consumer](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536217),
