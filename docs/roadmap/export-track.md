@@ -67,9 +67,11 @@ rather than embedded. Step 2 covers it.
   image is taken away.
 - ✅ `--flatten`, as an explicit opt-in (policy §6.1), with no source-file
   comment.
-- ⬜ A package dependency report, `vrm_export`'s own: policy q1 keeps
-  `package_vrm.py` as the importer's development tool rather than adopting
-  its inventory.
+- ✅ A package dependency report, `vrm_export`'s own (2026-10-29):
+  `--dependency-report` emits the portable JSON inventory of policy §8.1.
+  Tests compare every format's paths and byte counts with the written files,
+  including embedded/external image deduplication and repeatability.
+  Policy q1 keeps `package_vrm.py` as the importer's development tool.
 - ⬜ Richer diagnostics.
 - 🚧 The product's `vrm_export` exporting a `.vrm` from the release artifact,
   in the artifact-only smoke: `scripts/artifact_only_export_smoke.py`, a step

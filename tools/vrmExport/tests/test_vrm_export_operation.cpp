@@ -11,6 +11,7 @@
 #include "export/VrmExport.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/js/json.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -106,8 +107,49 @@ TestParseOptions()
     assert(!Parse({"a.vrm", "-o", "x.usda", "-o", "y.usda"}, &options, &error));
     assert(Parse({"a.vrm", "-o", "x.usda", "--flatten"}, &options, &error) && options.flatten);
     assert(Parse({"a.vrm", "-o", "x.usda"}, &options, &error) && !options.flatten);
+    assert(Parse({"a.vrm", "-o", "x.usda", "--dependency-report"}, &options, &error) &&
+           options.dependencyReport);
+    assert(Parse({"a.vrm", "-o", "x.usda"}, &options, &error) && !options.dependencyReport);
     assert(!Parse({"a.vrm", "-o", "x.usda", "--motion"}, &options, &error) &&
            Contains(error, "--motion"));
+}
+
+void
+TestDependencyReport()
+{
+    ExportResult result;
+    auto report = JsParseString(vrmExport::CreateDependencyReport("/private/avatar.usda", result))
+                      .GetJsObject();
+    assert(report.at("rootLayer").GetString() == "avatar.usda");
+    assert(report.at("dependencies").GetJsArray().empty());
+    assert(report.at("totalDependencyBytes").GetUInt64() == 0);
+    assert(report.at("validation").GetString() == "notRequested");
+
+    // Distinct sources sharing a file count once. Sorting, JSON escaping and
+    // sizes beyond 32 bits must survive serialization, without source paths.
+    const std::size_t large = static_cast<std::size_t>(1ull << 33);
+    result.assets = {{"/private/b.png", "./textures/b.png", large},
+                     {"/private/a.png", "./textures/a.png", 0},
+                     {"/private/duplicate.png", "./textures/b.png", large}};
+    result.checks = {"passed"};
+    const std::string output = "/private/avatar-\"quoted\"-\n.usda";
+    const std::string text = vrmExport::CreateDependencyReport(output, result);
+    assert(!Contains(text, "/private"));
+    report = JsParseString(text).GetJsObject();
+    assert(report.at("rootLayer").GetString() == "avatar-\"quoted\"-\n.usda");
+    assert(report.at("totalDependencyBytes").GetUInt64() == large);
+    assert(report.at("validation").GetString() == "passed");
+    const JsArray& dependencies = report.at("dependencies").GetJsArray();
+    assert(dependencies.size() == 2);
+    assert(dependencies[0].GetJsObject().at("path").GetString() == "./textures/a.png");
+    assert(dependencies[1].GetJsObject().at("sizeBytes").GetUInt64() == large);
+
+    report =
+        JsParseString(vrmExport::CreateDependencyReport("/private/A.USDZ", result)).GetJsObject();
+    assert(report.at("rootLayer").GetString() == "defaultLayer.usdc");
+    assert(report.at("format").GetString() == "usdz");
+    result.status = Status::ExportFailure;
+    assert(vrmExport::CreateDependencyReport(output, result).empty());
 }
 
 // Everything refused before a stage is opened, in the order the export
@@ -209,6 +251,7 @@ main(int argc, char** argv)
     TestDetectOutputFormat();
     TestHashBytes();
     TestParseOptions();
+    TestDependencyReport();
     TestRefusals(scratch, vrmFixture);
     TestCheckOutput(scratch);
 

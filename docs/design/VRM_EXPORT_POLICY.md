@@ -171,7 +171,7 @@ exists — Step 3's assembly, a Python binding, another tool — exactly as
 The dependency boundary:
 
 ```text
-vrm_export -> OpenUSD (usd, sdf, ar, tf, usdUtils, usdValidation)
+vrm_export -> OpenUSD (usd, sdf, ar, tf, js, usdUtils, usdValidation)
            ~> usdVrmFileFormat, usdVrmPackageResolver, vrmSchema   (run time only,
                                                                     through the
                                                                     plugin registry)
@@ -195,7 +195,7 @@ lane ([WORKSPACE.md](../architecture/WORKSPACE.md) §5).
 ### 5.1 Synopsis
 
 ```text
-vrm_export <input.vrm> -o <output.{usda,usdc,usdz}> [--check] [--overwrite] [--flatten] [--verbose]
+vrm_export <input.vrm> -o <output.{usda,usdc,usdz}> [--check] [--overwrite] [--flatten] [--dependency-report] [--verbose]
 vrm_export --help | --version
 ```
 
@@ -213,6 +213,7 @@ in place of `-o` is not accepted, so one spelling exists.
 | `--verbose` | 1 | Report each localized dependency and each check. |
 | `--help`, `--version` | 1 | |
 | `--flatten` | 2 | Opt-in flattening (§6.1). |
+| `--dependency-report` | 2 | On success, print a JSON inventory of the localized dependencies to stdout (§8.1). |
 | `--motion <clip.vrma>` | 3 | Assemble a clip onto the avatar. |
 | `--keep-source` | 4 | Embed the source `.vrm` (§6.4). |
 | `--keep-temp` | later | Keep the temporary directory of a failed `.usdz` export. |
@@ -338,6 +339,33 @@ What `--check` cannot prove is the one claim this tool is for: that the
 output opens **without the VRM plugins**. Its own process has them loaded.
 That claim is made by the integration tests, which reopen every output in a
 separate process with no VRM plugin on `PXR_PLUGINPATH_NAME`.
+
+### 8.1 Dependency report
+
+`--dependency-report` prints one JSON object to stdout after a successful
+export, including any requested validation. Diagnostics and `--verbose`
+stay on stderr; a failed export prints no inventory. It does not imply
+`--check`. A failure to write the report is an export failure (exit 4);
+the USD output has already been written.
+
+The version 1 object has these fields:
+
+| Field | Meaning |
+| --- | --- |
+| `reportVersion` | Integer `1`. |
+| `format` | `usda`, `usdc` or `usdz`, lowercase. |
+| `rootLayer` | The output's file name for a loose layer, `defaultLayer.usdc` for a package. |
+| `dependencies` | Array of objects with `path` (the localized `./textures/<hash>.<ext>`) and `sizeBytes` (integer byte count). Sorted by path, with each localized file listed once. |
+| `totalDependencyBytes` | Sum of the distinct dependencies' byte counts; excludes the root layer and package overhead. |
+| `validation` | `passed` when `--check` ran successfully, `notRequested` otherwise. |
+
+The inventory records the bytes copied during localization, including external
+images. Several source paths sharing one localized file count once; files
+already beside a loose export but unused by it are absent. An avatar with
+no dependencies has an empty array and a zero total. It carries no source,
+output-directory or staging-directory paths, so it can travel with the USD
+artifact. Repeated exports in different directories produce the same report
+for the same output file name, format and validation choice.
 
 ## 9. Determinism
 

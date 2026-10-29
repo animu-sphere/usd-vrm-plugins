@@ -79,5 +79,15 @@ main(int argc, char** argv)
     {
         std::cerr << "vrm_export: wrote " << options.outputPath << "\n";
     }
+    if (options.dependencyReport)
+    {
+        std::cout << vrmExport::CreateDependencyReport(options.outputPath, result) << "\n";
+        std::cout.flush();
+        if (!std::cout)
+        {
+            std::cerr << "vrm_export: cannot write the dependency report to stdout\n";
+            return static_cast<int>(Status::ExportFailure);
+        }
+    }
     return 0;
 }

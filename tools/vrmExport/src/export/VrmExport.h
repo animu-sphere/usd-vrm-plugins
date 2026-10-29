@@ -66,6 +66,7 @@ struct LocalizedAsset
 {
     std::string sourcePath;
     std::string outputPath;
+    std::size_t sizeBytes = 0;
 };
 
 struct ExportResult
@@ -88,6 +89,10 @@ ExportResult ExportVrm(const std::string& inputPath, const std::string& outputPa
 // The validation `check` runs, on an output already written. Exposed so a
 // test can run it on an output it corrupted.
 ExportResult CheckOutput(const std::string& outputPath);
+
+// JSON inventory of a successful export: sorted, distinct localized paths and
+// their byte counts, with no source or staging paths. Empty on a failed result.
+std::string CreateDependencyReport(const std::string& outputPath, const ExportResult& result);
 
 // The name a localized file is given (policy §6.2): FNV-1a 64-bit over
 // `size` bytes, with vrmContainer's offset basis -- 1469598103934665603, which

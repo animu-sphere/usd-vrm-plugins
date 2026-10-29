@@ -41,7 +41,7 @@ endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
 
-set(_vrm_export_usd_libs usd usdUtils usdValidation sdf ar plug tf vt gf arch)
+set(_vrm_export_usd_libs usd usdUtils usdValidation sdf ar plug tf vt gf arch js)
 set(_vrm_export_usd_targets)
 foreach(_usd_lib ${_vrm_export_usd_libs})
     if(TARGET ${_usd_lib})

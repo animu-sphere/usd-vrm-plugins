@@ -10,6 +10,7 @@
 #include "VrmExport.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/js/json.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -34,6 +35,7 @@
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <ctime>
 #include <map>
@@ -237,7 +239,7 @@ LocalizeDependencies(const SdfLayerHandle& layer, const SdfLayerHandle& source,
             }
         }
         localized.emplace(anchored, outputPath);
-        result->assets.push_back({assetPath, outputPath});
+        result->assets.push_back({assetPath, outputPath, size});
         return outputPath;
     });
     return !failed;
@@ -402,6 +404,44 @@ DetectOutputFormat(const std::string& outputPath)
         return OutputFormat::Usdz;
     }
     return OutputFormat::Unknown;
+}
+
+std::string
+CreateDependencyReport(const std::string& outputPath, const ExportResult& result)
+{
+    if (result.status != Status::Success)
+    {
+        return {};
+    }
+
+    // Inventory the bytes localization wrote, rather than reading paths back
+    // from a package through the source resolver. Several source images may
+    // share one localized path, and traversal order is not report order.
+    std::map<std::string, std::size_t> distinct;
+    for (const LocalizedAsset& asset : result.assets)
+    {
+        distinct.emplace(asset.outputPath, asset.sizeBytes);
+    }
+    JsArray dependencies;
+    uint64_t total = 0;
+    for (const auto& entry : distinct)
+    {
+        const auto size = static_cast<uint64_t>(entry.second);
+        dependencies.emplace_back(
+            JsObject{{"path", JsValue(entry.first)}, {"sizeBytes", JsValue(size)}});
+        total += size;
+    }
+    const std::string rootLayer = DetectOutputFormat(outputPath) == OutputFormat::Usdz
+                                      ? kPackageRootLayer
+                                      : TfGetBaseName(outputPath);
+    return JsWriteToString(JsValue(JsObject{
+        {"reportVersion", JsValue(1)},
+        {"format", JsValue(LowerExtension(outputPath))},
+        {"rootLayer", JsValue(rootLayer)},
+        {"dependencies", JsValue(std::move(dependencies))},
+        {"totalDependencyBytes", JsValue(total)},
+        {"validation", JsValue(result.checks.empty() ? "notRequested" : "passed")},
+    }));
 }
 
 ExportResult
