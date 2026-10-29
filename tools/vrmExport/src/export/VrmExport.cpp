@@ -72,7 +72,11 @@ Fail(Status status, std::string message)
 {
     ExportResult result;
     result.status = status;
-    result.message = std::move(message);
+    // OpenUSD commentary and file names can contain line breaks. Keep one
+    // diagnostic on one line without losing the distinction in a file name.
+    message = TfStringReplace(message, "\r", "\\r");
+    message = TfStringReplace(message, "\n", "\\n");
+    result.message = TfStringReplace(message, "\t", "\\t");
     return result;
 }
 
@@ -158,6 +162,59 @@ WriteBytes(const std::string& path, const char* data, std::size_t size, std::str
     return true;
 }
 
+// Locate a failed dependency in the authored stage, including asset arrays
+// and time samples. Only needed on failure; do not change the traversal that
+// determines export bytes or dependency order.
+std::string
+DescribeAssetUse(const SdfLayerHandle& layer, const std::string& assetPath)
+{
+    auto contains = [&assetPath](const VtValue& value)
+    {
+        if (value.IsHolding<SdfAssetPath>())
+        {
+            return value.UncheckedGet<SdfAssetPath>().GetAuthoredPath() == assetPath;
+        }
+        if (value.IsHolding<VtArray<SdfAssetPath>>())
+        {
+            for (const SdfAssetPath& path : value.UncheckedGet<VtArray<SdfAssetPath>>())
+            {
+                if (path.GetAuthoredPath() == assetPath)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    std::set<std::string> properties;
+    layer->Traverse(SdfPath::AbsoluteRootPath(),
+                    [&](const SdfPath& path)
+                    {
+                        if (!path.IsPropertyPath())
+                        {
+                            return;
+                        }
+                        const SdfAttributeSpecHandle attribute = layer->GetAttributeAtPath(path);
+                        if (!attribute)
+                        {
+                            return;
+                        }
+                        if (contains(attribute->GetDefaultValue()))
+                        {
+                            properties.insert(path.GetString());
+                        }
+                        for (double time : layer->ListTimeSamplesForPath(path))
+                        {
+                            VtValue sample;
+                            if (layer->QueryTimeSample(path, time, &sample) && contains(sample))
+                            {
+                                properties.insert(path.GetString());
+                            }
+                        }
+                    });
+    return properties.empty() ? "" : " (referenced by " + TfStringJoin(properties, ", ") + ")";
+}
+
 // Copies every dependency of `layer` into `rootDir`/textures and points the
 // layer at the copies. `source` anchors a relative path the way the layer it
 // came from would have. Returns false with `result` filled on the first
@@ -174,74 +231,94 @@ LocalizeDependencies(const SdfLayerHandle& layer, const SdfLayerHandle& source,
     std::set<std::string> written;
     bool failed = false;
 
-    UsdUtilsModifyAssetPaths(layer, [&](const std::string& assetPath) -> std::string {
-        if (failed || assetPath.empty())
+    UsdUtilsModifyAssetPaths(
+        layer,
+        [&](const std::string& assetPath) -> std::string
         {
-            return assetPath;
-        }
-        const std::string anchored = SdfComputeAssetPathRelativeToLayer(source, assetPath);
-        const auto known = localized.find(anchored);
-        if (known != localized.end())
-        {
-            return known->second;
-        }
-
-        // Step 1's input is a `.vrm`, whose layer has no composition arcs
-        // (policy §2). A layer dependency would need its own localization, so
-        // it is refused rather than copied as if it were an image.
-        const std::string extension = LowerExtension(InnermostPath(anchored));
-        if (!extension.empty() && SdfFileFormat::FindByExtension(extension))
-        {
-            *result = Fail(Status::ExportFailure,
-                           "the layer depends on another layer (" + assetPath +
-                               "), which this export does not localize");
-            failed = true;
-            return assetPath;
-        }
-
-        const ArResolvedPath resolved = resolver.Resolve(anchored);
-        std::shared_ptr<ArAsset> asset = resolved ? resolver.OpenAsset(resolved) : nullptr;
-        std::shared_ptr<const char> bytes = asset ? asset->GetBuffer() : nullptr;
-        if (!bytes && !(asset && asset->GetSize() == 0))
-        {
-            std::string message = "cannot read the dependency " + assetPath;
-            if (PointsIntoVrm(anchored))
+            if (failed || assetPath.empty())
             {
-                message += "; a texture inside a .vrm needs usdVrmPackageResolver registered";
+                return assetPath;
             }
-            *result = Fail(Status::ExportFailure, message);
-            failed = true;
-            return assetPath;
-        }
-
-        const std::size_t size = asset->GetSize();
-        std::string name = HexName(HashBytes(bytes.get(), size));
-        if (!extension.empty())
-        {
-            name += "." + extension;
-        }
-        const std::string outputPath = std::string("./") + kTexturesDir + "/" + name;
-
-        if (written.insert(name).second)
-        {
-            std::string error;
-            if (!TfIsDir(texturesDir) && !TfMakeDirs(texturesDir, -1, /* existOk = */ true))
+            const std::string anchored = SdfComputeAssetPathRelativeToLayer(source, assetPath);
+            const auto known = localized.find(anchored);
+            if (known != localized.end())
             {
-                *result = Fail(Status::ExportFailure, "cannot create " + texturesDir);
+                return known->second;
+            }
+
+            // Step 1's input is a `.vrm`, whose layer has no composition arcs
+            // (policy §2). A layer dependency would need its own localization, so
+            // it is refused rather than copied as if it were an image.
+            const std::string extension = LowerExtension(InnermostPath(anchored));
+            if (!extension.empty() && SdfFileFormat::FindByExtension(extension))
+            {
+                *result =
+                    Fail(Status::ExportFailure, "the layer depends on another layer (" + assetPath +
+                                                    "), which this export does not localize" +
+                                                    DescribeAssetUse(layer, assetPath));
                 failed = true;
                 return assetPath;
             }
-            if (!WriteBytes(TfStringCatPaths(texturesDir, name), bytes.get(), size, &error))
+
+            const ArResolvedPath resolved = resolver.Resolve(anchored);
+            std::shared_ptr<ArAsset> asset = resolved ? resolver.OpenAsset(resolved) : nullptr;
+            std::shared_ptr<const char> bytes = asset ? asset->GetBuffer() : nullptr;
+            if (!bytes && !(asset && asset->GetSize() == 0))
             {
-                *result = Fail(Status::ExportFailure, error);
+                std::string message = "cannot read the dependency '" + assetPath + "'" +
+                                      DescribeAssetUse(layer, assetPath) + "; anchored path '" +
+                                      anchored + "'";
+                if (PointsIntoVrm(anchored))
+                {
+                    message +=
+                        "; a texture inside a .vrm needs usdVrmPackageResolver registered "
+                        "on PXR_PLUGINPATH_NAME; if it is registered, check the embedded image";
+                }
+                else
+                {
+                    message += "; check that the external image exists and is readable relative "
+                               "to the input .vrm";
+                }
+                *result = Fail(Status::ExportFailure, message);
                 failed = true;
                 return assetPath;
             }
-        }
-        localized.emplace(anchored, outputPath);
-        result->assets.push_back({assetPath, outputPath, size});
-        return outputPath;
-    });
+
+            const std::size_t size = asset->GetSize();
+            std::string name = HexName(HashBytes(bytes.get(), size));
+            if (!extension.empty())
+            {
+                name += "." + extension;
+            }
+            const std::string outputPath = std::string("./") + kTexturesDir + "/" + name;
+
+            if (written.insert(name).second)
+            {
+                std::string error;
+                if (!TfIsDir(texturesDir) && !TfMakeDirs(texturesDir, -1, /* existOk = */ true))
+                {
+                    *result = Fail(
+                        Status::ExportFailure,
+                        "cannot create texture directory '" + texturesDir + "' for dependency '" +
+                            assetPath + "'" + DescribeAssetUse(layer, assetPath) +
+                            "; check write permissions and whether a file blocks the directory");
+                    failed = true;
+                    return assetPath;
+                }
+                if (!WriteBytes(TfStringCatPaths(texturesDir, name), bytes.get(), size, &error))
+                {
+                    *result = Fail(Status::ExportFailure,
+                                   error + "; localizing dependency '" + assetPath + "'" +
+                                       DescribeAssetUse(layer, assetPath) +
+                                       "; check destination permissions and available space");
+                    failed = true;
+                    return assetPath;
+                }
+            }
+            localized.emplace(anchored, outputPath);
+            result->assets.push_back({assetPath, outputPath, size});
+            return outputPath;
+        });
     return !failed;
 }
 
@@ -261,7 +338,8 @@ class TemporaryDirectory
             TfRmTree(_path, [](const std::string&, const std::string&) {});
         }
     }
-    const std::string& path() const
+    const std::string&
+    path() const
     {
         return _path;
     }
@@ -291,27 +369,30 @@ PinModificationTimes(const std::string& dir, std::string* error)
     }
 
     bool ok = true;
-    TfWalkDirs(dir, [&](const std::string& dirPath, std::vector<std::string>*,
-                        const std::vector<std::string>& fileNames) {
-        for (const std::string& name : fileNames)
-        {
-            const std::string path = TfStringCatPaths(dirPath, name);
+    TfWalkDirs(dir,
+               [&](const std::string& dirPath, std::vector<std::string>*,
+                   const std::vector<std::string>& fileNames)
+               {
+                   for (const std::string& name : fileNames)
+                   {
+                       const std::string path = TfStringCatPaths(dirPath, name);
 #if defined(ARCH_OS_WINDOWS)
-            __utimbuf64 times = {pinned, pinned};
-            const bool pinnedThis = _wutime64(ArchWindowsUtf8ToUtf16(path).c_str(), &times) == 0;
+                       __utimbuf64 times = {pinned, pinned};
+                       const bool pinnedThis =
+                           _wutime64(ArchWindowsUtf8ToUtf16(path).c_str(), &times) == 0;
 #else
             utimbuf times = {pinned, pinned};
             const bool pinnedThis = utime(path.c_str(), &times) == 0;
 #endif
-            if (!pinnedThis)
-            {
-                *error = "cannot set the modification time of " + path;
-                ok = false;
-                return false;
-            }
-        }
-        return true;
-    });
+                       if (!pinnedThis)
+                       {
+                           *error = "cannot set the modification time of " + path;
+                           ok = false;
+                           return false;
+                       }
+                   }
+                   return true;
+               });
     return ok;
 }
 
@@ -321,7 +402,8 @@ std::vector<std::string>
 AuthoredAssetPaths(const SdfLayerHandle& layer)
 {
     std::vector<std::string> paths;
-    auto collect = [&paths](const VtValue& value) {
+    auto collect = [&paths](const VtValue& value)
+    {
         if (value.IsHolding<SdfAssetPath>())
         {
             paths.push_back(value.UncheckedGet<SdfAssetPath>().GetAuthoredPath());
@@ -334,26 +416,28 @@ AuthoredAssetPaths(const SdfLayerHandle& layer)
             }
         }
     };
-    layer->Traverse(SdfPath::AbsoluteRootPath(), [&](const SdfPath& path) {
-        if (!path.IsPropertyPath())
-        {
-            return;
-        }
-        const SdfAttributeSpecHandle attribute = layer->GetAttributeAtPath(path);
-        if (!attribute)
-        {
-            return;
-        }
-        collect(attribute->GetDefaultValue());
-        for (const double time : layer->ListTimeSamplesForPath(path))
-        {
-            VtValue sample;
-            if (layer->QueryTimeSample(path, time, &sample))
-            {
-                collect(sample);
-            }
-        }
-    });
+    layer->Traverse(SdfPath::AbsoluteRootPath(),
+                    [&](const SdfPath& path)
+                    {
+                        if (!path.IsPropertyPath())
+                        {
+                            return;
+                        }
+                        const SdfAttributeSpecHandle attribute = layer->GetAttributeAtPath(path);
+                        if (!attribute)
+                        {
+                            return;
+                        }
+                        collect(attribute->GetDefaultValue());
+                        for (const double time : layer->ListTimeSamplesForPath(path))
+                        {
+                            VtValue sample;
+                            if (layer->QueryTimeSample(path, time, &sample))
+                            {
+                                collect(sample);
+                            }
+                        }
+                    });
     return paths;
 }
 
@@ -445,16 +529,14 @@ CreateDependencyReport(const std::string& outputPath, const ExportResult& result
 }
 
 ExportResult
-ExportVrm(const std::string& inputPath, const std::string& outputPath,
-          const ExportOptions& options)
+ExportVrm(const std::string& inputPath, const std::string& outputPath, const ExportOptions& options)
 {
     // The arguments first, and nothing written until all of them hold.
     const OutputFormat format = DetectOutputFormat(outputPath);
     if (format == OutputFormat::Unknown)
     {
-        return Fail(Status::InvalidArguments,
-                    "cannot tell the output format of " + outputPath +
-                        " (the extension must be .usda, .usdc or .usdz)");
+        return Fail(Status::InvalidArguments, "cannot tell the output format of " + outputPath +
+                                                  " (the extension must be .usda, .usdc or .usdz)");
     }
     if (LowerExtension(inputPath) != "vrm")
     {
@@ -477,7 +559,7 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
     {
         return Fail(Status::InputOpenFailure,
                     "OpenUSD has no file format for .vrm files; a .vrm needs "
-                    "usdVrmFileFormat registered");
+                    "usdVrmFileFormat registered on PXR_PLUGINPATH_NAME");
     }
 
     TfErrorMark mark;
@@ -485,8 +567,10 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
     if (!stage)
     {
         const std::string errors = TakeErrors(&mark);
-        return Fail(Status::InputOpenFailure, "OpenUSD could not open " + inputPath +
-                                                  (errors.empty() ? "" : ": " + errors));
+        return Fail(Status::InputOpenFailure,
+                    "OpenUSD could not open " + inputPath +
+                        "; check that it is a readable, valid VRM/GLB file" +
+                        (errors.empty() ? "" : ": " + errors));
     }
 
     // Materialize (policy §6.1): the root layer's content into a new layer, so
@@ -510,8 +594,8 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
     if (!layer)
     {
         const std::string errors = TakeErrors(&mark);
-        return Fail(Status::ExportFailure, "cannot create a layer to export into" +
-                                               (errors.empty() ? "" : ": " + errors));
+        return Fail(Status::ExportFailure,
+                    "cannot create a layer to export into" + (errors.empty() ? "" : ": " + errors));
     }
 
     ExportResult result;
@@ -526,7 +610,10 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
         staging = std::make_unique<TemporaryDirectory>();
         if (staging->path().empty())
         {
-            return Fail(Status::ExportFailure, "cannot create a temporary directory");
+            return Fail(
+                Status::ExportFailure,
+                "cannot create a temporary directory for '" + outputPath +
+                    "'; check the system temporary directory's permissions and available space");
         }
         rootDir = staging->path();
         layerPath = TfStringCatPaths(rootDir, kPackageRootLayer);
@@ -543,12 +630,18 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
     {
         if (!dir.empty() && !TfIsDir(dir) && !TfMakeDirs(dir, -1, /* existOk = */ true))
         {
-            return Fail(Status::ExportFailure, "cannot create " + dir);
+            const std::string errors = TakeErrors(&mark);
+            return Fail(Status::ExportFailure,
+                        "cannot create output directory '" + dir + "' for '" + outputPath +
+                            "'; check write permissions and whether a file blocks the directory" +
+                            (errors.empty() ? "" : ": " + errors));
         }
     }
 
     if (!LocalizeDependencies(layer, source, rootDir, &result))
     {
+        const std::string errors = TakeErrors(&mark);
+        result = Fail(result.status, result.message + (errors.empty() ? "" : ": " + errors));
         return result;
     }
 
@@ -556,7 +649,9 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
     {
         const std::string errors = TakeErrors(&mark);
         return Fail(Status::ExportFailure,
-                    "cannot write " + layerPath + (errors.empty() ? "" : ": " + errors));
+                    "cannot write '" + layerPath + "' for output '" + outputPath +
+                        "'; check destination permissions and available space" +
+                        (errors.empty() ? "" : ": " + errors));
     }
 
     if (format == OutputFormat::Usdz)
@@ -572,7 +667,9 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath,
         {
             const std::string errors = TakeErrors(&mark);
             return Fail(Status::PackagingFailure,
-                        "cannot package " + outputPath + (errors.empty() ? "" : ": " + errors));
+                        "cannot package '" + outputPath +
+                            "'; check destination permissions and available space" +
+                            (errors.empty() ? "" : ": " + errors));
         }
     }
 
@@ -599,8 +696,8 @@ CheckOutput(const std::string& outputPath)
     if (!stage)
     {
         const std::string errors = TakeErrors(&mark);
-        return Fail(Status::ValidationFailure, "check: cannot reopen " + outputPath +
-                                                   (errors.empty() ? "" : ": " + errors));
+        return Fail(Status::ValidationFailure,
+                    "check: cannot reopen " + outputPath + (errors.empty() ? "" : ": " + errors));
     }
     ExportResult result;
     const UsdPrim defaultPrim = stage->GetDefaultPrim();
@@ -620,9 +717,11 @@ CheckOutput(const std::string& outputPath)
     }
     if (!unresolved.empty())
     {
-        return Fail(Status::ValidationFailure,
-                    "check: " + std::to_string(unresolved.size()) +
-                        " dependency(ies) do not resolve, the first " + unresolved.front());
+        return Fail(
+            Status::ValidationFailure,
+            "check: " + std::to_string(unresolved.size()) +
+                " dependency(ies) do not resolve: " + TfStringJoin(unresolved, ", ") +
+                "; restore the dependencies beside the output or re-export the source .vrm");
     }
     result.checks.push_back(std::to_string(layers.size()) + " layer(s) and " +
                             std::to_string(assets.size()) + " asset(s), all resolved");
@@ -642,7 +741,9 @@ CheckOutput(const std::string& outputPath)
             if (!TfIsRelativePath(outer) || PointsIntoVrm(path))
             {
                 return Fail(Status::ValidationFailure,
-                            "check: " + layer->GetIdentifier() + " still names " + path);
+                            "check: " + layer->GetIdentifier() + " still names " + path +
+                                DescribeAssetUse(layer, path) +
+                                "; re-export the source .vrm to localize its dependencies");
             }
         }
     }
@@ -659,7 +760,8 @@ CheckOutput(const std::string& outputPath)
             return Fail(Status::ValidationFailure,
                         "check: OpenUSD's usdUtilsValidators are not all registered (" +
                             std::to_string(validators.size()) + " of " +
-                            std::to_string(names.size()) + " found)");
+                            std::to_string(names.size()) +
+                            " found); use an OpenUSD runtime with usdUtilsValidators registered");
         }
         const UsdValidationContext context(validators);
         std::size_t warnings = 0;

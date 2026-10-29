@@ -61,6 +61,14 @@ Current schema contract version: **2**.
 
 ### Fixed
 
+- **`vrm_export` failure diagnostics** ([export track](docs/roadmap/export-track.md)
+  Step 2) now locate unreadable textures by authored path, anchored path and
+  referring USD attributes, with recovery checks for external images,
+  embedded-image resolver registration and blocked destinations. Validation
+  lists all unresolved dependencies and locates non-portable asset
+  attributes. Operation errors escape line breaks and tabs; existing exit
+  codes and the dependency report's JSON contract are unchanged.
+
 - VRM 0.x spring collider offsets now convert their left-handed source-local
   Z coordinate into the glTF joint-local basis. The missing conversion could
   push AliciaSolid's fringe against the wrong side of its head collider.

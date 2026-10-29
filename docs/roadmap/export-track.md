@@ -55,7 +55,7 @@ textures resolved. `vrm_export_end_to_end` is that claim, over every fixture.
 Not covered by Step 1's tests: a `.vrm` whose image is an **external** file
 rather than embedded. Step 2 covers it.
 
-### Step 2 — validation and usability ⬜
+### Step 2 — validation and usability 🚧
 
 - ✅ Determinism: policy q2 decided (byte-identical across hosts and time
   zones of one CPU architecture), the staged files' times pinned, a
@@ -72,7 +72,12 @@ rather than embedded. Step 2 covers it.
   Tests compare every format's paths and byte counts with the written files,
   including embedded/external image deduplication and repeatability.
   Policy q1 keeps `package_vrm.py` as the importer's development tool.
-- ⬜ Richer diagnostics.
+- ✅ Richer diagnostics (2026-10-29): unreadable dependencies name their
+  referring USD attributes and anchored paths, with separate checks for
+  external images and embedded-image resolver registration. Destination
+  failures name the blocked path and recovery checks; validation lists every
+  unresolved dependency and locates non-portable asset attributes. Operation
+  messages escape line breaks and tabs; exit codes are unchanged.
 - 🚧 The product's `vrm_export` exporting a `.vrm` from the release artifact,
   in the artifact-only smoke: `scripts/artifact_only_export_smoke.py`, a step
   of `release.yml`'s workspace lanes. It passed locally against the installed

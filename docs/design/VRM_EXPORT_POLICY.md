@@ -238,6 +238,19 @@ Diagnostics go to stderr, one line each, prefixed `vrm_export:`. Where the
 cause is a missing plugin — no `.vrm` file format, an embedded texture that
 no resolver serves — the message names the bundle.
 
+Unreadable-dependency failures identify the authored asset path, its anchored path and
+the referring USD attributes, including array values and time samples. An
+embedded-image failure names `usdVrmPackageResolver` and
+`PXR_PLUGINPATH_NAME` as checks; it does not establish that the resolver is
+missing, since a damaged embedded image can also fail. External-image
+failures point to the image relative to the input. Destination failures
+identify the directory or file and suggest checking permissions, blocking
+files or available space. `--check` lists every unresolved dependency and
+identifies attributes that retain an absolute or VRM-package path. Line
+breaks and tabs in operation errors are escaped to keep each message on one
+line. These are descriptive messages, not a new numbered diagnostic catalog;
+the exit codes above remain the machine-readable failure categories.
+
 ## 6. Output shape
 
 ### 6.1 Materialization

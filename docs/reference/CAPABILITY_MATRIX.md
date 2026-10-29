@@ -124,6 +124,10 @@ The end-to-end suite reopens every output with no VRM plugin registered and
 compares the inventory with the actual localized files. CLI usage is in the
 [tool README](../../tools/vrmExport/README.md); open work is in the
 [export track](../roadmap/export-track.md).
+Failure diagnostics identify unreadable dependencies' authored and anchored
+paths and referring USD attributes, give destination recovery checks, and
+list all unresolved dependencies found by validation. Exit codes remain the
+[export policy's failure categories](../design/VRM_EXPORT_POLICY.md#53-exit-codes).
 
 ## See also
 
