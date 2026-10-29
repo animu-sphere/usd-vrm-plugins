@@ -16,6 +16,7 @@ struct Options
     bool check = false;
     bool overwrite = false;
     bool flatten = false;
+    bool dependencyReport = false;
     bool verbose = false;
     // Print and exit 0, with no other argument required.
     bool showHelp = false;

@@ -15,6 +15,14 @@ Current schema contract version: **2**.
 
 ### Added
 
+- **`vrm_export --dependency-report`** ([export track](docs/roadmap/export-track.md)
+  Step 2): a versioned JSON inventory on stdout after success, listing each
+  distinct localized texture and its byte count, the root layer, total texture
+  bytes and whether `--check` ran. It carries no machine-local paths;
+  diagnostics remain on stderr and failed exports emit no inventory. The
+  end-to-end suite compares it with loose files and package entries over every
+  fixture, including external images sharing bytes with an embedded image.
+
 - **`vrmRig::SpringBoneSolver`** ([spring-bone track](docs/roadmap/springbone-track.md)
   Step 1): a plain-value, stateful solver for VRM 1.0 chains and VRM 0.x
   root subtrees, including branching and 7 cm virtual tails, sphere/capsule

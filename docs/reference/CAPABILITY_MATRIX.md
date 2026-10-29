@@ -114,6 +114,17 @@ live and device input in
 What this product shipped of either before the split is in its
 [release records](../releases/).
 
+## Native USD export
+
+`vrm_export` writes `.usda`, `.usdc` and `.usdz` from imported VRM 0.x/1.0
+assets, localizes embedded and external textures, optionally flattens and
+validates the output, and emits a portable JSON dependency inventory with
+`--dependency-report` ([report contract](../design/VRM_EXPORT_POLICY.md#81-dependency-report)).
+The end-to-end suite reopens every output with no VRM plugin registered and
+compares the inventory with the actual localized files. CLI usage is in the
+[tool README](../../tools/vrmExport/README.md); open work is in the
+[export track](../roadmap/export-track.md).
+
 ## See also
 
 - [roadmap/](../roadmap/) — incomplete work.

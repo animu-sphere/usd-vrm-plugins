@@ -129,7 +129,7 @@ execVrm               -> execMotion  (runtime only: `vrm.computeBoundPose`
 execVrm               =: the Vrm*API applied schemas, UsdSkelSkeleton,
                          UsdSkelBindingAPI
 tests/parity          -> motionCore, motionRetarget, motionSampling
-vrm_export            -> OpenUSD only (usd, usdUtils, usdValidation, sdf, ar)
+vrm_export            -> OpenUSD only (usd, usdUtils, usdValidation, sdf, ar, js)
 vrm_export            ~> usdVrmFileFormat, usdVrmPackageResolver, vrmSchema
                          (runtime only, through the plugin registry; nothing
                          is linked)

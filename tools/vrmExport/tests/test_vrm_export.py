@@ -275,11 +275,36 @@ def check_no_local_path(output: pathlib.Path, source_path: pathlib.Path, label: 
                    f"{label}: the output names a temporary directory")
 
 
+def check_dependency_report(text: str, output: pathlib.Path, exported: dict,
+                            label: str, failures: Failures) -> dict:
+    """Compare the inventory with the actual portable output, not tool logs."""
+    report = json.loads(text)
+    if output.suffix == ".usdz":
+        with zipfile.ZipFile(output) as package:
+            sizes = {"./" + info.filename: info.file_size for info in package.infolist()
+                     if info.filename != "defaultLayer.usdc"}
+        root = "defaultLayer.usdc"
+    else:
+        paths = {e["authored"] for entries in exported["assets"].values()
+                 for e in entries if e["authored"]}
+        sizes = {path: (output.parent / path).stat().st_size for path in paths}
+        root = output.name
+    failures.check(report == {
+        "reportVersion": 1,
+        "format": output.suffix[1:],
+        "rootLayer": root,
+        "dependencies": [{"path": path, "sizeBytes": sizes[path]} for path in sorted(sizes)],
+        "totalDependencyBytes": sum(sizes.values()),
+        "validation": "passed",
+    }, f"{label}: dependency report differs from the output: {report}")
+    return report
+
+
 def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                  work: pathlib.Path, failures: Failures) -> None:
     full = plugin_env(plugins, ("fileformat", "resolver", "schema"))
     bare = plugin_env(plugins, ())
-    packages: list[tuple[pathlib.Path, pathlib.Path]] = []
+    packages: list[tuple[pathlib.Path, pathlib.Path, str]] = []
     for source_path in inputs:
         # Read with the plugins, in a child like every export is, so both
         # sides of each comparison come through the same code.
@@ -288,12 +313,16 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
             label = f"{source_path.name} -> .{fmt}"
             out_dir = work / f"{source_path.stem}-{fmt}"
             output = out_dir / f"{source_path.stem}.{fmt}"
-            result = run(tool, [str(source_path), "-o", str(output), "--check"], full)
+            result = run(tool, [str(source_path), "-o", str(output), "--check",
+                                "--dependency-report", "--verbose"], full)
             if not failures.check(result.returncode == 0,
                                   f"{label}: exit {result.returncode}: {result.stderr.strip()}"):
                 continue
-            compare(source, summarize(output, bare), label, failures,
+            exported = summarize(output, bare)
+            compare(source, exported, label, failures,
                     zero_sign=(fmt == "usda"))
+            report_text = result.stdout
+            check_dependency_report(report_text, output, exported, label, failures)
 
             if fmt == "usdz":
                 with zipfile.ZipFile(output) as package:
@@ -316,7 +345,7 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                     failures.check(digest == expected,
                                    f"{label}: SHA-256 {digest}, expected {expected}; "
                                    f"entries {entries}")
-                packages.append((source_path, output))
+                packages.append((source_path, output, report_text))
             else:
                 textures = out_dir / "textures"
                 count = len(list(textures.iterdir())) if textures.is_dir() else 0
@@ -332,10 +361,13 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
                 # Determinism (policy §9): a second export, elsewhere, is the
                 # same bytes.
                 again = work / f"{source_path.stem}-usda-again" / output.name
-                result = run(tool, [str(source_path), "-o", str(again)], full)
+                result = run(tool, [str(source_path), "-o", str(again), "--check",
+                                    "--dependency-report"], full)
                 failures.check(result.returncode == 0 and again.read_bytes() ==
                                output.read_bytes(),
                                f"{label}: a second export is not byte-identical")
+                failures.check(result.stdout == report_text,
+                               f"{label}: a second report is not byte-identical")
 
         # --flatten (policy §6.1): the composed stage in one layer. A `.vrm`
         # authors no composition arc, so it is the same stage; and like any
@@ -343,10 +375,13 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
         # comment UsdStage::Flatten writes by default would.
         label = f"{source_path.name} -> --flatten .usda"
         flat = work / f"{source_path.stem}-flatten" / f"{source_path.stem}.usda"
-        result = run(tool, [str(source_path), "-o", str(flat), "--flatten", "--check"], full)
+        result = run(tool, [str(source_path), "-o", str(flat), "--flatten", "--check",
+                            "--dependency-report"], full)
         if failures.check(result.returncode == 0,
                           f"{label}: exit {result.returncode}: {result.stderr.strip()}"):
-            compare(source, summarize(flat, bare), label, failures, zero_sign=True)
+            exported = summarize(flat, bare)
+            compare(source, exported, label, failures, zero_sign=True)
+            check_dependency_report(result.stdout, flat, exported, label, failures)
             check_no_local_path(flat, source_path, label, failures)
 
     # Determinism of a package (policy §9, q2): each `.usdz` exported again,
@@ -357,14 +392,16 @@ def test_exports(tool: str, inputs: list[pathlib.Path], plugins: dict[str, str],
     # localtime() runs in on Windows does not read from TZ (measured
     # 2026-10-26); Linux and macOS do.
     time.sleep(ZIP_TIME_RESOLUTION)
-    for source_path, output in packages:
+    for source_path, output, report_text in packages:
         label = f"{source_path.name} -> .usdz"
         again = work / f"{source_path.stem}-usdz-again" / output.name
-        result = run(tool, [str(source_path), "-o", str(again)],
+        result = run(tool, [str(source_path), "-o", str(again), "--check", "--dependency-report"],
                      dict(full, TZ=OTHER_TIME_ZONE))
         failures.check(result.returncode == 0 and again.read_bytes() == output.read_bytes(),
                        f"{label}: a second export, in TZ={OTHER_TIME_ZONE}, is not "
                        f"byte-identical")
+        failures.check(result.stdout == report_text,
+                       f"{label}: a second report is not byte-identical")
 
 
 def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
@@ -375,6 +412,8 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
     cases_dir.mkdir()
 
     def expect(args: list[str], code: int, label: str, env=full, needle: str = "") -> None:
+        if code != 0:
+            args = [*args, "--dependency-report"]
         result = run(tool, args, env)
         failures.check(result.returncode == code,
                        f"{label}: exit {result.returncode}, expected {code}: "
@@ -382,6 +421,8 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
         if needle:
             failures.check(needle in result.stdout + result.stderr,
                            f"{label}: the output does not mention {needle!r}")
+        if code != 0:
+            failures.check(not result.stdout, f"{label}: a failed export printed a report")
 
     expect(["--help"], 0, "--help", needle="usage: vrm_export")
     expect(["--version"], 0, "--version", needle="vrm_export ")
@@ -404,6 +445,33 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
     nested = cases_dir / "a" / "b" / "nested.usda"
     expect([str(vrm), "-o", str(nested), "--check"], 0, "a directory that does not exist")
     failures.check(nested.is_file(), "the nested output was not written")
+
+    # A shared loose textures directory can contain unrelated files. The
+    # inventory describes this export alone, and JSON preserves a UTF-8 name.
+    loose = cases_dir / "shared" / "依存 Ω.usdc"
+    textures = loose.parent / "textures"
+    textures.mkdir(parents=True)
+    (textures / "unrelated.png").write_bytes(b"unrelated")
+    result = run(tool, [str(textured), "-o", str(loose), "--dependency-report"], full)
+    if failures.check(result.returncode == 0, f"unchecked report: {result.stderr}"):
+        report = json.loads(result.stdout)
+        failures.check(report["validation"] == "notRequested",
+                       "an export without --check claimed validation")
+        report["validation"] = "passed"
+        check_dependency_report(json.dumps(report), loose,
+                                summarize(loose, plugin_env(plugins, ())),
+                                "shared textures report", failures)
+
+    # The inventory can be redirected independently of the artifact. A full
+    # sink must fail even when the report fits in the stream's output buffer.
+    if pathlib.Path("/dev/full").exists():
+        written = cases_dir / "report-sink.usdc"
+        with open("/dev/full", "wb") as sink:
+            result = subprocess.run([tool, str(textured), "-o", str(written),
+                                     "--dependency-report"], env=full, stdout=sink,
+                                    stderr=subprocess.PIPE, text=True, encoding="utf-8")
+        failures.check(result.returncode == 4 and written.is_file(),
+                       f"failed report sink: exit {result.returncode}: {result.stderr}")
 
     expect([str(textured), "-o", str(cases_dir / "verbose.usdz"), "--check", "--verbose"], 0,
            "--verbose", needle="vrm_export: localized ")
