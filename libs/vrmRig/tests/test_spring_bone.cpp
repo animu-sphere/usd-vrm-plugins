@@ -57,6 +57,44 @@ Same(const SpringBoneResult& a, const SpringBoneResult& b)
     }
 }
 void
+IndependentHistoryCopies()
+{
+    for (bool roots : {false, true})
+    {
+        const auto rig = Chain(roots);
+        const auto pose = Pose(rig);
+        SpringBoneSolver solver, control;
+        SpringBoneResult a, b, trialResult;
+        assert(solver.Configure(rig) && control.Configure(rig));
+        assert(solver.Reset(pose, &a) && control.Reset(pose, &b));
+        for (int i = 0; i < 20; ++i)
+        {
+            assert(solver.Step(1.0f / 60, pose, &a));
+            assert(control.Step(1.0f / 60, pose, &b));
+        }
+        SpringBoneSolver trial(solver); // copy live, nonzero-velocity history
+        for (int i = 0; i < 2; ++i)
+        {
+            if (i)
+                trial = solver; // assignment replaces the independently reset rig/history
+            assert(trial.Step(1.0f / 60, pose, &trialResult));
+            assert(control.Step(1.0f / 60, pose, &b));
+            Same(trialResult, b);
+            auto otherPose = pose;
+            otherPose.placement.translation = GfVec3f(20, 3, -4);
+            assert(trial.Reset(otherPose, &trialResult));
+            auto otherRig = rig;
+            otherRig.springs[0].parameters[0].gravityPower = 12;
+            assert(trial.Configure(otherRig));
+            assert(trial.Reset(otherPose, &trialResult));
+            assert(trial.Step(1.0f / 30, otherPose, &trialResult));
+            // Discarding trial work leaves the original exactly on its old tick.
+            assert(solver.Step(1.0f / 60, pose, &a));
+            Same(a, b);
+        }
+    }
+}
+void
 SettleAndReset()
 {
     const auto rig = Chain();
@@ -257,6 +295,7 @@ int
 main()
 {
     SettleAndReset();
+    IndependentHistoryCopies();
     Branches();
     Collisions();
     RotatedLeaf();

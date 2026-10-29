@@ -24,7 +24,12 @@ Current schema contract version: **2**.
   tests and committed trajectories from pinned three-vrm and UniVRM run in
   the workspace suite; the installed-consumer fixture steps the public API.
   Inputs currently require rigid metre transforms and fixed rest translations;
-  the stage reader, scaling decisions and runtime adapter remain open.
+  stage reading, runtime adapters and scheduling belong to
+  [`usd-avatar-runtime`](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/roadmap/current.md#vrm-secondary-motion-integration),
+  while scaling decisions remain open.
+  Independent solver copies retain their rig and live history for transactional
+  trial evaluation; unit tests hold copy construction and assignment to that
+  contract, including reset/reconfiguration isolation.
 
 - **The product's `vrm_export` is run from the release artifact** ([export
   track](docs/roadmap/export-track.md) Step 2). A new release lane step,
