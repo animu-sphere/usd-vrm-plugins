@@ -433,6 +433,25 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
     expect([str(cases_dir / "missing.vrm"), "-o", str(cases_dir / "a.usda")], 3,
            "a missing input")
 
+    malformed = cases_dir / "malformed.vrm"
+    malformed.write_bytes(b"not a GLB")
+    expect([str(malformed), "-o", str(cases_dir / "malformed.usda")], 3,
+           "a malformed VRM", needle="valid VRM/GLB")
+
+    # A regular file blocking a destination is portable and deterministic,
+    # unlike relying on a particular user's file permission configuration.
+    blocked = cases_dir / "blocked"
+    blocked.write_bytes(b"a file, not a directory")
+    for suffix in ("usda", "usdc", "usdz"):
+        expect([str(vrm), "-o", str(blocked / f"out.{suffix}")], 4,
+               f"blocked {suffix} output directory", needle="cannot create output directory")
+
+    blocked_textures = cases_dir / "blocked-textures"
+    blocked_textures.mkdir()
+    (blocked_textures / "textures").write_bytes(b"a file, not a directory")
+    expect([str(textured), "-o", str(blocked_textures / "out.usda")], 4,
+           "blocked textures directory", needle="referenced by /Asset/mtl/")
+
     not_vrm = cases_dir / "input.usda"
     not_vrm.write_text("#usda 1.0\n", encoding="utf-8")
     expect([str(not_vrm), "-o", str(cases_dir / "b.usda")], 2, "a non-.vrm input")
@@ -478,7 +497,7 @@ def test_command_line(tool: str, vrm: pathlib.Path, textured: pathlib.Path,
 
     # The two refusals that name a missing plugin (policy §5.3).
     expect([str(vrm), "-o", str(cases_dir / "c.usda")], 3, "no VRM plugin",
-           env=plugin_env(plugins, ()), needle="usdVrmFileFormat")
+           env=plugin_env(plugins, ()), needle="usdVrmFileFormat registered on PXR_PLUGINPATH_NAME")
     expect([str(textured), "-o", str(cases_dir / "d.usdz")], 4, "no package resolver",
            env=plugin_env(plugins, ("fileformat", "schema")), needle="usdVrmPackageResolver")
     failures.check(not (cases_dir / "d.usdz").exists(),
@@ -585,6 +604,11 @@ def test_external_images(tool: str, plugins: dict[str, str], work: pathlib.Path,
     failures.check("blue.png" in result.stderr,
                    f"a missing external image: the message does not name it: "
                    f"{result.stderr.strip()[:300]}")
+    for detail in ("referenced by /Asset/mtl/", str(missing).replace("\\", "/"),
+                   "external image exists and is readable"):
+        failures.check(detail in result.stderr.replace("\\", "/"),
+                       f"a missing external image: missing diagnostic detail {detail!r}: "
+                       f"{result.stderr.strip()[:500]}")
     failures.check(not gone.exists(), "a missing external image left an output behind")
     return vrm
 

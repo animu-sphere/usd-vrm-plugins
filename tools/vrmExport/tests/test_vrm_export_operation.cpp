@@ -73,8 +73,7 @@ TestHashBytes()
 }
 
 bool
-Parse(const std::vector<std::string>& arguments, vrmExport::Options* options,
-      std::string* error)
+Parse(const std::vector<std::string>& arguments, vrmExport::Options* options, std::string* error)
 {
     *options = vrmExport::Options();
     error->clear();
@@ -87,8 +86,8 @@ TestParseOptions()
     vrmExport::Options options;
     std::string error;
 
-    assert(Parse({"a.vrm", "-o", "a.usdz", "--check", "--overwrite", "--verbose"}, &options,
-                 &error));
+    assert(
+        Parse({"a.vrm", "-o", "a.usdz", "--check", "--overwrite", "--verbose"}, &options, &error));
     assert(options.inputPath == "a.vrm" && options.outputPath == "a.usdz");
     assert(options.check && options.overwrite && options.verbose);
 
@@ -160,10 +159,14 @@ TestRefusals(const std::string& scratch, const std::string& vrmFixture)
     const ExportOptions options;
     const std::string output = TfStringCatPaths(scratch, "out.usda");
 
-    ExportResult result = vrmExport::ExportVrm("a.vrm", TfStringCatPaths(scratch, "out.obj"),
-                                               options);
+    ExportResult result =
+        vrmExport::ExportVrm("a.vrm", TfStringCatPaths(scratch, "out.obj"), options);
     assert(result.status == Status::InvalidArguments);
     assert(Contains(result.message, ".usda, .usdc or .usdz"));
+
+    result = vrmExport::ExportVrm("a.vrm", "line\nbreak\r\t.obj", options);
+    assert(result.message.find_first_of("\r\n\t") == std::string::npos);
+    assert(Contains(result.message, "line\\nbreak\\r\\t.obj"));
 
     result = vrmExport::ExportVrm("a.usda", output, options);
     assert(result.status == Status::InvalidArguments);
@@ -218,13 +221,29 @@ TestCheckOutput(const std::string& scratch)
     result = vrmExport::CheckOutput(absolute);
     assert(result.status == Status::ValidationFailure);
     assert(Contains(result.message, "still names"));
+    assert(Contains(result.message, "/A.inputs:file"));
+    assert(Contains(result.message, "re-export"));
+
+    // A time-sampled array also needs the offending property in its message.
+    const std::string timed = TfStringCatPaths(scratch, "timed.usda");
+    WriteFile(timed, "#usda 1.0\n(\n    defaultPrim = \"A\"\n)\n\n"
+                     "def \"A\"\n{\n    asset[] inputs:files.timeSamples = {\n"
+                     "        1: [@" +
+                         absoluteTexture + "@],\n    }\n}\n");
+    result = vrmExport::CheckOutput(timed);
+    assert(result.status == Status::ValidationFailure);
+    assert(Contains(result.message, "/A.inputs:files"));
 
     const std::string missing = TfStringCatPaths(scratch, "missing_dependency.usda");
     WriteFile(missing, "#usda 1.0\n(\n    defaultPrim = \"A\"\n)\n\n"
-                       "def \"A\"\n{\n    asset inputs:file = @./nothing.png@\n}\n");
+                       "def \"A\"\n{\n    asset[] inputs:files = "
+                       "[@./nothing.png@, @./also_missing.png@]\n}\n");
     result = vrmExport::CheckOutput(missing);
     assert(result.status == Status::ValidationFailure);
     assert(Contains(result.message, "do not resolve"));
+    assert(Contains(result.message, "nothing.png"));
+    assert(Contains(result.message, "also_missing.png"));
+    assert(Contains(result.message, "restore the dependencies"));
 
     const std::string noDefault = TfStringCatPaths(scratch, "no_default.usda");
     WriteFile(noDefault, "#usda 1.0\n\ndef \"A\"\n{\n}\n");

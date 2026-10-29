@@ -67,6 +67,16 @@ Diagnostics and `--verbose` output stay on stderr. The inventory contains no
 machine-local paths, counts duplicate images once, and excludes the root
 layer from its byte total. A failed export emits no inventory.
 
+An unreadable texture's error names its authored path, the anchored path
+used to find it, and the referring USD attributes. For external images,
+check the file beside the input `.vrm`; for embedded images, check
+`usdVrmPackageResolver` on `PXR_PLUGINPATH_NAME` and the image in the source
+container. Destination errors name the directory or file and suggest
+checks for permissions, blocking files or available space. Validation lists
+all unresolved dependencies and identifies attributes that still name an
+absolute path or a path into a `.vrm`. Operation messages escape line breaks
+and tabs so each diagnostic stays on one line.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -115,6 +125,9 @@ second one exists (policy §4).
   entries), including byte counts, deduplication and repeatability. CLI cases
   hold the unchecked status, a shared textures directory, a Unicode output
   name, and no report on failure.
+  Failure cases also cover malformed VRM bytes, files blocking output and
+  texture directories, and the path, attribute and recovery details of a
+  missing external image.
   Registered only in the composed root build, which has the three bundles.
 - `workspace_unicode_paths` (root) — both formats from a directory no ANSI
   code page can spell.
