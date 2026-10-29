@@ -130,6 +130,12 @@ Calls return `false` with an optional error string on invalid input and leave
 both state and the caller's result unchanged. Error strings are library
 diagnostics, not importer `VRMxxx` codes.
 
+The solver has value semantics: copy construction and copy assignment retain
+the rig, initialization state and current history independently. A runtime can
+step a trial copy, discard it on frame failure, and adopt it on commit without
+advancing the original. Resetting or reconfiguring a copy affects only that
+copy. Serialization and cross-version checkpoint interchange are not provided.
+
 The numerical conventions are:
 
 - VRM 1.0's `joints` is an ordered direct-child chain. The final joint is

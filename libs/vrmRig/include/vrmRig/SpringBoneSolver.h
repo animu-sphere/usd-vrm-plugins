@@ -96,6 +96,8 @@ struct SpringBoneResult
 // Reset zeroes velocity at the supplied *current animated* pose. Each Step
 // supplies that tick's unsimulated pose; never feed the previous result back
 // as animation. Failed calls change neither state nor the caller's result.
+// Value copies own independent rig and history, including initialization state.
+// A caller may evaluate a trial copy and adopt it only after its frame commits.
 class SpringBoneSolver
 {
   public:
