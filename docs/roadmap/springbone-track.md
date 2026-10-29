@@ -1,6 +1,6 @@
 # The spring-bone track
 
-**Status:** 🚧 Solver verified on all three OS; runtime integration pending · **Target:** unscheduled
+**Status:** 🚧 Solver verified on all three OS; scoped runtime host measured on Windows; resident renderer integration pending · **Target:** unscheduled
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [VRM motion policy](../design/VRM_MOTION_POLICY.md) §10
 
@@ -94,20 +94,23 @@ version.
 **Done when** the solver passes the unit tests and the reference comparison
 on every CI lane, and an installed `vrmRig` package exposes it.
 
-### Step 2: handed to the runtime ⬜
+### Step 2: handed to the runtime ✅ (scoped headless host)
 
 This repository's half of the integration. Reading the stage into `vrmRig`
 values, the adapter, the host and the fixed-tick scheduling belong to
-`usd-avatar-runtime` and are planned there (its
+`usd-avatar-runtime` and are tracked there (its
 [physics orchestration milestones](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/roadmap/current.md#physics-orchestration-milestones),
 Milestone E). They are not restated here.
 
-- ⬜ Questions the runtime's integration raises about the solver's API are
-  answered in `vrmRig`, never worked around in the adapter. An adapter that
-  needs a second implementation is a finding about the library's API.
-- ⬜ The runtime's evidence of a VRM 0.x and a VRM 1.0 avatar moving under a
-  clip is cited from the [capability matrix](../reference/CAPABILITY_MATRIX.md)
-  where it was measured, not restated as this repository's finding.
+- ✅ The scoped runtime host consumes installed `vrmRig` values and transactional
+  solver copies without a substitute implementation. Unsupported non-unit joint
+  scale is refused; SB-O2 remains open.
+- ✅ Runtime-owned [2026-10-29 host evidence](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/reference/CAPABILITY_MATRIX.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29)
+  measures AliciaSolid (0.x) and Constraint Twist Sample (1.0) under a VRMA clip,
+  in enabled/disabled modes, with owner parity, reset replay and retained unload.
+  The [host contract](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/architecture/VRM_SESSION.md)
+  records the installed-package boundary and headless scope. Resident rendering,
+  Hydra/direct parity and hosted runtime lanes remain outside this finding.
 
 **Done when** that evidence was produced against an installed `vrmRig`, with
 no checkout of this repository.

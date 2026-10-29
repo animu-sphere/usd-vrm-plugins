@@ -47,6 +47,12 @@ Aligned with the design policy's §11 fidelity vocabulary:
 
 ## Import / evaluation / simulation boundary
 
+The runtime's [scoped headless host evidence (2026-10-29)](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/reference/CAPABILITY_MATRIX.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29)
+records clip-driven VRM 0.x/1.0 avatars against installed `vrmRig`, including
+fixed ticks, owner parity, reset replay and retained unload. This is evidence
+produced by `usd-avatar-runtime`; resident rendering, Hydra/direct parity and
+scaled spring rigs remain outside that measurement.
+
 Spring declarations in contract v2 use `vrm:rootJoints` for VRM 0.x subtree
 roots and `vrm:joints` for VRM 1.0 ordered chains. The fixture and corpus smoke
 tests assert this distinction; the validator checks exclusive authorship and
