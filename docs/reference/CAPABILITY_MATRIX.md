@@ -129,6 +129,11 @@ paths and referring USD attributes, give destination recovery checks, and
 list all unresolved dependencies found by validation. Exit codes remain the
 [export policy's failure categories](../design/VRM_EXPORT_POLICY.md#53-exit-codes).
 
+The installed product's exporter is verified on Windows, Linux and macOS
+arm64: two textured VRM 0.x/1.0 inputs export to `.usdz`, reopen with no VRM
+plugin registered, and refuse export when the product's importer registration
+is removed ([2026-10-29 release dry run](../reports/2026-10-29-export-release-dry-run.md)).
+
 ## See also
 
 - [roadmap/](../roadmap/) — incomplete work.

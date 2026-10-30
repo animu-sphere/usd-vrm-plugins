@@ -48,6 +48,8 @@ Current schema contract version: **2**.
   the package. Then the product's `usdVrmFileFormat` registration is moved
   aside, and the export has to refuse with exit 3. Until now only the build
   tree's `vrm_export` was tested.
+  The [2026-10-29 release dry run](docs/reports/2026-10-29-export-release-dry-run.md)
+  passed on Windows, Linux and macOS arm64, closing Step 2's artifact condition.
 
 - **`vrm_export --flatten`** ([export track](docs/roadmap/export-track.md)
   Step 2; export policy §6.1). Writes the composed stage flattened into one
