@@ -19,6 +19,7 @@ GetUsage()
            "  --check              reopen and validate the output\n"
            "  --overwrite          replace an existing output file\n"
            "  --flatten            write the composed stage flattened into one layer\n"
+           "  --motion <clip.vrma>  bake a clip onto the avatar before exporting\n"
            "  --dependency-report  print a JSON dependency inventory on success\n"
            "  --verbose            report each localized texture and each check\n"
            "  --help               print this and exit\n"
@@ -46,19 +47,26 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, std::s
             options->showVersion = true;
             return true;
         }
-        if (argument == "-o" || argument == "--output")
+        if (argument == "-o" || argument == "--output" || argument == "--motion")
         {
             if (i + 1 == arguments.size())
             {
                 *error = argument + " needs a path";
                 return false;
             }
-            if (!options->outputPath.empty())
+            std::string& path = argument == "--motion" ? options->motionPath : options->outputPath;
+            if (!path.empty())
             {
-                *error = "the output is given twice";
+                *error = argument == "--motion" ? "the motion is given twice"
+                                                : "the output is given twice";
                 return false;
             }
-            options->outputPath = arguments[++i];
+            path = arguments[++i];
+            if (path.empty() || path[0] == '-')
+            {
+                *error = argument + " needs a path";
+                return false;
+            }
         }
         else if (argument == "--check")
         {

@@ -1,6 +1,6 @@
 # The native USD export track
 
-**Status:** 🚧 in progress — Steps 1–2 implemented · **Target:** v0.10.0 carries Step 1;
+**Status:** 🚧 in progress — Steps 1–3 implemented; Step 3 hosted proof pending · **Target:** v0.10.0 carries Step 1;
 Steps 2–4 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [export policy](../design/VRM_EXPORT_POLICY.md) §11
 
@@ -86,12 +86,27 @@ rather than embedded. Step 2 covers it.
   passed on Windows, Linux and macOS arm64, including plugin-free readback
   and refusal with the product's importer registration removed.
 
-### Step 3 — motion assembly ⬜
+### Step 3 — motion assembly 🚧
 
-- ⬜ `--motion <clip.vrma>`: avatar and clip composed into one artifact. The
+- ✅ `--motion <clip.vrma>`: avatar and clip composed into one artifact. The
   `.vrm` and `.vrma` file formats stay independent; `vrm_export` composes
-  them. Needs policy q3 — who authors the binding layer.
-- ⬜ An animated `.usdz`.
+  them. Policy q3 is settled for offline export: invoke the shipped
+  `motion_retarget` bake, then replace its avatar reference with a native,
+  content-named layer. Live binding vocabulary remains outside this decision.
+- ✅ An animated `.usdz`, with the avatar layer and textures inside it;
+  `--flatten` instead writes one composed layer. Loose `.usda` / `.usdc`
+  retain the same composition and portable dependencies.
+- ✅ `vrm_export_motion` measured on Windows: five body/expression/gaze and
+  VRM 0.x/1.0 cases, each in all three formats with and without flattening.
+  Plugin-free keyed attributes, resolved joint transforms, metrics and
+  texture bytes equal the existing bake, including after hiding the sources.
+  Reports count the native layer too; repeat exports are byte-identical.
+- ✅ The release smoke now exercises `--motion` from the installed product
+  and requires a moving UsdSkel skeleton in plugin-free readback.
+  The Windows local product passed with `ost 0.23.14` and an explicit
+  unmanaged-output packaging override; this is not hosted release evidence.
+- ⬜ Hosted Windows/Linux/macOS workspace and release-artifact measurements
+  of Step 3. Step 2's dated release report predates this option.
 
 ### Step 4 — distribution pipeline ⬜
 

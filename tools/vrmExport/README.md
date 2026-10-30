@@ -25,6 +25,12 @@ bundle.
 
 The **output** needs none of them.
 
+`--motion clip.vrma` also needs `usdVrmaFileFormat` registered and the
+`motion_retarget` executable. The complete product ships both tools;
+alternatively put them in one `bin/` or put `motion_retarget` on `PATH`.
+It reuses that tool's bake, with hips root motion, expressions and look-at
+enabled. Spring bones are not simulated.
+
 ## What it writes
 
 - The imported stage's root layer, as the importer authored it — not
@@ -49,6 +55,7 @@ No output names a path of the machine that wrote it.
 | `--check` | Reopen the output and validate it: a `defaultPrim`, every dependency resolved, no absolute path or path into a `.vrm`, and for `.usdz` OpenUSD's five `usdUtilsValidators`. |
 | `--overwrite` | Replace an existing output. Without it, one is refused. |
 | `--flatten` | Write the composed stage flattened into one layer. For a `.vrm`, whose layer has no composition arcs, the stage is the same either way. |
+| `--motion <clip.vrma>` | Bake one VRMA clip onto the avatar and export the animated result. |
 | `--dependency-report` | On success, print a JSON inventory to stdout: sorted distinct localized paths, their byte counts, the root layer and validation status ([policy §8.1](../../docs/design/VRM_EXPORT_POLICY.md#81-dependency-report)). Does not imply `--check`. |
 | `--verbose` | Report each localized texture and each check. |
 | `--help`, `--version` | |
@@ -66,6 +73,18 @@ vrm_export avatar.vrm -o avatar.usdz --check --dependency-report > dependencies.
 Diagnostics and `--verbose` output stay on stderr. The inventory contains no
 machine-local paths, counts duplicate images once, and excludes the root
 layer from its byte total. A failed export emits no inventory.
+
+For motion export:
+
+```sh
+vrm_export avatar.vrm --motion walk.vrma -o avatar_walk.usdz --check
+```
+
+By default the output root holds the baked animation and references a native
+`avatar_<hash>.usdc`. Keep that sidecar and `textures/` beside a loose export;
+a `.usdz` includes them. The dependency report counts the sidecar's bytes
+too. With `--flatten`, the avatar and animation share one layer and no
+sidecar is written. Neither output needs the source `.vrm` or `.vrma`.
 
 An unreadable texture's error names its authored path, the anchored path
 used to find it, and the referring USD attributes. For external images,
@@ -131,11 +150,20 @@ second one exists (policy §4).
   Registered only in the composed root build, which has the three bundles.
 - `workspace_unicode_paths` (root) — both formats from a directory no ANSI
   code page can spell.
+- `vrm_export_motion` — five VRM 0.x/1.0 and body/expression/gaze cases,
+  each in all three formats with and without flattening. Compares keyed
+  attributes, resolved UsdSkel joint transforms, stage metrics and texture
+  bytes with the existing bake, with no VRM plugin registered and again
+  after hiding the sources. Covers the installed-product tool layout,
+  Unicode and spaces, report byte counts, repeatability and missing inputs,
+  VRMA registration and bake executable.
 - `scripts/artifact_only_export_smoke.py` (release lane) — the *installed
   product's* `vrm_export` exports `Seed-san.vrm` and a VRM 0.x fixture to
   `.usdz`. Each package is read back with no VRM plugin registered, and the
   export must refuse once the product's importer registration is moved
   aside.
+  It also exports a VRMA-driven avatar using the product's two tools and
+  requires plugin-free UsdSkel readback to resolve a moving skeleton.
 
 ```sh
 ost build

@@ -111,6 +111,11 @@ TestParseOptions()
     assert(Parse({"a.vrm", "-o", "x.usda"}, &options, &error) && !options.dependencyReport);
     assert(!Parse({"a.vrm", "-o", "x.usda", "--motion"}, &options, &error) &&
            Contains(error, "--motion"));
+    assert(Parse({"a.vrm", "-o", "x.usda", "--motion", "walk.vrma"}, &options, &error));
+    assert(options.motionPath == "walk.vrma");
+    assert(!Parse({"a.vrm", "-o", "x.usda", "--motion", "--check"}, &options, &error));
+    assert(!Parse({"a.vrm", "-o", "x.usda", "--motion", "a.vrma", "--motion", "b.vrma"}, &options,
+                  &error));
 }
 
 void

@@ -58,6 +58,8 @@ struct ExportOptions
     // Write the composed stage flattened into one layer, rather than the root
     // layer's content (policy §6.1). Opt-in: a package is not a flatten.
     bool flatten = false;
+    // Optional VRMA clip, baked by the co-installed motion_retarget tool.
+    std::string motionPath;
 };
 
 // One dependency copied into the output: where it was read from, as the

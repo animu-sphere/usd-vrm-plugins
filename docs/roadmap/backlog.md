@@ -74,6 +74,9 @@ never the canonical model — and `vrmRig` never depends on OpenExec.
   `usd-motion-plugins`' `Bindings` prim (its USD-O5); the `vrm:retarget:*`
   statements `execVrm` reads are this repository's half, and today only the
   parity harness authors them ([ExecIr track §4](execir-track.md#4-contract-changes-this-track-requires)).
+  Offline native export uses the existing `motion_retarget` skeleton binding
+  ([export policy §6.5](../design/VRM_EXPORT_POLICY.md#65-motion-assembly));
+  that does not settle the live assembly vocabulary.
 - ⬜ **Which names a VRMA clip's expression weights carry on a
   `MotionChannelSet`.** The shared stage shape is `usd-motion-plugins`'
   `/Animation/Channels` with `motion:channelName`; the `.vrma` stage keeps

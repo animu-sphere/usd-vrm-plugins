@@ -46,6 +46,7 @@ main(int argc, char** argv)
     exportOptions.check = options.check;
     exportOptions.overwrite = options.overwrite;
     exportOptions.flatten = options.flatten;
+    exportOptions.motionPath = options.motionPath;
 
     vrmExport::ExportResult result;
     try
@@ -62,8 +63,8 @@ main(int argc, char** argv)
     {
         for (const vrmExport::LocalizedAsset& asset : result.assets)
         {
-            std::cerr << "vrm_export: localized " << asset.sourcePath << " -> "
-                      << asset.outputPath << "\n";
+            std::cerr << "vrm_export: localized " << asset.sourcePath << " -> " << asset.outputPath
+                      << "\n";
         }
         for (const std::string& check : result.checks)
         {

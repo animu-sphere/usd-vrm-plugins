@@ -82,4 +82,17 @@ else()
     set_tests_properties(vrm_export_end_to_end PROPERTIES
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmPackageResolver>;PATH=path_list_prepend:${_repo_root}/plugins/vrmSchema/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer>;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages")
+    if(TARGET motion_retarget AND TARGET UsdVrmaFileFormat)
+        add_dependencies(vrm_export motion_retarget)
+        add_test(NAME vrm_export_motion
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_vrm_export_motion.py"
+                --tool "$<TARGET_FILE:vrm_export>" --retarget "$<TARGET_FILE:motion_retarget>"
+                --repo "${_repo_root}"
+                --plugin "${_fileformat_resources}" --plugin "${_resolver_resources}"
+                --plugin "${_schema_resources}"
+                --plugin "${_plugins_bin}/usdVrmaFileFormat/tests/resources/usdVrmaFileFormat")
+        get_test_property(vrm_export_end_to_end ENVIRONMENT_MODIFICATION _motion_env)
+        set_tests_properties(vrm_export_motion PROPERTIES ENVIRONMENT_MODIFICATION
+            "${_motion_env};PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmaFileFormat>")
+    endif()
 endif()

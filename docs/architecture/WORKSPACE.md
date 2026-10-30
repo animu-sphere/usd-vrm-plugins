@@ -133,6 +133,9 @@ vrm_export            -> OpenUSD only (usd, usdUtils, usdValidation, sdf, ar, js
 vrm_export            ~> usdVrmFileFormat, usdVrmPackageResolver, vrmSchema
                          (runtime only, through the plugin registry; nothing
                          is linked)
+vrm_export            ~> motion_retarget executable, usdVrmaFileFormat
+                         (--motion only; existing offline bake invoked without
+                         a shell, VRMA opened through the plugin registry)
 vrmImaging            -> OpenUSD only (usd, sdf, tf, vt, hd, usdImaging)
 vrmImaging            ~> vrmSchema   (runtime only: UsdImaging asks an adapter
                          only about schemas a prim's definition includes, and

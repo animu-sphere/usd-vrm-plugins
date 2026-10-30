@@ -13,6 +13,7 @@ struct Options
 {
     std::string inputPath;
     std::string outputPath;
+    std::string motionPath;
     bool check = false;
     bool overwrite = false;
     bool flatten = false;
@@ -25,8 +26,7 @@ struct Options
 
 // Parses the arguments after the program name. On failure `error` says why
 // and the result is false; the caller exits with InvalidArguments.
-bool ParseOptions(const std::vector<std::string>& arguments, Options* options,
-                  std::string* error);
+bool ParseOptions(const std::vector<std::string>& arguments, Options* options, std::string* error);
 
 const char* GetUsage();
 
