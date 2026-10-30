@@ -1,6 +1,6 @@
 # The native USD export track
 
-**Status:** 🚧 in progress — Step 1 implemented · **Target:** v0.10.0 carries Step 1;
+**Status:** 🚧 in progress — Steps 1–2 implemented · **Target:** v0.10.0 carries Step 1;
 Steps 2–4 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [export policy](../design/VRM_EXPORT_POLICY.md) §11
 
@@ -19,8 +19,9 @@ left to build. The steps are this track's internal order, not Product P0–P3.
   [`package_vrm.py`](../../plugins/usdVrmFileFormat/tools/package_vrm.py)
   already writes a loose `.usda` + `textures/`. It is the predecessor, and
   stays as the importer's development tool (policy q1, decided 2026-10-26).
-- **Step 2 is under way:** `.usdz` exports are byte-identical across hosts
-  and time zones of one CPU architecture (2026-10-26).
+- **Step 2 is implemented:** validation and usability, including the
+  installed product's exporter measured on Windows, Linux and macOS arm64
+  in the [2026-10-29 release dry run](../reports/2026-10-29-export-release-dry-run.md).
 
 ## 2. Steps
 
@@ -55,7 +56,7 @@ textures resolved. `vrm_export_end_to_end` is that claim, over every fixture.
 Not covered by Step 1's tests: a `.vrm` whose image is an **external** file
 rather than embedded. Step 2 covers it.
 
-### Step 2 — validation and usability 🚧
+### Step 2 — validation and usability ✅
 
 - ✅ Determinism: policy q2 decided (byte-identical across hosts and time
   zones of one CPU architecture), the staged files' times pinned, a
@@ -78,10 +79,12 @@ rather than embedded. Step 2 covers it.
   failures name the blocked path and recovery checks; validation lists every
   unresolved dependency and locates non-portable asset attributes. Operation
   messages escape line breaks and tabs; exit codes are unchanged.
-- 🚧 The product's `vrm_export` exporting a `.vrm` from the release artifact,
+- ✅ The product's `vrm_export` exporting a `.vrm` from the release artifact,
   in the artifact-only smoke: `scripts/artifact_only_export_smoke.py`, a step
-  of `release.yml`'s workspace lanes. It passed locally against the installed
-  v0.10.0 product; it is ✅ once a release dry run is green with it.
+  of `release.yml`'s workspace lanes. The
+  [2026-10-29 release dry run](../reports/2026-10-29-export-release-dry-run.md)
+  passed on Windows, Linux and macOS arm64, including plugin-free readback
+  and refusal with the product's importer registration removed.
 
 ### Step 3 — motion assembly ⬜
 
