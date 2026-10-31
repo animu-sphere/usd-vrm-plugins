@@ -14,6 +14,7 @@ record of adopting it in public is worth as much as the plugins.
 | [motion/](motion/) | Sessions in front of real hardware, and what they measured. A device is needed once per behavior rather than once per run, so what a session produces is a capture, a manifest and a report — never a green tick, since the hardware lane never gates a pull request. |
 | [delivery-history.md](delivery-history.md) | The granular pre-`v0.1.0` delivery log: what shipped, retained from the original roadmap. |
 | [2026-10-29-export-release-dry-run.md](2026-10-29-export-release-dry-run.md) | Export Step 2's installed-product proof on Windows, Linux and macOS arm64. |
+| [2026-10-31-export-motion-release-dry-run.md](2026-10-31-export-motion-release-dry-run.md) | Export Step 3's hosted workspace and installed-product proof on Windows, Linux and macOS arm64. |
 
 ## What belongs where
 

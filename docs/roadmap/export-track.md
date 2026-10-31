@@ -1,6 +1,6 @@
 # The native USD export track
 
-**Status:** 🚧 in progress — Steps 1–3 implemented; Step 3 hosted proof pending · **Target:** v0.10.0 carries Step 1;
+**Status:** 🚧 in progress — Steps 1–3 implemented and verified; Step 4 open · **Target:** v0.10.0 carries Step 1;
 Steps 2–4 unscheduled ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [export policy](../design/VRM_EXPORT_POLICY.md) §11
 
@@ -22,6 +22,9 @@ left to build. The steps are this track's internal order, not Product P0–P3.
 - **Step 2 is implemented:** validation and usability, including the
   installed product's exporter measured on Windows, Linux and macOS arm64
   in the [2026-10-29 release dry run](../reports/2026-10-29-export-release-dry-run.md).
+- **Step 3 is implemented and verified:** motion assembly passed hosted
+  workspace and installed-product checks on all three OS in the
+  [2026-10-31 measurements](../reports/2026-10-31-export-motion-release-dry-run.md).
 
 ## 2. Steps
 
@@ -86,7 +89,7 @@ rather than embedded. Step 2 covers it.
   passed on Windows, Linux and macOS arm64, including plugin-free readback
   and refusal with the product's importer registration removed.
 
-### Step 3 — motion assembly 🚧
+### Step 3 — motion assembly ✅
 
 - ✅ `--motion <clip.vrma>`: avatar and clip composed into one artifact. The
   `.vrm` and `.vrma` file formats stay independent; `vrm_export` composes
@@ -96,17 +99,20 @@ rather than embedded. Step 2 covers it.
 - ✅ An animated `.usdz`, with the avatar layer and textures inside it;
   `--flatten` instead writes one composed layer. Loose `.usda` / `.usdc`
   retain the same composition and portable dependencies.
-- ✅ `vrm_export_motion` measured on Windows: five body/expression/gaze and
+- ✅ `vrm_export_motion` measured on hosted Windows, Linux and macOS arm64:
+  [2026-10-31 source CI evidence](../reports/2026-10-31-export-motion-release-dry-run.md).
+  Five body/expression/gaze and
   VRM 0.x/1.0 cases, each in all three formats with and without flattening.
   Plugin-free keyed attributes, resolved joint transforms, metrics and
   texture bytes equal the existing bake, including after hiding the sources.
   Reports count the native layer too; repeat exports are byte-identical.
 - ✅ The release smoke now exercises `--motion` from the installed product
   and requires a moving UsdSkel skeleton in plugin-free readback.
-  The Windows local product passed with `ost 0.23.14` and an explicit
-  unmanaged-output packaging override; this is not hosted release evidence.
-- ⬜ Hosted Windows/Linux/macOS workspace and release-artifact measurements
-  of Step 3. Step 2's dated release report predates this option.
+- ✅ Hosted Windows/Linux/macOS release-artifact measurements of Step 3:
+  [2026-10-31 release dry run](../reports/2026-10-31-export-motion-release-dry-run.md),
+  with pinned `ost 0.23.13`. Each product exports an animated `.usdz` using
+  its own bake tool, reopens it without VRM plugins and refuses motion export
+  when that tool is removed.
 
 ### Step 4 — distribution pipeline ⬜
 

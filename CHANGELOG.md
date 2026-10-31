@@ -24,7 +24,9 @@ Current schema contract version: **2**.
   exercise all formats and flattening modes against the existing bake,
   with plugin-free UsdSkel transforms and source-removal readback. The release
   smoke also requires the installed product's animated output to drive a
-  skeleton. Hosted Step 3 evidence remains pending.
+  skeleton. Hosted workspace and installed-product checks pass on Windows,
+  Linux and macOS arm64, closing Step 3's evidence condition
+  ([2026-10-31 measurements](docs/reports/2026-10-31-export-motion-release-dry-run.md)).
 
 - **`vrm_export --dependency-report`** ([export track](docs/roadmap/export-track.md)
   Step 2): a versioned JSON inventory on stdout after success, listing each
