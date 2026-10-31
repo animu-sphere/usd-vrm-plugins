@@ -1,0 +1,1159 @@
+{
+  "date": "2026-10-31",
+  "source_commit": "de7317a",
+  "configuration": "Release",
+  "method": "ctest --test-dir build/cy2026-windows-x86_64-py313-usd -C Release --show-only=json-v1; listing only, no test execution",
+  "count": 62,
+  "labels": {
+    "motion.integration": 10,
+    "motion.real-corpus": 8,
+    "material.imaging": 11,
+    "motion.retarget": 5,
+    "motion.openexec": 15,
+    "motion.cli": 1
+  },
+  "tests": [
+    {
+      "name": "workspace_openusd_contract",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 69,
+      "labels": [],
+      "command": [
+        "C:/Program Files/CMake/bin/cmake.exe",
+        "-DFIXTURE_DIR=${REPO}/tests/cmake/openusd-contract",
+        "-DWORK_DIR=${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/openusd-contract",
+        "-DPROBE_GENERATOR=Ninja",
+        "-P",
+        "${REPO}/tests/cmake/openusd_contract_test.cmake"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_bvh_end_to_end",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 199,
+      "labels": [
+        "motion.integration",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/motion/test_bvh_end_to_end.py",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_real_avatar_bake",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 238,
+      "labels": [
+        "motion.integration",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/motion/test_real_avatar.py",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--clip",
+        "${REPO}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_reference_pipeline",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 276,
+      "labels": [
+        "motion.integration",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/motion/test_reference_pipeline.py",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--bvh-clip",
+        "${REPO}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda",
+        "--trace-clip",
+        "${REPO}/tools/motionRetarget/tests/fixtures/recorded_session_clip.usda",
+        "--avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_reference_pipeline_local",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 280,
+      "labels": [
+        "motion.integration",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/motion/test_reference_pipeline.py",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--bvh-clip",
+        "${REPO}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda",
+        "--trace-clip",
+        "${REPO}/tools/motionRetarget/tests/fixtures/recorded_session_clip.usda",
+        "--local"
+      ],
+      "conditions": {
+        "SKIP_RETURN_CODE": 77,
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_expression_bake",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 328,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/expressions.vrm",
+        "--animation",
+        "${REPO}/tools/motionRetarget/tests/fixtures/expressive_clip.usda",
+        "--output",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/imaging/expression_bake.usda",
+        "--quiet"
+      ],
+      "conditions": {
+        "FIXTURES_SETUP": [
+          "usdvrm_expression_bake"
+        ],
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_expression_bake_imaging",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 334,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_expression_bake_tests.exe",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/imaging/expression_bake.usda"
+      ],
+      "conditions": {
+        "FIXTURES_REQUIRED": [
+          "usdvrm_expression_bake"
+        ],
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_expression_bake_mtoon",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 328,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/expressions_mtoon.vrm",
+        "--animation",
+        "${REPO}/tools/motionRetarget/tests/fixtures/expressive_clip.usda",
+        "--output",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/imaging/expression_bake_mtoon.usda",
+        "--quiet"
+      ],
+      "conditions": {
+        "FIXTURES_SETUP": [
+          "usdvrm_expression_bake_mtoon"
+        ],
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_expression_bake_mtoon_imaging",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 334,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_expression_bake_tests.exe",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/imaging/expression_bake_mtoon.usda"
+      ],
+      "conditions": {
+        "FIXTURES_REQUIRED": [
+          "usdvrm_expression_bake_mtoon"
+        ],
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_unicode_paths",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 407,
+      "labels": [
+        "motion.integration",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/paths/test_unicode_paths.py",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--export",
+        "${REPO}/tools/vrmExport/bin/vrm_export.exe",
+        "--avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma",
+        "--clip",
+        "${REPO}/tests/motion/fixtures/mocopi-mobile-arm-raise-turn.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_validate_imaging",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 444,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/imaging/test_validate_imaging.py",
+        "--validator",
+        "${REPO}/plugins/usdVrmFileFormat/tools/validate_vrm.py",
+        "--vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/mtoon_vrm1.vrm"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_import_imaging",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 475,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/imaging/test_import_imaging.py",
+        "--suite",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_import_tests.exe",
+        "--oracle-dir",
+        "${REPO}/plugins/usdVrmFileFormat/tests",
+        "--vrm1",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/mtoon_vrm1.vrm",
+        "--vrm0",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/mtoon_vrm0.vrm",
+        "--work",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/imaging"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_ctest_labels",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 501,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/scripts/check_ctest_labels.py",
+        "--ctest",
+        "C:/Program Files/CMake/bin/ctest.exe",
+        "--build-dir",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd",
+        "--source-dir",
+        "${REPO}",
+        "--config",
+        "Release"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_ctest_labels_selftest",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 510,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/scripts/check_ctest_labels.py",
+        "--selftest"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_release_closure",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 515,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/test_release_closure.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_cmake_boundaries",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 532,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/scripts/check_cmake_boundaries.py",
+        "--motion-include",
+        "${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include",
+        "--motion-include",
+        "${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionRetarget/d6f835997a5a31fb26672fb05008e0bae2a936b90e36f7488ae5a8a0f1625c37/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionRetarget/d6f835997a5a31fb26672fb05008e0bae2a936b90e36f7488ae5a8a0f1625c37/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include",
+        "--motion-include",
+        "${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionSampling/f991e0493a22081bc70c33abb89491263324c9b6931659e6b7e002b7f94a8080/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionSampling/f991e0493a22081bc70c33abb89491263324c9b6931659e6b7e002b7f94a8080/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include",
+        "--motion-include",
+        "${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionUsd/f11545538fa3a72d9efa6dd108f155123af66b7ee1f52d227f0b345b2ceac5bc/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionUsd/f11545538fa3a72d9efa6dd108f155123af66b7ee1f52d227f0b345b2ceac5bc/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${REPO}/.strata/external-libraries/cy2026-windows-x86_64-py313-usd/motionCore/f06fef790e19371c3d085c667e44805d738b63e8af77df2d8fafa6a41d5969a5/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/AppData/Local/Programs/Python/Python313/Include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include;${USER}/.ost/runtimes/openstrata-cy2026-windows-x86_64-py313-usd/include"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "workspace_cmake_boundaries_selftest",
+      "source": "${REPO}/CMakeLists.txt",
+      "line": 536,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/scripts/check_cmake_boundaries.py",
+        "--selftest"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd"
+      }
+    },
+    {
+      "name": "vrmContainer_unit",
+      "source": "${REPO}/libs/vrmContainer/tests/CMakeLists.txt",
+      "line": 10,
+      "labels": [],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmContainer/tests/vrmContainer_tests.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmContainer/tests"
+      }
+    },
+    {
+      "name": "vrmContainer_boundaries",
+      "source": "${REPO}/libs/vrmContainer/tests/CMakeLists.txt",
+      "line": 18,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/libs/vrmContainer/tests/check_boundaries.py",
+        "${REPO}/libs/vrmContainer/tests/..",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmContainer/vrmContainer.dll"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmContainer/tests"
+      }
+    },
+    {
+      "name": "vrmRig_unit",
+      "source": "${REPO}/libs/vrmRig/tests/CMakeLists.txt",
+      "line": 9,
+      "labels": [
+        "motion.retarget"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests/vrmRig_tests.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests"
+      }
+    },
+    {
+      "name": "vrmRig_spring_unit",
+      "source": "${REPO}/libs/vrmRig/tests/CMakeLists.txt",
+      "line": 15,
+      "labels": [
+        "motion.retarget"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests/vrmRig_spring_tests.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests"
+      }
+    },
+    {
+      "name": "vrmRig_spring_three-vrm",
+      "source": "${REPO}/libs/vrmRig/tests/CMakeLists.txt",
+      "line": 26,
+      "labels": [
+        "motion.retarget"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests/vrmRig_spring_reference_tests.exe",
+        "${REPO}/libs/vrmRig/tests/springbone/cases.json",
+        "${REPO}/libs/vrmRig/tests/springbone/three-vrm.csv",
+        "all"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests"
+      }
+    },
+    {
+      "name": "vrmRig_spring_univrm",
+      "source": "${REPO}/libs/vrmRig/tests/CMakeLists.txt",
+      "line": 26,
+      "labels": [
+        "motion.retarget"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests/vrmRig_spring_reference_tests.exe",
+        "${REPO}/libs/vrmRig/tests/springbone/cases.json",
+        "${REPO}/libs/vrmRig/tests/springbone/univrm.csv",
+        "vrm0"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests"
+      }
+    },
+    {
+      "name": "vrmRig_boundaries",
+      "source": "${REPO}/libs/vrmRig/tests/CMakeLists.txt",
+      "line": 56,
+      "labels": [
+        "motion.retarget"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/libs/vrmRig/tests/check_boundaries.py",
+        "${REPO}/libs/vrmRig/tests/..",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/vrmRig.lib"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/libs/vrmRig/tests"
+      }
+    },
+    {
+      "name": "vrmschema_material_api",
+      "source": "${REPO}/plugins/vrmSchema/tests/CMakeLists.txt",
+      "line": 36,
+      "labels": [],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmSchema/tests/vrmschema_material_api.exe",
+        "${REPO}/plugins/vrmSchema/tests/fixtures/basic.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmSchema/tests"
+      }
+    },
+    {
+      "name": "vrmschema_plugin",
+      "source": "${REPO}/plugins/vrmSchema/tests/CMakeLists.txt",
+      "line": 49,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/vrmSchema/tests/test_vrmschema_plugin.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmSchema/tests"
+      }
+    },
+    {
+      "name": "execVrm_rig",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 42,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_rig_tests.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_humanoid",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 76,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_humanoid_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/humanoid_rig.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_correction",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 91,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_correction_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/corrected_rig.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_retarget",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 112,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_retarget_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/retargeted_rig.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_joint_transforms",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 132,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_joint_transforms_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/retargeted_rig.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_diagnostics",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 149,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_diagnostics_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/retargeted_rig.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_retarget_without_exec_motion",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 161,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_retarget_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/retargeted_rig.usda",
+        "--without-exec-motion"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_humanoid_without_schema",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 170,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests/execVrm_humanoid_tests.exe",
+        "${REPO}/plugins/execVrm/tests/fixtures/humanoid_rig.usda",
+        "--without-schema"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "execVrm_boundaries",
+      "source": "${REPO}/plugins/execVrm/tests/CMakeLists.txt",
+      "line": 189,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/execVrm/tests/check_boundaries.py",
+        "${REPO}/plugins/execVrm/tests/..",
+        "${REPO}/plugins/execVrm/lib/libExecVrm.dll",
+        "motionCore::motionCore|motionRetarget::motionRetarget|vrmRig::vrmRig|arch|tf|gf|vt|plug|sdf|usd|usdSkel|vdf|ef|esf|esfUsd|exec|execUsd",
+        "${REPO}/.strata/external-bundles/cy2026-windows-x86_64-py313-usd/execMotion/2c41a6641ad3648f48d4ede5ab2ea25aca090db0047e30c8d609d55f01c80e31/plugin/resources/execMotion/plugInfo.json"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/execVrm/tests"
+      }
+    },
+    {
+      "name": "usdvrm_transform_util",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 44,
+      "labels": [],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests/test_transform_util.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_path_util",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 68,
+      "labels": [],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests/test_path_util.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_python_smoke",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 112,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmFileFormat/tests/test_usdvrm_plugin.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_corpus_smoke",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 122,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmFileFormat/tests/test_usdvrm_corpus.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_negative",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 133,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmFileFormat/tests/test_usdvrm_negative.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_validate",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 144,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmFileFormat/tests/test_usdvrm_validate.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_realization_regenerate",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 187,
+      "labels": [],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests/test_realization_regenerate.exe",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrm_baseline",
+      "source": "${REPO}/plugins/usdVrmFileFormat/tests/CMakeLists.txt",
+      "line": 243,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tools/baseline_freeze.py",
+        "--check"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrmresolver_boundaries",
+      "source": "${REPO}/plugins/usdVrmPackageResolver/tests/CMakeLists.txt",
+      "line": 25,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmPackageResolver/tests/check_boundaries.py",
+        "${REPO}/plugins/usdVrmPackageResolver/tests/..",
+        "${REPO}/plugins/usdVrmPackageResolver/lib/libUsdVrmPackageResolver.dll"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmPackageResolver/tests"
+      }
+    },
+    {
+      "name": "usdvrmresolver_python",
+      "source": "${REPO}/plugins/usdVrmPackageResolver/tests/CMakeLists.txt",
+      "line": 48,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmPackageResolver/tests/test_resolver.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmPackageResolver/tests"
+      }
+    },
+    {
+      "name": "usdvrma_python_smoke",
+      "source": "${REPO}/plugins/usdVrmaFileFormat/tests/CMakeLists.txt",
+      "line": 30,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/test_usdvrma_plugin.py"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmaFileFormat/tests"
+      }
+    },
+    {
+      "name": "usdvrma_fixture_deterministic",
+      "source": "${REPO}/plugins/usdVrmaFileFormat/tests/CMakeLists.txt",
+      "line": 38,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/../tools/generate_fixtures.py",
+        "--check"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmaFileFormat/tests"
+      }
+    },
+    {
+      "name": "vrmImaging_discovery",
+      "source": "${REPO}/plugins/vrmImaging/tests/CMakeLists.txt",
+      "line": 48,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_discovery_tests.exe"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests"
+      }
+    },
+    {
+      "name": "vrmImaging_mtoon",
+      "source": "${REPO}/plugins/vrmImaging/tests/CMakeLists.txt",
+      "line": 52,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_mtoon_tests.exe",
+        "${REPO}/plugins/vrmImaging/tests/fixtures/mtoon_materials.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests"
+      }
+    },
+    {
+      "name": "vrmImaging_mtoon_without_schema",
+      "source": "${REPO}/plugins/vrmImaging/tests/CMakeLists.txt",
+      "line": 59,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_mtoon_tests.exe",
+        "${REPO}/plugins/vrmImaging/tests/fixtures/mtoon_materials.usda",
+        "--without-schema"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests"
+      }
+    },
+    {
+      "name": "vrmImaging_material",
+      "source": "${REPO}/plugins/vrmImaging/tests/CMakeLists.txt",
+      "line": 62,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_material_tests.exe",
+        "${REPO}/plugins/vrmImaging/tests/fixtures/material_core.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests"
+      }
+    },
+    {
+      "name": "vrmImaging_texture_info",
+      "source": "${REPO}/plugins/vrmImaging/tests/CMakeLists.txt",
+      "line": 66,
+      "labels": [
+        "material.imaging"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests/vrmImaging_texture_info_tests.exe",
+        "${REPO}/plugins/vrmImaging/tests/fixtures/texture_info.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/vrmImaging/tests"
+      }
+    },
+    {
+      "name": "motion_retarget_design_triplet",
+      "source": "${REPO}/tools/motionRetarget/tests/CMakeLists.txt",
+      "line": 25,
+      "labels": [
+        "motion.cli"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tools/motionRetarget/tests/test_motion_retarget.py",
+        "--tool",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures/design_triplet",
+        "--tool-fixtures",
+        "${REPO}/tools/motionRetarget/tests/fixtures",
+        "--humanoid-map",
+        "${REPO}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tools/motionRetarget/tests"
+      }
+    },
+    {
+      "name": "vrm_export_operation",
+      "source": "${REPO}/tools/vrmExport/tests/CMakeLists.txt",
+      "line": 31,
+      "labels": [],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tools/vrmExport/tests/vrm_export_operation_tests.exe",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/minimal.vrm"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tools/vrmExport/tests"
+      }
+    },
+    {
+      "name": "vrm_export_end_to_end",
+      "source": "${REPO}/tools/vrmExport/tests/CMakeLists.txt",
+      "line": 68,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tools/vrmExport/tests/test_vrm_export.py",
+        "--tool",
+        "${REPO}/tools/vrmExport/bin/vrm_export.exe",
+        "--plugin",
+        "fileformat=${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat",
+        "--plugin",
+        "resolver=${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmPackageResolver/tests/resources/usdVrmPackageResolver",
+        "--plugin",
+        "schema=${REPO}/plugins/vrmSchema/plugin/resources/vrmSchema",
+        "--textured",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/textures.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/minimal.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/vrm0_minimal.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/textures.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/materials.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/mtoon_vrm0.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/mtoon_vrm1.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/multiskin_ibm.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/expressions.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/vrm0_expressions.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/lookat.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/springbone.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/constraints.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/animation.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/fixtures/vrm0_frontbake.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tools/vrmExport/tests"
+      }
+    },
+    {
+      "name": "vrm_export_motion",
+      "source": "${REPO}/tools/vrmExport/tests/CMakeLists.txt",
+      "line": 87,
+      "labels": [],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tools/vrmExport/tests/test_vrm_export_motion.py",
+        "--tool",
+        "${REPO}/tools/vrmExport/bin/vrm_export.exe",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--repo",
+        "${REPO}",
+        "--plugin",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat",
+        "--plugin",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmPackageResolver/tests/resources/usdVrmPackageResolver",
+        "--plugin",
+        "${REPO}/plugins/vrmSchema/plugin/resources/vrmSchema",
+        "--plugin",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/plugins/usdVrmaFileFormat/tests/resources/usdVrmaFileFormat"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tools/vrmExport/tests"
+      }
+    },
+    {
+      "name": "workspace_exec_driver",
+      "source": "${REPO}/tests/parity/CMakeLists.txt",
+      "line": 102,
+      "labels": [
+        "motion.openexec"
+      ],
+      "command": [
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity/exec_driver_contract.exe",
+        "${REPO}/.strata/external-bundles/cy2026-windows-x86_64-py313-usd/execMotion/2c41a6641ad3648f48d4ede5ab2ea25aca090db0047e30c8d609d55f01c80e31/tests/fixtures/filtered_clip.usda"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity"
+      }
+    },
+    {
+      "name": "workspace_exec_parity_recorded_fixture",
+      "source": "${REPO}/tests/parity/CMakeLists.txt",
+      "line": 165,
+      "labels": [
+        "motion.integration",
+        "motion.openexec",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/parity/test_exec_parity.py",
+        "--parity",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity/exec_parity.exe",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures",
+        "--design-fixtures",
+        "${REPO}/tests/motion/fixtures/design_triplet",
+        "--design-map",
+        "${REPO}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json",
+        "--parity-fixtures",
+        "${REPO}/tests/parity/fixtures",
+        "--case",
+        "recorded_fixture",
+        "--real-avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma-walk",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity"
+      }
+    },
+    {
+      "name": "workspace_exec_parity_recorded_root_motion",
+      "source": "${REPO}/tests/parity/CMakeLists.txt",
+      "line": 165,
+      "labels": [
+        "motion.integration",
+        "motion.openexec",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/parity/test_exec_parity.py",
+        "--parity",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity/exec_parity.exe",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures",
+        "--design-fixtures",
+        "${REPO}/tests/motion/fixtures/design_triplet",
+        "--design-map",
+        "${REPO}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json",
+        "--parity-fixtures",
+        "${REPO}/tests/parity/fixtures",
+        "--case",
+        "recorded_root_motion",
+        "--real-avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma-walk",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity"
+      }
+    },
+    {
+      "name": "workspace_exec_parity_generated_thirty_fps",
+      "source": "${REPO}/tests/parity/CMakeLists.txt",
+      "line": 165,
+      "labels": [
+        "motion.integration",
+        "motion.openexec"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/parity/test_exec_parity.py",
+        "--parity",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity/exec_parity.exe",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures",
+        "--design-fixtures",
+        "${REPO}/tests/motion/fixtures/design_triplet",
+        "--design-map",
+        "${REPO}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json",
+        "--parity-fixtures",
+        "${REPO}/tests/parity/fixtures",
+        "--case",
+        "generated_thirty_fps",
+        "--real-avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma-walk",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity"
+      }
+    },
+    {
+      "name": "workspace_exec_parity_recorded_real_avatar",
+      "source": "${REPO}/tests/parity/CMakeLists.txt",
+      "line": 165,
+      "labels": [
+        "motion.integration",
+        "motion.openexec",
+        "motion.real-corpus"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/parity/test_exec_parity.py",
+        "--parity",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity/exec_parity.exe",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures",
+        "--design-fixtures",
+        "${REPO}/tests/motion/fixtures/design_triplet",
+        "--design-map",
+        "${REPO}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json",
+        "--parity-fixtures",
+        "${REPO}/tests/parity/fixtures",
+        "--case",
+        "recorded_real_avatar",
+        "--real-avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma-walk",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity"
+      }
+    },
+    {
+      "name": "workspace_exec_parity_vrma_walk",
+      "source": "${REPO}/tests/parity/CMakeLists.txt",
+      "line": 165,
+      "labels": [
+        "motion.integration",
+        "motion.openexec"
+      ],
+      "command": [
+        "${USER}/AppData/Local/Programs/Python/Python313/python.exe",
+        "${REPO}/tests/parity/test_exec_parity.py",
+        "--parity",
+        "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity/exec_parity.exe",
+        "--retarget",
+        "${REPO}/tools/motionRetarget/bin/motion_retarget.exe",
+        "--fixtures",
+        "${REPO}/tests/motion/fixtures",
+        "--design-fixtures",
+        "${REPO}/tests/motion/fixtures/design_triplet",
+        "--design-map",
+        "${REPO}/tools/motionRetarget/tests/fixtures/design_avatar_humanoid_map.json",
+        "--parity-fixtures",
+        "${REPO}/tests/parity/fixtures",
+        "--case",
+        "vrma_walk",
+        "--real-avatar",
+        "${REPO}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+        "--vrma-walk",
+        "${REPO}/plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+      ],
+      "conditions": {
+        "WORKING_DIRECTORY": "${REPO}/build/cy2026-windows-x86_64-py313-usd/tests/parity"
+      }
+    }
+  ]
+}
