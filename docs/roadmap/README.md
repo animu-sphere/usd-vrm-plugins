@@ -23,7 +23,6 @@ commitment. P0 precedes P1; P2 candidates wait for their recorded trigger.
 
 | Track | Status | Priority | Owner | Target |
 | --- | --- | --- | --- | --- |
-| Pinnable C++ consumer libraries and motion 0.5.4 | release preparation | P0 | usd-vrm-plugins | v0.12.0 candidate |
 | Package portability: RPATH, symbols, bundle resolution and CI coverage | scope review active; implementation remains backlog | P1 | usd-vrm-plugins | v0.13.0 proposal |
 | VRM expression/look-at computations | backlog; scope review before implementation | P2 | usd-vrm-plugins | v0.14.0 proposal, uncommitted |
 | ExecIr adapters, native export profiles and true VRM round-trip | research; no implementation commitment | P2 | usd-vrm-plugins | unscheduled |

@@ -138,7 +138,7 @@ the interpretation of VRM 0.x spring declarations. The release's migration
 and distribution boundaries are in the
 [release record](../releases/v0.11.0.md).
 
-*Applied at v0.12.0*: every internal range moves to `>=0.12,<0.13`. No library
+*Applied at v0.12.0 (2026-10-31)*: every internal range moves to `>=0.12,<0.13`. No library
 API is added here. The bump marks the move of every motion pin from 0.5.1 to
 0.5.4, which rebuilds every package, and the first registry publication of the
 `usd` libraries. The [release record](../releases/v0.12.0.md) has the details.

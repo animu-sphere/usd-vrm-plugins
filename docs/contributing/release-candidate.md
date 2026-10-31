@@ -2,7 +2,7 @@
 
 This is a preparation worksheet, not publication evidence. Scope, priority and
 target version belong to the [roadmap index](../roadmap/README.md#status-at-a-glance).
-The last completed preparation is recorded in [v0.11.0](../releases/v0.11.0.md).
+The last completed preparation is recorded in [v0.12.0](../releases/v0.12.0.md).
 The package version stays at [VERSION](../../VERSION) until the next lockstep bump.
 
 ## Freeze the scope and compatibility boundary
