@@ -184,6 +184,13 @@ vrm_export -> OpenUSD (usd, sdf, ar, tf, js, usdUtils, usdValidation)
   through as data; a change to the importer's output is not a change here.
 - It links no consumed motion package until Step 3 needs one.
 
+Step 3 invokes the existing `motion_retarget` executable at run time, with
+an argument vector and no shell. It does not link the bake's internals or
+introduce another rig reader. The tool is found beside `vrm_export`, in the
+installed product's sibling `motion_retarget/bin`, then on `PATH`. Only
+`--motion` requires it and `usdVrmaFileFormat`; static export keeps the same
+dependencies. The full product already ships both tools.
+
 `vrm_export` is a member of the aggregate product from Step 1. There is no
 choice to make: `ost` refuses a discovered tool that is neither in
 `release_members` nor excluded, and `release.yml` counts every `tools/`
@@ -195,7 +202,7 @@ lane ([WORKSPACE.md](../architecture/WORKSPACE.md) §5).
 ### 5.1 Synopsis
 
 ```text
-vrm_export <input.vrm> -o <output.{usda,usdc,usdz}> [--check] [--overwrite] [--flatten] [--dependency-report] [--verbose]
+vrm_export <input.vrm> -o <output.{usda,usdc,usdz}> [--motion <clip.vrma>] [--check] [--overwrite] [--flatten] [--dependency-report] [--verbose]
 vrm_export --help | --version
 ```
 
@@ -250,6 +257,14 @@ identifies attributes that retain an absolute or VRM-package path. Line
 breaks and tabs in operation errors are escaped to keep each message on one
 line. These are descriptive messages, not a new numbered diagnostic catalog;
 the exit codes above remain the machine-readable failure categories.
+
+For `--motion`, a non-`.vrma` argument is exit 2; a missing/unreadable clip
+or unregistered `usdVrmaFileFormat` is exit 3. A missing `motion_retarget`,
+failed bake or failed materialization is exit 4. The bake runs with
+`--quiet` so stdout remains the dependency report; its refusal still reaches
+stderr under its own `motion_retarget:` prefix. Its root-motion policy is
+the existing tool's default (`hips`); expressions and look-at are enabled.
+This option does not simulate spring bones.
 
 ## 6. Output shape
 
@@ -327,6 +342,30 @@ The package carries the materialized representation and nothing that needs
 the VRM plugins to read. Optional source embedding (`--keep-source`) is
 Step 4's, if a consumer asks for it.
 
+### 6.5 Motion assembly
+
+`--motion` accepts one `.vrma`. `motion_retarget` authors the binding and
+baked animation in a temporary layer, using its existing body, expression
+and look-at path. Its default prim has the avatar's original name, so
+`/Asset` and the rig, geometry and material paths do not move.
+
+Without `--flatten`, the exporter materializes and localizes the avatar into
+`avatar_<hash>.usdc` beside the root layer, where the hash of the native
+layer's bytes uses §6.2's algorithm. The bake's avatar reference is replaced
+with `./avatar_<hash>.usdc`. The root holds the animation, skeleton binding
+and expression material overrides; the native avatar keeps the rig and
+geometry. Several loose exports may share content-named avatar layers and
+textures. A `.usdz` includes that layer and its textures under the same
+relative names. Neither source `.vrm` nor `.vrma` is included or referenced.
+
+With `--flatten`, the composed bake is flattened without a source comment,
+then localized. It writes one native layer and textures, with no avatar
+sidecar. Temporary bake files are removed on success and refusal.
+
+This settles q3 only for this offline export: `vrm_export` orchestrates and
+`motion_retarget` authors the binding. It introduces no live binding
+vocabulary and does not decide the generic `Bindings` prim's ownership.
+
 ## 7. Absolute paths
 
 No output contains a path of the machine that produced it: not the source
@@ -368,8 +407,8 @@ The version 1 object has these fields:
 | `reportVersion` | Integer `1`. |
 | `format` | `usda`, `usdc` or `usdz`, lowercase. |
 | `rootLayer` | The output's file name for a loose layer, `defaultLayer.usdc` for a package. |
-| `dependencies` | Array of objects with `path` (the localized `./textures/<hash>.<ext>`) and `sizeBytes` (integer byte count). Sorted by path, with each localized file listed once. |
-| `totalDependencyBytes` | Sum of the distinct dependencies' byte counts; excludes the root layer and package overhead. |
+| `dependencies` | Array of objects with `path` (a localized `./textures/<hash>.<ext>`, or the native `./avatar_<hash>.usdc` for unflattened motion) and `sizeBytes` (integer byte count). Sorted by path, with each localized file listed once. |
+| `totalDependencyBytes` | Sum of the distinct dependencies' byte counts, including a motion avatar sidecar when present; excludes the root layer and package overhead. |
 | `validation` | `passed` when `--check` ran successfully, `notRequested` otherwise. |
 
 The inventory records the bytes copied during localization, including external
@@ -388,6 +427,9 @@ for the same output file name, format and validation choice.
   bit-for-bit. A `.usdc` or `.usdz` holds every value numerically: the crate
   writer drops the sign of zero in integer-valued vectors and float arrays
   (§2). Step 1's tests compare accordingly.
+  An unflattened motion export's avatar sidecar is always crate, even when
+  the animation root is `.usda`, so its avatar values have that same numeric
+  equality.
 - `.usdz`: **byte-identical across hosts and time zones of one CPU
   architecture** (q2, decided 2026-10-26). Each entry carries the modification time of the temporary
   file it was packaged from, converted with `localtime()` (§2), so before
@@ -452,7 +494,9 @@ are not Product P0–P3. Status is the
   times in local terms (§9). Measured afterwards: that holds within one CPU
   architecture, because x86-64 and arm64 import different values (§2). The
   alternatives were per host only, or stage-semantic equality only.
-- **q3 — who authors Step 3's binding layer.** The same question the backlog
-  holds for any avatar + clip composition
-  ([VRM motion open questions](../roadmap/backlog.md#vrm-motion-open-questions));
-  Step 3 is its first consumer outside the parity harness.
+- **q3 — who authors Step 3's binding layer.** *Decided for offline export
+  2026-10-31:* `vrm_export` invokes the shipped `motion_retarget` to author
+  its existing bake and skeleton binding, then replaces the avatar reference
+  with a portable native layer (§6.5). No second implementation of the bake
+  or new library identity is needed. The broader live assembly question in
+  the [backlog](../roadmap/backlog.md#vrm-motion-open-questions) remains open.

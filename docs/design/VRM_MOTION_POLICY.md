@@ -81,6 +81,11 @@ Who authors that binding layer, and in what vocabulary, is open
 generic half of the question is `usd-motion-plugins`' `Bindings` prim
 (USD-O5 in its USD_MAPPING.md).
 
+For offline native export, `vrm_export --motion` orchestrates the existing
+`motion_retarget` bake and its skeleton binding, then packages the native
+avatar and animation ([export policy §6.5](VRM_EXPORT_POLICY.md#65-motion-assembly)).
+This resolves that consumer without defining a live assembly vocabulary.
+
 ## 3. What `.vrma` import authors
 
 `usdVrmaFileFormat` accepts a GLB with `VRMC_vrm_animation` `specVersion`

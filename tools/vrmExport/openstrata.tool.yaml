@@ -5,6 +5,8 @@
 # It requires no library: it links OpenUSD alone and reaches a `.vrm` through
 # the plugin registry at run time (docs/design/VRM_EXPORT_POLICY.md §4). The
 # three VRM bundles it opens a `.vrm` with are the product's members already.
+# --motion also invokes the product's motion_retarget executable and opens
+# usdVrmaFileFormat at run time; no additional link-time library is required.
 schema: openstrata.tool/v1alpha1
 tool:
   id: vrm_export

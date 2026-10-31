@@ -58,6 +58,7 @@ endforeach()
 # installed and exports no package.
 add_library(vrm_export_operation STATIC
     src/Options.cpp
+    src/export/MotionBake.cpp
     src/export/VrmExport.cpp)
 target_include_directories(vrm_export_operation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_features(vrm_export_operation PUBLIC cxx_std_17)

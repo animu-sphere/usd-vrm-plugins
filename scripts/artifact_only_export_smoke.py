@@ -59,7 +59,7 @@ INPUTS = (
 # Read in a process with no VRM plugin registered. Printed as JSON.
 READ_BACK = r'''
 import json, sys
-from pxr import Ar, Plug, Sdf, Usd
+from pxr import Ar, Plug, Sdf, Usd, UsdSkel
 
 stage = Usd.Stage.Open(sys.argv[1])
 assets, unresolved = 0, []
@@ -77,12 +77,28 @@ for prim in stage.Traverse():
             unresolved.append(f"{attr.GetPath()}: {value.path} -> {resolved!r}")
 registered = [p.name for p in Plug.Registry().GetAllPlugins()
               if p.name.lower().startswith(("usdvrm", "vrm", "execvrm"))]
+cache = UsdSkel.Cache()
+for prim in stage.Traverse():
+    if prim.IsA(UsdSkel.Root):
+        cache.Populate(UsdSkel.Root(prim), Usd.PrimDefaultPredicate)
+animated, moving = 0, 0
+for prim in stage.Traverse():
+    if not prim.IsA(UsdSkel.Skeleton):
+        continue
+    query = cache.GetSkelQuery(UsdSkel.Skeleton(prim))
+    if query and query.GetAnimQuery():
+        animated += 1
+        first = query.ComputeJointLocalTransforms(stage.GetStartTimeCode())
+        last = query.ComputeJointLocalTransforms(stage.GetEndTimeCode())
+        moving += int(bool(first) and first != last)
 print(json.dumps({
     "defaultPrim": stage.GetRootLayer().defaultPrim,
     "prims": sum(1 for _ in stage.Traverse()),
     "assets": assets,
     "unresolved": unresolved,
     "vrmPlugins": registered,
+    "animatedSkeletons": animated,
+    "movingSkeletons": moving,
 }))
 '''
 
@@ -106,9 +122,13 @@ def without_product_plugins(env: dict, prefix: pathlib.Path) -> dict:
 
 
 def export(tool: pathlib.Path, source: pathlib.Path, output: pathlib.Path,
-           env: dict) -> subprocess.CompletedProcess:
-    print(f"$ vrm_export {source.name} -o {output.name} --check", flush=True)
-    return subprocess.run([str(tool), str(source), "-o", str(output), "--check"],
+           env: dict, motion: pathlib.Path | None = None) -> subprocess.CompletedProcess:
+    motion_flag = f" --motion {motion.name}" if motion else ""
+    print(f"$ vrm_export {source.name}{motion_flag} -o {output.name} --check", flush=True)
+    command = [str(tool), str(source), "-o", str(output), "--check"]
+    if motion is not None:
+        command += ["--motion", str(motion)]
+    return subprocess.run(command,
                           env=env, text=True, encoding="utf-8", errors="replace",
                           capture_output=True)
 
@@ -124,7 +144,8 @@ def main() -> int:
     args = parser.parse_args()
 
     platform, profile = workspace_target()
-    for required in INPUTS:
+    motion = REPO_ROOT / "plugins/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+    for required in (*INPUTS, motion):
         if not required.is_file():
             fail_setup(f"no input at {required}")
 
@@ -183,6 +204,37 @@ def main() -> int:
                            f"{summary['vrmPlugins']}")
             print(f"  {summary['prims']} prims, {summary['assets']} textures "
                   f"resolved inside the package, no VRM plugin")
+
+        # Step 3: both tools and the VRMA reader must come from this product.
+        animated = scratch / "out" / "animated.usdz"
+        result = export(tool, INPUTS[0], animated, env, motion)
+        if failures.check(result.returncode == 0,
+                          f"animated export: {result.returncode}: {result.stdout}{result.stderr}"):
+            read = subprocess.run([sys.executable, "-c", READ_BACK, str(animated)],
+                                  env=bare, text=True, encoding="utf-8", errors="replace",
+                                  capture_output=True)
+            if failures.check(read.returncode == 0,
+                              f"animated plugin-free readback: {read.stdout}{read.stderr}"):
+                summary = json.loads(read.stdout)
+                failures.check(summary["animatedSkeletons"] > 0 and summary["movingSkeletons"] > 0,
+                               f"the packaged animation does not drive its skeleton: {summary}")
+                failures.check(not summary["vrmPlugins"] and not summary["unresolved"],
+                               f"animated package depends on plugins or missing assets: {summary}")
+                print(f"  animated: {summary['movingSkeletons']} moving skeleton(s), no VRM plugin")
+
+        retarget = prefix / "tools" / "motion_retarget" / "bin" / f"motion_retarget{suffix()}"
+        if not retarget.is_file():
+            fail_setup(f"the product holds no motion_retarget at {retarget}")
+        moved = retarget.with_name(retarget.name + ".hidden")
+        try:
+            retarget.rename(moved)
+            result = export(tool, INPUTS[0], scratch / "out" / "missing-bake.usdz", env, motion)
+            failures.check(result.returncode == 4 and "motion_retarget" in result.stderr,
+                           f"removing the product's bake tool did not refuse: "
+                           f"{result.returncode}: {result.stdout}{result.stderr}")
+        finally:
+            if moved.exists():
+                moved.rename(retarget)
 
         # And the negative: with the product's importer registration gone,
         # nothing may answer in its place.

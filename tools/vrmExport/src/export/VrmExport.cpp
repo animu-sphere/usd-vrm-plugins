@@ -8,6 +8,7 @@
 // `.usdz` by OpenUSD's own packaging (§6.3). `check` then reopens what was
 // written (§8).
 #include "VrmExport.h"
+#include "MotionBake.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/js/json.h"
@@ -27,6 +28,8 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
+#include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/dependencies.h"
@@ -542,6 +545,11 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath, const Exp
     {
         return Fail(Status::InvalidArguments, "the input must be a .vrm file: " + inputPath);
     }
+    if (!options.motionPath.empty() && LowerExtension(options.motionPath) != "vrma")
+    {
+        return Fail(Status::InvalidArguments,
+                    "--motion must name a .vrma file: " + options.motionPath);
+    }
     if (TfIsDir(outputPath, /* resolveSymlinks = */ true))
     {
         return Fail(Status::InvalidArguments, outputPath + " is a directory");
@@ -571,6 +579,41 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath, const Exp
                     "OpenUSD could not open " + inputPath +
                         "; check that it is a readable, valid VRM/GLB file" +
                         (errors.empty() ? "" : ": " + errors));
+    }
+
+    // The existing CLI owns the complete VRM bake (body, expressions, gaze).
+    // Keep its binding layer separate from the avatar until materialization.
+    std::unique_ptr<TemporaryDirectory> motionStaging;
+    SdfLayerRefPtr bakedLayer;
+    if (!options.motionPath.empty())
+    {
+        if (!TfIsFile(options.motionPath))
+            return Fail(Status::InputOpenFailure, "no .vrma file at " + options.motionPath);
+        if (!SdfFileFormat::FindByExtension("vrma"))
+            return Fail(Status::InputOpenFailure,
+                        "--motion needs usdVrmaFileFormat registered on PXR_PLUGINPATH_NAME");
+        if (!UsdStage::Open(options.motionPath))
+            return Fail(Status::InputOpenFailure,
+                        "cannot open motion '" + options.motionPath + "': " + TakeErrors(&mark));
+        motionStaging = std::make_unique<TemporaryDirectory>();
+        if (motionStaging->path().empty())
+            return Fail(Status::ExportFailure,
+                        "cannot create a temporary directory for motion assembly");
+        const std::string bakedPath = TfStringCatPaths(motionStaging->path(), "motion.usda");
+        std::string error;
+        if (!BakeMotion(inputPath, options.motionPath, bakedPath, &error))
+            return Fail(Status::ExportFailure, error);
+        bakedLayer = SdfLayer::FindOrOpen(bakedPath);
+        if (!bakedLayer)
+            return Fail(Status::ExportFailure,
+                        "cannot read motion_retarget output: " + TakeErrors(&mark));
+        if (options.flatten)
+        {
+            stage = UsdStage::Open(bakedLayer);
+            if (!stage)
+                return Fail(Status::ExportFailure,
+                            "cannot compose the baked motion: " + TakeErrors(&mark));
+        }
     }
 
     // Materialize (policy §6.1): the root layer's content into a new layer, so
@@ -643,6 +686,46 @@ ExportVrm(const std::string& inputPath, const std::string& outputPath, const Exp
         const std::string errors = TakeErrors(&mark);
         result = Fail(result.status, result.message + (errors.empty() ? "" : ": " + errors));
         return result;
+    }
+
+    if (bakedLayer && !options.flatten)
+    {
+        // A native avatar plus the bake's stronger opinions. Content-named
+        // avatars let multiple loose exports share a directory safely.
+        const std::string avatarPath = TfStringCatPaths(motionStaging->path(), "avatar.usdc");
+        if (!layer->Export(avatarPath))
+            return Fail(Status::ExportFailure,
+                        "cannot materialize the motion avatar: " + TakeErrors(&mark));
+        const std::shared_ptr<ArAsset> avatar =
+            ArGetResolver().OpenAsset(ArResolvedPath(avatarPath));
+        const std::shared_ptr<const char> bytes = avatar ? avatar->GetBuffer() : nullptr;
+        if (!bytes)
+            return Fail(Status::ExportFailure, "cannot read the materialized motion avatar");
+        const std::size_t size = avatar->GetSize();
+        const std::string name = "avatar_" + HexName(HashBytes(bytes.get(), size)) + ".usdc";
+        std::string outputAbsolute = TfNormPath(TfAbsPath(outputPath));
+        std::string dependencyAbsolute = TfNormPath(TfStringCatPaths(rootDir, name));
+#if defined(ARCH_OS_WINDOWS)
+        outputAbsolute = TfStringToLower(outputAbsolute);
+        dependencyAbsolute = TfStringToLower(dependencyAbsolute);
+#endif
+        if (outputAbsolute == dependencyAbsolute)
+            return Fail(
+                Status::InvalidArguments,
+                "the output names the native avatar dependency; choose another output name");
+        std::string error;
+        if (!WriteBytes(TfStringCatPaths(rootDir, name), bytes.get(), size, &error))
+            return Fail(Status::ExportFailure, error);
+        result.assets.push_back({inputPath, "./" + name, size});
+
+        layer = SdfLayer::CreateAnonymous("vrm_motion.usda");
+        layer->TransferContent(bakedLayer);
+        const SdfPrimSpecHandle root =
+            layer->GetPrimAtPath(SdfPath::AbsoluteRootPath().AppendChild(layer->GetDefaultPrim()));
+        if (!root)
+            return Fail(Status::ExportFailure, "motion_retarget output has no default prim");
+        root->GetReferenceList().ClearEdits();
+        root->GetReferenceList().Add(SdfReference("./" + name));
     }
 
     if (!layer->Export(layerPath))

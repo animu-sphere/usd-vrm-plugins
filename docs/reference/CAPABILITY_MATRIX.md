@@ -129,6 +129,17 @@ paths and referring USD attributes, give destination recovery checks, and
 list all unresolved dependencies found by validation. Exit codes remain the
 [export policy's failure categories](../design/VRM_EXPORT_POLICY.md#53-exit-codes).
 
+`--motion <clip.vrma>` invokes the existing `motion_retarget` bake (body,
+expressions and look-at), then exports the bound animation with a native
+avatar reference or, with `--flatten`, one composed layer. Neither source
+format is needed to reopen it. Windows `vrm_export_motion` compares five
+cases in all formats, with and without flattening, against that bake in
+plugin-free processes, including resolved UsdSkel transforms and source
+removal. A local Windows product also passes the installed-artifact smoke
+(explicit unmanaged-output packaging override, `ost 0.23.14`). Hosted
+multi-platform and release-lane proof for this option is still pending;
+the dated release evidence below covers static export.
+
 The installed product's exporter is verified on Windows, Linux and macOS
 arm64: two textured VRM 0.x/1.0 inputs export to `.usdz`, reopen with no VRM
 plugin registered, and refuse export when the product's importer registration

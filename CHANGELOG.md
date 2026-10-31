@@ -15,6 +15,17 @@ Current schema contract version: **2**.
 
 ### Added
 
+- **`vrm_export --motion <clip.vrma>`** ([export track](docs/roadmap/export-track.md)
+  Step 3) reuses the shipped `motion_retarget` bake for body, expressions and
+  look-at. The result references a content-named native avatar layer with
+  localized textures, or uses one composed layer with `--flatten`; `.usdz`
+  contains every dependency and needs neither source format nor VRM plugins.
+  Dependency inventories also count the native avatar sidecar. Five cases
+  exercise all formats and flattening modes against the existing bake,
+  with plugin-free UsdSkel transforms and source-removal readback. The release
+  smoke also requires the installed product's animated output to drive a
+  skeleton. Hosted Step 3 evidence remains pending.
+
 - **`vrm_export --dependency-report`** ([export track](docs/roadmap/export-track.md)
   Step 2): a versioned JSON inventory on stdout after success, listing each
   distinct localized texture and its byte count, the root layer, total texture
