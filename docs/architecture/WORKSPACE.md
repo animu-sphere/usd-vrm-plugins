@@ -24,6 +24,7 @@ The workspace declares these VRM import identities:
 | `usdVrmFileFormat` | plugin bundle (`usd-fileformat`) | `.vrm` `SdfFileFormat`, VRM 0.x / 1.0 detection, glTF/VRM parsing, canonical model (private), USD authoring (geometry, materials, skeleton, animation, schema application), import diagnostics |
 | `usdVrmPackageResolver` | plugin bundle (`usd-package-resolver`) | `avatar.vrm[images/...]` package path resolution, embedded resource byte access, malformed/truncated/out-of-range rejection |
 | `vrmContainer` | plain CMake library (`libs/`) | GLB header/chunk parsing, buffer-view access, byte-range validation, immutable byte views — shared by file format and resolver |
+| `vrmSchemaSdk` | plain CMake library (`libs/vrmSchemaSdk/`) | Packages the `vrmSchema` bundle's whole install tree, headers included, for C++ consumers. It adds no source, and a consumer finds it as `vrmSchema` |
 | `vrmCore` | plain CMake library (deferred) | canonical model, only if a second consumer beyond the importer appears |
 | `usdVrm` | aggregate product name | retired as a bundle id; names the aggregate package composed of the bundles above |
 

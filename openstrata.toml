@@ -1,6 +1,6 @@
 [project]
 name = "usd-vrm-plugins"
-version = "0.11.0"
+version = "0.12.0"
 
 [requires]
 platform = "cy2026"
@@ -50,6 +50,7 @@ members = [
   "plugins/vrmSchema",
   "libs/vrmContainer",
   "libs/vrmRig",
+  "libs/vrmSchemaSdk",
   "tools/motionRetarget",
   "tools/vrmExport",
 ]

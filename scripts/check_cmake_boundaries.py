@@ -115,6 +115,7 @@ _DEPARTED_NAMESPACE = re.compile(
 ALLOWED: dict[str, frozenset[str]] = {
     "libs/vrmContainer": frozenset(),
     "libs/vrmRig": frozenset({"motionCore"}),
+    "libs/vrmSchemaSdk": frozenset(),
     "plugins/vrmSchema": frozenset(),
     "plugins/usdVrmFileFormat": frozenset(),
     "plugins/usdVrmPackageResolver": frozenset(),

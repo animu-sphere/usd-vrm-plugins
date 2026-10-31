@@ -138,6 +138,11 @@ the interpretation of VRM 0.x spring declarations. The release's migration
 and distribution boundaries are in the
 [release record](../releases/v0.11.0.md).
 
+*Applied at v0.12.0*: every internal range moves to `>=0.12,<0.13`. No library
+API is added here. The bump marks the move of every motion pin from 0.5.1 to
+0.5.4, which rebuilds every package, and the first registry publication of the
+`usd` libraries. The [release record](../releases/v0.12.0.md) has the details.
+
 ## 4. The packages
 
 ### 4.1 Plugin bundles
@@ -223,6 +228,11 @@ would close the question, and it has not been made.
 The link closure is 22 entries — every OpenUSD library a typed schema is built
 from — against `vrmContainer`'s empty one, which is the clearest statement in
 this document of what `find_dependency(pxr)` is carrying.
+
+The `vrmSchema` bundle package holds no headers, because `ost plugin package` does
+not stage them, although the installed target names `include/`. C++ consumers pin
+the `vrmSchemaSdk` library instead. It packages the same install tree whole and
+provides the same `vrmSchema` CMake package, and it is not a product member.
 
 ### 4.2 Libraries
 

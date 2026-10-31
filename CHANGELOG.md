@@ -13,6 +13,28 @@ Current schema contract version: **2**.
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-10-31
+
+> **Pinnable libraries for C++ consumers.** `vrmRig` and the new `vrmSchemaSdk`
+> are published to GHCR on the `usd` lane, so another repository can build
+> against them by digest. Every motion pin moves to 0.5.4. Schema contract stays
+> at **2**, and no library API changes here.
+
+### Added
+
+- `libs/vrmSchemaSdk` packages the `vrmSchema` bundle's whole install tree. The
+  bundle package holds no headers, although its CMake target names them, so it
+  cannot be built against. A consumer finds this package as `vrmSchema`.
+- The release workflow publishes `vrmRig` and `vrmSchemaSdk` for Windows, Linux
+  and macOS, with `external-library-pins.json` and `.md` as release assets.
+
+### Changed
+
+- Every `usd-motion-plugins` pin moves from 0.5.1 to 0.5.4: `motionCore`,
+  `motionRetarget`, `motionSampling`, `motionUsd` and the `execMotion` bundle. Each
+  package here is rebuilt against them.
+- Internal `requires` ranges move to `>=0.12,<0.13`.
+
 ## [0.11.0] — 2026-10-31
 
 > **Native animated USD export and the secondary-motion foundation.**
@@ -4918,7 +4940,8 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.8.0...v0.9.0

@@ -1,0 +1,13 @@
+# OpenStrata plain-library descriptor. The vrmSchema C++ SDK: the typed Vrm*API
+# headers, import library, CMake package and USD resources of plugins/vrmSchema,
+# in one installed prefix. A consumer finds it as `vrmSchema`. It has no
+# package_contract, for motionUsd's reason: `ost library verify-consumer` resolves
+# only the declared closure, which cannot name OpenUSD.
+schema: openstrata.library/v1alpha1
+library:
+  id: vrmSchemaSdk
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.12.0
+cmake:
+  package: vrmSchema
+  target: vrmSchema::vrmSchema
