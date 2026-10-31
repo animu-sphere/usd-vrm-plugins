@@ -39,6 +39,7 @@ contract wins — structural changes go there first, in their own PR.
 | Incomplete work, and which release carries it | [roadmap/](roadmap/) |
 | Released history | [releases/](releases/) and the [CHANGELOG](../CHANGELOG.md) |
 | How documents here are maintained, and how they cite sibling repositories | [contributing/documentation.md](contributing/documentation.md) |
+| Which checks a release product cell must pass | [contributing/release-closure.md](contributing/release-closure.md) |
 
 Where the design policies overlap, the narrower one wins:
 VRM_MOTION_POLICY.md and MATERIAL_ARCHITECTURE_POLICY.md over

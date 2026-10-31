@@ -147,6 +147,12 @@ a **draft** GitHub release — per-target lean + debug bundles, a source archive
 Publishing the draft is a human decision. Run the workflow manually
 (`workflow_dispatch`) for a dry run that creates no release.
 
+Each product cell also runs the installed CMake consumers and writes the
+[release closure checklist](../contributing/release-closure.md), comparing
+manifest membership with the packages and requiring every closure gate to
+have actually succeeded. Its JSON and consumer reports are uploaded as
+`closure-<cell>` even when a check fails.
+
 `usdVrmFileFormat` carries a `buildInfo.json` stamp (commit / toolchain /
 OpenUSD release and `PXR_VERSION` / OpenExec components / build type / schema
 contract version), surfaced by `tools/vrm_report.py`.

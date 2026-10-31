@@ -89,12 +89,17 @@ In this order; each step is its own pull request unless it says otherwise.
 
 ## Release closure and checkable invariants
 
-- ⬜ **One release-closure checklist**, generated or checked from the
+- 🚧 **One release-closure checklist**, generated or checked from the
   manifests, covering the workspace graph, a standalone bundle build, the
   aggregate package, an installed-consumer configure, the artifact-only smoke
   and installed data resolving — and run where a release runs, which a pull
   request does not ([ost report 39](../reports/ost/39-2026-09-01-v0.22.8-release-lane-first-execution.md)).
   The expectation is [scope policy §8](../design/INTEGRATION_SCOPE_POLICY.md#8-release-quality-is-artifact-closure).
+  The [checklist](../contributing/release-closure.md) is wired into every
+  release product cell, including installed CMake consumers and a
+  manifest-derived member inventory. Missing or skipped gates fail its JSON
+  report. Still open: a hosted release dry run measuring the new gates on
+  Windows, Linux and macOS arm64.
 - ⬜ **Make the review checklist checkable where it is cheap.** Inventory
   [scope policy §11](../design/INTEGRATION_SCOPE_POLICY.md#11-pr-review-checklist)
   against what is enforced, and record which invariants stay review
