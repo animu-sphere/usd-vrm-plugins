@@ -132,13 +132,14 @@ list all unresolved dependencies found by validation. Exit codes remain the
 `--motion <clip.vrma>` invokes the existing `motion_retarget` bake (body,
 expressions and look-at), then exports the bound animation with a native
 avatar reference or, with `--flatten`, one composed layer. Neither source
-format is needed to reopen it. Windows `vrm_export_motion` compares five
-cases in all formats, with and without flattening, against that bake in
-plugin-free processes, including resolved UsdSkel transforms and source
-removal. A local Windows product also passes the installed-artifact smoke
-(explicit unmanaged-output packaging override, `ost 0.23.14`). Hosted
-multi-platform and release-lane proof for this option is still pending;
-the dated release evidence below covers static export.
+format is needed to reopen it. On hosted Windows, Linux and macOS arm64,
+`vrm_export_motion` compares five cases in all formats, with and without
+flattening, against that bake in plugin-free processes, including resolved
+UsdSkel transforms and source removal. The installed-product smoke also
+passes on all three OS: the product's two tools export a VRMA-driven
+`.usdz`, plugin-free readback resolves a moving skeleton, and removing the
+product's bake executable makes export refuse with exit 4
+([2026-10-31 hosted measurements](../reports/2026-10-31-export-motion-release-dry-run.md)).
 
 The installed product's exporter is verified on Windows, Linux and macOS
 arm64: two textured VRM 0.x/1.0 inputs export to `.usdz`, reopen with no VRM
