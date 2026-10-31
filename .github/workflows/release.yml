@@ -56,8 +56,12 @@
 # Beside the product, two `lookdev` cells build, test and package ONE bundle,
 # `vrmImaging`, against the canonical `lookdev` runtime (the one with usdview),
 # for a Formation of it and a Hydra renderer. The `publish` job pushes those
-# packages to GHCR and writes their pin table. Those packages are the only
-# thing this workflow puts in a registry.
+# packages to GHCR and writes their pin table.
+#
+# Each `usd` cell also packages the libraries a C++ consumer pins: `vrmRig` and
+# `vrmSchemaSdk`, the only `usd` packages this workflow puts in a registry. The
+# bundles and the product stay GitHub release assets. These libraries go last in
+# the cell because building `vrmSchemaSdk` rewrites the bundle's staged outputs.
 #
 # `workflow_dispatch` is a dry run: the same build/verify/package lanes, with
 # everything uploaded as workflow artifacts, no registry write and no release
@@ -615,6 +619,41 @@ jobs:
           fi
           cp "$product_archive" release-stage/
           ls -l release-stage/
+      - name: Build, test and package the C++ consumer libraries
+        if: ${{ matrix.lane == 'workspace' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          mkdir -p oci-stage
+          for name in vrmRig vrmSchemaSdk; do
+            library="libs/$name"
+            ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            if [ "$name" = "vrmRig" ]; then
+              ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            fi
+            ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name.json"
+            ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name-second.json"
+            first="$(jq -er '.data.archive_digest' ".ost-ci/$name.json")"
+            second="$(jq -er '.data.archive_digest' ".ost-ci/$name-second.json")"
+            if [ "$first" != "$second" ]; then
+              echo "::error title=release packaging::two packagings of $name disagree ($first, $second)" ; exit 1
+            fi
+            archive="$(jq -er '.data.archive' ".ost-ci/$name.json")"
+            target="$(jq -er '.data.target' ".ost-ci/$name.json")"
+            got="$(jq -er '.data.library.version' ".ost-ci/$name.json")"
+            if [ "$got" != "$version" ]; then
+              echo "::error title=release packaging::$name packaged version $got but the release is $version" ; exit 1
+            fi
+            if command -v cygpath > /dev/null; then archive="$(cygpath -u "$archive")"; fi
+            dist_dir="$(dirname "$archive")"
+            cp "$archive" release-stage/
+            cp "$dist_dir/manifest.json" "release-stage/$name-$version-$target.manifest.json"
+            mkdir -p "oci-stage/$name-$target"
+            cp -R "$dist_dir/." "oci-stage/$name-$target/"
+            printf '%s\t%s\t%s\t%s\n' "$name" "$version" "$target" "$first" > "oci-stage/$name-$target/publish.tsv"
+          done
+          ls -l release-stage/ oci-stage/
       # The `lookdev` lane. `ost` 0.23.11 keeps the workspace's default pin:
       # a `--profile lookdev` build writes its own
       # `strata.<runtime-id>.lock`, and `plugin package` reads that one, so
@@ -676,8 +715,7 @@ jobs:
           name: release-${{ matrix.name }}
           path: release-stage/
           if-no-files-found: error
-      - name: Upload the package to publish (lookdev)
-        if: ${{ matrix.lane == 'lookdev' }}
+      - name: Upload the packages to publish
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: oci-${{ matrix.name }}
@@ -701,7 +739,7 @@ jobs:
   # A dry run imports and lists the packages, pushes nothing, and writes the
   # table with no source.
   publish:
-    name: publish the lookdev packages
+    name: publish the registry packages
     needs: [preflight, build]
     runs-on: ubuntu-24.04
     permissions:
@@ -749,12 +787,11 @@ jobs:
             ost artifact import "$dir" --json > /dev/null
             cat "$dir/publish.tsv" >> .ost-ci/artifacts.tsv
           done
-          # One row per lookdev cell that uploaded, counted from what arrived
-          # rather than written here.
-          want="$(ls -d oci-staged/*/ | wc -l | tr -d ' ')"
+          # One row per package that arrived, counted rather than written here.
+          want="$(ls -d oci-staged/*/*/ | wc -l | tr -d ' ')"
           have="$(wc -l < .ost-ci/artifacts.tsv | tr -d ' ')"
           if [ "$want" -eq 0 ] || [ "$have" -ne "$want" ]; then
-            echo "::error title=publish::$want lookdev cell(s) uploaded, $have package row(s) read" ; exit 1
+            echo "::error title=publish::$want package(s) uploaded, $have package row(s) read" ; exit 1
           fi
           cat .ost-ci/artifacts.tsv
       - name: Push each package to the OCI repository
@@ -784,11 +821,19 @@ jobs:
           else
             rows=.ost-ci/artifacts.tsv
           fi
-          python3 scripts/make_lookdev_pins.py --rows "$rows" \
+          published=""
+          if [ "${{ needs.preflight.outputs.is_release }}" = "true" ]; then published="--published"; fi
+          awk -F'\t' '$3 ~ /-lookdev$/' "$rows" > .ost-ci/lookdev-rows.tsv
+          awk -F'\t' -v OFS='\t' '$3 !~ /-lookdev$/ { print "library", $0 }' "$rows" > .ost-ci/library-rows.tsv
+          python3 scripts/make_lookdev_pins.py --rows .ost-ci/lookdev-rows.tsv \
             --version "${{ needs.preflight.outputs.version }}" \
-            --repository "${OCI_REPOSITORY}" --out pins \
-            $([ "${{ needs.preflight.outputs.is_release }}" = "true" ] && echo --published)
-          cat pins/lookdev-package-pins.md
+            --repository "${OCI_REPOSITORY}" --out pins $published
+          targets="$(cut -f4 .ost-ci/library-rows.tsv | sort -u | wc -l | tr -d ' ')"
+          python3 scripts/make_library_pins.py --rows .ost-ci/library-rows.tsv \
+            --version "${{ needs.preflight.outputs.version }}" \
+            --repository "${OCI_REPOSITORY}" --targets "$targets" \
+            --want library=2 --out pins $published
+          cat pins/lookdev-package-pins.md pins/external-library-pins.md
       - name: Upload the pin table
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -838,9 +883,11 @@ jobs:
             --version "${{ needs.preflight.outputs.version }}" \
             --checksums dist-release/SHA256SUMS \
             --out release-notes.md $extra
-          # The lookdev pin table, from the publish job (`release-pins`).
+          # The pin tables, from the publish job (`release-pins`).
           printf '\n' >> release-notes.md
           cat dist-release/lookdev-package-pins.md >> release-notes.md
+          printf '\n## Libraries for C++ consumers\n\nPaste these under `requires.libraries`.\n\n' >> release-notes.md
+          cat dist-release/external-library-pins.md >> release-notes.md
           cat release-notes.md
       - name: Create the draft GitHub release
         if: ${{ needs.preflight.outputs.is_release == 'true' }}

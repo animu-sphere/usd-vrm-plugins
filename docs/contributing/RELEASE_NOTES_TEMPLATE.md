@@ -29,6 +29,8 @@ VRMA motion clips as canonical `UsdSkelAnimation` data.
 | `usd-vrm-plugins-{version}-<target>-plugin-product.tar.zst` | aggregate product: the six bundles above, `motion_retarget` and `vrm_export` |
 | `<bundle>-{version}-<target>.manifest.json` | OpenStrata manifest sidecar per bundle |
 | `lookdev-package-pins.json` · `lookdev-package-pins.md` | published Windows/Linux lookdev archive and OCI digests |
+| `vrmRig-{version}-<target>.tar.zst` · `vrmSchemaSdk-{version}-<target>.tar.zst` | installed libraries for C++ consumers, with headers and CMake packages |
+| `external-library-pins.json` · `external-library-pins.md` | archive and OCI digests of those libraries |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |
 

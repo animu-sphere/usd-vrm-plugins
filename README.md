@@ -64,6 +64,7 @@ walk.vrma  ─▶ usdVrmaFileFormat ─▶ /Animation  (semantic humanoid clip)
 | [`execVrm`](plugins/execVrm) | VRM retarget computations for OpenExec over the applied `VrmHumanoidAPI` |
 | [`vrmImaging`](plugins/vrmImaging) | The canonical material schemas as Hydra data on the material prim, for any Hydra renderer |
 | [`vrmContainer`](libs/vrmContainer) | GLB parsing and byte-range validation, shared by the importer and the resolver |
+| [`vrmSchemaSdk`](libs/vrmSchemaSdk) | the `vrmSchema` install tree with its headers, for C++ consumers; found as the `vrmSchema` CMake package |
 | [`vrmRig`](libs/vrmRig) | What a VRM rig adds to the generic retarget: required bones, expression resolve, look-at, stateful spring-bone evaluation |
 | [`motion_retarget`](tools/motionRetarget) | CLI: bakes a semantic clip onto a VRM rig as `UsdSkelAnimation` |
 | [`vrm_export`](tools/vrmExport) | CLI: writes an imported `.vrm` as native `.usda` / `.usdc` / `.usdz` that opens with no VRM plugin |

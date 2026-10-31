@@ -3,7 +3,7 @@ manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
   name: usdVrmaFileFormat
-  version: 0.11.0
+  version: 0.12.0
   kind: usd-fileformat
 license: Apache-2.0
 runtime:
@@ -17,20 +17,20 @@ requires:
   capabilities: [usd-stage-read]
   libraries:
     - id: vrmContainer
-      version: ">=0.11,<0.12"
+      version: ">=0.12,<0.13"
     - id: motionCore
       version: ">=0.5,<0.6"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:08455616fe7c7ee936161cf4231ed10051ca6bf447f922feac47d04a8f23eed0
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:4586e148440892f6838bcd46888ff03c7b31a0be84be54bf103ee2940a2389c0
+            digest: sha256:8b18c442e74aed488bc7fb9a9aa1b0ec8759c9949de9099802237f7da365f5c6
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:5b525a4f2065022a87c0f940e9a4497b8edaaa0ba4dffedf81a65df0bc544f08
           cy2026-macos-arm64-py313-usd:
-            digest: sha256:970b5a1987c71b5154a76e7ca0d52dddbd309f5ce754c1311c8733d300db6539
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:eaf5e19cbd42779757b905b4b66f4be3e0493f545f0ef3908a38884443422f30
+            digest: sha256:26d71d60eb9f45a518cd10c4c153af3e157bae740064968fea233a4e7d65130f
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:4c94586167cc31e684b96038dde01d367690b4ead8e02bbe7e2a7bf7cdae70d4
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:18ce3b990b976b03480b2c948a3435e533cf2d5eb703e4e3ba14d9822bf43547
-            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:f7edfb277d2c02c5bb90f847de9decfd593aa677f0deb438c47597add7ee1b43
+            digest: sha256:7c3472097fa7a75d28769a1f48c5c031294955b91b4663deed64534dd156124b
+            source: oci://ghcr.io/animu-sphere/usd-motion-plugins@sha256:34495585c29c55a719d332b69482325e082b573eac7213a46113a2e02394b708
 usd:
   plug_info: plugin/resources/usdVrmaFileFormat/plugInfo.json
 tests:
