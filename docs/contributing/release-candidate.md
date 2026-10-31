@@ -1,57 +1,32 @@
 # Release candidate preparation
 
-This is a **preparation worksheet**, not a release record or evidence of a
-published tag. Target version and priority belong to the
-[roadmap index](../roadmap/README.md#status-at-a-glance).
-The package version remains [VERSION](../../VERSION) until the lockstep bump.
+This is a preparation worksheet, not publication evidence. Scope, priority and
+target version belong to the [roadmap index](../roadmap/README.md#status-at-a-glance).
+The last completed preparation is recorded in [v0.11.0](../releases/v0.11.0.md).
+The package version stays at [VERSION](../../VERSION) until the next lockstep bump.
 
-## Bounded candidate scope
+## Freeze the scope and compatibility boundary
 
-Theme: native animated USD export and the VRM secondary-motion foundation.
-Use only the existing [Unreleased changes](../../CHANGELOG.md#unreleased):
+Use only the selected milestone and existing Unreleased changes. Record
+capabilities, non-goals, accepted limitations and migration in a candidate
+record marked `status: proposed` with an explicit **Unpublished** banner.
+Package version and schema contract are independent; schema changes require
+their own migration instructions and consumer verification.
 
-- Native export usability/validation, external images, `--flatten`, dependency
-  inventory, diagnostics and reproducibility.
-- `--motion <clip.vrma>`: the existing bake packaged as native animated USD,
-  including plugin-free reopening and missing-tool refusal.
-- `vrmRig::SpringBoneSolver`, the corrected VRM 0.x collider basis and schema
-  contract **2** (roots versus ordered chains).
-- Regression, installed-consumer and release-closure checks already on main.
+## Prepare and verify
 
-ExecIr, resident renderer integration, full MToon rendering and constrained
-distribution profiles are outside this candidate's acceptance conditions.
+Synchronize VERSION, workspace/member/tool descriptors, internal dependency
+ranges, CMake fallbacks and the numbered CHANGELOG. Run the graph, source,
+standalone, plain-CMake and installed-consumer checks. Run the latest
+[release closure checklist](release-closure.md) at the resulting main SHA.
+Inspect all three closure JSON files, their installed-consumer reports,
+artifact-only positive/negative cases and packaging reproducibility.
+Missing, skipped or failed required gates block tagging; applicable pyramid
+skips and installed-data exclusions must be described by the evidence.
 
-## Compatibility and migration
-
-Package version and schema contract are independent. Preserve contract **2**
-when bumping the package. Consumers of old spring declarations must follow
-[Migrating v1 spring declarations](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#migrating-v1-spring-declarations).
-Reimport from `.vrm` where possible. A v1 VRM 0.x stage needs its spring root
-values moved to `vrm:rootJoints`, with the old `vrm:joints` opinion removed;
-VRM 1.0 chains keep `vrm:joints`. Preserve parallel parameters and collider
-relationships. Changing the version marker alone is not migration. The
-validator rejects a mismatched contract (`VRM271`) and ambiguous declarations
-(`VRM256`); legacy consumers must be tested or updated before consuming v2.
-
-## Evidence still required
-
-Earlier [Step 2](../reports/2026-10-29-export-release-dry-run.md) and
-[Step 3](../reports/2026-10-31-export-motion-release-dry-run.md) export reports
-establish those measurements. They predate the newest closure gates and do
-not establish candidate-wide release readiness.
-
-Before tagging, freeze the scope and candidate SHA; synchronize VERSION,
-workspace/member/tool descriptors, internal version ranges, CMake fallbacks,
-CHANGELOG and a release record explicitly marked unpublished until cut.
-Run the source, standalone and plain-CMake checks, then the
-[latest closure checklist](release-closure.md) at the resulting main SHA.
-Inspect `release-closure.json` from all three product cells, installed
-consumers, artifact-only smokes and reproducibility. Skips and failures are
-not passing evidence.
-
-The release owner explicitly accepts or blocks on the
-[known package limitations](../roadmap/backlog.md#package-portability).
-After all gates pass, tag and inspect the draft, actual assets/checksums,
-lookdev registry publication and digests. Human publication remains the final
-step. Record the actual tag SHA, workflow run URL and asset inventory in the
-release record, then clear completed tasks from current.
+Explicitly accept or block each known packaging limitation. After the gates
+pass, tag the verified SHA, inspect the draft, actual assets/checksums and
+lookdev registry digests, then publish under the release owner's authorization.
+Record the exact tag SHA, workflow URLs, publication and asset inventory before
+removing the unpublished status. Remove completed work from current and select
+the next milestone.

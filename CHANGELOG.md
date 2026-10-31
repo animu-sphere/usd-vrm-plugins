@@ -20,7 +20,7 @@ Current schema contract version: **2**.
 > `vrmRig` adds the spring-bone solver. Schema contract **2** distinguishes
 > VRM 0.x spring roots from VRM 1.0 chains. Reimport old VRM 0.x stages or
 > follow the [migration notes](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#migrating-v1-spring-declarations).
-> Publication and candidate evidence are tracked in the explicitly unpublished
+> Publication, migration and verification evidence are recorded in the
 > [release record](docs/releases/v0.11.0.md).
 
 ### Added
@@ -30,8 +30,8 @@ Current schema contract version: **2**.
   skipped and failed gates prevent staging; the JSON and installed-consumer
   reports upload even on failure. The release lane now runs the graph and
   every installed CMake consumer itself, and reads its standalone bundle
-  build list from the descriptors. Hosted verification of the new gates is
-  pending ([checklist](docs/contributing/release-closure.md)).
+  build list from the descriptors. All three product cells pass the required
+  gates at the release SHA ([closure report](docs/reports/2026-10-31-v0.11.0-release-closure.md)).
 
 - **`vrm_export --motion <clip.vrma>`** ([export track](docs/archive/export/export-track.md)
   Step 3) reuses the shipped `motion_retarget` bake for body, expressions and

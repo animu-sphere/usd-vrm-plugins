@@ -132,11 +132,11 @@ one.
 `usdVrmFileFormat`, `vrmImaging` and `motion_retarget` use, and `vrmRig` is a
 package the tagged 0.9.0 release does not have.
 
-*Prepared for v0.11.0*: every internal range moves to `>=0.11,<0.12`.
+*Applied at v0.11.0 (2026-10-31)*: every internal range moves to `>=0.11,<0.12`.
 `vrmRig` adds the public spring-bone solver API, and schema contract v2 changes
-the interpretation of VRM 0.x spring declarations. The candidate's migration
+the interpretation of VRM 0.x spring declarations. The release's migration
 and distribution boundaries are in the
-[unpublished release record](../releases/v0.11.0.md).
+[release record](../releases/v0.11.0.md).
 
 ## 4. The packages
 
@@ -267,8 +267,9 @@ of **this** repository resolves.
 `vrmRig` also installs `SpringBoneSolver.h`, advertising
 `VRMRIG_SPRING_BONE_API`. Its consumer fixture configures a two-joint chain,
 resets and steps it through the installed static library. That path is measured
-on Windows x86-64; its dependency closure is unchanged, and hosted Linux/macOS
-verification of this additive API is still pending.
+on Windows x86-64, Linux x86-64 and macOS arm64, including the installed
+solver API ([v0.11.0 closure](../reports/2026-10-31-v0.11.0-release-closure.md)); its dependency
+closure is unchanged.
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
 and defines a `<NAME>_STATIC` compile definition `PUBLIC`, which a consumer

@@ -12,10 +12,9 @@ the released-version table or count as a published release in the docs check.
 Record publication evidence before removing that status. Before the version
 bump, use the [candidate worksheet](../contributing/release-candidate.md).
 
-Current preparation: [v0.11.0 candidate](v0.11.0.md) (**unpublished**).
-
 | Version | Record | Theme |
 | --- | --- | --- |
+| v0.11.0 | [v0.11.0.md](v0.11.0.md) | Native animated USD export, reproducible and diagnosed dependency localization, the spring-bone solver and schema contract v2; verified release closure on all three product OS |
 | v0.10.0 | [v0.10.0.md](v0.10.0.md) | Canonical materials reach Hydra: one canonical record per VRM 0.x and 1.0 material, both realizations generated from it, expression colours driving it over time, and `vrmImaging` handing it to any Hydra renderer with per-field invalidation; native USD export; the motion split completed |
 | v0.9.0 | [v0.9.0.md](v0.9.0.md) | The OpenExec foundation: `execMotion` and `execVrm` evaluate a humanoid through OpenExec as wrappers over the motion libraries, equal to the offline bake bit for bit on recorded input, from the installed product |
 | v0.8.0 | [v0.8.0.md](v0.8.0.md) | Installed-package consumer lane, shared OSC foundation and VRChat OSC Trackers input: twelve packages consumed from a clean prefix by a project that is not this workspace, and a third live surface reaching an unchanged pipeline over shared transport and decoder libraries |

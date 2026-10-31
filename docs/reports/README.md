@@ -16,6 +16,7 @@ record of adopting it in public is worth as much as the plugins.
 | [2026-10-29-export-release-dry-run.md](2026-10-29-export-release-dry-run.md) | Export Step 2's installed-product proof on Windows, Linux and macOS arm64. |
 | [2026-10-31-export-motion-release-dry-run.md](2026-10-31-export-motion-release-dry-run.md) | Export Step 3's hosted workspace and installed-product proof on Windows, Linux and macOS arm64. |
 | [2026-10-31-documentation-ownership-audit.md](2026-10-31-documentation-ownership-audit.md) | Documentation inventory, task disposition and citation audit at `d1dd81c`. |
+| [2026-10-31-v0.11.0-release-closure.md](2026-10-31-v0.11.0-release-closure.md) | v0.11.0 source, installed-product and consumer closure, the Windows CRLF repair, publication and checksummed asset inventory. |
 | [ci/2026-10-31-ci-audit.md](ci/2026-10-31-ci-audit.md) | CI timing baseline, CTest inventory, routing and verification claims. |
 
 ## What belongs where

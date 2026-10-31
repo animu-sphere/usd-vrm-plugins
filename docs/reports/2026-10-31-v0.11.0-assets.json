@@ -1,0 +1,384 @@
+{
+  "version": "0.11.0",
+  "tagCommit": "aabd8129d961298ef693baa06c0590736d5a9f7b",
+  "release": "https://github.com/animu-sphere/usd-vrm-plugins/releases/tag/v0.11.0",
+  "publishedAt": "2026-10-31T08:51:22Z",
+  "workflow": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41184973417",
+  "assets": [
+    {
+      "name": "SHA256SUMS",
+      "bytes": 7395,
+      "sha256": "sha256:19f01819b0cfe60ea839e6737607e0b50aab83fa63adf8b50d1ad545d33f5539",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/SHA256SUMS"
+    },
+    {
+      "name": "execVrm-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 61736,
+      "sha256": "sha256:ee2bda286477de399cb020e67d51b39a1e69312d85b1afd523afb298b54e273c",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/execVrm-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "execVrm-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 704615,
+      "sha256": "sha256:51daf2bc78d6b9ca7ba125ff907d8eeff19ad41620a9c9fafb6d1b15423a2926",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/execVrm-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "execVrm-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 61771,
+      "sha256": "sha256:3188cd16531c8c8a07b9f8cf79e96bbd8de2bb779feafc8414a9cc615bac7bd4",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/execVrm-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "execVrm-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 474769,
+      "sha256": "sha256:6699316861c0f3b0088c906bad76ee8d0be3811d83246d826eaf66438b0cc3f8",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/execVrm-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "execVrm-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 61909,
+      "sha256": "sha256:13995efc9d9fc7b93a07349d54d89c201eb5126bd18f28d32babee7fa87cc190",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/execVrm-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "execVrm-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 1248805,
+      "sha256": "sha256:9948680df43eefc44d7e7b2a1fb8950f1c818357f16c9e18ffd7de685d1ee230",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/execVrm-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "lookdev-package-pins.json",
+      "bytes": 1005,
+      "sha256": "sha256:9e3af4fda335d73711af5e13db639a53ef3e1b788e2fc7c110c6d27d604e4bea",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/lookdev-package-pins.json"
+    },
+    {
+      "name": "lookdev-package-pins.md",
+      "bytes": 1229,
+      "sha256": "sha256:d23f10e30b06e60016a6084df93e355f5292fea01bb7e30d6984762264a0b308",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/lookdev-package-pins.md"
+    },
+    {
+      "name": "motion_retarget-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 8116,
+      "sha256": "sha256:dc0ef67212a2445d9c6dc10422575c36404069d020f810679ed3008751f2d916",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/motion_retarget-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "motion_retarget-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 223217,
+      "sha256": "sha256:d8f0e51b03b0398d52a9549b59e9023a330b35b23aebcc8efadb724671bb8cad",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/motion_retarget-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "motion_retarget-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 8090,
+      "sha256": "sha256:8a5523380aa5922d64c4083a57b728c34e2b8b964e7e62b034d6030b21ece2c3",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/motion_retarget-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "motion_retarget-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 157307,
+      "sha256": "sha256:65e551fe879b2c18f33f001234218286943a27b31a0a3450fc895bb4f63b04a6",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/motion_retarget-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "motion_retarget-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 8112,
+      "sha256": "sha256:86facb1bd01fd6daaffc1fcadf1ba64dc30776484eb967fe78bb2dda79edfd92",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/motion_retarget-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "motion_retarget-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 162641,
+      "sha256": "sha256:f43371fe667fb3a7d576ce19b3f539a15c946f8027d5749c3af38fa9d8f4bf76",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/motion_retarget-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usd-vrm-plugins-0.11.0-cy2026-linux-x86_64-py313-usd-plugin-product.tar.zst",
+      "bytes": 33292738,
+      "sha256": "sha256:5fad226ba803aca08bb15497281dd5771ba215c6a69c04d82f10b8fd0208d2f9",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usd-vrm-plugins-0.11.0-cy2026-linux-x86_64-py313-usd-plugin-product.tar.zst"
+    },
+    {
+      "name": "usd-vrm-plugins-0.11.0-cy2026-macos-arm64-py313-usd-plugin-product.tar.zst",
+      "bytes": 32315298,
+      "sha256": "sha256:17dc7825dd6efa8f85a733b54c6579a3d42a425b051d9a23cb7ce9cb23a88912",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usd-vrm-plugins-0.11.0-cy2026-macos-arm64-py313-usd-plugin-product.tar.zst"
+    },
+    {
+      "name": "usd-vrm-plugins-0.11.0-cy2026-windows-x86_64-py313-usd-plugin-product.tar.zst",
+      "bytes": 33977916,
+      "sha256": "sha256:f93115434bfa139538cdb1e053704ad75863d2feb2098805d2903ebf57a9c99f",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usd-vrm-plugins-0.11.0-cy2026-windows-x86_64-py313-usd-plugin-product.tar.zst"
+    },
+    {
+      "name": "usd-vrm-plugins-0.11.0-src.tar.gz",
+      "bytes": 25182712,
+      "sha256": "sha256:c5762465801ee7c53c93b60644b31b21e3ed08629efd0fe8d86000c415b78459",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usd-vrm-plugins-0.11.0-src.tar.gz"
+    },
+    {
+      "name": "usdVrmFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 25770,
+      "sha256": "sha256:9eaca50a92236b30da49b84c716fdb8321c00e6ee7adcf501e178be0a7fe5c13",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 15341566,
+      "sha256": "sha256:c099f46bffe0319146d8cd4df15b353e90a8cb4d9bd26fedf917a1e87e57ed0c",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 25824,
+      "sha256": "sha256:b79e358a481929909a2a0d1f80861f17ec13b3f92b4afc31696682c01e8bb84b",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 15250060,
+      "sha256": "sha256:9bdab92fff9a65948aa7a98908ec6ec2fe2ff185ba89b9d891dfdec3fd88cf1f",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 26679,
+      "sha256": "sha256:1d2e351d3983bedb3812eb9680d874c95fc58d8f7b31a7dada7b9bfbc919780f",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 15237588,
+      "sha256": "sha256:f52874a672c621addd0d0d360498db12c382918f07500dddd928d5a91a92985a",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmPackageResolver-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 12575,
+      "sha256": "sha256:c5dec4af7359612000738734a5fb8211b044291d8279012e454edf54f475f173",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmPackageResolver-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmPackageResolver-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 73300,
+      "sha256": "sha256:4a9f6576eb007ee26c3aa4188ce4f7c408d902043a0dedc2612bb5de0d18fddf",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmPackageResolver-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmPackageResolver-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 12619,
+      "sha256": "sha256:fa84ed66c729308650b07b2f10e3667d8550857402163a784577745f84ea78bf",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmPackageResolver-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmPackageResolver-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 61938,
+      "sha256": "sha256:aea38d409cd6ff12dc2f1e534e78e3582ad64677a6f884ba6c9eeff96e4ea26c",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmPackageResolver-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmPackageResolver-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 13182,
+      "sha256": "sha256:5748df644ffbb218eb7ec065197dc4ba8a9eca825f561a370a41c15d493f3ee7",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmPackageResolver-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmPackageResolver-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 58537,
+      "sha256": "sha256:4d8bb09cbd9e23f661eae9663169530b97e7d731b68a47235432f35e2fdff480",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmPackageResolver-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmaFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 19819,
+      "sha256": "sha256:3e2dc15f1c52adb5490393e42dc01051cacb2ad0c883f62f506b991b4a500030",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmaFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmaFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 165437,
+      "sha256": "sha256:27d6dcc29c43bae11acd069d72fdb5facc624f6cbf83f507844c03b2477e6514",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmaFileFormat-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmaFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 19838,
+      "sha256": "sha256:9a61b9d4f915e0aa2d78da83f65d2c1fefe0e4fdd58241d0975ab499333b8ad5",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmaFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmaFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 119357,
+      "sha256": "sha256:95d1ae7179ebb17febf3188b7fbdb470bb78e571123b0d40693ec9805c25f597",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmaFileFormat-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "usdVrmaFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 20386,
+      "sha256": "sha256:595ed2bb997f2a58ff80d17acd50845867ecfb05592b7a2da34cf20b727f271c",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmaFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "usdVrmaFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 189974,
+      "sha256": "sha256:c285e86d2f8742e9001b99a6746772a5c0c20cc5f0cec20708e0f067991db76a",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/usdVrmaFileFormat-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-linux-x86_64-py313-lookdev.manifest.json",
+      "bytes": 11903,
+      "sha256": "sha256:3adaa4728222f323f196a65032facbc9b824753affb3c1cc3403126f458baf76",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-linux-x86_64-py313-lookdev.manifest.json"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-linux-x86_64-py313-lookdev.tar.zst",
+      "bytes": 123847,
+      "sha256": "sha256:2ee2039ad8d8932aa1612af2a22fc1eeb3fb49f311ed452c8e393952a895df98",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-linux-x86_64-py313-lookdev.tar.zst"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 11887,
+      "sha256": "sha256:639733394446568afd7872b5a6ab0a99c3516fae4a372c2c58d93abc6dd7abca",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 123897,
+      "sha256": "sha256:9440f90257d40c0f3046fd96bffbde4fe734b37e5fb8817292b9bcce3d371794",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 11901,
+      "sha256": "sha256:9fbce9fbbcd54cf190717193953623c0caa72bab59ebe1c28a4094bbc65120a5",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 81625,
+      "sha256": "sha256:6fc9fe76963fc2f8ca1a0f311f763be5e46a799d1e99bfa3bbb8d3a07dba808c",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-windows-x86_64-py313-lookdev.manifest.json",
+      "bytes": 12203,
+      "sha256": "sha256:fdb1e07f364c724b544c4d91c2d4fab1a414e26d3f22ba2f19be8fb71878a322",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-windows-x86_64-py313-lookdev.manifest.json"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-windows-x86_64-py313-lookdev.tar.zst",
+      "bytes": 92772,
+      "sha256": "sha256:4b93b57c731f72a2f941d56090b6466a6bb4f143f07cd0f073371735884cc5a2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-windows-x86_64-py313-lookdev.tar.zst"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 12187,
+      "sha256": "sha256:cca98e3c8794d368257f66b15568654cb4929857ee1605bb39dd223781196701",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrmImaging-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 92756,
+      "sha256": "sha256:14add78e0f3888aaafd5ee67f9d429852ef70684875a5fc0097599e338f9fc7b",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmImaging-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrmSchema-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 9809,
+      "sha256": "sha256:10bf6ceb48a985e8e3572e679e866748f7fc3fa0602058c605fa4420a6b63dbd",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmSchema-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrmSchema-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 91089,
+      "sha256": "sha256:86c4f729e1ed6df7ad208f09a9bb322ace5a1a0c067fcd487b065909ad20914a",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmSchema-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrmSchema-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 9813,
+      "sha256": "sha256:051e402c141840ccbe21011aea5f1d3e6b342ba8eb0e49977a1c44f8867d04b8",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmSchema-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrmSchema-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 56085,
+      "sha256": "sha256:230aab96eb29742e63b53c63f447f0f9482cc92803467f307829c81efa1779e4",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmSchema-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrmSchema-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 10067,
+      "sha256": "sha256:1b6abc82fa262fe7e5e1e95cf5fd524ae87930b6ac32ba35d5cd14c09a86d87a",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmSchema-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrmSchema-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 69493,
+      "sha256": "sha256:6c3eb170829f656b0b374221138cb2432790bc1e4c2dd7fce29a3b11490488ff",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrmSchema-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrm_export-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json",
+      "bytes": 3229,
+      "sha256": "sha256:f79f64526399aeddbd58c1b4cdd6e83b17c245faed06bde3dcb6b9bd92878be0",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrm_export-0.11.0-cy2026-linux-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrm_export-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst",
+      "bytes": 65075,
+      "sha256": "sha256:1a678007553211476f266d6e9fd1686d928642845cdf2879a4301fc4db42f6c4",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrm_export-0.11.0-cy2026-linux-x86_64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrm_export-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json",
+      "bytes": 3203,
+      "sha256": "sha256:19d2e7d6bbaaaead7e032541e65087a05c9d3241bb271fb7353dffab39a7ecf5",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrm_export-0.11.0-cy2026-macos-arm64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrm_export-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst",
+      "bytes": 52943,
+      "sha256": "sha256:b70c227879c21b0c365bb39d5296a50b24a780950a32f480c311beda3c9b5710",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrm_export-0.11.0-cy2026-macos-arm64-py313-usd.tar.zst"
+    },
+    {
+      "name": "vrm_export-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json",
+      "bytes": 3225,
+      "sha256": "sha256:dccaf40612eeaaa439612509e1afe809ca7392919cbfc4de16f7b3e1b17f19e9",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrm_export-0.11.0-cy2026-windows-x86_64-py313-usd.manifest.json"
+    },
+    {
+      "name": "vrm_export-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst",
+      "bytes": 56113,
+      "sha256": "sha256:f44c8f1aeac0c1cedd61eae5023c44deda10f051268d2ea20ec684f5f7150877",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/releases/download/v0.11.0/vrm_export-0.11.0-cy2026-windows-x86_64-py313-usd.tar.zst"
+    }
+  ],
+  "lookdev": {
+    "packages": {
+      "vrmImaging": {
+        "cy2026-linux-x86_64-py313-lookdev": {
+          "artifact": "sha256:2ee2039ad8d8932aa1612af2a22fc1eeb3fb49f311ed452c8e393952a895df98",
+          "source": "oci://ghcr.io/animu-sphere/usd-vrm-plugins@sha256:045c9a41ba9b1738685932b6f058191258bdf1965e9e780c950a47e3c136381c",
+          "tag": "oci://ghcr.io/animu-sphere/usd-vrm-plugins:vrmImaging-0.11.0-cy2026-linux-x86_64-py313-lookdev",
+          "version": "0.11.0"
+        },
+        "cy2026-windows-x86_64-py313-lookdev": {
+          "artifact": "sha256:4b93b57c731f72a2f941d56090b6466a6bb4f143f07cd0f073371735884cc5a2",
+          "source": "oci://ghcr.io/animu-sphere/usd-vrm-plugins@sha256:87d6fd26159a3b854422a2f2168459c40cafe6f9ab4e3d37481370711f224496",
+          "tag": "oci://ghcr.io/animu-sphere/usd-vrm-plugins:vrmImaging-0.11.0-cy2026-windows-x86_64-py313-lookdev",
+          "version": "0.11.0"
+        }
+      }
+    },
+    "published": true,
+    "repository": "ghcr.io/animu-sphere/usd-vrm-plugins",
+    "version": "0.11.0"
+  }
+}
