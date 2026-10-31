@@ -13,13 +13,14 @@ below follows from that.
 | --- | --- | --- |
 | root `README.md` | What this repository is, what it owns and does not, a small conceptual diagram, a component responsibility table, links, a minimal build entry point, the licence | See [root README](#root-readme) |
 | `docs/README.md` | Which document owns which subject | Content of its own |
-| `design/` | Intended contracts, their rationale, the evidence they rest on, open questions | Claims that something is implemented |
-| `architecture/` | Component identities, dependency edges, packaging — the binding structural contract | Rationale; plans |
+| `design/` | Adopted contracts, invariants and design decisions | Obsolete implementation checklists |
+| `architecture/` | Current identities, dependency edges, artifact/API/ABI contracts | Migration chronology; plans |
 | `reference/` | Facts about the current tree: capabilities, supported configurations | Plans; a sibling repository's status |
 | `roadmap/` | Incomplete work this repository owns, and which release carries it | Completed work; rationale; a sibling's roadmap |
 | `guides/` | How to accomplish a task, with commands that have been run | Commands nobody has run |
-| `releases/` | One immutable record per released version | Work in progress |
-| `reports/` | Dated measurements and observations: real runs, hardware sessions, protocol captures, OpenUSD release audits, build and delivery evidence | Current-state claims |
+| `releases/` | One record per version, explicitly unpublished during preparation, immutable once released | Future feature plans; implied publication without evidence |
+| `ideas/` | Uncommitted research and conditions for promotion | Release obligations |
+| `reports/` | Dated measurements, ownership audits and observations: real runs, hardware sessions, protocol captures, release/build evidence | Future promises; binding policy |
 | `archive/` | Plans and documents that were once authoritative and no longer are | Anything a reader should act on |
 | `contributing/` | How to maintain this repository | End-user tasks |
 
@@ -130,3 +131,35 @@ exists, and an archived one to be `historical`.
 6. A sibling's contract is linked, not restated.
 7. A change to a section a sibling repository cites is checked against the
    citation.
+
+## Task lifecycle and release truth
+
+- **active**: local owner, next action, acceptance evidence and priority are
+  fixed for the next milestone; list only unfinished work in `current.md`.
+- **backlog**: unstarted local candidate with a concrete trigger and done-when.
+- **blocked**: name the dependency owner, actual issue/report and unblock condition.
+- **research**: no implementation commitment; keep in `ideas/` or an explicitly
+  optional research track, outside release acceptance.
+- **done**: remove the task immediately; keep behavior in policy/reference,
+  evidence in reports and delivered scope in release records/CHANGELOG.
+- **cancelled / superseded / transferred**: record the reason and owner once
+  in the archive or audit, rather than retaining an active checkbox.
+
+Every live task names an owner repository, next action, done-when and evidence
+destination. Priority/target assignments live only in the roadmap index;
+task documents link to that table. Foreign work is a dependency link.
+Permanent non-goals live only in the scope policy. Native USD export does not
+imply VRM round-trip support.
+
+A versioned release record's `status: proposed` means **unpublished**. It must
+not count as a released version. Remove that status only after publication
+evidence is recorded; final numbered CHANGELOG sections and version bumps
+alone do not prove publication. Candidate work can instead remain in the
+[preparation worksheet](release-candidate.md) until the lockstep bump.
+An implemented gate is not a measured passing gate: inspect closure artifacts
+at the candidate SHA for all three OS before claiming release verification.
+
+When moving a document, audit local/sibling citations and anchors, repair
+internal links, and keep a short compatibility stub for externally used paths.
+Stubs are explicitly superseded, name their canonical owner and contain no
+parallel task list. Binding contracts and regression rules remain current.

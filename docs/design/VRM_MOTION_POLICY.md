@@ -300,7 +300,8 @@ the library's API.
   EXEC_CONTRACT §5's.
 
 The computation list is the [bundle README](../../plugins/execVrm/README.md)'s.
-Expression and look-at computations are the [ExecIr track](../roadmap/execir-track.md)'s.
+Expression and look-at computations are scoped in
+[standard VRM computations](../roadmap/vrm-computations.md), independently of ExecIr.
 
 ### 7.3 Parity with the bake
 
@@ -365,8 +366,9 @@ is [roadmap/execir-track.md](../roadmap/execir-track.md).
 
 ## 10. Spring bones on a rig
 
-> Decided 2026-10-27. The remaining work is the
-> [spring-bone track](../roadmap/springbone-track.md).
+> The schema/solver/handoff plan is complete in its measured scope. Remaining
+> VRM work is in the [backlog](../roadmap/backlog.md#spring-bones); stage reading,
+> scheduling and resident rendering are owned by `usd-avatar-runtime`.
 
 What `VrmSpringBoneAPI` and `VrmColliderAPI` mean is VRM vocabulary
 ([scope policy §4](INTEGRATION_SCOPE_POLICY.md#4-canonical-motion-is-the-only-confluence)):

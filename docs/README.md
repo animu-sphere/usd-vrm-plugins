@@ -15,6 +15,7 @@ contract wins — structural changes go there first, in their own PR.
 | [design/](design/) | What the intended contracts are, and why. | [DESIGN_POLICY.md](design/DESIGN_POLICY.md) · [VRM_MOTION_POLICY.md](design/VRM_MOTION_POLICY.md) |
 | [architecture/](architecture/) | Which components exist, how they depend on each other, and what each installed package promises. | [WORKSPACE.md](architecture/WORKSPACE.md) · [PACKAGE_CONTRACT.md](architecture/PACKAGE_CONTRACT.md) |
 | [reference/](reference/) | What is implemented now, and on what. | [CAPABILITY_MATRIX.md](reference/CAPABILITY_MATRIX.md) · [SUPPORTED_CONFIGURATIONS.md](reference/SUPPORTED_CONFIGURATIONS.md) |
+| [ideas/](ideas/) | What is being investigated without an implementation commitment. | [README.md](ideas/README.md) |
 | [roadmap/](roadmap/) | What incomplete work remains. | [README.md](roadmap/README.md) · [current.md](roadmap/current.md) |
 | [guides/](guides/) | How to perform a task. | [INSTALL.md](guides/INSTALL.md) · [VIEWING_MOTION.md](guides/VIEWING_MOTION.md) |
 | [releases/](releases/) | What shipped in a released version. | [README.md](releases/README.md) |
@@ -32,11 +33,14 @@ contract wins — structural changes go there first, in their own PR.
 | The `/Asset/mtl` hierarchy and MToon | [design/MATERIAL_ARCHITECTURE_POLICY.md](design/MATERIAL_ARCHITECTURE_POLICY.md) |
 | Writing an imported `.vrm` as a native `.usda` / `.usdc` / `.usdz` (`vrm_export`) | [design/VRM_EXPORT_POLICY.md](design/VRM_EXPORT_POLICY.md) |
 | Exposing the canonical material schemas to Hydra (`vrmImaging`) | [design/VRM_IMAGING_POLICY.md](design/VRM_IMAGING_POLICY.md) |
-| Workspace identities, dependency directions, artifact naming, Workspace Phase 0–8 | [architecture/WORKSPACE.md](architecture/WORKSPACE.md) |
+| Current workspace identities, dependency directions and artifact naming | [architecture/WORKSPACE.md](architecture/WORKSPACE.md) |
 | What a consumer writes to use an installed package | [architecture/PACKAGE_CONTRACT.md](architecture/PACKAGE_CONTRACT.md) |
 | The VRM schemas | [plugins/vrmSchema/docs/SCHEMA_CONTRACT.md](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) |
 | Implemented capabilities; platforms and OpenUSD versions | [reference/](reference/) |
-| Incomplete work, and which release carries it | [roadmap/](roadmap/) |
+| Open tasks and target versions | [roadmap/README.md](roadmap/README.md) and [current.md](roadmap/current.md) |
+| Uncommitted research | [ideas/README.md](ideas/README.md) |
+| Completed workspace migration history | [archive/workspace-migration/WORKSPACE.md](archive/workspace-migration/WORKSPACE.md) |
+| Candidate preparation (not a publication claim) | [contributing/release-candidate.md](contributing/release-candidate.md) |
 | Released history | [releases/](releases/) and the [CHANGELOG](../CHANGELOG.md) |
 | How documents here are maintained, and how they cite sibling repositories | [contributing/documentation.md](contributing/documentation.md) |
 | Which checks a release product cell must pass | [contributing/release-closure.md](contributing/release-closure.md) |
@@ -54,6 +58,8 @@ is linked, never restated here:
 | Subject | Owner |
 | --- | --- |
 | Generic motion: values, sampling, filtering, recording, retargeting, the OpenUSD motion mapping, generic OpenExec evaluation | [`usd-motion-plugins`](https://github.com/animu-sphere/usd-motion-plugins/tree/main/docs) |
+| MToon rendering and image conformance | [`hydra-toon`](https://github.com/animu-sphere/hydra-toon/tree/main/docs) |
+| Avatar hosts, scheduling and resident rendering | [`usd-avatar-runtime`](https://github.com/animu-sphere/usd-avatar-runtime/tree/main/docs) |
 | Device and protocol input, source profiles, tracker observations | [`motion-connectors`](https://github.com/animu-sphere/motion-connectors/tree/main/docs) |
 
 ## Superseded

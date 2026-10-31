@@ -43,7 +43,7 @@ exit 3 and names `usdVrmFileFormat` on every host.
 
 ## Boundary of the finding
 
-This closes the [export track](../roadmap/export-track.md)'s Step 2 condition
+This closes the [export track](../archive/export/export-track.md)'s Step 2 condition
 that the exporter run from the release artifact. The full run also passed
 the build-tree verification pyramid, repeat packaging with equal digests,
 the packaged-library check, clean-install smoke, artifact-only exec and
@@ -51,7 +51,7 @@ imaging smokes, and the packaged VRMA reader.
 
 The export smoke covers these two textured inputs and `.usdz`; the
 build-tree end-to-end suite holds the wider fixture and output-format matrix.
-The existing [build-machine RPATH carry-over](../roadmap/current.md#carried-out-of-v090)
+The existing [build-machine RPATH carry-over](../archive/release-preparation/current-before-cleanup.md#carried-out-of-v090)
 remains: the exec smoke counted 6 checkout RPATH entries in 6 binaries on
 Linux, and 8 in 6 binaries on macOS, while reporting that no module loaded
 from those paths. Motion assembly remains Step 3's work.

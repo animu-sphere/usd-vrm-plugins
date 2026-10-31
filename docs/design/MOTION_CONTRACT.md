@@ -34,3 +34,14 @@ The design triplet this document shipped beside moved to
 **History.** The full text is in git history; the last revision is
 [e98db79](https://github.com/animu-sphere/usd-vrm-plugins/blob/e98db79635e431b958c0cf64f088c822a9f73cf2/docs/design/MOTION_CONTRACT.md).
 Its headings are the anchors older documents in this repository cite.
+
+<a id="openexec-driver-contract-after-v080"></a>
+<a id="scale-policy-v090"></a>
+<a id="expression-semantics-v070"></a>
+<a id="root-and-hips-v070"></a>
+<a id="comparison-semantics-v060"></a>
+<a id="partial-skeleton-policy-v090"></a>
+<a id="vrm_openexec_-codes"></a>
+
+Legacy anchors above lead to this document's owner links; they do not restore
+retired contracts or task lists.

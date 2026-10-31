@@ -47,7 +47,7 @@ P0 or the extracted bundle CMake-prefix question in
 [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md#41-plugin-bundles).
 Consumed motion profiles are owned and tested by `usd-motion-plugins`.
 The RPATH and other accepted packaging carry-overs in
-[current.md](../roadmap/current.md#carried-over-from-shipped-releases) remain open.
+[package portability backlog](../roadmap/backlog.md#package-portability) remain open.
 
 ## Local verification
 

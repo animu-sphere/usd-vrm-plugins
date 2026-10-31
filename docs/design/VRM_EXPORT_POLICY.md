@@ -18,10 +18,10 @@ owner: usd-vrm-plugins
 >
 > **This introduces no new phase sequence.** The steps in §11 are the internal
 > order of one track, not a sequence beside Product P0–P6 and Workspace
-> Phase 0–8 ([roadmap](../roadmap/README.md#sequences)). The release a step
+> Phase 0–8 (now [historical](../archive/workspace-migration/WORKSPACE.md#8-phase-status)). The release a step
 > lands in is fixed by the
-> [status table](../roadmap/README.md#status-at-a-glance), and the open steps
-> are the [export track](../roadmap/export-track.md).
+> [status table](../roadmap/README.md#status-at-a-glance). Steps 1–3 are
+> implemented; distribution proposals remain [research](../ideas/README.md).
 >
 > **Step 1 implemented 2026-09-26.** Four things measured while building it
 > changed or sharpened a rule here: a `.usdz`'s root layer is
@@ -465,8 +465,10 @@ VRM-specific logic goes there.
 ## 11. Steps
 
 The source plan named these P0–P3; they are **Steps 1–4 of this track**, and
-are not Product P0–P3. Status is the
-[export track](../roadmap/export-track.md)'s.
+are not Product P0–P3. The implementation history is
+[archived](../archive/export/export-track.md); current capabilities are in the
+[reference](../reference/CAPABILITY_MATRIX.md#native-usd-export). Step 4 remains
+uncommitted [research](../ideas/README.md).
 
 1. **Native export.** `.usda`, `.usdc`, `.usdz`; localization; `--check`,
    `--overwrite`; the exit codes; tests over the fixtures and the corpus.

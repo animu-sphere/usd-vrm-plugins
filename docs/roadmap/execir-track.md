@@ -1,17 +1,17 @@
 # The `ExecIr` track
 
-**Status:** ⬜ not started · **Target:** unscheduled
+**Status:** research; optional experimental track · **Owner:** usd-vrm-plugins · **Priority/target:** see index
 ([status table](README.md#status-at-a-glance)) ·
 **Policy:** [VRM_MOTION_POLICY.md §8](../design/VRM_MOTION_POLICY.md#8-execir-is-optional-never-a-prerequisite)
 
-The OpenExec work this repository still owns. The foundation it builds on —
+Uncommitted optional OpenExec research owned by this repository. The foundation it builds on —
 `execVrm` over the consumed `execMotion`, equal to the offline bake bit for
 bit — shipped in [v0.9.0](../releases/v0.9.0.md); its plan is
 [archived](../archive/motion-split/openexec-foundation.md) and its
 measurements are the [OpenUSD 26.08 reports](../reports/openusd/README.md).
 What is left is VRM-specific: an invertible humanoid rig through `ExecIr`,
-expression and look-at as computations, and the display and contract items the
-foundation left open.
+and the display and contract questions the foundation left open. Standard
+expression/look-at computations are scoped [separately](vrm-computations.md).
 
 ## 1. What `ExecIr` is, and is not
 
@@ -32,7 +32,14 @@ damage is `ExecIr` as the canonical motion contract: it is per-prim scalar
 avars in world space, the canonical contract quaternion arrays in joint-local
 space ([migration report §7.2](../reports/openusd/26.08-openexec-migration.md#72-the-shape-mismatch-with-usdskel)).
 
-## 2. Tasks
+## 2. Conditional research steps
+
+P0-1 is the entry audit. All other steps are uncommitted options until it
+identifies a consumer, accepted boundaries, done criteria and an evidence
+location. Their P0/P1 labels are historical internal ordering, not release
+priorities. Reports belong in `docs/reports/`; accepted changes update policy
+and architecture first. No step here gates the current release.
+
 
 ### P0-1 — `ExecIr` responsibility audit ⬜
 
@@ -89,22 +96,16 @@ contract's EX-O1.
 Only the necessary values are invalidated by each of: animation time,
 humanoid mapping, skeleton rest pose, controller value, switch source,
 root-motion policy, look-at target, expression weight, and an unrelated
-material attribute.
+material attribute. Only schedule cases for computations actually implemented.
 
-### P1-1 — expression computations ⬜
+### P1-1 — expression computations
 
-`vrm.resolveExpressionWeights`, `vrm.computeMorphTargetWeights`,
-`vrm.computeMaterialColorOverrides`, `vrm.computeTextureTransformOverrides`,
-each a wrapper over `vrmRig`'s resolver
-([VRM_MOTION_POLICY.md §5](../design/VRM_MOTION_POLICY.md#5-expressions-on-a-rig)).
-Results are produced, not written back to the stage continuously.
+Transferred to [standard VRM computations](vrm-computations.md#expression-computations).
+It does not depend on the optional adapter audit or an ExecIr representation.
 
-### P1-2 — look-at computations ⬜
+### P1-2 — look-at computations
 
-`vrm.computeLookAt` and `vrm.applyLookAtToPose`, over `vrmRig`'s evaluator:
-head transform, eye origin, target position, VRM range maps and the
-bone/expression mode in; yaw/pitch, eye rotations, expression weights and an
-updated pose out.
+Transferred to [standard VRM computations](vrm-computations.md#look-at-computations).
 
 ### P1-3 — performance baseline ⬜
 
@@ -118,7 +119,7 @@ Registered computation names, provider resolution, dependency edges, result
 types, batch request contents, invalidation cause, cache hit/miss and timings,
 visible during development.
 
-### Release gate
+### Conditional experiment acceptance
 
 A VRM humanoid builds an `ExecIr`-compatible rig · FK forward evaluation
 works · switching and compensation work · limited inverse evaluation works ·
@@ -175,8 +176,8 @@ v0.9.0 proved the mechanism on an exec-computed `UsdGeomXformable` instead
 ## 5. Deferred past this track
 
 Spring-bone simulation (never an OpenExec computation; it is `vrmRig`'s, on
-the [spring-bone track](springbone-track.md)), full-body IK, foot locking, contact solving,
+the [VRM motion policy](../design/VRM_MOTION_POLICY.md#10-spring-bones-on-a-rig)), full-body IK, foot locking, contact solving,
 GPU computation, per-frame stage write-back, editor UI, Python computation
 registration, production-grade arbitrary rig authoring, and realtime skinned
 display (§3). Several are permanent non-goals
-([backlog](backlog.md#non-goals)).
+([scope policy](../design/INTEGRATION_SCOPE_POLICY.md#2-what-this-repository-does-not-own)).

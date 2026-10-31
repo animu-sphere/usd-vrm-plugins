@@ -11,8 +11,8 @@ owner: usd-vrm-plugins
 
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check, the reduced contract and the cross-repository test are done; the release-artifact proof is the next release's dry run · **Target:** after the OpenExec foundation ·
-**Structure:** [architecture/WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
+**Status:** ✅ MIG-0..MIG-4 on this side — every identity [WORKSPACE.md §9.1](../workspace-migration/WORKSPACE.md#91-destination-of-every-identity) sends elsewhere arrived there with its history (2026-09-19..21) and is consumed or deleted here (2026-09-21..24), `execMotion` last; what MIG-4 still owes is `motion-connectors`' (recorded evidence, ARDY); 🚧 MIG-5 — the mechanical check, the reduced contract and the cross-repository test are done; the release-artifact proof is the next release's dry run · **Target:** after the OpenExec foundation ·
+**Structure:** [architecture/WORKSPACE.md §9](../workspace-migration/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
 **Added:** 2026-09-06 as the conditional split track · **Rewritten:** 2026-09-17
@@ -25,7 +25,7 @@ could end it, and its scope was `motionCore` + `motionRuntime` only. The
 motion architecture is owned: generic motion leaves this repository, and
 device and protocol input goes to `motion-connectors`. So the gate is gone,
 the scope is every identity
-[WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity)
+[WORKSPACE.md §9.1](../workspace-migration/WORKSPACE.md#91-destination-of-every-identity)
 gives a destination, and what is left to plan is **order and evidence**. The
 filename is kept so that links to the track keep working.
 
@@ -43,7 +43,7 @@ are exactly the API defects that should be fixed once, in the destination,
 rather than moved and fixed there later without the evidence that found them.
 
 The moves then follow the dependency order
-([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules), rule 6),
+([WORKSPACE.md §9.2](../workspace-migration/WORKSPACE.md#92-moving-rules), rule 6),
 and each waits for its destination to publish an installable package. The
 motion-plugins policy numbers its migration **Migration Phase A–F**; the
 milestones below say which of them each one serves.
@@ -68,9 +68,9 @@ repository's, and needs nothing from this one.
   removed, and every string literal of their sources. It checks what it finds
   against a ledger, `tests/boundary/motion-vocabulary.json`.
   The first run found 40 names. 16 are renames or identity names
-  ([WORKSPACE.md §9.3](../../architecture/WORKSPACE.md#93-names)), 8 are the
+  ([WORKSPACE.md §9.3](../workspace-migration/WORKSPACE.md#93-names)), 8 are the
   retarget's diagnostic codes, and 16 belong to the look-at and expression
-  findings of [§9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget).
+  findings of [§9.5](../workspace-migration/WORKSPACE.md#95-the-line-through-vrmretarget).
   Two anchors pin the required-bone finding, whose names no pattern can see.
   A new VRM name in a moving header, a ledger row that no longer matches, and
   an anchor that disappears each fail, and three near-miss ledgers prove it.
@@ -79,7 +79,7 @@ repository's, and needs nothing from this one.
   ([§4](#4-mig-2--sampling-retarget-usd-bridge-)).
 - ✅ **Draw the line through `vrmRetarget`** (2026-09-19). The line is by
   header, and only `HumanoidMap::GetRequiredBones` is cut in two
-  ([WORKSPACE.md §9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
+  ([WORKSPACE.md §9.5](../workspace-migration/WORKSPACE.md#95-the-line-through-vrmretarget)).
   The map itself is generic and moves as `RetargetMap`. What stays is VRM
   1.0's required-bone set, `ExpressionResolver` and `LookAtEvaluator`. Three
   findings are recorded there for the arrival: a caller-supplied required
@@ -116,7 +116,7 @@ repository's, and needs nothing from this one.
   Each move's own suites travel with it and must pass in the destination.
   The consumer-side rows stay here and are re-run against the consumed
   package before the in-tree copy is deleted
-  ([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules), rule 2):
+  ([WORKSPACE.md §9.2](../workspace-migration/WORKSPACE.md#92-moving-rules), rule 2):
 
   | Move | Travels, and must pass there | Stays, and re-runs here against the package |
   | --- | --- | --- |
@@ -148,7 +148,7 @@ repository's, and needs nothing from this one.
   The members that switched their edge: `usdVrmaFileFormat`, `vrmRetarget`,
   `motionSource`, `execMotion`, `execVrm` and the three CLIs — the adapters and
   `motionTracking` the original item also named had already left with MIG-4
-  ([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules), rule 1).
+  ([WORKSPACE.md §9.2](../workspace-migration/WORKSPACE.md#92-moving-rules), rule 1).
   Adapting code here to the renamed types was acceptable during migration
   (motion-plugins policy §37); keeping two cores was not.
 - ✅ The `.vrma` stage does not change: `/Animation`, `HumanoidSkeleton`,
@@ -196,7 +196,7 @@ repository's, and needs nothing from this one.
   finding `execVrm` and `motion_retarget` both carry a copy of today.
   - ✅ Arrived with its history (2026-09-19,
     [usd-motion-plugins #9](https://github.com/animu-sphere/usd-motion-plugins/pull/9)):
-    32 commits, cut along [WORKSPACE.md §9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget),
+    32 commits, cut along [WORKSPACE.md §9.5](../workspace-migration/WORKSPACE.md#95-the-line-through-vrmretarget),
     with `ExpressionResolver` and `LookAtEvaluator` left out of the history.
     `TargetSkeleton` is `SkeletonDescriptor` there, `TargetJoint` is
     `SkeletonJoint`, `HumanoidMap` is `RetargetMap`, and the codes are
@@ -233,7 +233,7 @@ repository's, and needs nothing from this one.
     (`libs/vrmRig/`), decided on 2026-09-20 — two resolvers and a bone
     set, none of it a retarget. It links `motionCore` alone, and its boundary
     check forbids the rest of `usd-motion-plugins`, so
-    [WORKSPACE.md §9.5](../../architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
+    [WORKSPACE.md §9.5](../workspace-migration/WORKSPACE.md#95-the-line-through-vrmretarget)'s
     line is held after the cut rather than only drawn before it. MIG-0's
     vocabulary check retired in the same change, its last headers gone.
 - ✅ `motionUsd`. The authoring half arrived on 2026-09-19
@@ -469,7 +469,7 @@ repository's, and needs nothing from this one.
   `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
   `motion-connectors`, which depends on `usd-motion-plugins` and on nothing
   here. They arrive **together**, in `motion-connectors` v0.1.0, and leave
-  here in one change ([WORKSPACE.md §9.2](../../architecture/WORKSPACE.md#92-moving-rules)
+  here in one change ([WORKSPACE.md §9.2](../workspace-migration/WORKSPACE.md#92-moving-rules)
   rule 7). The adapters lose the `vrm` prefix there, as
   `motionConnectorVmc`, `motionConnectorMocopi` and `motionConnectorVrchatOsc`.
   - ✅ The two leaves arrived with their history (2026-09-19):
@@ -555,7 +555,7 @@ repository's, and needs nothing from this one.
 - ✅ No generic motion source file remains here, checked mechanically
   (2026-09-24). `scripts/check_cmake_boundaries.py`
   (`workspace_cmake_boundaries`, and first in the plain-CMake lane) fails
-  when an identity [WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity)
+  when an identity [WORKSPACE.md §9.1](../workspace-migration/WORKSPACE.md#91-destination-of-every-identity)
   sent elsewhere comes back. It checks every name the identity has had, here
   and in its destination. A member directory fails, and so does a target or
   target prefix (`execMotion_blend_tests`), any file under `adapters/` or
@@ -634,7 +634,7 @@ repository's, and needs nothing from this one.
 
 ## 9. Done when
 
-- Every identity [WORKSPACE.md §9.1](../../architecture/WORKSPACE.md#91-destination-of-every-identity)
+- Every identity [WORKSPACE.md §9.1](../workspace-migration/WORKSPACE.md#91-destination-of-every-identity)
   gives another destination lives there, with its history.
 - This repository consumes them as installed packages and holds no copy.
 - Every parity baseline MIG-0 named was reproduced across the move.

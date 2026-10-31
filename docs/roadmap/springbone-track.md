@@ -1,136 +1,16 @@
-# The spring-bone track
+---
+status: superseded
+owner: usd-vrm-plugins
+canonical: ../design/VRM_MOTION_POLICY.md
+---
 
-**Status:** 🚧 Solver verified on all three OS; scoped runtime host measured on Windows; resident renderer integration pending · **Target:** unscheduled
-([status table](README.md#status-at-a-glance)) ·
-**Policy:** [VRM motion policy](../design/VRM_MOTION_POLICY.md) §10
+# Springbone track — archived
 
-Spring bones evaluated on a VRM rig. The schema states what each spring
-declares, and `vrmRig` solves it. Where the solver lives, what it may depend
-on and what it is measured against are set by the policy. This document holds
-what is left to build. The steps are this track's internal order, not
-Product P0–P6.
+The completed plan is [archived](../archive/springbone/springbone-track.md).
+Current behavior and constraints are owned by the
+[policy](../design/VRM_MOTION_POLICY.md) and [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
-## 1. Where it stands
+Schema and solver Steps 0–2 are complete in their measured scope. Remaining VRM scale and collider work is in the [backlog](backlog.md#spring-bones); runtime stage reading, scheduling and resident rendering belong to [usd-avatar-runtime](https://github.com/animu-sphere/usd-avatar-runtime/tree/main/docs/roadmap).
 
-- **Import is complete.** Springs, colliders and collider groups from both VRM
-  versions are authored under `/Asset/rig/SecondaryMotion`. The `springbone`
-  and `vrm0_frontbake` fixtures hold them, and the negative fixture
-  `missing_spring_collider_group` holds the warning (`VRM190`) for a
-  collider-group index that is out of range.
-- **`vrmRig` evaluates plain rig/pose values.** The solver and its unit and
-  reference-comparison suites pass on hosted Windows, Linux and macOS arm64
-  ([source CI](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250),
-  `14efdec`). No stage reader or live adapter is implemented here.
-- **Schema contract v2 separates roots and chains** (policy §10.2).
-  Step 0 supplies the stage declaration the solver will consume.
-- **Order adjusted 2026-10-27:** Step 0 was brought forward while the
-  [export track](export-track.md)'s Step 2 remains open, to advance secondary
-  motion. Its export reopening tests also run against the schema change.
-
-## 2. Steps
-
-### Step 0: VRM 0.x springs state their roots ✅
-
-- ✅ `vrm:rootJoints` on `VrmSpringBoneAPI`. The per-joint parameter arrays
-  are parallel to whichever of `vrm:joints` or `vrm:rootJoints` is authored,
-  and a spring authors exactly one of them. The schema is regenerated with
-  `plugins/vrmSchema/tools/generate_schema.py`.
-- ✅ [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)
-  states the two shapes, and the schema contract version is bumped, because
-  what a VRM 0.x stage authors changes meaning.
-- ✅ The importer writes a VRM 0.x group's `bones` into `vrm:rootJoints`.
-  VRM 1.0 spring data does not change; both versions carry contract v2.
-- ✅ The validator reports a spring that authors both arrays or neither as
-  `VRM256` (allocation approved 2026-10-28).
-  `VRM253` checks the selected array, including empty declarations.
-- ✅ Affected fixture goldens and corpus digests are regenerated, and the
-  CHANGELOG states the stage change.
-- ✅ Contract v2 export pins measured on Windows x86-64 and macOS arm64;
-  Linux x86-64 matches the Windows pins. Hosted macOS measurements are in
-  [run 40620009249](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620009249/job/122591483785):
-  the only failures were comparison with the superseded v1 pins, now updated.
-
-**Done when** every VRM 0.x fixture and corpus avatar authors its roots in
-`vrm:rootJoints` and no `vrm:joints`, every VRM 1.0 spring is unchanged, and a
-reader can tell a chain from a set of roots without knowing the source
-version.
-
-### Step 1: the solver in `vrmRig` ✅
-
-- ✅ A header beside `ExpressionResolver.h` and `LookAtEvaluator.h`. It holds
-  the rig values (a joint tree with parent indices, rest transforms,
-  per-joint parameters, colliders, collider groups and the center) and a
-  stateful solver with a reset and a fixed step. The output convention is
-  absolute joint-local rotations in the full skeleton's joint order, stated in
-  the [vrmRig README](../../libs/vrmRig/README.md#spring-bones).
-- ✅ Root expansion: VRM 0.x roots into a joint tree, given the skeleton's
-  topology. Each joint appears once (policy §10.2).
-- ✅ The end-of-chain rules for both versions, fixed against the references
-  (policy §10.3).
-- ✅ `VRMRIG_SPRING_BONE_API` in the installed headers, as
-  `VRMRIG_LOOKAT_DIRECTION_API` is for look-at directions, so that a consumer
-  built against an older install fails with a clear message.
-- ✅ Unit tests on constructed rigs (`vrmRig_spring_unit`):
-  - a chain settles under gravity, and stiffness returns it to rest;
-  - a sphere collider and a capsule collider each push a joint out;
-  - a VRM 0.x branching tree moves each joint exactly once;
-  - a reset restores the same state, and a repeated run is identical.
-- ✅ A reference comparison: joint trajectories from three-vrm (both
-  versions) and UniVRM (VRM 0.x) on generated inputs. They are committed as
-  data with the script that regenerates them, and compared within a stated
-  tolerance (policy §10.4). [Harness and scope](../../libs/vrmRig/tests/springbone/README.md):
-  672 three-vrm and 416 UniVRM joint samples, rigid unit-scale inputs,
-  `1e-4 m` position and `1e-4` sign-aligned quaternion distance. The UniVRM
-  measurement runs its unmodified system with a rigid math shim, not a Unity
-  player; three-vrm's joints receive refreshed child matrices each step.
-- ✅ `vrmRig`'s boundary check unchanged: the solver adds no dependency.
-- ✅ Hosted Windows/Linux/macOS suites pass, including the updated installed
-  consumer which configures, resets and steps the solver. Measured 2026-10-28
-  on `14efdec`: the three `vrmRig_spring_*` tests in every
-  [workspace cell](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250),
-  the three-platform [installed-consumer lane](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536217),
-  and [plain CMake](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536305).
-
-**Done when** the solver passes the unit tests and the reference comparison
-on every CI lane, and an installed `vrmRig` package exposes it.
-
-### Step 2: handed to the runtime ✅ (scoped headless host)
-
-This repository's half of the integration. Reading the stage into `vrmRig`
-values, the adapter, the host and the fixed-tick scheduling belong to
-`usd-avatar-runtime` and are tracked there (its
-[physics orchestration milestones](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/roadmap/current.md#physics-orchestration-milestones),
-Milestone E). They are not restated here.
-
-- ✅ The scoped runtime host consumes installed `vrmRig` values and transactional
-  solver copies without a substitute implementation. Unsupported non-unit joint
-  scale is refused; SB-O2 remains open.
-- ✅ Runtime-owned [2026-10-29 host evidence](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/reference/CAPABILITY_MATRIX.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29)
-  measures AliciaSolid (0.x) and Constraint Twist Sample (1.0) under a VRMA clip,
-  in enabled/disabled modes, with owner parity, reset replay and retained unload.
-  The [host contract](https://github.com/animu-sphere/usd-avatar-runtime/blob/main/docs/architecture/VRM_SESSION.md)
-  records the installed-package boundary and headless scope. Resident rendering,
-  Hydra/direct parity and hosted runtime lanes remain outside this finding.
-
-**Done when** that evidence was produced against an installed `vrmRig`, with
-no checkout of this repository.
-
-## 3. Open questions
-
-- **SB-O1: extended colliders.** `VRMC_springBone_extended_collider`
-  (inside spheres and capsules, planes) is not read by the importer. Adding
-  it is an additive schema change, made when a corpus avatar uses it.
-- **SB-O2: scale.** How a non-unit avatar placement, or a stage whose
-  `metersPerUnit` is not 1, applies to hit radii, collider sizes and the
-  VRM 0.x virtual tail.
-- **SB-O3: colliders outside the avatar.** The environment and other avatars
-  depend on `usd-physics-plugins`' shared-collider question (SM-O1) and on
-  the runtime's world membership. Nothing is planned here until a consumer
-  needs it.
-
-## 4. Not this track
-
-- A rigid-body world, or any physics backend (policy §10.1).
-- An OpenExec computation for springs (policy §10.1).
-- Baking springs into a clip. `motion_retarget` does not simulate, and an
-  offline spring bake waits for an offline consumer to ask for one.
+Release status is recorded in the [roadmap index](README.md#status-at-a-glance),
+[CHANGELOG](../../CHANGELOG.md) and [release records](../releases/).

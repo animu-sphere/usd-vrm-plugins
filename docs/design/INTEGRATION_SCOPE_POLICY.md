@@ -58,7 +58,21 @@ reverses one:
 - A general humanoid DCC toolchain, a game runtime, or the update loop that
   composes avatars at run time (`usd-avatar-runtime`, `usd-stage-runner`).
 
-The same list, as refusals, is [the backlog's non-goals](../roadmap/backlog.md#non-goals).
+Additional format/runtime exclusions:
+
+- A rigid-body world or its stepping loop (`usd-physics-plugins` and
+  `usd-avatar-runtime` own those); VRM spring evaluation itself stays here.
+- Pixel-perfect MToon across all renderers, a native MToon renderer, outline
+  pass or GPU pipeline (`hydra-toon` owns rendering and image conformance).
+- Arbitrary broken-glTF repair, a full VRM exporter, or DCC-specific UI.
+- Per-frame USD authoring for live playback; author animation on bake,
+  record or publish instead.
+- I/O inside an OpenExec computation; callbacks evaluate immutable snapshots.
+- ExecIr as the canonical motion contract or a prerequisite for the standard
+  pipeline ([motion policy §8](VRM_MOTION_POLICY.md#8-execir-is-optional-never-a-prerequisite)).
+
+These exclusions are policy, not backlog tasks. Feasibility research does not
+reverse them without an explicit policy decision.
 
 ## 3. The test for a new identity
 
@@ -147,8 +161,8 @@ composed build resolves every target in-tree without opening a package config,
 so on 2026-08-29 two installed packages named a target no consumer could
 resolve while all seventeen lanes were green
 ([the packaging track](../archive/packaging/packaging-hardening.md) §1). One
-checklist a release passes or fails is still open
-([current.md](../roadmap/current.md#release-closure-and-checkable-invariants)).
+checklist is now [implemented](../contributing/release-closure.md); hosted
+verification of its latest gates is [current work](../roadmap/current.md).
 
 ## 9. Four test layers
 

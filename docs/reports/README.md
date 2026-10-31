@@ -15,6 +15,7 @@ record of adopting it in public is worth as much as the plugins.
 | [delivery-history.md](delivery-history.md) | The granular pre-`v0.1.0` delivery log: what shipped, retained from the original roadmap. |
 | [2026-10-29-export-release-dry-run.md](2026-10-29-export-release-dry-run.md) | Export Step 2's installed-product proof on Windows, Linux and macOS arm64. |
 | [2026-10-31-export-motion-release-dry-run.md](2026-10-31-export-motion-release-dry-run.md) | Export Step 3's hosted workspace and installed-product proof on Windows, Linux and macOS arm64. |
+| [2026-10-31-documentation-ownership-audit.md](2026-10-31-documentation-ownership-audit.md) | Documentation inventory, task disposition and citation audit at `d1dd81c`. |
 
 ## What belongs where
 

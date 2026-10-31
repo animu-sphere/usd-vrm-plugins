@@ -14,7 +14,7 @@ owner: usd-vrm-plugins
 > **Destination (2026-09-17): `usd-motion-plugins`.** `motionSource`, `motionBvh`,
 > the BVH tools and the producer profiles move there, and so does §13's NPZ /
 > AMASS decision, behind the versioned NPZ payload contract that repository
-> requires first ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> requires first ([WORKSPACE.md §9](../workspace-migration/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-3). This plan stays the record
 > of what was built and measured here.
 
@@ -453,7 +453,7 @@ to make small.
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, two producers' profiles, basis and unit conversion, source rest pose, root policy, `MotionClip`, the semantic clip writer | ✅ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, the recorded corpus | 🚧 — only the **artifact-only smoke** is left, and it is unblocked ([§10](#10-contract-changes-this-plan-requires)) |
-| **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | 🚧 — two paths of three compared ([report 01](../../reports/motion/01-2026-08-15-mocopi-cross-source.md)); the relay is [current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)'s |
+| **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | 🚧 — two paths of three compared ([report 01](../../reports/motion/01-2026-08-15-mocopi-cross-source.md)); the relay is [current.md](../release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces)'s |
 
 The measurements below are what BVH-0 bought, and they are kept because the two
 shipped profiles were written from them: a profile schema written from one
@@ -842,7 +842,7 @@ what one producer could not have shown.
   either provenance or it is out.
 - What is the corpus, and what is redistributable? AMASS datasets carry research
   licences that differ per sub-dataset — the same gate the VRM corpus hit, and
-  the [corpus policy](../../roadmap/current.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)
+  the [corpus policy](../release-preparation/current-before-cleanup.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)
   already has the shape for it: a manifest with no bytes.
 
 ### 13.4 Non-goals, added to §11

@@ -15,11 +15,9 @@ the handful of facts that silently rot when the workspace changes shape:
    see the comment where it stood)*;
 5. the OpenUSD pin agrees across the bundle manifests, the configure-time
    contract module, and the supported-configurations reference;
-6. the roadmap and the release records agree about which versions are out:
-   VERSION has a record and a changelog section, a `Next:` / `Then:` milestone
-   is not an already-released version, a `Shipped:` one is, the roadmap status
-   table agrees with those headings, and no document points at a retired
-   roadmap filename;
+6. VERSION has a record and changelog section; unpublished records do not
+   count as releases, and the roadmap owner/target table plans no shipped
+   version. No milestone-heading wording is required;
 7. every identity that installs a CMake package has a row in
    PACKAGE_CONTRACT.md, and every row that is not reserved names an identity
    the manifests declare;
@@ -32,8 +30,8 @@ the handful of facts that silently rot when the workspace changes shape:
     `historical` and says so in a banner, a superseded one names a
     `canonical` replacement that exists and holds no parallel copy of what it
     replaced, and every `status` is one of the known values;
-11. every roadmap document other than the index still holds incomplete work,
-    and nothing that states current status (reference/) cites the archive.
+11. roadmap work has explicit ownership, superseded stubs hold no task list,
+    current/backlog contain no completed tasks, and reference/ cites no archive.
 
 Check 6 exists because the roadmap said "Next: v0.6.0 - the OpenExec
 foundation" for two weeks after v0.6.0 shipped VMC input instead. Nothing was
@@ -47,6 +45,9 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
+import tomllib
+import unicodedata
+from urllib.parse import unquote
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -267,22 +268,20 @@ RETIRED_DOC_NAMES = {
 }
 
 VERSION_RE = re.compile(r"v(\d+\.\d+\.\d+)")
-# "## Next: v0.7.0 - ..." / "## Then: ..." / "## Shipped: ..."
-MILESTONE_HEADING = re.compile(
-    r"^##\s+(Next|Then|Shipped):\s*v(\d+\.\d+\.\d+)\b", re.M)
 
 
 def released_versions() -> set[str]:
-    """Versions with a release record. A record exists only once cut."""
+    """Published records only; preparation records explicitly say proposed."""
     return {p.stem.lstrip("v")
-            for p in REPO_ROOT.glob("docs/releases/v*.md")}
+            for p in REPO_ROOT.glob("docs/releases/v*.md")
+            if front_matter(p.read_text(encoding="utf-8")).get("status")
+            != "proposed"}
 
 
 def check_release_records(failures: list[str]) -> None:
     """VERSION, the release records, and the changelog name the same release."""
     version = read("VERSION").strip()
-    released = released_versions()
-    if version not in released:
+    if not (REPO_ROOT / f"docs/releases/v{version}.md").exists():
         failures.append(
             f"VERSION is {version!r} but docs/releases/v{version}.md does not "
             f"exist. A released version needs a record (docs/releases/README.md)")
@@ -290,42 +289,55 @@ def check_release_records(failures: list[str]) -> None:
         failures.append(
             f"CHANGELOG.md has no `## [{version}]` section, but VERSION says "
             f"{version!r}")
+    workspace_version = tomllib.loads(read("openstrata.toml"))["project"]["version"]
+    if workspace_version != version:
+        failures.append(f"openstrata.toml version {workspace_version!r} "
+                        f"does not match VERSION {version!r}")
+    for pattern in ("plugins/*/openstrata.plugin.yaml",
+                    "libs/*/openstrata.library.yaml",
+                    "tools/*/openstrata.tool.yaml"):
+        for descriptor in REPO_ROOT.glob(pattern):
+            declared = scalar(descriptor.read_text(encoding="utf-8"), "version")
+            if declared != version:
+                failures.append(f"{descriptor.relative_to(REPO_ROOT)} version "
+                                f"{declared!r} does not match VERSION {version!r}")
 
 
 def check_roadmap_status(failures: list[str]) -> None:
-    """The roadmap's next milestone is not a version that already shipped."""
+    """Read the owner/target table rather than an obsolete heading convention."""
     released = released_versions()
-    current = read("docs/roadmap/current.md")
-
-    headings = MILESTONE_HEADING.findall(current)
-    if not headings:
+    rows = []
+    for line in read("docs/roadmap/README.md").splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if (line.startswith("|") and len(cells) == 5
+                and cells[0] != "Track" and not cells[0].startswith("---")):
+            rows.append(cells)
+    if not rows:
         failures.append(
-            "docs/roadmap/current.md has no `## Next: vX.Y.Z` heading; the "
-            "next milestone is what this document is for")
+            "docs/roadmap/README.md needs track/status/priority/owner/target rows")
         return
-
-    planned = [v for kind, v in headings if kind in ("Next", "Then")]
-    for kind, ver in headings:
-        if kind in ("Next", "Then") and ver in released:
-            failures.append(
-                f"docs/roadmap/current.md says `{kind}: v{ver}` but "
-                f"docs/releases/v{ver}.md exists — that version has shipped")
-        if kind == "Shipped" and ver not in released:
-            failures.append(
-                f"docs/roadmap/current.md says `Shipped: v{ver}` with no "
-                f"docs/releases/v{ver}.md to back it")
-
-    # The status table is the single source for a track's target version, so
-    # the Next milestone has to be one of the versions it lists as unshipped.
-    table = read("docs/roadmap/README.md")
-    targets = set(VERSION_RE.findall(table))
-    unmet = [v for v in planned if v not in targets]
-    if unmet:
+    for track, status, priority, owner, target in rows:
+        if priority not in {"P0", "P1", "P2"} or not status:
+            failures.append(f"roadmap track {track!r} needs status and priority")
+        if owner != "usd-vrm-plugins":
+            failures.append(f"roadmap track {track!r} must have a local owner; "
+                            "external work belongs in dependency links")
+        for version in VERSION_RE.findall(target):
+            if version in released:
+                failures.append(
+                    f"roadmap track {track!r} targets released v{version}; "
+                    "completed work belongs in release history")
+    current = read("docs/roadmap/current.md")
+    if "README.md#status-at-a-glance" not in current:
         failures.append(
-            "docs/roadmap/README.md's status table does not name "
-            + ", ".join(f"v{v}" for v in unmet)
-            + ", which docs/roadmap/current.md is planning. One table decides "
-              "which release a track lands in")
+            "current.md must defer target/priority to the roadmap owner table")
+    # The navigation owner table must expose the canonical lifecycle surfaces.
+    navigation = read("docs/README.md")
+    for canonical in ("architecture/WORKSPACE.md", "architecture/PACKAGE_CONTRACT.md",
+                      "roadmap/README.md", "ideas/README.md",
+                      "contributing/release-candidate.md"):
+        if not re.search(rf"\]\({re.escape(canonical)}\)", navigation):
+            failures.append(f"docs/README.md owner table omits {canonical}")
 
 
 def check_retired_doc_names(failures: list[str]) -> None:
@@ -524,7 +536,24 @@ def check_release_lane_ost_pin(failures: list[str]) -> None:
                 f"PR lane will report it (ost report 39)")
 
 
+def markdown_anchors(text: str) -> set[str]:
+    """Heading slugs and explicit legacy anchors used by repository Markdown."""
+    text = FENCE.sub("", text)
+    result = set(re.findall(r'<a\s+(?:id|name)=[\'\"]([^\'\"]+)', text))
+    counts: dict[str, int] = {}
+    for heading in re.findall(r"^#{1,6}\s+(.+?)\s*#*\s*$", text, re.M):
+        heading = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", heading)
+        slug = "".join(c for c in heading.lower()
+                       if c in "-_ " or unicodedata.category(c)[0] in "LN")
+        slug = slug.replace(" ", "-")
+        count = counts.get(slug, 0)
+        result.add(slug + (f"-{count}" if count else ""))
+        counts[slug] = count + 1
+    return result
+
+
 def check_links(failures: list[str]) -> None:
+    anchor_cache: dict[pathlib.Path, set[str]] = {}
     for p in sorted(REPO_ROOT.glob("**/*.md")):
         rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
         if is_generated(rel):
@@ -532,11 +561,18 @@ def check_links(failures: list[str]) -> None:
         for target in LINK.findall(prose_only(p.read_text(encoding="utf-8",
                                                           errors="replace"))):
             t = target.strip()
-            if t.startswith(("http://", "https://", "mailto:", "#")):
+            if re.match(r"[a-zA-Z][\w+.-]*:", t):
                 continue
-            path = t.partition("#")[0]
-            if path and not (p.parent / path).resolve().exists():
+            path, _, fragment = t.partition("#")
+            destination = (p.parent / unquote(path)).resolve() if path else p.resolve()
+            if not destination.exists():
                 failures.append(f"{rel}: broken link -> {t}")
+            elif fragment and destination.suffix == ".md":
+                if destination not in anchor_cache:
+                    anchor_cache[destination] = markdown_anchors(
+                        destination.read_text(encoding="utf-8"))
+                if unquote(fragment) not in anchor_cache[destination]:
+                    failures.append(f"{rel}: broken anchor -> {t}")
 
 
 # --- entry points, lifecycle, and ownership ----------------------------------
@@ -660,11 +696,23 @@ def check_roadmap_ownership(failures: list[str]) -> None:
     for p in sorted((REPO_ROOT / "docs" / "roadmap").glob("*.md")):
         if p.name == "README.md":
             continue
-        if not OPEN_ITEM.search(p.read_text(encoding="utf-8",
-                                            errors="replace")):
+        text = p.read_text(encoding="utf-8", errors="replace")
+        if front_matter(text).get("status") == "superseded":
+            if OPEN_ITEM.search(text) or re.search(r"^\s*- \[[ xX]\]", text, re.M):
+                failures.append(f"docs/roadmap/{p.name}: a compatibility stub "
+                                "must not keep a task list")
+            continue
+        if "usd-vrm-plugins" not in text:
+            failures.append(f"docs/roadmap/{p.name} has no owner repository")
+        if not (OPEN_ITEM.search(text) or re.search(
+                r"\b(active|backlog|blocked|research)\b", text)):
             failures.append(
                 f"docs/roadmap/{p.name} has no open item. Completed work "
                 f"leaves the roadmap: move the plan to docs/archive/")
+        if p.name in {"current.md", "backlog.md"} and (
+                "✅" in text or re.search(r"^\s*- \[[xX]\]", text, re.M)):
+            failures.append(f"docs/roadmap/{p.name}: completed tasks belong "
+                            "in release history or the archive")
     for p in sorted((REPO_ROOT / "docs" / "reference").glob("*.md")):
         text = prose_only(p.read_text(encoding="utf-8", errors="replace"))
         for target in LINK.findall(text):

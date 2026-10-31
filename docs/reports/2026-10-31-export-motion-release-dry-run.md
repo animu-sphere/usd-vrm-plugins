@@ -63,7 +63,7 @@ report `artifact-only export smoke: PASS`.
 
 ## Boundary of the finding
 
-This closes the [export track](../roadmap/export-track.md)'s Step 3 hosted
+This closes the [export track](../archive/export/export-track.md)'s Step 3 hosted
 workspace and installed-artifact proof. The product smoke covers one body
 clip and `.usdz`; the workspace suite covers the wider format, flattening,
 expression and gaze matrix. The earlier
@@ -71,6 +71,6 @@ expression and gaze matrix. The earlier
 `--motion` and covers static export only. No renderer playback or spring
 simulation is measured by this suite.
 
-The [build-machine RPATH carry-over](../roadmap/current.md#carried-out-of-v090)
+The [build-machine RPATH carry-over](../archive/release-preparation/current-before-cleanup.md#carried-out-of-v090)
 remains: the exec smoke counted 6 checkout RPATH entries in 6 binaries on
 Linux, and 8 in 6 binaries on macOS, with nothing loaded from those paths.

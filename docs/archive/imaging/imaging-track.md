@@ -25,7 +25,7 @@ internal order, not a phase sequence.
 ## 1. Where it stands
 
 - The schemas it reads shipped with Product P5 Steps 3–4
-  ([material track](../../roadmap/material-track.md)): every imported material carries
+  ([material track](../material/material-track.md)): every imported material carries
   them, VRM 0.x and 1.0 alike, as Material interface inputs `inputs:vrm:*`.
 - All three canonical schemas reach Hydra (Steps I0–I2). Every field is
   under `vrm/material/<field>`, `vrm/mtoon/<field>` or
@@ -249,7 +249,7 @@ writes it. The step's done-when is met.
 
 Everything below lands before v0.10.0 is tagged, except the published
 package, which only the tag's run can close
-([current.md](../../roadmap/current.md#next-v0100--canonical-materials-reach-hydra-)).
+([current.md](../release-preparation/current-before-cleanup.md#shipped-v0100--canonical-materials-reach-hydra-)).
 
 - ✅ An `ost` plugin kind for a UsdImaging adapter: asked in
   [ost report 49](../../reports/ost/49-2026-09-26-v0.23.8-no-plugin-kind-for-a-usdimaging-adapter.md),

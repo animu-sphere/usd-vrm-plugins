@@ -278,4 +278,4 @@ the required bundle's `plugin/resources/<bundle>` directory to
 ## Non-goals
 
 See the [`CHANGELOG`](../../CHANGELOG.md#non-goals-for-v010) and the
-[roadmap non-goals](../roadmap/backlog.md#non-goals).
+[scope policy](../design/INTEGRATION_SCOPE_POLICY.md#2-what-this-repository-does-not-own).

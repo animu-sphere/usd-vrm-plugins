@@ -18,7 +18,7 @@ owner: usd-vrm-plugins
 > [`motionConnectorTracking`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorTracking) and
 > [`motionConnectorVrchatOsc`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorVrchatOsc)
 > there; this repository deleted its copies in the same change
-> ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> ([WORKSPACE.md §9](../workspace-migration/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-4). **This plan is a record
 > now, not a plan.**
 
@@ -213,7 +213,7 @@ enumerator no live adapter has. A shared primitive in `motionCore` — the signe
 permutation, its determinant, and one angle composition — would have all three
 as consumers, which is one more than the rule this track keeps invoking asks
 for. It is a contract change ([§10](#10-contract-changes-this-plan-requires))
-and belongs with [the producer contract](../../roadmap/backlog.md#canonical-motion-producer-contract),
+and belongs with [the producer contract](../release-preparation/backlog-before-cleanup.md#canonical-motion-producer-contract),
 where the four producer categories are already being unified; doing it inside
 this track would settle a workspace-wide boundary from one adapter's needs.
 
@@ -841,7 +841,7 @@ by up to 25.7°. The adapter composes `Ry · Rx · Rz`, the survivor Unity
 documents — documentation breaking a tie the measurement narrowed, rather than
 standing in for one. **What closes it is one take**: a labelled *rolled* head or
 foot, held, which is twenty seconds of hardware
-([the operator-evidence list](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)).
+([the operator-evidence list](../release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces)).
 
 Two consequences beyond the arithmetic. **The adapter's binaries load OpenUSD
 for the first time** — producing a canonical value is what took the `motionCore`

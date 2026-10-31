@@ -75,12 +75,12 @@ simulates:
   schema data on the stage. Their runtime evaluation/simulation is a **separate
   layer**, never run by this importer: `execVrm` for look-at and constraints,
   and `vrmRig`, stepped by a runtime outside this repository, for spring bones
-  ([spring-bone track](../roadmap/springbone-track.md)). `execVrm` evaluates
+  ([solver API](../../libs/vrmRig/README.md#spring-bones)). `execVrm` evaluates
   retargeting only — the target rig, the humanoid map, rest-pose correction,
   one sample's retarget and its diagnostics — and none of these three yet;
-  they follow on [the `ExecIr` track](../roadmap/execir-track.md).
+  expression/look-at computations are [scoped separately](../roadmap/vrm-computations.md).
 - MToon **shading** is approximated in `/mtlx` under a headlight (Product P5
-  Step 6, [material track](../roadmap/material-track.md)); a skinned avatar
+  Step 6, [material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md#52-materialx--preferred-portable-realization)); a skinned avatar
   needs `USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1` in Storm or the shading
   shows every triangle. The full MToon renderer — scene lights, outline, UV
   animation — is `hydra-toon`'s, another repository.
@@ -103,7 +103,8 @@ motion is implemented by the components below; the contract is
 
 Not implemented here: expression and look-at as OpenExec computations, an
 `ExecIr` rig, and realtime skinned display through the exec scene index
-([the `ExecIr` track](../roadmap/execir-track.md)).
+([standard computations](../roadmap/vrm-computations.md) and
+[optional research](../roadmap/execir-track.md)).
 
 **Consumed, and not stated here.** The generic motion this product links —
 values, sampling, filtering, recording, retargeting, BVH, the OpenUSD motion
@@ -122,8 +123,8 @@ validates the output, and emits a portable JSON dependency inventory with
 `--dependency-report` ([report contract](../design/VRM_EXPORT_POLICY.md#81-dependency-report)).
 The end-to-end suite reopens every output with no VRM plugin registered and
 compares the inventory with the actual localized files. CLI usage is in the
-[tool README](../../tools/vrmExport/README.md); open work is in the
-[export track](../roadmap/export-track.md).
+[tool README](../../tools/vrmExport/README.md); distribution extensions are
+uncommitted [research](../ideas/README.md).
 Failure diagnostics identify unreadable dependencies' authored and anchored
 paths and referring USD attributes, give destination recovery checks, and
 list all unresolved dependencies found by validation. Exit codes remain the
