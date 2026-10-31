@@ -2,8 +2,9 @@
 
 Milestone: release closure (target and priority: [roadmap index](README.md#status-at-a-glance)).
 Owner: `usd-vrm-plugins`. The candidate consists of existing implementation;
-new features wait until after this milestone. Package version stays unchanged
-until release preparation; schema contract remains **2**.
+new features wait until after this milestone. Package version is **0.11.0**
+during release preparation; schema contract remains **2**. The
+[candidate record](../releases/v0.11.0.md) is explicitly unpublished.
 
 ## Goal
 
@@ -15,7 +16,6 @@ that the newer release-closure gates passed.
 
 | ID | Status | Owner | Next action / done when | Evidence destination |
 | --- | --- | --- | --- | --- |
-| R01 | active | usd-vrm-plugins | Freeze the candidate scope; prepare the lockstep package-version/range/fallback updates, numbered CHANGELOG, release record, schema migration and accepted limitations. No publication claim before publishing. | [Candidate preparation](../contributing/release-candidate.md); final release record. |
 | R02 | active | usd-vrm-plugins | Run graph, workspace regressions, standalone bundles, plain CMake and installed consumers; run the latest release workflow on the resulting main SHA. All three product cells must have passing closure JSON, including all required gates. | Dated report with SHA/run URLs, closure and consumer artifacts. |
 | R03 | active | usd-vrm-plugins | Review artifact-only import/VRMA/exec/imaging/export proof and negative tests at that SHA; explicitly accept or block on each packaging limitation. | Candidate report and release record; [closure requirements](../contributing/release-closure.md). |
 | R04 | blocked | usd-vrm-plugins | After R01–R03 pass: tag, inspect draft/assets/checksums and registry digests, then human publication. Record actual tag SHA, run URL and asset inventory; remove completed rows here and select the next milestone. | Published release and immutable release record. |
