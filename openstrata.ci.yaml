@@ -1,8 +1,11 @@
 # OpenStrata CI support matrix for usd-vrm-plugins.
 #
 # Policy: this file is the CI contract; .github/workflows/ost-*.yml are
-# renderer output from `ost ci generate github`. Do not hand-edit CI
-# semantics in the generated workflow YAML. As of ost 0.22.6 there is no
+# renderer output, adapted by `python scripts/ci/generate.py` into a callable
+# workflow. The adapter only changes triggers/event guards; CI routing lives
+# in .github/workflows/ci-routing.yml and scripts/ci/changed_paths.py. OST
+# 0.23.13 has no native path routing or workflow_call generation contract.
+# Do not hand-edit the generated workflow YAML. As of ost 0.22.6 there is no
 # standing exception to that policy: every Linux cell's X11 requirement is
 # declared below as `host_packages`, so regeneration re-renders the step
 # instead of deleting a hand-added one.

@@ -1,0 +1,2476 @@
+{
+  "captured_date": "2026-10-31",
+  "repository": "animu-sphere/usd-vrm-plugins",
+  "description": "100 latest PR workflow runs = 25 distinct head SHAs (not necessarily 25 distinct PRs); latest attempts; observed elapsed job seconds, not billed runner minutes. Job percentiles include non-successful jobs. Step percentiles include successful steps only. Queue time, flaky-retry rates, and cache-hit rates are not inferred from timestamps.",
+  "outcomes": {"runs":{"success":93,"failure":7},"jobs":{"success":332,"cancelled":2,"skipped":3,"failure":13}},
+  "runs": [
+    {
+      "id": 41164583822,
+      "name": "plain cmake",
+      "sha": "15c30c47c0ef9f60f82df69f6d5b4c549c43cbd9",
+      "branch": "codex/docs-roadmap-lifecycle",
+      "title": "docs: separate open roadmap work from completed plans",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41164583822",
+      "created": "2026-10-31T03:29:26Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 332
+    },
+    {
+      "id": 41164583782,
+      "name": "docs-check",
+      "sha": "15c30c47c0ef9f60f82df69f6d5b4c549c43cbd9",
+      "branch": "codex/docs-roadmap-lifecycle",
+      "title": "docs: separate open roadmap work from completed plans",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41164583782",
+      "created": "2026-10-31T03:29:26Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 41164583806,
+      "name": "package consumer",
+      "sha": "15c30c47c0ef9f60f82df69f6d5b4c549c43cbd9",
+      "branch": "codex/docs-roadmap-lifecycle",
+      "title": "docs: separate open roadmap work from completed plans",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41164583806",
+      "created": "2026-10-31T03:29:26Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 360
+    },
+    {
+      "id": 41164583789,
+      "name": "ost source ci",
+      "sha": "15c30c47c0ef9f60f82df69f6d5b4c549c43cbd9",
+      "branch": "codex/docs-roadmap-lifecycle",
+      "title": "docs: separate open roadmap work from completed plans",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41164583789",
+      "created": "2026-10-31T03:29:26Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2371
+    },
+    {
+      "id": 41160728869,
+      "name": "docs-check",
+      "sha": "538211f73c599695c526c8ac784d1c3775fe6155",
+      "branch": "codex/release-closure-checklist",
+      "title": "ci: record release closure gates and installed consumers",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41160728869",
+      "created": "2026-10-31T02:35:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 6
+    },
+    {
+      "id": 41160729064,
+      "name": "package consumer",
+      "sha": "538211f73c599695c526c8ac784d1c3775fe6155",
+      "branch": "codex/release-closure-checklist",
+      "title": "ci: record release closure gates and installed consumers",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41160729064",
+      "created": "2026-10-31T02:35:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 247
+    },
+    {
+      "id": 41160728861,
+      "name": "plain cmake",
+      "sha": "538211f73c599695c526c8ac784d1c3775fe6155",
+      "branch": "codex/release-closure-checklist",
+      "title": "ci: record release closure gates and installed consumers",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41160728861",
+      "created": "2026-10-31T02:35:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 277
+    },
+    {
+      "id": 41160728902,
+      "name": "ost source ci",
+      "sha": "538211f73c599695c526c8ac784d1c3775fe6155",
+      "branch": "codex/release-closure-checklist",
+      "title": "ci: record release closure gates and installed consumers",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41160728902",
+      "created": "2026-10-31T02:35:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2239
+    },
+    {
+      "id": 41159958028,
+      "name": "ost source ci",
+      "sha": "e166dbb8beba47b5f48e9970069aed85f888a206",
+      "branch": "codex/export-step3-release-proof",
+      "title": "docs: close export step 3 with hosted release evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41159958028",
+      "created": "2026-10-31T02:25:42Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2083
+    },
+    {
+      "id": 41159957953,
+      "name": "docs-check",
+      "sha": "e166dbb8beba47b5f48e9970069aed85f888a206",
+      "branch": "codex/export-step3-release-proof",
+      "title": "docs: close export step 3 with hosted release evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41159957953",
+      "created": "2026-10-31T02:25:42Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 6
+    },
+    {
+      "id": 41159957947,
+      "name": "package consumer",
+      "sha": "e166dbb8beba47b5f48e9970069aed85f888a206",
+      "branch": "codex/export-step3-release-proof",
+      "title": "docs: close export step 3 with hosted release evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41159957947",
+      "created": "2026-10-31T02:25:42Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 292
+    },
+    {
+      "id": 41159957948,
+      "name": "plain cmake",
+      "sha": "e166dbb8beba47b5f48e9970069aed85f888a206",
+      "branch": "codex/export-step3-release-proof",
+      "title": "docs: close export step 3 with hosted release evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41159957948",
+      "created": "2026-10-31T02:25:42Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 397
+    },
+    {
+      "id": 41096542510,
+      "name": "docs-check",
+      "sha": "1638b827bff93048cb9d1a36e21c5d3c51839da8",
+      "branch": "codex/vrm-export-motion-assembly",
+      "title": "feat: assemble VRMA motion in native USD exports",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41096542510",
+      "created": "2026-10-30T17:10:52Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 41096542534,
+      "name": "package consumer",
+      "sha": "1638b827bff93048cb9d1a36e21c5d3c51839da8",
+      "branch": "codex/vrm-export-motion-assembly",
+      "title": "feat: assemble VRMA motion in native USD exports",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41096542534",
+      "created": "2026-10-30T17:10:52Z",
+      "conclusion": "success",
+      "attempt": 2,
+      "jobs": 5,
+      "job_seconds": 323
+    },
+    {
+      "id": 41096542578,
+      "name": "plain cmake",
+      "sha": "1638b827bff93048cb9d1a36e21c5d3c51839da8",
+      "branch": "codex/vrm-export-motion-assembly",
+      "title": "feat: assemble VRMA motion in native USD exports",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41096542578",
+      "created": "2026-10-30T17:10:52Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 356
+    },
+    {
+      "id": 41096542640,
+      "name": "ost source ci",
+      "sha": "1638b827bff93048cb9d1a36e21c5d3c51839da8",
+      "branch": "codex/vrm-export-motion-assembly",
+      "title": "feat: assemble VRMA motion in native USD exports",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41096542640",
+      "created": "2026-10-30T17:10:52Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2564
+    },
+    {
+      "id": 41090457289,
+      "name": "docs-check",
+      "sha": "a08d02ce5b9befde752d151919135fb016b85828",
+      "branch": "codex/export-step2-release-proof",
+      "title": "docs: close export Step 2 with release artifact evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41090457289",
+      "created": "2026-10-30T16:30:07Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 41090457625,
+      "name": "ost source ci",
+      "sha": "a08d02ce5b9befde752d151919135fb016b85828",
+      "branch": "codex/export-step2-release-proof",
+      "title": "docs: close export Step 2 with release artifact evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41090457625",
+      "created": "2026-10-30T16:30:07Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2061
+    },
+    {
+      "id": 41090457628,
+      "name": "plain cmake",
+      "sha": "a08d02ce5b9befde752d151919135fb016b85828",
+      "branch": "codex/export-step2-release-proof",
+      "title": "docs: close export Step 2 with release artifact evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41090457628",
+      "created": "2026-10-30T16:30:07Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 378
+    },
+    {
+      "id": 41090457642,
+      "name": "package consumer",
+      "sha": "a08d02ce5b9befde752d151919135fb016b85828",
+      "branch": "codex/export-step2-release-proof",
+      "title": "docs: close export Step 2 with release artifact evidence",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/41090457642",
+      "created": "2026-10-30T16:30:07Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 1120
+    },
+    {
+      "id": 40880925301,
+      "name": "package consumer",
+      "sha": "539a244b4a6478e4b75b56488926421f9cd1e2fa",
+      "branch": "codex/vrm-export-diagnostics",
+      "title": "fix: make vrm export failures actionable",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40880925301",
+      "created": "2026-10-29T13:19:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 327
+    },
+    {
+      "id": 40880925243,
+      "name": "plain cmake",
+      "sha": "539a244b4a6478e4b75b56488926421f9cd1e2fa",
+      "branch": "codex/vrm-export-diagnostics",
+      "title": "fix: make vrm export failures actionable",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40880925243",
+      "created": "2026-10-29T13:19:48Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 337
+    },
+    {
+      "id": 40880925246,
+      "name": "ost source ci",
+      "sha": "539a244b4a6478e4b75b56488926421f9cd1e2fa",
+      "branch": "codex/vrm-export-diagnostics",
+      "title": "fix: make vrm export failures actionable",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40880925246",
+      "created": "2026-10-29T13:19:48Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2128
+    },
+    {
+      "id": 40880925261,
+      "name": "docs-check",
+      "sha": "539a244b4a6478e4b75b56488926421f9cd1e2fa",
+      "branch": "codex/vrm-export-diagnostics",
+      "title": "fix: make vrm export failures actionable",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40880925261",
+      "created": "2026-10-29T13:19:48Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40878107873,
+      "name": "package consumer",
+      "sha": "25ae91a99a3431b15a8ac08dd7d522bd511f2e58",
+      "branch": "codex/vrm-export-dependency-report",
+      "title": "feat: add JSON dependency reports to vrm_export",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40878107873",
+      "created": "2026-10-29T13:00:57Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 266
+    },
+    {
+      "id": 40878107855,
+      "name": "docs-check",
+      "sha": "25ae91a99a3431b15a8ac08dd7d522bd511f2e58",
+      "branch": "codex/vrm-export-dependency-report",
+      "title": "feat: add JSON dependency reports to vrm_export",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40878107855",
+      "created": "2026-10-29T13:00:57Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40878107884,
+      "name": "ost source ci",
+      "sha": "25ae91a99a3431b15a8ac08dd7d522bd511f2e58",
+      "branch": "codex/vrm-export-dependency-report",
+      "title": "feat: add JSON dependency reports to vrm_export",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40878107884",
+      "created": "2026-10-29T13:00:57Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1934
+    },
+    {
+      "id": 40878107809,
+      "name": "plain cmake",
+      "sha": "25ae91a99a3431b15a8ac08dd7d522bd511f2e58",
+      "branch": "codex/vrm-export-dependency-report",
+      "title": "feat: add JSON dependency reports to vrm_export",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40878107809",
+      "created": "2026-10-29T13:00:57Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 349
+    },
+    {
+      "id": 40873960450,
+      "name": "plain cmake",
+      "sha": "e0f21a618fd6d32a8a0b101cfa475a2fa1a684ee",
+      "branch": "codex/vrm0-collider-handedness",
+      "title": "fix: normalize VRM 0.x collider offset coordinates",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40873960450",
+      "created": "2026-10-29T12:31:28Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 369
+    },
+    {
+      "id": 40873960540,
+      "name": "package consumer",
+      "sha": "e0f21a618fd6d32a8a0b101cfa475a2fa1a684ee",
+      "branch": "codex/vrm0-collider-handedness",
+      "title": "fix: normalize VRM 0.x collider offset coordinates",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40873960540",
+      "created": "2026-10-29T12:31:28Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 336
+    },
+    {
+      "id": 40873960453,
+      "name": "ost source ci",
+      "sha": "e0f21a618fd6d32a8a0b101cfa475a2fa1a684ee",
+      "branch": "codex/vrm0-collider-handedness",
+      "title": "fix: normalize VRM 0.x collider offset coordinates",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40873960453",
+      "created": "2026-10-29T12:31:28Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2040
+    },
+    {
+      "id": 40873960459,
+      "name": "docs-check",
+      "sha": "e0f21a618fd6d32a8a0b101cfa475a2fa1a684ee",
+      "branch": "codex/vrm0-collider-handedness",
+      "title": "fix: normalize VRM 0.x collider offset coordinates",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40873960459",
+      "created": "2026-10-29T12:31:28Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 40812926867,
+      "name": "ost source ci",
+      "sha": "ec6df6f7d89c93b38817fb046a2b84b70b21d94a",
+      "branch": "codex/springbone-runtime-host-evidence",
+      "title": "docs: record scoped VRM runtime host handoff",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40812926867",
+      "created": "2026-10-29T03:34:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2080
+    },
+    {
+      "id": 40812926833,
+      "name": "package consumer",
+      "sha": "ec6df6f7d89c93b38817fb046a2b84b70b21d94a",
+      "branch": "codex/springbone-runtime-host-evidence",
+      "title": "docs: record scoped VRM runtime host handoff",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40812926833",
+      "created": "2026-10-29T03:34:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 371
+    },
+    {
+      "id": 40812926818,
+      "name": "docs-check",
+      "sha": "ec6df6f7d89c93b38817fb046a2b84b70b21d94a",
+      "branch": "codex/springbone-runtime-host-evidence",
+      "title": "docs: record scoped VRM runtime host handoff",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40812926818",
+      "created": "2026-10-29T03:34:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 6
+    },
+    {
+      "id": 40812926830,
+      "name": "plain cmake",
+      "sha": "ec6df6f7d89c93b38817fb046a2b84b70b21d94a",
+      "branch": "codex/springbone-runtime-host-evidence",
+      "title": "docs: record scoped VRM runtime host handoff",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40812926830",
+      "created": "2026-10-29T03:34:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 367
+    },
+    {
+      "id": 40809454240,
+      "name": "package consumer",
+      "sha": "089a960eca7536ced4ae5f4bf9463db8968d0a40",
+      "branch": "codex/springbone-copy-contract",
+      "title": "Guarantee independent spring solver history copies",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40809454240",
+      "created": "2026-10-29T02:58:16Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 326
+    },
+    {
+      "id": 40809454231,
+      "name": "docs-check",
+      "sha": "089a960eca7536ced4ae5f4bf9463db8968d0a40",
+      "branch": "codex/springbone-copy-contract",
+      "title": "Guarantee independent spring solver history copies",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40809454231",
+      "created": "2026-10-29T02:58:16Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40809454242,
+      "name": "plain cmake",
+      "sha": "089a960eca7536ced4ae5f4bf9463db8968d0a40",
+      "branch": "codex/springbone-copy-contract",
+      "title": "Guarantee independent spring solver history copies",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40809454242",
+      "created": "2026-10-29T02:58:16Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 380
+    },
+    {
+      "id": 40809454239,
+      "name": "ost source ci",
+      "sha": "089a960eca7536ced4ae5f4bf9463db8968d0a40",
+      "branch": "codex/springbone-copy-contract",
+      "title": "Guarantee independent spring solver history copies",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40809454239",
+      "created": "2026-10-29T02:58:16Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2119
+    },
+    {
+      "id": 40627447216,
+      "name": "docs-check",
+      "sha": "a86f679cc63194162eb369a5ea3cbfba6ac15e0e",
+      "branch": "codex/springbone-hosted-verification",
+      "title": "docs: record hosted spring-bone solver verification",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40627447216",
+      "created": "2026-10-28T03:34:19Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40627447134,
+      "name": "package consumer",
+      "sha": "a86f679cc63194162eb369a5ea3cbfba6ac15e0e",
+      "branch": "codex/springbone-hosted-verification",
+      "title": "docs: record hosted spring-bone solver verification",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40627447134",
+      "created": "2026-10-28T03:34:19Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 300
+    },
+    {
+      "id": 40627447137,
+      "name": "plain cmake",
+      "sha": "a86f679cc63194162eb369a5ea3cbfba6ac15e0e",
+      "branch": "codex/springbone-hosted-verification",
+      "title": "docs: record hosted spring-bone solver verification",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40627447137",
+      "created": "2026-10-28T03:34:19Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 227
+    },
+    {
+      "id": 40627447140,
+      "name": "ost source ci",
+      "sha": "a86f679cc63194162eb369a5ea3cbfba6ac15e0e",
+      "branch": "codex/springbone-hosted-verification",
+      "title": "docs: record hosted spring-bone solver verification",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40627447140",
+      "created": "2026-10-28T03:34:19Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2040
+    },
+    {
+      "id": 40624536254,
+      "name": "docs-check",
+      "sha": "14efdec9c6370ad94a8532ff75792f6bc707bbfd",
+      "branch": "codex/springbone-solver",
+      "title": "feat: evaluate VRM spring bones in vrmRig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536254",
+      "created": "2026-10-28T03:04:01Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 5
+    },
+    {
+      "id": 40624536217,
+      "name": "package consumer",
+      "sha": "14efdec9c6370ad94a8532ff75792f6bc707bbfd",
+      "branch": "codex/springbone-solver",
+      "title": "feat: evaluate VRM spring bones in vrmRig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536217",
+      "created": "2026-10-28T03:04:01Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 306
+    },
+    {
+      "id": 40624536250,
+      "name": "ost source ci",
+      "sha": "14efdec9c6370ad94a8532ff75792f6bc707bbfd",
+      "branch": "codex/springbone-solver",
+      "title": "feat: evaluate VRM spring bones in vrmRig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536250",
+      "created": "2026-10-28T03:04:01Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1849
+    },
+    {
+      "id": 40624536305,
+      "name": "plain cmake",
+      "sha": "14efdec9c6370ad94a8532ff75792f6bc707bbfd",
+      "branch": "codex/springbone-solver",
+      "title": "feat: evaluate VRM spring bones in vrmRig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40624536305",
+      "created": "2026-10-28T03:04:01Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 342
+    },
+    {
+      "id": 40620987323,
+      "name": "package consumer",
+      "sha": "54edd1944439da8a779bd71b3b2c4d6d6222c43f",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620987323",
+      "created": "2026-10-28T02:26:56Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 262
+    },
+    {
+      "id": 40620987245,
+      "name": "ost source ci",
+      "sha": "54edd1944439da8a779bd71b3b2c4d6d6222c43f",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620987245",
+      "created": "2026-10-28T02:26:56Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2025
+    },
+    {
+      "id": 40620987300,
+      "name": "plain cmake",
+      "sha": "54edd1944439da8a779bd71b3b2c4d6d6222c43f",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620987300",
+      "created": "2026-10-28T02:26:56Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 345
+    },
+    {
+      "id": 40620987446,
+      "name": "docs-check",
+      "sha": "54edd1944439da8a779bd71b3b2c4d6d6222c43f",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620987446",
+      "created": "2026-10-28T02:26:56Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 4
+    },
+    {
+      "id": 40620009249,
+      "name": "ost source ci",
+      "sha": "d8eb165660be1d873d9f84e9e0c1357e046c2aae",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620009249",
+      "created": "2026-10-28T02:17:03Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1842
+    },
+    {
+      "id": 40620009226,
+      "name": "plain cmake",
+      "sha": "d8eb165660be1d873d9f84e9e0c1357e046c2aae",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620009226",
+      "created": "2026-10-28T02:17:03Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 330
+    },
+    {
+      "id": 40620009185,
+      "name": "docs-check",
+      "sha": "d8eb165660be1d873d9f84e9e0c1357e046c2aae",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620009185",
+      "created": "2026-10-28T02:17:03Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 5
+    },
+    {
+      "id": 40620009189,
+      "name": "package consumer",
+      "sha": "d8eb165660be1d873d9f84e9e0c1357e046c2aae",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40620009189",
+      "created": "2026-10-28T02:17:03Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 308
+    },
+    {
+      "id": 40619656923,
+      "name": "ost source ci",
+      "sha": "29f784603fc91333ba73b7dc6b03aaa2afb9244b",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40619656923",
+      "created": "2026-10-28T02:13:31Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 131
+    },
+    {
+      "id": 40619656895,
+      "name": "docs-check",
+      "sha": "29f784603fc91333ba73b7dc6b03aaa2afb9244b",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40619656895",
+      "created": "2026-10-28T02:13:31Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 5
+    },
+    {
+      "id": 40619656825,
+      "name": "package consumer",
+      "sha": "29f784603fc91333ba73b7dc6b03aaa2afb9244b",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40619656825",
+      "created": "2026-10-28T02:13:31Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 83
+    },
+    {
+      "id": 40619656782,
+      "name": "plain cmake",
+      "sha": "29f784603fc91333ba73b7dc6b03aaa2afb9244b",
+      "branch": "codex/springbone-root-joints",
+      "title": "feat: distinguish VRM 0.x spring roots with schema contract v2",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40619656782",
+      "created": "2026-10-28T02:13:31Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 329
+    },
+    {
+      "id": 40352181634,
+      "name": "docs-check",
+      "sha": "a8efa96630c4bd572ae7905136545ee6fb351e35",
+      "branch": "docs/springbone-track",
+      "title": "docs: plan spring-bone evaluation on a VRM rig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40352181634",
+      "created": "2026-10-26T15:43:51Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 40352181637,
+      "name": "ost source ci",
+      "sha": "a8efa96630c4bd572ae7905136545ee6fb351e35",
+      "branch": "docs/springbone-track",
+      "title": "docs: plan spring-bone evaluation on a VRM rig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40352181637",
+      "created": "2026-10-26T15:43:51Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2218
+    },
+    {
+      "id": 40352181458,
+      "name": "package consumer",
+      "sha": "a8efa96630c4bd572ae7905136545ee6fb351e35",
+      "branch": "docs/springbone-track",
+      "title": "docs: plan spring-bone evaluation on a VRM rig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40352181458",
+      "created": "2026-10-26T15:43:50Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 519
+    },
+    {
+      "id": 40352181488,
+      "name": "plain cmake",
+      "sha": "a8efa96630c4bd572ae7905136545ee6fb351e35",
+      "branch": "docs/springbone-track",
+      "title": "docs: plan spring-bone evaluation on a VRM rig",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40352181488",
+      "created": "2026-10-26T15:43:50Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 367
+    },
+    {
+      "id": 40346110309,
+      "name": "plain cmake",
+      "sha": "28656fa23b2823e508f97e3b91609dc610231c22",
+      "branch": "export/step2-artifact-smoke",
+      "title": "Export track Step 2: run the product's vrm_export from the release artifact",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346110309",
+      "created": "2026-10-26T15:06:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 398
+    },
+    {
+      "id": 40346110201,
+      "name": "ost source ci",
+      "sha": "28656fa23b2823e508f97e3b91609dc610231c22",
+      "branch": "export/step2-artifact-smoke",
+      "title": "Export track Step 2: run the product's vrm_export from the release artifact",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346110201",
+      "created": "2026-10-26T15:06:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 2082
+    },
+    {
+      "id": 40346110220,
+      "name": "package consumer",
+      "sha": "28656fa23b2823e508f97e3b91609dc610231c22",
+      "branch": "export/step2-artifact-smoke",
+      "title": "Export track Step 2: run the product's vrm_export from the release artifact",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346110220",
+      "created": "2026-10-26T15:06:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 410
+    },
+    {
+      "id": 40346110215,
+      "name": "docs-check",
+      "sha": "28656fa23b2823e508f97e3b91609dc610231c22",
+      "branch": "export/step2-artifact-smoke",
+      "title": "Export track Step 2: run the product's vrm_export from the release artifact",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346110215",
+      "created": "2026-10-26T15:06:54Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 40346104361,
+      "name": "plain cmake",
+      "sha": "c116b85cf75fdb5a68d239010aabaed102db9168",
+      "branch": "export/step2-flatten",
+      "title": "Export track Step 2: vrm_export --flatten",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346104361",
+      "created": "2026-10-26T15:06:52Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 294
+    },
+    {
+      "id": 40346104573,
+      "name": "package consumer",
+      "sha": "c116b85cf75fdb5a68d239010aabaed102db9168",
+      "branch": "export/step2-flatten",
+      "title": "Export track Step 2: vrm_export --flatten",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346104573",
+      "created": "2026-10-26T15:06:52Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 316
+    },
+    {
+      "id": 40346104253,
+      "name": "ost source ci",
+      "sha": "c116b85cf75fdb5a68d239010aabaed102db9168",
+      "branch": "export/step2-flatten",
+      "title": "Export track Step 2: vrm_export --flatten",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346104253",
+      "created": "2026-10-26T15:06:51Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1982
+    },
+    {
+      "id": 40346104323,
+      "name": "docs-check",
+      "sha": "c116b85cf75fdb5a68d239010aabaed102db9168",
+      "branch": "export/step2-flatten",
+      "title": "Export track Step 2: vrm_export --flatten",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346104323",
+      "created": "2026-10-26T15:06:51Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 6
+    },
+    {
+      "id": 40346096957,
+      "name": "ost source ci",
+      "sha": "788ed8c6f98bdd8c249236c71cd32404c254ad2c",
+      "branch": "export/step2-external-image",
+      "title": "Export track Step 2: test localization of external images",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346096957",
+      "created": "2026-10-26T15:06:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1975
+    },
+    {
+      "id": 40346097084,
+      "name": "package consumer",
+      "sha": "788ed8c6f98bdd8c249236c71cd32404c254ad2c",
+      "branch": "export/step2-external-image",
+      "title": "Export track Step 2: test localization of external images",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346097084",
+      "created": "2026-10-26T15:06:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 341
+    },
+    {
+      "id": 40346097152,
+      "name": "plain cmake",
+      "sha": "788ed8c6f98bdd8c249236c71cd32404c254ad2c",
+      "branch": "export/step2-external-image",
+      "title": "Export track Step 2: test localization of external images",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346097152",
+      "created": "2026-10-26T15:06:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 224
+    },
+    {
+      "id": 40346097073,
+      "name": "docs-check",
+      "sha": "788ed8c6f98bdd8c249236c71cd32404c254ad2c",
+      "branch": "export/step2-external-image",
+      "title": "Export track Step 2: test localization of external images",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40346097073",
+      "created": "2026-10-26T15:06:49Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40343890146,
+      "name": "docs-check",
+      "sha": "07abe22fc8dcb0b9ebba3fbb27f541ab9aefd1e9",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40343890146",
+      "created": "2026-10-26T14:53:25Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 40343889921,
+      "name": "package consumer",
+      "sha": "07abe22fc8dcb0b9ebba3fbb27f541ab9aefd1e9",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40343889921",
+      "created": "2026-10-26T14:53:25Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 286
+    },
+    {
+      "id": 40343889902,
+      "name": "plain cmake",
+      "sha": "07abe22fc8dcb0b9ebba3fbb27f541ab9aefd1e9",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40343889902",
+      "created": "2026-10-26T14:53:25Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 304
+    },
+    {
+      "id": 40343889836,
+      "name": "ost source ci",
+      "sha": "07abe22fc8dcb0b9ebba3fbb27f541ab9aefd1e9",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40343889836",
+      "created": "2026-10-26T14:53:25Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1875
+    },
+    {
+      "id": 40342157726,
+      "name": "plain cmake",
+      "sha": "ef25de9d62f7d7c68502f107621a42b6da5dbeb5",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40342157726",
+      "created": "2026-10-26T14:42:40Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 319
+    },
+    {
+      "id": 40342157729,
+      "name": "docs-check",
+      "sha": "ef25de9d62f7d7c68502f107621a42b6da5dbeb5",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40342157729",
+      "created": "2026-10-26T14:42:40Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 40342157962,
+      "name": "package consumer",
+      "sha": "ef25de9d62f7d7c68502f107621a42b6da5dbeb5",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40342157962",
+      "created": "2026-10-26T14:42:40Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 394
+    },
+    {
+      "id": 40342157680,
+      "name": "ost source ci",
+      "sha": "ef25de9d62f7d7c68502f107621a42b6da5dbeb5",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40342157680",
+      "created": "2026-10-26T14:42:40Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1848
+    },
+    {
+      "id": 40340125192,
+      "name": "docs-check",
+      "sha": "8e8aaab94c4ad3bb336c41fe7b55c8a34c6083ea",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40340125192",
+      "created": "2026-10-26T14:30:04Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40340126097,
+      "name": "plain cmake",
+      "sha": "8e8aaab94c4ad3bb336c41fe7b55c8a34c6083ea",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40340126097",
+      "created": "2026-10-26T14:30:04Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 334
+    },
+    {
+      "id": 40340125051,
+      "name": "package consumer",
+      "sha": "8e8aaab94c4ad3bb336c41fe7b55c8a34c6083ea",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40340125051",
+      "created": "2026-10-26T14:30:04Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 307
+    },
+    {
+      "id": 40340125275,
+      "name": "ost source ci",
+      "sha": "8e8aaab94c4ad3bb336c41fe7b55c8a34c6083ea",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40340125275",
+      "created": "2026-10-26T14:30:04Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1654
+    },
+    {
+      "id": 40338766329,
+      "name": "plain cmake",
+      "sha": "d3aba9395420edaf3ce0cf3e7af3d95b7a20ce26",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40338766329",
+      "created": "2026-10-26T14:20:39Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 321
+    },
+    {
+      "id": 40338766317,
+      "name": "docs-check",
+      "sha": "d3aba9395420edaf3ce0cf3e7af3d95b7a20ce26",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40338766317",
+      "created": "2026-10-26T14:20:39Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 40338766483,
+      "name": "ost source ci",
+      "sha": "d3aba9395420edaf3ce0cf3e7af3d95b7a20ce26",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40338766483",
+      "created": "2026-10-26T14:20:39Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1862
+    },
+    {
+      "id": 40338766319,
+      "name": "package consumer",
+      "sha": "d3aba9395420edaf3ce0cf3e7af3d95b7a20ce26",
+      "branch": "export/step2-usdz-determinism",
+      "title": "Export track Step 2: the same .usdz bytes on every host",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/40338766319",
+      "created": "2026-10-26T14:20:39Z",
+      "conclusion": "failure",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 1210
+    },
+    {
+      "id": 37292171732,
+      "name": "docs-check",
+      "sha": "7a0c92660946616b1a61b42b6304c43dcce2d94c",
+      "branch": "codex/lookat-direction-api",
+      "title": "Add owner LookAt direction evaluation API",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/37292171732",
+      "created": "2026-10-05T09:45:45Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 7
+    },
+    {
+      "id": 37292171753,
+      "name": "package consumer",
+      "sha": "7a0c92660946616b1a61b42b6304c43dcce2d94c",
+      "branch": "codex/lookat-direction-api",
+      "title": "Add owner LookAt direction evaluation API",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/37292171753",
+      "created": "2026-10-05T09:45:45Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 307
+    },
+    {
+      "id": 37292171736,
+      "name": "ost source ci",
+      "sha": "7a0c92660946616b1a61b42b6304c43dcce2d94c",
+      "branch": "codex/lookat-direction-api",
+      "title": "Add owner LookAt direction evaluation API",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/37292171736",
+      "created": "2026-10-05T09:45:45Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1846
+    },
+    {
+      "id": 37292171700,
+      "name": "plain cmake",
+      "sha": "7a0c92660946616b1a61b42b6304c43dcce2d94c",
+      "branch": "codex/lookat-direction-api",
+      "title": "Add owner LookAt direction evaluation API",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/37292171700",
+      "created": "2026-10-05T09:45:45Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 317
+    },
+    {
+      "id": 36331081442,
+      "name": "docs-check",
+      "sha": "039b3c3f852c23f38fb7abcb17c96361eadf909c",
+      "branch": "docs/hydra-toon-repinned",
+      "title": "Record hydra-toon's re-pin to the published vrmImaging",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/36331081442",
+      "created": "2026-09-27T15:51:23Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 8
+    },
+    {
+      "id": 36331081405,
+      "name": "package consumer",
+      "sha": "039b3c3f852c23f38fb7abcb17c96361eadf909c",
+      "branch": "docs/hydra-toon-repinned",
+      "title": "Record hydra-toon's re-pin to the published vrmImaging",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/36331081405",
+      "created": "2026-09-27T15:51:23Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 5,
+      "job_seconds": 261
+    },
+    {
+      "id": 36331081437,
+      "name": "plain cmake",
+      "sha": "039b3c3f852c23f38fb7abcb17c96361eadf909c",
+      "branch": "docs/hydra-toon-repinned",
+      "title": "Record hydra-toon's re-pin to the published vrmImaging",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/36331081437",
+      "created": "2026-09-27T15:51:23Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 1,
+      "job_seconds": 216
+    },
+    {
+      "id": 36331081394,
+      "name": "ost source ci",
+      "sha": "039b3c3f852c23f38fb7abcb17c96361eadf909c",
+      "branch": "docs/hydra-toon-repinned",
+      "title": "Record hydra-toon's re-pin to the published vrmImaging",
+      "url": "https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/36331081394",
+      "created": "2026-09-27T15:51:23Z",
+      "conclusion": "success",
+      "attempt": 1,
+      "jobs": 7,
+      "job_seconds": 1710
+    }
+  ],
+  "jobs": {
+    "plain cmake / plain CMake, no ost (linux)": {
+      "n": 25,
+      "p50_seconds": 334,
+      "p95_seconds": 397,
+      "total_seconds": 8209
+    },
+    "docs-check / docs consistency": {
+      "n": 25,
+      "p50_seconds": 7,
+      "p95_seconds": 8,
+      "total_seconds": 169
+    },
+    "package consumer / read the pins from the CI contract": {
+      "n": 25,
+      "p50_seconds": 7,
+      "p95_seconds": 9,
+      "total_seconds": 184
+    },
+    "package consumer / consume-linux": {
+      "n": 25,
+      "p50_seconds": 88,
+      "p95_seconds": 162,
+      "total_seconds": 2350
+    },
+    "package consumer / consume-macos": {
+      "n": 25,
+      "p50_seconds": 76,
+      "p95_seconds": 902,
+      "total_seconds": 3494
+    },
+    "package consumer / consume-windows": {
+      "n": 25,
+      "p50_seconds": 125,
+      "p95_seconds": 184,
+      "total_seconds": 3171
+    },
+    "package consumer / criterion 6 - three platforms agree": {
+      "n": 25,
+      "p50_seconds": 9,
+      "p95_seconds": 12,
+      "total_seconds": 379
+    },
+    "ost source ci / workspace-graph-pr": {
+      "n": 25,
+      "p50_seconds": 6,
+      "p95_seconds": 8,
+      "total_seconds": 168
+    },
+    "ost source ci / usdvrmfileformat-pr-linux": {
+      "n": 25,
+      "p50_seconds": 89,
+      "p95_seconds": 151,
+      "total_seconds": 2296
+    },
+    "ost source ci / workspace-pr-macos-arm64": {
+      "n": 25,
+      "p50_seconds": 539,
+      "p95_seconds": 673,
+      "total_seconds": 13437
+    },
+    "ost source ci / usdvrmfileformat-pr-windows": {
+      "n": 25,
+      "p50_seconds": 148,
+      "p95_seconds": 198,
+      "total_seconds": 3675
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64": {
+      "n": 25,
+      "p50_seconds": 91,
+      "p95_seconds": 114,
+      "total_seconds": 2179
+    },
+    "ost source ci / workspace-pr-linux": {
+      "n": 25,
+      "p50_seconds": 391,
+      "p95_seconds": 603,
+      "total_seconds": 9810
+    },
+    "ost source ci / workspace-pr-windows": {
+      "n": 25,
+      "p50_seconds": 711,
+      "p95_seconds": 773,
+      "total_seconds": 16993
+    }
+  },
+  "steps": {
+    "plain cmake / plain CMake, no ost (linux) / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 46
+    },
+    "plain cmake / plain CMake, no ost (linux) / Refuse to run with ost on PATH": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "plain cmake / plain CMake, no ost (linux) / Check the CMake dependency boundary": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 18
+    },
+    "plain cmake / plain CMake, no ost (linux) / Fetch the OpenUSD install the CI contract pins": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 121
+    },
+    "plain cmake / plain CMake, no ost (linux) / Install the Python this OpenUSD was built against, and the host packages": {
+      "n": 25,
+      "p50_seconds": 38,
+      "p95_seconds": 86,
+      "total_seconds": 975
+    },
+    "plain cmake / plain CMake, no ost (linux) / Resolve the usd-motion-plugins commit the pinned packages were built from": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 3,
+      "total_seconds": 41
+    },
+    "plain cmake / plain CMake, no ost (linux) / Check out usd-motion-plugins at that commit": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 23
+    },
+    "plain cmake / plain CMake, no ost (linux) / Build and install usd-motion-plugins with plain CMake": {
+      "n": 25,
+      "p50_seconds": 31,
+      "p95_seconds": 42,
+      "total_seconds": 758
+    },
+    "plain cmake / plain CMake, no ost (linux) / Check the installed motion packages know no VRM": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 8
+    },
+    "plain cmake / plain CMake, no ost (linux) / Fetch the execMotion bundle execVrm pins": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 8
+    },
+    "plain cmake / plain CMake, no ost (linux) / Configure usd-vrm-plugins": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 56
+    },
+    "plain cmake / plain CMake, no ost (linux) / Build": {
+      "n": 25,
+      "p50_seconds": 108,
+      "p95_seconds": 125,
+      "total_seconds": 2609
+    },
+    "plain cmake / plain CMake, no ost (linux) / Test": {
+      "n": 25,
+      "p50_seconds": 150,
+      "p95_seconds": 172,
+      "total_seconds": 3441
+    },
+    "docs-check / docs consistency / Run actions/checkout@v4": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 2,
+      "total_seconds": 45
+    },
+    "docs-check / docs consistency / Run actions/setup-python@v5": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 5
+    },
+    "docs-check / docs consistency / Check docs against the manifests": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 12
+    },
+    "docs-check / docs consistency / Check documentation lint regressions": {
+      "n": 1,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 1
+    },
+    "package consumer / read the pins from the CI contract / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 2,
+      "total_seconds": 48
+    },
+    "package consumer / read the pins from the CI contract / Read the pinned ost version out of the CI contract": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "package consumer / read the pins from the CI contract / Bootstrap ost": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 27
+    },
+    "package consumer / read the pins from the CI contract / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "package consumer / read the pins from the CI contract / Resolve the three platforms this lane runs on": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "package consumer / consume-linux / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 2,
+      "total_seconds": 41
+    },
+    "package consumer / consume-linux / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "package consumer / consume-linux / Bootstrap ost": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 26
+    },
+    "package consumer / consume-linux / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 2,
+      "total_seconds": 15
+    },
+    "package consumer / consume-linux / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 6,
+      "total_seconds": 107
+    },
+    "package consumer / consume-linux / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 53
+    },
+    "package consumer / consume-linux / Remove resumable transfer state before caching": {
+      "n": 20,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "package consumer / consume-linux / Save the verified artifact registry cache": {
+      "n": 20,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 69
+    },
+    "package consumer / consume-linux / Install the host packages this runtime needs to be consumed": {
+      "n": 25,
+      "p50_seconds": 11,
+      "p95_seconds": 91,
+      "total_seconds": 529
+    },
+    "package consumer / consume-linux / Set up the host Python the runtime is built against": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 5
+    },
+    "package consumer / consume-linux / Materialize the packages this workspace consumes": {
+      "n": 24,
+      "p50_seconds": 4,
+      "p95_seconds": 5,
+      "total_seconds": 81
+    },
+    "package consumer / consume-linux / Consume every installed package from outside the workspace": {
+      "n": 24,
+      "p50_seconds": 52,
+      "p95_seconds": 72,
+      "total_seconds": 1286
+    },
+    "package consumer / consume-linux / Upload the closures this platform measured": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 32
+    },
+    "package consumer / consume-macos / Check out the repository": {
+      "n": 23,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 74
+    },
+    "package consumer / consume-macos / Hosted runner billing notice": {
+      "n": 23,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "package consumer / consume-macos / Bootstrap ost": {
+      "n": 23,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 32
+    },
+    "package consumer / consume-macos / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 23,
+      "p50_seconds": 0,
+      "p95_seconds": 3,
+      "total_seconds": 17
+    },
+    "package consumer / consume-macos / Pull the pinned runtime SDK from its remote reference": {
+      "n": 23,
+      "p50_seconds": 3,
+      "p95_seconds": 8,
+      "total_seconds": 80
+    },
+    "package consumer / consume-macos / Verify and materialize the pinned runtime SDK": {
+      "n": 23,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 72
+    },
+    "package consumer / consume-macos / Remove resumable transfer state before caching": {
+      "n": 19,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "package consumer / consume-macos / Save the verified artifact registry cache": {
+      "n": 19,
+      "p50_seconds": 4,
+      "p95_seconds": 8,
+      "total_seconds": 70
+    },
+    "package consumer / consume-macos / Set up the host Python the runtime is built against": {
+      "n": 23,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 4
+    },
+    "package consumer / consume-macos / Materialize the packages this workspace consumes": {
+      "n": 22,
+      "p50_seconds": 5,
+      "p95_seconds": 7,
+      "total_seconds": 108
+    },
+    "package consumer / consume-macos / Consume every installed package from outside the workspace": {
+      "n": 22,
+      "p50_seconds": 49,
+      "p95_seconds": 60,
+      "total_seconds": 1064
+    },
+    "package consumer / consume-macos / Upload the closures this platform measured": {
+      "n": 23,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 33
+    },
+    "package consumer / consume-windows / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 6,
+      "p95_seconds": 12,
+      "total_seconds": 164
+    },
+    "package consumer / consume-windows / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 4
+    },
+    "package consumer / consume-windows / Bootstrap ost": {
+      "n": 25,
+      "p50_seconds": 7,
+      "p95_seconds": 13,
+      "total_seconds": 198
+    },
+    "package consumer / consume-windows / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 3,
+      "total_seconds": 19
+    },
+    "package consumer / consume-windows / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 5,
+      "total_seconds": 69
+    },
+    "package consumer / consume-windows / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 74
+    },
+    "package consumer / consume-windows / Remove resumable transfer state before caching": {
+      "n": 20,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "package consumer / consume-windows / Save the verified artifact registry cache": {
+      "n": 20,
+      "p50_seconds": 3,
+      "p95_seconds": 9,
+      "total_seconds": 80
+    },
+    "package consumer / consume-windows / Set up the host Python the runtime is built against": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 8
+    },
+    "package consumer / consume-windows / Materialize the packages this workspace consumes": {
+      "n": 24,
+      "p50_seconds": 3,
+      "p95_seconds": 6,
+      "total_seconds": 85
+    },
+    "package consumer / consume-windows / Consume every installed package from outside the workspace": {
+      "n": 24,
+      "p50_seconds": 92,
+      "p95_seconds": 141,
+      "total_seconds": 2290
+    },
+    "package consumer / consume-windows / Upload the closures this platform measured": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 31
+    },
+    "package consumer / criterion 6 - three platforms agree / Check out the repository": {
+      "n": 22,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 41
+    },
+    "package consumer / criterion 6 - three platforms agree / Set up Python": {
+      "n": 22,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 4
+    },
+    "package consumer / criterion 6 - three platforms agree / Download every platform's closures": {
+      "n": 22,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 198
+    },
+    "package consumer / criterion 6 - three platforms agree / Compare the closures across the three platforms": {
+      "n": 22,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 11
+    },
+    "package consumer / criterion 6 - three platforms agree / Upload the comparison": {
+      "n": 22,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 25
+    },
+    "ost source ci / workspace-graph-pr / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 2,
+      "total_seconds": 47
+    },
+    "ost source ci / workspace-graph-pr / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-graph-pr / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 21
+    },
+    "ost source ci / workspace-graph-pr / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-graph-pr / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-graph-pr / Validate the workspace dependency graph": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 50
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 23
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 3,
+      "total_seconds": 21
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 6,
+      "total_seconds": 62
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 55
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Pull digest-pinned external library artifacts": {
+      "n": 24,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 68
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Install the host packages this runtime needs to be consumed": {
+      "n": 24,
+      "p50_seconds": 10,
+      "p95_seconds": 60,
+      "total_seconds": 385
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Set up host Python for schema tooling": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 4
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Record the schema-tooling Python contract": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Validate the materialized runtime (runnable tools)": {
+      "n": 24,
+      "p50_seconds": 5,
+      "p95_seconds": 8,
+      "total_seconds": 132
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Build the plugin from source": {
+      "n": 24,
+      "p50_seconds": 52,
+      "p95_seconds": 64,
+      "total_seconds": 1209
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Run the verification pyramid": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 12
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Package the plugin (never published from this workflow)": {
+      "n": 24,
+      "p50_seconds": 4,
+      "p95_seconds": 5,
+      "total_seconds": 95
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Upload the verification report and CI evidence": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 33
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 68
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 28
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 5,
+      "total_seconds": 22
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 4,
+      "p95_seconds": 6,
+      "total_seconds": 116
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 81
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Pull digest-pinned external library artifacts": {
+      "n": 24,
+      "p50_seconds": 5,
+      "p95_seconds": 6,
+      "total_seconds": 102
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Remove resumable transfer state before caching": {
+      "n": 20,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Save the verified artifact registry cache": {
+      "n": 20,
+      "p50_seconds": 4,
+      "p95_seconds": 13,
+      "total_seconds": 104
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Set up host Python for schema tooling": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 8
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Record the schema-tooling Python contract": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Validate the materialized runtime (runnable tools)": {
+      "n": 24,
+      "p50_seconds": 6,
+      "p95_seconds": 13,
+      "total_seconds": 172
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Validate the workspace dependency graph": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Build the workspace from source": {
+      "n": 24,
+      "p50_seconds": 123,
+      "p95_seconds": 175,
+      "total_seconds": 3033
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Run the workspace test suite": {
+      "n": 21,
+      "p50_seconds": 399,
+      "p95_seconds": 524,
+      "total_seconds": 8528
+    },
+    "ost source ci / workspace-pr-macos-arm64 / Upload the build logs and CI evidence": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 17
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 6,
+      "p95_seconds": 10,
+      "total_seconds": 157
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 3
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 7,
+      "p95_seconds": 18,
+      "total_seconds": 223
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 14
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 3,
+      "total_seconds": 32
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 5,
+      "total_seconds": 60
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 3,
+      "total_seconds": 69
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Pull digest-pinned external library artifacts": {
+      "n": 24,
+      "p50_seconds": 4,
+      "p95_seconds": 6,
+      "total_seconds": 97
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Set up host Python for schema tooling": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 4
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Record the schema-tooling Python contract": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Validate the materialized runtime (runnable tools)": {
+      "n": 24,
+      "p50_seconds": 21,
+      "p95_seconds": 65,
+      "total_seconds": 660
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Build the plugin from source": {
+      "n": 24,
+      "p50_seconds": 83,
+      "p95_seconds": 98,
+      "total_seconds": 1993
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Run the verification pyramid": {
+      "n": 24,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 28
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Package the plugin (never published from this workflow)": {
+      "n": 24,
+      "p50_seconds": 4,
+      "p95_seconds": 5,
+      "total_seconds": 100
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Upload the verification report and CI evidence": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 30
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 74
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 28
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 5,
+      "total_seconds": 38
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 70
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 4,
+      "p95_seconds": 4,
+      "total_seconds": 84
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Pull digest-pinned external library artifacts": {
+      "n": 24,
+      "p50_seconds": 5,
+      "p95_seconds": 6,
+      "total_seconds": 102
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Set up host Python for schema tooling": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 8
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Record the schema-tooling Python contract": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Validate the materialized runtime (runnable tools)": {
+      "n": 24,
+      "p50_seconds": 7,
+      "p95_seconds": 10,
+      "total_seconds": 167
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Build the plugin from source": {
+      "n": 24,
+      "p50_seconds": 49,
+      "p95_seconds": 62,
+      "total_seconds": 1162
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Run the verification pyramid": {
+      "n": 24,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 65
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Package the plugin (never published from this workflow)": {
+      "n": 24,
+      "p50_seconds": 4,
+      "p95_seconds": 6,
+      "total_seconds": 109
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Upload the verification report and CI evidence": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 2,
+      "total_seconds": 43
+    },
+    "ost source ci / workspace-pr-linux / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 44
+    },
+    "ost source ci / workspace-pr-linux / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / workspace-pr-linux / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 27
+    },
+    "ost source ci / workspace-pr-linux / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / workspace-pr-linux / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / workspace-pr-linux / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 2,
+      "total_seconds": 14
+    },
+    "ost source ci / workspace-pr-linux / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 127
+    },
+    "ost source ci / workspace-pr-linux / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 2,
+      "p95_seconds": 3,
+      "total_seconds": 57
+    },
+    "ost source ci / workspace-pr-linux / Pull digest-pinned external library artifacts": {
+      "n": 24,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 75
+    },
+    "ost source ci / workspace-pr-linux / Remove resumable transfer state before caching": {
+      "n": 20,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / workspace-pr-linux / Save the verified artifact registry cache": {
+      "n": 20,
+      "p50_seconds": 4,
+      "p95_seconds": 9,
+      "total_seconds": 83
+    },
+    "ost source ci / workspace-pr-linux / Install the host packages this runtime needs to be consumed": {
+      "n": 24,
+      "p50_seconds": 11,
+      "p95_seconds": 65,
+      "total_seconds": 412
+    },
+    "ost source ci / workspace-pr-linux / Set up host Python for schema tooling": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 3
+    },
+    "ost source ci / workspace-pr-linux / Record the schema-tooling Python contract": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / workspace-pr-linux / Validate the materialized runtime (runnable tools)": {
+      "n": 24,
+      "p50_seconds": 4,
+      "p95_seconds": 9,
+      "total_seconds": 119
+    },
+    "ost source ci / workspace-pr-linux / Validate the workspace dependency graph": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / workspace-pr-linux / Build the workspace from source": {
+      "n": 24,
+      "p50_seconds": 129,
+      "p95_seconds": 153,
+      "total_seconds": 3095
+    },
+    "ost source ci / workspace-pr-linux / Run the workspace test suite": {
+      "n": 24,
+      "p50_seconds": 212,
+      "p95_seconds": 408,
+      "total_seconds": 5618
+    },
+    "ost source ci / workspace-pr-linux / Upload the build logs and CI evidence": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 7
+    },
+    "ost source ci / workspace-pr-windows / Check out the repository": {
+      "n": 25,
+      "p50_seconds": 6,
+      "p95_seconds": 8,
+      "total_seconds": 152
+    },
+    "ost source ci / workspace-pr-windows / Hosted runner billing notice": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 3
+    },
+    "ost source ci / workspace-pr-windows / Bootstrap ost 0.23.13 (pinned release asset, checksum-verified)": {
+      "n": 25,
+      "p50_seconds": 6,
+      "p95_seconds": 8,
+      "total_seconds": 162
+    },
+    "ost source ci / workspace-pr-windows / Check ost is available and record its version": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 10
+    },
+    "ost source ci / workspace-pr-windows / Validate the CI manifest": {
+      "n": 25,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / workspace-pr-windows / Restore the artifact registry cache (speed only, never correctness)": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 2,
+      "total_seconds": 19
+    },
+    "ost source ci / workspace-pr-windows / Pull the pinned runtime SDK from its remote reference": {
+      "n": 25,
+      "p50_seconds": 4,
+      "p95_seconds": 6,
+      "total_seconds": 90
+    },
+    "ost source ci / workspace-pr-windows / Verify and materialize the pinned runtime SDK": {
+      "n": 25,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 74
+    },
+    "ost source ci / workspace-pr-windows / Pull digest-pinned external library artifacts": {
+      "n": 24,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 75
+    },
+    "ost source ci / workspace-pr-windows / Remove resumable transfer state before caching": {
+      "n": 20,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-pr-windows / Save the verified artifact registry cache": {
+      "n": 20,
+      "p50_seconds": 3,
+      "p95_seconds": 5,
+      "total_seconds": 77
+    },
+    "ost source ci / workspace-pr-windows / Set up host Python for schema tooling": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 2
+    },
+    "ost source ci / workspace-pr-windows / Record the schema-tooling Python contract": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 1
+    },
+    "ost source ci / workspace-pr-windows / Validate the materialized runtime (runnable tools)": {
+      "n": 24,
+      "p50_seconds": 20,
+      "p95_seconds": 27,
+      "total_seconds": 494
+    },
+    "ost source ci / workspace-pr-windows / Validate the workspace dependency graph": {
+      "n": 24,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 4
+    },
+    "ost source ci / workspace-pr-windows / Build the workspace from source": {
+      "n": 24,
+      "p50_seconds": 376,
+      "p95_seconds": 389,
+      "total_seconds": 8500
+    },
+    "ost source ci / workspace-pr-windows / Run the workspace test suite": {
+      "n": 24,
+      "p50_seconds": 286,
+      "p95_seconds": 435,
+      "total_seconds": 7161
+    },
+    "ost source ci / workspace-pr-windows / Upload the build logs and CI evidence": {
+      "n": 25,
+      "p50_seconds": 1,
+      "p95_seconds": 1,
+      "total_seconds": 13
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Remove resumable transfer state before caching": {
+      "n": 13,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-windows / Save the verified artifact registry cache": {
+      "n": 13,
+      "p50_seconds": 4,
+      "p95_seconds": 6,
+      "total_seconds": 52
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Remove resumable transfer state before caching": {
+      "n": 13,
+      "p50_seconds": 0,
+      "p95_seconds": 1,
+      "total_seconds": 1
+    },
+    "ost source ci / usdvrmfileformat-pr-macos-arm64 / Save the verified artifact registry cache": {
+      "n": 13,
+      "p50_seconds": 3,
+      "p95_seconds": 7,
+      "total_seconds": 49
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Remove resumable transfer state before caching": {
+      "n": 13,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "total_seconds": 0
+    },
+    "ost source ci / usdvrmfileformat-pr-linux / Save the verified artifact registry cache": {
+      "n": 13,
+      "p50_seconds": 3,
+      "p95_seconds": 4,
+      "total_seconds": 45
+    }
+  }
+}

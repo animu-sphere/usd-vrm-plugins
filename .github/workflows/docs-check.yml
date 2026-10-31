@@ -9,17 +9,7 @@
 name: docs-check
 
 on:
-  pull_request:
-    paths:
-      - "**/*.md"
-      - "**/openstrata.plugin.yaml"
-      - "**/openstrata.library.yaml"
-      - "scripts/check_docs.py"
-      - "tests/test_docs.py"
-      - "VERSION"
-      - "openstrata.toml"
-      - "**/openstrata.tool.yaml"
-      - ".github/workflows/docs-check.yml"
+  workflow_call:
   push:
     branches: [main]
     paths:
@@ -42,11 +32,13 @@ jobs:
     name: docs consistency
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.13"
       - name: Check docs against the manifests
         run: python scripts/check_docs.py
       - name: Check documentation lint regressions
         run: python tests/test_docs.py
+      - name: Validate the current release-note inputs
+        run: python scripts/make_release_notes.py --allow-unreleased --out "$RUNNER_TEMP/release-notes.md"

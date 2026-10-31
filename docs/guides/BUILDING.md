@@ -115,8 +115,46 @@ avatar open and validate, and an embedded texture resolves straight from the
 
 ## CI
 
-CI is generated from the support matrix in `openstrata.ci.yaml`
-(`ost ci generate github`). The PR lane (`.github/workflows/ost-source-ci.yml`)
+The PR entry point is [ci-routing.yml](../../.github/workflows/ci-routing.yml).
+Every PR runs change classification, documentation/link/manifest consistency,
+release-note input validation, and the fixed **`ci-required`** aggregate check.
+There is no workflow-level PR path filter, so docs-only changes still report a
+required result. Classification uses the event's base/head SHA and their merge
+base, with a complete checkout and NUL-delimited git diff; it does not depend
+on the GitHub files API's pagination limits. Renames include both paths.
+
+Only root `README.md`, `CHANGELOG.md`, and `docs/**/*.md` select docs-only CI.
+Two Markdown files remain executable validation/release inputs and select full
+CI: `docs/architecture/PACKAGE_CONTRACT.md` and
+`docs/contributing/RELEASE_NOTES_TEMPLATE.md`. Non-Markdown docs files, tests,
+fixtures, manifests, CMake, CI definitions, dependencies, `VERSION`, unknown
+paths, and empty diffs select full CI. A classification error fails the gate.
+Add an exclusion in [changed_paths.py](../../scripts/ci/changed_paths.py) whenever
+a build or test begins reading another Markdown file as input.
+
+Full CI calls the generated OST workflow, plain-CMake workflow, and installed
+package-consumer workflow. It also validates the CI manifest and checks generated
+workflow drift. Code changes retain every OS and packaging claim; no tests or
+matrix cells were removed. `ci-required` requires every selected workflow to
+succeed, and accepts heavy-workflow skips only on a valid docs-only route.
+
+The support matrix in `openstrata.ci.yaml` owns the OST jobs. OST 0.23.13 cannot
+generate `workflow_call`, so [generate.py](../../scripts/ci/generate.py) adapts
+only its trigger and job event guards into a reusable workflow. Build, runtime
+verification, test and package steps are preserved verbatim. Unexpected generator
+shapes or the wrong OST version fail generation. Regenerate using the pinned OST:
+
+```sh
+python scripts/ci/generate.py
+python scripts/ci/generate.py --check
+```
+
+The adapter invokes `ost ci generate github --stdout`; do not overwrite the
+adapted workflow with raw OST output or edit its jobs by hand. The same version
+check applies locally and in the CI drift gate. Native OST reusable-workflow
+support can replace the adapter when available.
+
+The OST lane ([ost-source-ci.yml](../../.github/workflows/ost-source-ci.yml))
 runs **seven cells** against digest-pinned cy2026 runtimes on hosted Windows /
 macOS arm64 / Linux:
 
@@ -134,6 +172,19 @@ macOS arm64 / Linux:
   pyramid (`--up-to 5`; Windows is capped at 4), and `ost plugin package` it.
   Neither the standalone configure nor packaging is reachable from a workspace
   cell, and they are per-platform, which is what these three are for.
+
+Use **Actions → ci → Run workflow** (`workflow_dispatch`) to force all lanes,
+including docs and drift validation. The individual source, plain-CMake and
+package-consumer workflows also retain manual dispatch for focused diagnosis.
+Release tag/manual validation stays in `release.yml`.
+
+Branch protection should require **`ci-required`**, rather than the conditional
+matrix cell names or reusable-workflow job names. Before enabling routing in a
+repository with protected branches, replace any old required cell checks with
+this fixed check. At the 2026-10-31 audit this repository's `main` had no branch
+protection or effective rules; no remote settings were changed. See the
+[baseline and claim audit](../reports/ci/2026-10-31-ci-audit.md) for measurements
+and the remaining cache/coverage experiments.
 
 ## Release artifacts
 

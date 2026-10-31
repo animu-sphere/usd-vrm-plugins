@@ -1,0 +1,77 @@
+# Hand-authored PR entry point; OST owns the called source matrix and steps.
+name: ci
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      full: ${{ steps.classify.outputs.full }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test routing and required-gate failure cases
+        run: python3 tests/test_ci_routing.py
+      - name: Classify the PR base/head diff
+        id: classify
+        run: python3 scripts/ci/changed_paths.py
+
+  docs:
+    needs: changes
+    uses: ./.github/workflows/docs-check.yml
+
+  generated:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Read the OST pin
+        id: version
+        run: echo "version=$(python3 scripts/ci_pins.py bootstrap-version)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/bootstrap-ost
+        with:
+          version: ${{ steps.version.outputs.version }}
+      - name: Validate the manifest and generated workflow
+        run: |
+          ost ci validate
+          python3 scripts/ci/generate.py --check
+
+  source:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    uses: ./.github/workflows/ost-source-ci.yml
+
+  plain:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    uses: ./.github/workflows/plain-cmake.yml
+
+  consumer:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    uses: ./.github/workflows/package-consumer.yml
+
+  ci-required:
+    name: ci-required
+    if: always()
+    needs: [changes, docs, generated, source, plain, consumer]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Require success from every selected lane
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 scripts/ci/required_gate.py
