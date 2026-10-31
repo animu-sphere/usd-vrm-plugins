@@ -13,6 +13,16 @@ Current schema contract version: **2**.
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-10-31
+
+> **Native animated USD export and the secondary-motion foundation.**
+> `vrm_export` packages the existing VRMA bake into portable native USD;
+> `vrmRig` adds the spring-bone solver. Schema contract **2** distinguishes
+> VRM 0.x spring roots from VRM 1.0 chains. Reimport old VRM 0.x stages or
+> follow the [migration notes](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#migrating-v1-spring-declarations).
+> Publication and candidate evidence are tracked in the explicitly unpublished
+> [release record](docs/releases/v0.11.0.md).
+
 ### Added
 
 - **A release closure checklist** now records the manifest-derived product
@@ -107,7 +117,7 @@ Current schema contract version: **2**.
 - **Schema contract v2 distinguishes spring roots from chains.** VRM 0.x
   `secondaryAnimation.boneGroups[].bones` now authors `vrm:rootJoints` on
   `VrmSpringBoneAPI`; VRM 1.0 keeps `vrm:joints`. Parameter arrays are parallel
-  to the authored array, and root expansion belongs to the future `vrmRig`
+  to the authored array, and root expansion belongs to the `vrmRig`
   solver. Reimport VRM 0.x assets or follow the
   [migration notes](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#migrating-v1-spring-declarations)
   before marking an exported stage v2. The importer stamps v2 for both source
@@ -4908,7 +4918,8 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.7.0...v0.8.0

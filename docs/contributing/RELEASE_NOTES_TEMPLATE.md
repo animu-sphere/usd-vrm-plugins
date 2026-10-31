@@ -23,9 +23,12 @@ VRMA motion clips as canonical `UsdSkelAnimation` data.
 | `usdVrmFileFormat-{version}-<target>.tar.zst` | `.vrm` importer bundle for `<target>` (lean) |
 | `usdVrmPackageResolver-{version}-<target>.tar.zst` | embedded-texture package resolver for `<target>` (lean) |
 | `usdVrmaFileFormat-{version}-<target>.tar.zst` | `.vrma` animation importer bundle for `<target>` (lean) |
-| `usd-vrm-plugins-{version}-<target>-plugin-product.tar.zst` | aggregate product archive containing exactly the eight members `openstrata.toml` `release_members` names: the four bundles above, `execMotion`, `execVrm` and two CLI tools |
-| `motion_retarget` · `motion_bvh` | tool members of the product archive — the retarget and BVH CLIs |
+| `execVrm-{version}-<target>.tar.zst` | VRM OpenExec computations; embeds the pinned external `execMotion` bundle |
+| `vrmImaging-{version}-<target>.tar.zst` | canonical VRM material data for Hydra; separate `usd` and `lookdev` targets |
+| `motion_retarget-{version}-<target>.tar.zst` · `vrm_export-{version}-<target>.tar.zst` | retarget and native USD export CLI packages |
+| `usd-vrm-plugins-{version}-<target>-plugin-product.tar.zst` | aggregate product: the six bundles above, `motion_retarget` and `vrm_export` |
 | `<bundle>-{version}-<target>.manifest.json` | OpenStrata manifest sidecar per bundle |
+| `lookdev-package-pins.json` · `lookdev-package-pins.md` | published Windows/Linux lookdev archive and OCI digests |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |
 
@@ -40,23 +43,20 @@ VRMA motion clips as canonical `UsdSkelAnimation` data.
 >
 > `usdVrmaFileFormat` is independently installable: it has no plugin-bundle
 > dependency and is independently package-tested. The aggregate product artifact
-> contains the exact seven members, manifests, checksums, and evidence in
+> contains the exact eight members, manifests, checksums, and evidence in
 > dependency order. It is produced by `ost plugin package --workspace --product`
 > and is the recommended install starting point.
 >
-> **The live-capture adapters and their `*_record` CLIs are not in any
-> artifact.** That is deliberate —
-> [WORKSPACE.md](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/architecture/WORKSPACE.md)
-> §5 keeps optional network and SDK dependencies out of the core distribution —
-> and they build from the source archive.
+> Generic motion files, BVH tools and motion profiles are owned by
+> [usd-motion-plugins](https://github.com/animu-sphere/usd-motion-plugins).
+> Live input and recording adapters are owned by
+> [motion-connectors](https://github.com/animu-sphere/motion-connectors).
+> They are not source or product members of this repository.
 >
-> **The product carries the motion profiles.** `motion_bvh_convert` needs a
-> producer profile, and `ost plugin product install --prefix <dir>` puts the
-> shipped ones at `<prefix>/share/usd-vrm-plugins/profiles/motion/` where the
-> tool finds them with no flag — verified per release by
-> `scripts/artifact_only_bvh_smoke.py`. No *member* archive carries them: a
-> `motion_bvh` archive unpacked on its own is its two executables, so that route
-> still needs a `cmake --install` prefix or a `--profile` path.
+> **Schema contract 2:** reimport VRM 0.x assets or follow the
+> [spring migration notes](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#migrating-v1-spring-declarations)
+> before consuming old exported stages. Accepted distribution limitations are
+> recorded in the [release record](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/releases/{tag}.md).
 
 Each binary bundle carries a `buildInfo.json` stamp in its resources
 (git commit / build OS / compiler / build type / OpenUSD version / schema

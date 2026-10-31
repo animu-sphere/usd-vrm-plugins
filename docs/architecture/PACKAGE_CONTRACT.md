@@ -132,6 +132,12 @@ one.
 `usdVrmFileFormat`, `vrmImaging` and `motion_retarget` use, and `vrmRig` is a
 package the tagged 0.9.0 release does not have.
 
+*Prepared for v0.11.0*: every internal range moves to `>=0.11,<0.12`.
+`vrmRig` adds the public spring-bone solver API, and schema contract v2 changes
+the interpretation of VRM 0.x spring declarations. The candidate's migration
+and distribution boundaries are in the
+[unpublished release record](../releases/v0.11.0.md).
+
 ## 4. The packages
 
 ### 4.1 Plugin bundles
