@@ -342,11 +342,17 @@ jobs:
       # provenance, so running it AFTER the per-bundle builds makes
       # `plugin package` fail closed with PLUGIN_PACKAGE_OUTPUT_MISMATCH. Root
       # build first, per-bundle builds second. See ost report 33 §4.
+      - name: Validate the release workspace graph
+        id: closure_graph
+        if: ${{ matrix.lane == 'workspace' }}
+        shell: bash
+        run: ost plugin test --workspace --graph-only --json
       - name: Build the workspace root tree (plain libraries + CLI tools)
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: ost build --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --progress plain
       - name: Build every bundle from source (dependency order)
+        id: closure_standalone
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -372,16 +378,19 @@ jobs:
           # the shared libraries it records" holds the packaged bytes to each
           # bundle's own record, so a closure that stops covering them fails
           # there, by library and bundle.
-          for bundle in plugins/vrmSchema plugins/execVrm plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/vrmImaging plugins/usdVrmaFileFormat; do
+          bundle_paths="$(python scripts/check_release_closure.py --bundle-paths)"
+          for bundle in $bundle_paths; do
             echo "::group::build $bundle"
             ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             echo "::endgroup::"
           done
       - name: Run the verification pyramid against the build tree (whole workspace)
+        id: closure_workspace
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: ost plugin test --workspace --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
       - name: Package the workspace (lean bundles + aggregate product + split debug symbols)
+        id: closure_package
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -389,6 +398,7 @@ jobs:
           mkdir -p .ost-ci
           ost plugin package --workspace --product --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
       - name: Prove packaging is digest-reproducible
+        id: closure_reproducibility
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -411,6 +421,7 @@ jobs:
       # step that fails -- by library and bundle -- when the build order above
       # stops putting a binary in the prefix (ost report 40).
       - name: Verify every bundle carries the shared libraries it records
+        id: closure_libraries
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -428,6 +439,7 @@ jobs:
       # opens, validates, and texture-resolves real models across the composed
       # product. See ost reports 23 and 26.
       - name: Verify the packaged artifacts, composed (clean-install smoke)
+        id: closure_clean_install
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
@@ -446,6 +458,7 @@ jobs:
       # registration and requires a refusal. The display suite left with
       # execMotion (MIG-2).
       - name: Evaluate the exec bundles from the product alone
+        id: closure_exec
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -465,6 +478,7 @@ jobs:
       # fails if `VrmImaging` loads from anywhere but the prefix, and requires
       # discovery to fail with the product's registration moved aside.
       - name: Run the vrmImaging suites against the product alone
+        id: closure_imaging
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -481,6 +495,7 @@ jobs:
       # requires a refusal with the product's importer registration moved
       # aside. `vrm_export_end_to_end` runs the build tree's executable only.
       - name: Export a .vrm with the product's vrm_export alone
+        id: closure_export
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: |
@@ -492,9 +507,31 @@ jobs:
           fi
           python scripts/artifact_only_export_smoke.py --product "$(dirname "$product")"
       - name: Verify the packaged VRMA reader independently
+        id: closure_vrma
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash
         run: ost plugin test plugins/usdVrmaFileFormat --from-package --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
+      - name: Configure, build and run installed CMake consumers
+        id: closure_consumers
+        if: ${{ matrix.lane == 'workspace' }}
+        shell: bash
+        run: python scripts/run_package_consumer_lane.py --platform ${{ matrix.platform }} --profile ${{ matrix.profile }} --reports .ost-ci/release-consumers
+      - name: Record the release closure checklist
+        if: ${{ always() && matrix.lane == 'workspace' }}
+        shell: bash
+        env:
+          RELEASE_CLOSURE_STEPS: ${{ toJSON(steps) }}
+          RELEASE_CLOSURE_CELL: ${{ matrix.name }}
+        run: python scripts/check_release_closure.py --package-json .ost-ci/package.json --output .ost-ci/release-closure.json
+      - name: Upload release closure evidence
+        if: ${{ always() && matrix.lane == 'workspace' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: closure-${{ matrix.name }}
+          path: |
+            .ost-ci/release-closure.json
+            .ost-ci/release-consumers/
+          if-no-files-found: error
       - name: Stage the release artifacts
         if: ${{ matrix.lane == 'workspace' }}
         shell: bash

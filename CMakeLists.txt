@@ -512,6 +512,10 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON)
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_ctest_labels.py"
             --selftest)
 
+    add_test(NAME workspace_release_closure
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_release_closure.py")
+
     # The CMake dependency boundary (WORKSPACE.md §2) as the build states it:
     # what each member resolves, links and includes, against what it may; the
     # root resolving nothing on a member's behalf; no source tree of another

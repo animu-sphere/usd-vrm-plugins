@@ -15,6 +15,14 @@ Current schema contract version: **2**.
 
 ### Added
 
+- **A release closure checklist** now records the manifest-derived product
+  members and the execution outcome of each release product gate. Missing,
+  skipped and failed gates prevent staging; the JSON and installed-consumer
+  reports upload even on failure. The release lane now runs the graph and
+  every installed CMake consumer itself, and reads its standalone bundle
+  build list from the descriptors. Hosted verification of the new gates is
+  pending ([checklist](docs/contributing/release-closure.md)).
+
 - **`vrm_export --motion <clip.vrma>`** ([export track](docs/roadmap/export-track.md)
   Step 3) reuses the shipped `motion_retarget` bake for body, expressions and
   look-at. The result references a content-named native avatar layer with

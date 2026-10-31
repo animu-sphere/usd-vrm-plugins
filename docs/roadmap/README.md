@@ -49,7 +49,7 @@ table.
 | --- | --- | --- |
 | OpenExec foundation | Shipped | v0.9.0 |
 | release-artifact proof of the reduced product | Shipped | v0.10.0 |
-| release closure checklist and checkable invariants | Planned | unscheduled |
+| release closure checklist and checkable invariants | In progress | unscheduled |
 | `ExecIr` invertible VRM humanoid rig | Planned | unscheduled |
 | MToon canonical semantics (Product P5) | In progress | v0.10.0 carries Steps 3–7; the rest unscheduled |
 | Native USD export (`vrm_export`) | In progress | v0.10.0 carries Step 1; the rest unscheduled |
