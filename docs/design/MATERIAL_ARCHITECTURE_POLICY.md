@@ -16,11 +16,10 @@
 > **This introduces no new phase sequence.** The steps in §7 are the
 > internal order of **Product P5**, not another sequence alongside Product
 > P0–P6 and Workspace Phase 0–8
-> ([roadmap](../roadmap/README.md#sequences)). The
-> release P5 lands in is fixed by the
-> [roadmap status table](../roadmap/README.md#status-at-a-glance), never here;
-> the open steps and their status are the
-> [material track](../roadmap/material-track.md).
+> (the [workspace sequence is historical](../archive/workspace-migration/WORKSPACE.md#8-phase-status)).
+> Steps 1–7 are complete here; [v0.10.0](../releases/v0.10.0.md) records the
+> delivered scope. Renderer implementation and conformance images belong to
+> [hydra-toon](https://github.com/animu-sphere/hydra-toon/tree/main/docs/roadmap).
 >
 > **Revised 2026-09-25: semantics first.** The canonical schemas no longer come
 > last (§7), the renderer-specific realization is named — `hydra-toon`, a
@@ -705,9 +704,9 @@ nothing regenerated and nothing written below them.
 ## 7. Product P5, in order
 
 The internal order of Product P5, not a phase sequence (see the header). Each
-step is independently reviewable. The open steps' status and "done when" are
-the [material track](../roadmap/material-track.md); this section keeps the
-order's rationale and the record of the steps that shipped.
+step was independently reviewable. Steps 1–7 are complete here; the original
+acceptance evidence is [archived](../archive/material/material-track.md). This
+section preserves the design rationale and current realization constraints.
 
 **The order was revised on 2026-09-25.** It was: restructure `/preview`, add
 `/mtlx`, and the schemas **last**, so that the first rendering improvements
@@ -897,9 +896,9 @@ The rule to preserve:
 
 ### 7.5 Steps 4–7 — after the contract
 
-Added 2026-09-25 with the revised order. Status and "done when" for each are
-the [material track](../roadmap/material-track.md); what is fixed here is what
-each step may and may not do.
+Steps 4–7 are complete here; [v0.10.0](../releases/v0.10.0.md) records the
+delivered scope. What remains binding here is what each realization may and
+may not do.
 
 - **Step 4 — importer canonicalization.** Both source versions author the same
   canonical fields (§6.6). The raw block is untouched; the baseline diff is

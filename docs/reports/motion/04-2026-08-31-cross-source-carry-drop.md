@@ -375,7 +375,7 @@ turned out to be exactly that, on the one take where the truth was known.
 ## 10. Reproducing it
 
 The bytes live outside the repository and cannot come in
-([the corpus policy](../../roadmap/current.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)).
+([the corpus policy](../../archive/release-preparation/current-before-cleanup.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)).
 Given them:
 
 ```powershell
@@ -406,7 +406,7 @@ step, which is what §5 was found with).
 
 - **The relay arm.** No VMC relay session has been recorded, so §11's diagram is
   three of four and the VMC half of the root/hips decision stays open. It is
-  [on the operator-evidence list](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)
+  [on the operator-evidence list](../../archive/release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces)
   and this report does not shorten it.
 - **The right-hand head turn's 15.5°.** Two performances cannot separate a
   sender difference from a person. A shared take would have settled it and this

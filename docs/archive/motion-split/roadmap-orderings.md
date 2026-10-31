@@ -81,7 +81,7 @@ and its remaining items stay here beside the move
 code they would have extended. The OpenExec foundation keeps its place and its
 version: it finishes here first, because its findings are the API defects the
 move fixes on arrival. Destinations are
-[WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture); the plan is
+[WORKSPACE.md §9](../workspace-migration/WORKSPACE.md#9-destinations-under-the-motion-architecture); the plan is
 [motion-foundation-split.md](motion-foundation-split.md). The 2026-09-06 note
 below is the record of the order it replaces.
 
@@ -159,7 +159,7 @@ Where things stand, as of 2026-09-19:
   the VRChat OSC tracker input over the shared OSC foundation
   ([release record](../../releases/v0.8.0.md)). What it shipped and did not close
   is in that record's known limitations; the part with work left is in
-  [current.md](../../roadmap/current.md#carried-out-of-v080).
+  [current.md](../release-preparation/current-before-cleanup.md#carried-out-of-v080).
 - **v0.9.0 shipped on 2026-09-17**: the
   [OpenExec foundation](openexec-foundation.md), with OpenExec and the offline
   bake agreeing on 414 598 values, every one `==`
@@ -170,7 +170,7 @@ Where things stand, as of 2026-09-19:
   still uses by digest. What is left is MIG-5's release-artifact proof and
   its cross-repository test ([current.md](../../roadmap/current.md)). Carried beside it: operator evidence for both input halves, the
   Workspace Phase 5 packaging P0, and the build machine's RPATH in packaged
-  POSIX binaries ([current.md](../../roadmap/current.md#carried-out-of-v090)).
+  POSIX binaries ([current.md](../release-preparation/current-before-cleanup.md#carried-out-of-v090)).
 - **The recorded half's second format family left with the layer it extends**:
   it is no longer this repository's. NPZ / AMASS enters through `motionSource`,
   which is `usd-motion-plugins`' since MIG-3, and whether it is one identity

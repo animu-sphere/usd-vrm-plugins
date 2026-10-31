@@ -10,7 +10,8 @@ runs on every lane and in a few seconds:
   package and never as a source tree: no `add_subdirectory()` out of this
   repository, no `FetchContent` or `ExternalProject`, no `include()` of another
   repository's file.
-* **Nothing left behind** (MIG-5). No identity WORKSPACE.md §9.1 sent to
+* **Nothing left behind** (MIG-5). No identity the archived workspace
+  destination table sent to
   usd-motion-plugins or motion-connectors comes back, under the name it had
   here or the one it has there: no member directory, no target or target
   prefix (`motionCore_tests`), no file under `adapters/` or `profiles/motion/`,
@@ -67,7 +68,8 @@ CONSUMED = frozenset({
 MOTION_PLUGINS = "usd-motion-plugins"
 CONNECTORS = "motion-connectors"
 
-# Every identity WORKSPACE.md §9.1 sends to another repository, under every
+# Every identity in the archived workspace destination table sent elsewhere,
+# under every
 # name it has had -- the one it had here and the one it has there -- with the
 # repository that owns it now (MIG-5: nothing left behind). None may be a
 # member, a target or a target's prefix here: `motionCore_tests` is a copy of

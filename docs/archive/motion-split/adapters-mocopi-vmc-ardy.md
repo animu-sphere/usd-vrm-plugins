@@ -17,7 +17,7 @@ owner: usd-vrm-plugins
 > [`motionConnectorMocopi`](https://github.com/animu-sphere/motion-connectors/blob/main/libs/motionConnectorMocopi) and the
 > two recorders under that repository's root `tools/`; this repository deleted
 > its copies in the same change
-> ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> ([WORKSPACE.md §9](../workspace-migration/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-4). The ARDY adapter (§7) is
 > created there, behind the generator interface `usd-motion-plugins` specifies.
 > **This plan is a record now, not a plan**: what it measured is what was built
@@ -802,7 +802,7 @@ be verified from committed bytes shipped with v0.6.0; everything in it that need
 an operator, a sender application, or a device is the evidence half, and no
 amount of code closes those. The carried items below all sit on that same line,
 and the ones that are release conditions are tracked in
-[current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces).
+[current.md](../release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces).
 
 ### Milestone A — VMC decoding ✅ (v0.6.0, one item carried)
 
@@ -908,7 +908,7 @@ and the first can say it about `motion_capture` too.
 - ⬜ **The artifact-only leg is not done.** Nothing here has been run from
   packaged artifacts. An adapter artifact is producible as of `ost` 0.22.3, so
   what remains is the run, in
-  [current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces),
+  [current.md](../release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces),
   and the decision about whether a release carries one, which is
   [BND-2](boundary-consolidation.md#4-bnd-2--settle-the-adapter-distribution-decision-).
 
@@ -938,7 +938,7 @@ transmits a BVH file over the same UDP format — and that produces a capture wi
 no device at all: pointed at a `.bvh` this repository wrote, it yields bytes
 whose *encoding* is the vendor's and whose *content* is ours. That is the only
 route to a committable, publicly CI-runnable mocopi capture, which is why
-[the redistributable-capture carry-over](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces)
+[the redistributable-capture carry-over](../release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces)
 names `BVH Sender` rather than a phone. Such a capture belongs in `generated/`
 with its provenance saying what produced it: its bytes are genuinely the
 vendor's protocol, so it is not generated in the sense the VMC corpus is, and
@@ -957,7 +957,7 @@ as a new value type, so its output meets the *same* contract as
   unproducible on this product, so `VRM_MOCOPI_TRACKING_LOST` stays frozen and
   unraised and the explicit tracking state §11 asks `motionCore` for is not
   built. Closing this is a recovery a device can actually produce, or a decision
-  that this product cannot — [current.md](../../roadmap/current.md#carried-out-of-v070--evidence-an-operator-produces).
+  that this product cannot — [current.md](../release-preparation/current-before-cleanup.md#carried-out-of-v070--evidence-an-operator-produces).
 
 ### Milestone E — the generator contract ⬜
 

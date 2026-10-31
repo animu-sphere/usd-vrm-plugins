@@ -450,8 +450,8 @@ The plan and every measurement behind these rows are in
 
 The steps and their done-when are in the
 [imaging track](../archive/imaging/imaging-track.md), the
-[material track](../roadmap/material-track.md) and the
-[export track](../roadmap/export-track.md); the summary is the
+[material track](../archive/material/material-track.md) and the
+[export track](../archive/export/export-track.md); the summary is the
 [v0.10.0 record](../releases/v0.10.0.md).
 
 - ✅ **Material track Steps 3–7**: `VrmMaterialAPI`, `VrmMToonAPI` and

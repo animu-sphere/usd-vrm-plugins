@@ -23,7 +23,7 @@ Current schema contract version: **2**.
   build list from the descriptors. Hosted verification of the new gates is
   pending ([checklist](docs/contributing/release-closure.md)).
 
-- **`vrm_export --motion <clip.vrma>`** ([export track](docs/roadmap/export-track.md)
+- **`vrm_export --motion <clip.vrma>`** ([export track](docs/archive/export/export-track.md)
   Step 3) reuses the shipped `motion_retarget` bake for body, expressions and
   look-at. The result references a content-named native avatar layer with
   localized textures, or uses one composed layer with `--flatten`; `.usdz`
@@ -36,7 +36,7 @@ Current schema contract version: **2**.
   Linux and macOS arm64, closing Step 3's evidence condition
   ([2026-10-31 measurements](docs/reports/2026-10-31-export-motion-release-dry-run.md)).
 
-- **`vrm_export --dependency-report`** ([export track](docs/roadmap/export-track.md)
+- **`vrm_export --dependency-report`** ([export track](docs/archive/export/export-track.md)
   Step 2): a versioned JSON inventory on stdout after success, listing each
   distinct localized texture and its byte count, the root layer, total texture
   bytes and whether `--check` ran. It carries no machine-local paths;
@@ -44,7 +44,7 @@ Current schema contract version: **2**.
   end-to-end suite compares it with loose files and package entries over every
   fixture, including external images sharing bytes with an embedded image.
 
-- **`vrmRig::SpringBoneSolver`** ([spring-bone track](docs/roadmap/springbone-track.md)
+- **`vrmRig::SpringBoneSolver`** ([spring-bone track](docs/archive/springbone/springbone-track.md)
   Step 1): a plain-value, stateful solver for VRM 1.0 chains and VRM 0.x
   root subtrees, including branching and 7 cm virtual tails, sphere/capsule
   colliders, center-space history and explicit reset. It returns absolute
@@ -61,7 +61,7 @@ Current schema contract version: **2**.
   contract, including reset/reconfiguration isolation.
 
 - **The product's `vrm_export` is run from the release artifact** ([export
-  track](docs/roadmap/export-track.md) Step 2). A new release lane step,
+  track](docs/archive/export/export-track.md) Step 2). A new release lane step,
   `scripts/artifact_only_export_smoke.py`, installs the product outside the
   repository and exports `Seed-san.vrm` and `mtoon_vrm0.vrm` to `.usdz` with
   the product's own tool and bundles. Each package is read back in a process
@@ -72,7 +72,7 @@ Current schema contract version: **2**.
   The [2026-10-29 release dry run](docs/reports/2026-10-29-export-release-dry-run.md)
   passed on Windows, Linux and macOS arm64, closing Step 2's artifact condition.
 
-- **`vrm_export --flatten`** ([export track](docs/roadmap/export-track.md)
+- **`vrm_export --flatten`** ([export track](docs/archive/export/export-track.md)
   Step 2; export policy §6.1). Writes the composed stage flattened into one
   layer, as an explicit opt-in, and with no source-file comment: the one
   `UsdStage::Flatten` adds by default names the input's absolute path. For a
@@ -84,7 +84,11 @@ Current schema contract version: **2**.
 
 ### Fixed
 
-- **`vrm_export` failure diagnostics** ([export track](docs/roadmap/export-track.md)
+- Documentation now separates current contracts, open local tasks, research
+  and completed plans. Old track URLs remain compatibility stubs; the roadmap
+  distinguishes implemented features from release-verified artifacts.
+
+- **`vrm_export` failure diagnostics** ([export track](docs/archive/export/export-track.md)
   Step 2) now locate unreadable textures by authored path, anchored path and
   referring USD attributes, with recovery checks for external images,
   embedded-image resolver registration and blocked destinations. Validation
@@ -112,7 +116,7 @@ Current schema contract version: **2**.
   parameters against the selected array, including empty declarations.
 
 - **`vrm_export` writes the same `.usdz` bytes on every host of an architecture** ([export
-  track](docs/roadmap/export-track.md) Step 2; export policy §9, q2). OpenUSD's
+  track](docs/archive/export/export-track.md) Step 2; export policy §9, q2). OpenUSD's
   packaging stamps each entry with its file's modification time in local
   time, so two exports of one `.vrm` differed. Every staged file now gets the
   time that is 2000-01-01 00:00:00 in local time before packaging, which
@@ -125,7 +129,7 @@ Current schema contract version: **2**.
   development tool, and Step 2's dependency report will be `vrm_export`'s own.
 
 - **`vrm_export` is tested on a `.vrm` with external images** ([export
-  track](docs/roadmap/export-track.md) Step 2; export policy §6.2). Every
+  track](docs/archive/export/export-track.md) Step 2; export policy §6.2). Every
   committed fixture embeds its images, so the half of localization that reads
   a file beside the `.vrm` had no test. `vrm_export_end_to_end` now writes a
   `.vrm` with one embedded and two external images at run time, one of them
@@ -197,7 +201,7 @@ Current schema contract version: **2**.
   `hydra-toon` plays for the step's live-slot half.
 
 - **Expression colours drive the canonical material slots** (Product P5
-  Step 7; [material track](docs/roadmap/material-track.md)). A VRM
+  Step 7; [material track](docs/archive/material/material-track.md)). A VRM
   expression's material-colour bind now resolves through one table — the
   [schema contract's](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md#expression-colours-drive-canonical-slots),
   carried in code as `vrmRig/MaterialColorSlots.h` — onto the Material's
@@ -285,7 +289,7 @@ Current schema contract version: **2**.
   (ost report 50; it became one with `ost` 0.23.10, above).
 
 - **`vrm_export`: an imported `.vrm` as native `.usda`, `.usdc` or `.usdz`**
-  ([export track](docs/roadmap/export-track.md) Step 1;
+  ([export track](docs/archive/export/export-track.md) Step 1;
   [export policy](docs/design/VRM_EXPORT_POLICY.md)). A new CLI in the
   product. `vrm_export avatar.vrm -o avatar.usdz` writes the imported stage's
   root layer with every texture copied into `textures/` and referenced
@@ -299,7 +303,7 @@ Current schema contract version: **2**.
   zero in an integer-valued vector or array (OpenUSD's crate writer).
 
 - **MToon shading is approximated in MaterialX** (Product P5 Step 6, item 3;
-  [material track](docs/roadmap/material-track.md)). An MToon material's
+  [material track](docs/archive/material/material-track.md)). An MToon material's
   `/mtlx` now draws `VRMC_materials_mtoon` 1.0's toon lighting — shade colour
   and texture, shading shift, toony — plus MatCap, parametric rim and the rim
   mask, in standard MaterialX nodes, **lit by a headlight**: the shading
@@ -311,7 +315,7 @@ Current schema contract version: **2**.
 
 - **Every material carries a MaterialX realization, generated from canonical
   semantics** (Product P5 Step 6, items 1–2;
-  [material track](docs/roadmap/material-track.md)). `/mtlx`'s only input is
+  [material track](docs/archive/material/material-track.md)). `/mtlx`'s only input is
   a material's `VrmMaterialAPI` / `VrmTextureInfoAPI` attributes, as
   `/preview`'s has been since Step 5, and it is no longer unlit-only: a lit
   material gets glTF metallic-roughness PBR through the same `gltf_pbr`
@@ -325,7 +329,7 @@ Current schema contract version: **2**.
   `usdvrm_realization_regenerate` and covers both graphs.
 
 - **`/preview` is generated from canonical material semantics** (Product P5
-  Step 5; [material track](docs/roadmap/material-track.md)). The
+  Step 5; [material track](docs/archive/material/material-track.md)). The
   UsdPreviewSurface generator's only input is a material's
   `VrmMaterialAPI` / `VrmTextureInfoAPI` attributes: the importer authors them,
   reads them back from the stage and generates the graph from what it read, so
@@ -339,7 +343,7 @@ Current schema contract version: **2**.
   states a `KHR_texture_transform`.
 
 - **Imported materials carry their canonical semantics** (Product P5 Step 4;
-  [material track](docs/roadmap/material-track.md)). Every material gets
+  [material track](docs/archive/material/material-track.md)). Every material gets
   `VrmMaterialAPI`, an MToon material `VrmMToonAPI`, and each texture it
   samples a `VrmTextureInfoAPI:<role>` instance, every value authored. A VRM
   0.x MToon material (`materialProperties`, Unity property names) lands in the
@@ -359,7 +363,7 @@ Current schema contract version: **2**.
 
 - **The canonical material schemas: `VrmMaterialAPI`, `VrmMToonAPI`,
   `VrmTextureInfoAPI`** — Product P5 Step 3
-  ([material track](docs/roadmap/material-track.md)), additive within schema
+  ([material track](docs/archive/material/material-track.md)), additive within schema
   contract v1. They carry a material's source semantics on the
   `UsdShadeMaterial` itself:
   - `VrmMaterialAPI` — the glTF material core, plus `KHR_materials_unlit` and
@@ -624,7 +628,7 @@ Current schema contract version: **2**.
     package, target, include root, namespace, consumer fixture and suites
     (`vrmRig_unit`, `vrmRig_boundaries`). It links `motionCore` alone, and its
     boundary check forbids every other `usd-motion-plugins` package, which is
-    [WORKSPACE.md §9.5](docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)'s
+    [WORKSPACE.md §9.5](docs/archive/workspace-migration/WORKSPACE.md#95-the-line-through-vrmretarget)'s
     line held after the cut. The package consumer lane passes it on Windows.
 
 - **The core and the runtime are consumed packages now** (MIG-1 and MIG-2,
@@ -799,7 +803,7 @@ Current schema contract version: **2**.
   [`motionConnector*`](https://github.com/animu-sphere/motion-connectors)
   there, with their history, their corpora and their boundary checks; this
   repository builds, ships and tests none of them. They left **together**,
-  which is [WORKSPACE.md §9.2](docs/architecture/WORKSPACE.md#92-moving-rules)
+  which is [WORKSPACE.md §9.2](docs/archive/workspace-migration/WORKSPACE.md#92-moving-rules)
   rule 7 rather than a convenience: an adapter with its transport in another
   repository would have been a live half split across two.
   - **What this product loses is a capability, not a test.** From the next
@@ -991,7 +995,7 @@ Current schema contract version: **2**.
   42 carries the forward-note; report 37's P1 underneath it stays open.
 
 - **The line through `vrmRetarget`**
-  ([WORKSPACE.md §9.5](docs/architecture/WORKSPACE.md#95-the-line-through-vrmretarget)).
+  ([WORKSPACE.md §9.5](docs/archive/workspace-migration/WORKSPACE.md#95-the-line-through-vrmretarget)).
   The split is by header. `HumanoidMap` is generic and moves as `RetargetMap`,
   and only its VRM 1.0 required-bone set stays. `ExpressionResolver` and
   `LookAtEvaluator` stay too. Three findings are recorded for the arrival. §9.1

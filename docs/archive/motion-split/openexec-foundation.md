@@ -14,7 +14,7 @@ owner: usd-vrm-plugins
 > **After v0.9.0 (decided 2026-09-17).** The foundation finishes here. Then
 > `execMotion` moves to `usd-motion-plugins` as its optional OpenExec bundle,
 > while `execVrm` and the `ExecIr` track (§7) stay
-> ([WORKSPACE.md §9](../../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> ([WORKSPACE.md §9](../workspace-migration/WORKSPACE.md#9-destinations-under-the-motion-architecture),
 > [the migration](motion-foundation-split.md) MIG-2). The findings the nodes
 > produced are fixed in the destination libraries on arrival.
 

@@ -6,6 +6,12 @@ records are history — once written for a released version they are not
 rewritten; new work goes to a new record. Active, incomplete work lives in the
 [roadmap](../roadmap/), not here.
 
+During lockstep release preparation, a candidate record may use front matter
+`status: proposed` and an explicit **Unpublished** banner. It does not enter
+the released-version table or count as a published release in the docs check.
+Record publication evidence before removing that status. Before the version
+bump, use the [candidate worksheet](../contributing/release-candidate.md).
+
 | Version | Record | Theme |
 | --- | --- | --- |
 | v0.10.0 | [v0.10.0.md](v0.10.0.md) | Canonical materials reach Hydra: one canonical record per VRM 0.x and 1.0 material, both realizations generated from it, expression colours driving it over time, and `vrmImaging` handing it to any Hydra renderer with per-field invalidation; native USD export; the motion split completed |
