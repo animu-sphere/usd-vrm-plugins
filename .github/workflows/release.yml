@@ -378,7 +378,8 @@ jobs:
           # the shared libraries it records" holds the packaged bytes to each
           # bundle's own record, so a closure that stops covering them fails
           # there, by library and bundle.
-          bundle_paths="$(python scripts/check_release_closure.py --bundle-paths)"
+          # Native Windows Python writes CRLF; Bash word splitting keeps CR.
+          bundle_paths="$(python scripts/check_release_closure.py --bundle-paths | tr -d '\r')"
           for bundle in $bundle_paths; do
             echo "::group::build $bundle"
             ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
